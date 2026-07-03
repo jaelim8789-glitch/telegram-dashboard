@@ -1,0 +1,39 @@
+"use client";
+
+import { useDashboardStore } from "@/store/useDashboardStore";
+import { TABS, type TabId } from "@/types";
+import { RegisterInspector } from "@/components/inspector/RegisterInspector";
+import { SendInspector } from "@/components/inspector/SendInspector";
+import { GroupInspector } from "@/components/inspector/GroupInspector";
+import { AutoReplyInspector } from "@/components/inspector/AutoReplyInspector";
+import { ProfileInspector } from "@/components/inspector/ProfileInspector";
+import { LogInspector } from "@/components/inspector/LogInspector";
+
+const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
+  register: RegisterInspector,
+  send: SendInspector,
+  group: GroupInspector,
+  autoreply: AutoReplyInspector,
+  profile: ProfileInspector,
+  log: LogInspector,
+};
+
+export function Inspector() {
+  const activeTab = useDashboardStore((s) => s.activeTab);
+  const ActiveInspector = INSPECTOR_CONTENT[activeTab];
+  const tabLabel = TABS.find((t) => t.id === activeTab)?.label;
+
+  return (
+    <aside className="flex w-80 shrink-0 flex-col border-l border-neutral-800 bg-neutral-900">
+      <div className="border-b border-neutral-800 px-4 py-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          인스펙터
+        </span>
+        <div className="mt-0.5 text-sm text-neutral-300">{tabLabel}</div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4">
+        <ActiveInspector />
+      </div>
+    </aside>
+  );
+}

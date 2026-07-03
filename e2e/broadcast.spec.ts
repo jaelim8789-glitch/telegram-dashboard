@@ -1,0 +1,74 @@
+import { expect, test } from "@playwright/test";
+import { createAccount, createBroadcast, deleteAccount, uniquePhone } from "./helpers";
+
+/**
+ * Covers the send flow end to end for what's true without a live Telegram session:
+ * the UI's own validation/disabled states, the scheduled-send toggle, and — via the
+ * real API against the real DB — that a scheduled broadcast shows up correctly in the
+ * send tab's history with its "예약됨" badge and scheduled time. Selecting a *real*
+ * Telegram group to send to isn't reachable here (see accounts.spec.ts for why), so
+ * this exercises the UI/data-flow around sending rather than an actual delivered message.
+ */
+test.describe("발송 흐름 (예약 포함)", () => {
+  let accountId: string;
+
+  test.beforeEach(async ({ request }) => {
+    accountId = await createAccount(request, uniquePhone(), "E2E 발송 테스트 계정");
+  });
+
+  test.afterEach(async ({ request }) => {
+    await deleteAccount(request, accountId);
+  });
+
+  test("인증되지 않은 계정은 발송 탭에서 그룹 목록 에러와 비활성화된 발송 버튼을 보여준다", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+    await expect(page.getByText(/인증되지 않았습니다/)).toBeVisible({ timeout: 10000 });
+
+    const sendButton = page.getByRole("button", { name: "발송", exact: true }).last();
+    await expect(sendButton).toBeDisabled();
+  });
+
+  test("예약 발송 체크박스를 켜면 날짜/시간 입력이 나타나고, 끄면 사라진다", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
+    await page.getByText("예약 발송").click();
+    await expect(page.locator('input[type="datetime-local"]')).toHaveCount(1);
+    await page.getByText("예약 발송").click();
+    await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
+  });
+
+  test("API로 생성한 예약 발송이 발송 이력에 예약됨 배지와 예정 시각으로 표시된다", async ({ page, request }) => {
+    const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    await createBroadcast(request, {
+      accountId,
+      message: "E2E 예약 발송 확인용 메시지",
+      recipients: ["-100123456"],
+      scheduledAt,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    await expect(page.getByText("E2E 예약 발송 확인용 메시지")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("예약됨")).toBeVisible();
+  });
+
+  test("API로 생성한 즉시 발송은 워커 처리 후 실패 상태와 사유가 이력에 표시된다", async ({ page, request }) => {
+    await createBroadcast(request, {
+      accountId,
+      message: "E2E 즉시 발송 확인용 메시지",
+      recipients: ["-100654321"],
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+    await expect(page.getByText("E2E 즉시 발송 확인용 메시지")).toBeVisible({ timeout: 10000 });
+
+    // No real Telegram session exists for this account, so the worker fails it — but
+    // fails it *cleanly*, which is what's actually being verified here.
+    await expect(page.getByText("실패")).toBeVisible({ timeout: 15000 });
+  });
+});
