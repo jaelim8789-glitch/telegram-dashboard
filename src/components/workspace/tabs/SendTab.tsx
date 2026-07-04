@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { motion } from "framer-motion";
+import { Send as SendIcon, Users2 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Select } from "@/components/ui/Field";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
-import {
-  MAX_BROADCAST_RECIPIENTS,
-  isBroadcastInFlight,
-  type Broadcast,
-  type BroadcastStatus,
-  type Group,
-} from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
@@ -23,6 +25,7 @@ const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warn
 };
 
 const POLL_INTERVAL_MS = 3000;
+type SortMode = "default" | "members" | "favorites";
 
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
@@ -43,13 +46,26 @@ export function SendTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
 
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
+  const groups = useDashboardStore((s) => s.sendGroups);
+  const groupsLoading = useDashboardStore((s) => s.sendGroupsLoading);
+  const setGroups = useDashboardStore((s) => s.setSendGroups);
+  const setGroupsLoading = useDashboardStore((s) => s.setSendGroupsLoading);
   const [groupsError, setGroupsError] = useState<string | null>(null);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
+  const toggleGroup = useDashboardStore((s) => s.toggleSendGroupId);
+  const message = useDashboardStore((s) => s.sendMessage);
+  const setMessage = useDashboardStore((s) => s.setSendMessage);
+  const imageFile = useDashboardStore((s) => s.sendImageFile);
+  const setImageFile = useDashboardStore((s) => s.setSendImageFile);
+  const clearSendDraft = useDashboardStore((s) => s.clearSendDraft);
+
+  const { isFavorite, toggleFavorite } = useFavoriteGroups();
+  const { recent, markUsed } = useRecentGroups();
+  const { tagsByGroup, addTag } = useGroupTags();
+
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("default");
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -64,8 +80,7 @@ export function SendTab() {
     setGroupsLoading(true);
     setGroupsError(null);
     try {
-      const result = await api.fetchGroups(accountId);
-      setGroups(result);
+      setGroups(await api.fetchGroups(accountId));
     } catch (err) {
       setGroups([]);
       setGroupsError(err instanceof Error ? err.message : "그룹 목록을 불러오지 못했습니다.");
@@ -87,7 +102,7 @@ export function SendTab() {
   }
 
   useEffect(() => {
-    setSelectedIds([]);
+    clearSendDraft();
     setSubmitError(null);
     setSubmitNotice(null);
     if (selectedAccountId) {
@@ -97,6 +112,7 @@ export function SendTab() {
       setGroups([]);
       setHistory([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId]);
 
   // Poll while anything is pending/sending — real-time-ish status without a websocket.
@@ -116,13 +132,21 @@ export function SendTab() {
     };
   }, [history, selectedAccountId]);
 
-  function toggleGroup(id: string) {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= MAX_BROADCAST_RECIPIENTS) return prev;
-      return [...prev, id];
-    });
+  function handleAddTag(groupId: string) {
+    const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");
+    if (tag) addTag(groupId, tag);
   }
+
+  const visibleGroups = useMemo(() => {
+    const filtered = groups.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
+    const sorted = [...filtered];
+    if (sortMode === "members") {
+      sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
+    } else if (sortMode === "favorites") {
+      sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
+    }
+    return sorted;
+  }, [groups, search, sortMode, isFavorite]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -143,14 +167,13 @@ export function SendTab() {
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
       });
+      markUsed(selectedIds);
       setSubmitNotice(
         scheduledAtIso
           ? "발송이 예약되었습니다. 아래 발송 이력에서 확인하세요."
           : "발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요."
       );
-      setMessage("");
-      setImageFile(null);
-      setSelectedIds([]);
+      clearSendDraft();
       setIsScheduled(false);
       setScheduledAtLocal("");
       await loadHistory(selectedAccountId);
@@ -164,52 +187,74 @@ export function SendTab() {
   if (!account) {
     return (
       <Panel title="메시지 작성">
-        <p className="text-sm text-neutral-500">먼저 사이드바에서 계정을 선택해주세요.</p>
+        <p className="text-sm text-app-text-muted">먼저 사이드바에서 계정을 선택해주세요.</p>
       </Panel>
     );
   }
 
+  const canSubmit = !submitting && selectedIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       <Panel
         title="메시지 작성"
         description={`선택된 계정: ${account.name ?? account.phone} · 최대 ${MAX_BROADCAST_RECIPIENTS}명, 계정당 1분에 1회로 제한됩니다.`}
       >
-        <form onSubmit={handleSubmit}>
+        <form id="send-form" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <span className="mb-1.5 block text-xs font-medium text-neutral-400">
-                발송 대상 ({selectedIds.length}/{MAX_BROADCAST_RECIPIENTS})
-              </span>
-              {groupsLoading && <p className="text-xs text-neutral-500">그룹 목록을 불러오는 중...</p>}
-              {groupsError && <p className="text-xs text-red-400">{groupsError}</p>}
-              {!groupsLoading && !groupsError && groups.length === 0 && (
-                <p className="text-xs text-neutral-500">참여 중인 그룹/채널이 없습니다.</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-app-text-muted">
+                  발송 대상 ({selectedIds.length}/{MAX_BROADCAST_RECIPIENTS})
+                </span>
+                <Select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)} className="w-auto">
+                  <option value="default">기본 정렬</option>
+                  <option value="members">멤버 많은순</option>
+                  <option value="favorites">즐겨찾기 우선</option>
+                </Select>
+              </div>
+              <SearchInput
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="그룹/채널 이름 검색"
+                className="mb-2"
+              />
+
+              {groupsLoading && (
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
               )}
-              {groups.length > 0 && (
-                <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-neutral-700 p-2">
-                  {groups.map((g) => {
-                    const checked = selectedIds.includes(g.id);
-                    const disabled = !checked && selectedIds.length >= MAX_BROADCAST_RECIPIENTS;
+              {groupsError && <p className="text-xs text-app-danger">{groupsError}</p>}
+              {!groupsLoading && !groupsError && groups.length === 0 && (
+                <EmptyState icon={Users2} title="참여 중인 그룹/채널이 없습니다" />
+              )}
+              {!groupsLoading && visibleGroups.length > 0 && (
+                <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1">
+                  {visibleGroups.map((g) => {
+                    const selected = selectedIds.includes(g.id);
+                    const disabled = !selected && selectedIds.length >= MAX_BROADCAST_RECIPIENTS;
                     return (
-                      <label
+                      <GroupSelectCard
                         key={g.id}
-                        className={`flex items-center gap-2 rounded px-2 py-1 text-sm ${disabled ? "text-neutral-600" : "text-neutral-200 hover:bg-neutral-800/60"}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={disabled}
-                          onChange={() => toggleGroup(g.id)}
-                        />
-                        <span className="flex-1 truncate">{g.title}</span>
-                        {g.participantsCount != null && (
-                          <span className="text-xs text-neutral-500">{g.participantsCount}명</span>
-                        )}
-                      </label>
+                        group={g}
+                        selected={selected}
+                        disabled={disabled}
+                        isFavorite={isFavorite(g.id)}
+                        isRecent={recent.includes(g.id)}
+                        tags={tagsByGroup[g.id] ?? []}
+                        onToggleSelect={toggleGroup}
+                        onToggleFavorite={toggleFavorite}
+                        onAddTag={handleAddTag}
+                      />
                     );
                   })}
                 </div>
+              )}
+              {!groupsLoading && !groupsError && groups.length > 0 && visibleGroups.length === 0 && (
+                <p className="text-xs text-app-text-subtle">검색 결과가 없습니다.</p>
               )}
             </div>
 
@@ -228,12 +273,12 @@ export function SendTab() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-neutral-400 file:mr-3 file:rounded-md file:border file:border-neutral-700 file:bg-neutral-800 file:px-2.5 file:py-1.5 file:text-neutral-200"
+                className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text"
               />
             </Field>
 
             <div>
-              <label className="flex items-center gap-2 text-sm text-neutral-200">
+              <label className="flex items-center gap-2 text-sm text-app-text">
                 <input
                   type="checkbox"
                   checked={isScheduled}
@@ -252,7 +297,7 @@ export function SendTab() {
                         .toISOString()
                         .slice(0, 16)}
                       required={isScheduled}
-                      className="w-full rounded-md border border-neutral-700 bg-neutral-800/60 px-2.5 py-1.5 text-sm text-neutral-100 outline-none focus:border-sky-500/60"
+                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60"
                     />
                   </Field>
                 </div>
@@ -260,42 +305,30 @@ export function SendTab() {
             </div>
           </div>
 
-          {submitError && <p className="mt-3 text-xs text-red-400">{submitError}</p>}
-          {submitNotice && <p className="mt-3 text-xs text-emerald-400">{submitNotice}</p>}
-
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={
-                submitting || selectedIds.length === 0 || !message.trim() || (isScheduled && !scheduledAtLocal)
-              }
-            >
-              {submitting ? "처리 중..." : isScheduled ? "예약하기" : "발송"}
-            </Button>
-          </div>
+          {submitError && <p className="mt-3 text-xs text-app-danger">{submitError}</p>}
+          {submitNotice && <p className="mt-3 text-xs text-app-success">{submitNotice}</p>}
         </form>
       </Panel>
 
       <Panel title="발송 이력" description="이 계정의 최근 발송 작업 목록입니다. 진행 중인 작업은 자동으로 갱신됩니다.">
-        {historyLoading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
+        {historyLoading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
         {!historyLoading && history.length === 0 && (
-          <p className="text-xs text-neutral-500">아직 발송 이력이 없습니다.</p>
+          <p className="text-xs text-app-text-muted">아직 발송 이력이 없습니다.</p>
         )}
-        <div className="divide-y divide-neutral-800">
+        <div className="divide-y divide-app-border">
           {history.map((h) => {
             const meta = STATUS_TONE[h.status];
             const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
             return (
               <div key={h.id} className="flex items-center justify-between py-2.5 text-sm">
                 <div className="min-w-0 flex-1 pr-3">
-                  <div className="truncate text-neutral-300">{h.message}</div>
-                  <div className="text-xs text-neutral-600">
+                  <div className="truncate text-app-text">{h.message}</div>
+                  <div className="text-xs text-app-text-subtle">
                     {isFutureSchedule && h.scheduledAt
                       ? `${formatDateTime(h.scheduledAt)} 예약`
                       : formatRelativeTime(h.createdAt)}{" "}
                     · 수신자 {h.recipients.length}명
-                    {h.errorMessage && <span className="text-red-400"> · {h.errorMessage}</span>}
+                    {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
                   </div>
                 </div>
                 <Badge tone={isFutureSchedule ? "info" : meta.tone}>
@@ -306,6 +339,25 @@ export function SendTab() {
           })}
         </div>
       </Panel>
+
+      <motion.div
+        initial={false}
+        animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="sticky bottom-4 ml-auto flex w-fit"
+        style={{ pointerEvents: canSubmit ? "auto" : "none" }}
+      >
+        <Button
+          type="submit"
+          form="send-form"
+          variant="primary"
+          className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30"
+          disabled={!canSubmit}
+        >
+          <SendIcon className="h-4 w-4" />
+          {submitting ? "처리 중..." : isScheduled ? "예약하기" : "발송"}
+        </Button>
+      </motion.div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { Account, TabId } from "@/types";
+import type { Account, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
+import { MAX_BROADCAST_RECIPIENTS } from "@/types";
 
 interface DashboardState {
   activeTab: TabId;
@@ -18,6 +19,23 @@ interface DashboardState {
   fetchAccounts: () => Promise<void>;
   registerAccount: (input: api.CreateAccountInput) => Promise<Account>;
   removeAccount: (id: string) => Promise<void>;
+
+  // Send-tab draft state, lifted here (rather than local to SendTab) purely so the
+  // Inspector's live preview / send summary can read it too — no backend involvement.
+  sendGroups: Group[];
+  sendGroupsLoading: boolean;
+  setSendGroups: (groups: Group[]) => void;
+  setSendGroupsLoading: (loading: boolean) => void;
+
+  sendMessage: string;
+  setSendMessage: (message: string) => void;
+
+  sendImageFile: File | null;
+  setSendImageFile: (file: File | null) => void;
+
+  sendSelectedGroupIds: string[];
+  toggleSendGroupId: (id: string) => void;
+  clearSendDraft: () => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -63,4 +81,26 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       selectedAccountId: state.selectedAccountId === id ? null : state.selectedAccountId,
     }));
   },
+
+  sendGroups: [],
+  sendGroupsLoading: false,
+  setSendGroups: (groups) => set({ sendGroups: groups }),
+  setSendGroupsLoading: (loading) => set({ sendGroupsLoading: loading }),
+
+  sendMessage: "",
+  setSendMessage: (message) => set({ sendMessage: message }),
+
+  sendImageFile: null,
+  setSendImageFile: (file) => set({ sendImageFile: file }),
+
+  sendSelectedGroupIds: [],
+  toggleSendGroupId: (id) =>
+    set((state) => {
+      if (state.sendSelectedGroupIds.includes(id)) {
+        return { sendSelectedGroupIds: state.sendSelectedGroupIds.filter((x) => x !== id) };
+      }
+      if (state.sendSelectedGroupIds.length >= MAX_BROADCAST_RECIPIENTS) return state;
+      return { sendSelectedGroupIds: [...state.sendSelectedGroupIds, id] };
+    }),
+  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [] }),
 }));
