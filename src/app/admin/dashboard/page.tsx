@@ -34,13 +34,19 @@ function AdminDashboardContent() {
           <Button variant="primary">API 키 관리로 이동</Button>
         </Link>
       </Panel>
+
+      <Panel title="사용자 관리" description="전화번호 인증으로 가입한 일반 사용자 목록을 조회하고 활성화 상태를 관리합니다.">
+        <Link href="/admin/users">
+          <Button variant="primary">사용자 관리로 이동</Button>
+        </Link>
+      </Panel>
     </div>
   );
 }
 
 export default function AdminDashboardPage() {
   return (
-    <AdminGuard>
+    <AdminGuard requireAdmin>
       <AdminDashboardContent />
     </AdminGuard>
   );

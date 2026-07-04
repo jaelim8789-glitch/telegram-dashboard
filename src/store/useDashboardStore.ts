@@ -6,6 +6,9 @@ interface DashboardState {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
 
+  role: "admin" | "user" | "api_key" | null;
+  setRole: (role: "admin" | "user" | "api_key" | null) => void;
+
   accounts: Account[];
   accountsLoading: boolean;
   accountsError: string | null;
@@ -19,6 +22,9 @@ interface DashboardState {
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   activeTab: "register",
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  role: null,
+  setRole: (role) => set({ role }),
 
   accounts: [],
   accountsLoading: false,

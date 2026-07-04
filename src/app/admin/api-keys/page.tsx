@@ -131,7 +131,7 @@ function ApiKeysContent() {
 
 export default function ApiKeysPage() {
   return (
-    <AdminGuard>
+    <AdminGuard requireAdmin>
       <ApiKeysContent />
     </AdminGuard>
   );

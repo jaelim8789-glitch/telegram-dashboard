@@ -4,9 +4,11 @@ import { LogOut, Radio, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function Header() {
   const router = useRouter();
+  const role = useDashboardStore((s) => s.role);
 
   function handleLogout() {
     clearToken();
@@ -32,13 +34,15 @@ export function Header() {
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           Sprint 5.5 · Admin Auth
         </span>
-        <Link
-          href="/admin/dashboard"
-          title="관리자"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-        >
-          <Settings className="h-4 w-4" />
-        </Link>
+        {role === "admin" && (
+          <Link
+            href="/admin/dashboard"
+            title="관리자"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
+        )}
         <button
           type="button"
           onClick={handleLogout}

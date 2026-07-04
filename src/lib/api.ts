@@ -439,3 +439,82 @@ export async function fetchAutoReplyLogs(accountId: string): Promise<AutoReplyLo
   const logs = await request<ApiAutoReplyLog[]>(`/api/accounts/${accountId}/auto-reply/logs`);
   return logs.map(toAutoReplyLog);
 }
+
+// === 일반 사용자 로그인 (전화번호 인증 + API 키) ===
+
+export async function sendVerificationCode(phone: string): Promise<void> {
+  await request<{ sent: boolean }>("/api/auth/send-code", { method: "POST", body: JSON.stringify({ phone }) });
+}
+
+export async function verifyLoginCode(phone: string, code: string): Promise<string> {
+  const result = await request<{ api_key: string }>("/api/auth/verify-code", {
+    method: "POST",
+    body: JSON.stringify({ phone, code }),
+  });
+  return result.api_key;
+}
+
+export async function loginWithApiKey(apiKey: string): Promise<string> {
+  const result = await request<{ access_token: string; token_type: string }>("/api/auth/login-with-api-key", {
+    method: "POST",
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  return result.access_token;
+}
+
+export interface AuthMe {
+  role: "admin" | "user" | "api_key";
+  phone: string | null;
+}
+
+export async function fetchAuthMe(): Promise<AuthMe> {
+  return request("/api/auth/me");
+}
+
+// === 사용자 관리 (관리자 전용) ===
+
+export interface DashboardUser {
+  id: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
+interface ApiUser {
+  id: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+function toDashboardUser(api: ApiUser): DashboardUser {
+  return {
+    id: api.id,
+    phone: api.phone,
+    isActive: api.is_active,
+    createdAt: api.created_at,
+    lastLogin: api.last_login,
+  };
+}
+
+export async function fetchUsers(): Promise<DashboardUser[]> {
+  const users = await request<ApiUser[]>("/api/admin/users");
+  return users.map(toDashboardUser);
+}
+
+export async function toggleUser(id: string, isActive: boolean): Promise<DashboardUser> {
+  const user = await request<ApiUser>(`/api/admin/users/${id}/toggle`, {
+    method: "POST",
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  return toDashboardUser(user);
+}
+
+export async function reissueUserApiKey(id: string): Promise<string> {
+  const result = await request<{ id: string; api_key: string }>(`/api/admin/users/${id}/reissue-key`, {
+    method: "POST",
+  });
+  return result.api_key;
+}
