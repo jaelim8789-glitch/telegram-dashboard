@@ -8,12 +8,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_STYLE: Record<Variant, string> = {
-  primary: "bg-sky-500 text-white hover:bg-sky-400",
+  primary: "bg-app-primary text-white shadow-sm shadow-app-primary/20 hover:bg-app-primary-hover",
   secondary:
-    "bg-neutral-800 text-neutral-200 border border-neutral-700 hover:bg-neutral-750 hover:border-neutral-600",
-  ghost: "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200",
-  danger:
-    "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20",
+    "bg-app-card text-app-text border border-app-border hover:border-app-border-strong hover:bg-app-card-hover",
+  ghost: "text-app-text-muted hover:bg-app-card hover:text-app-text",
+  danger: "bg-app-danger-muted text-app-danger border border-app-danger/20 hover:bg-app-danger/20",
 };
 
 export function Button({ variant = "secondary", className, type = "button", ...props }: ButtonProps) {
@@ -21,7 +20,9 @@ export function Button({ variant = "secondary", className, type = "button", ...p
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium",
+        "transition-all duration-150 ease-out active:scale-[0.98]",
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
         VARIANT_STYLE[variant],
         className
       )}

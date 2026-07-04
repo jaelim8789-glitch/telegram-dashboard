@@ -11,19 +11,12 @@ interface PanelProps {
 
 export function Panel({ title, description, action, children, className }: PanelProps) {
   return (
-    <section
-      className={cn(
-        "rounded-xl border border-neutral-800 bg-neutral-900/60",
-        className
-      )}
-    >
+    <section className={cn("rounded-2xl border border-app-border bg-app-card", className)}>
       {(title || action) && (
-        <div className="flex items-start justify-between gap-3 border-b border-neutral-800 px-4 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-app-border px-4 py-3.5">
           <div>
-            {title && <h3 className="text-sm font-semibold text-neutral-100">{title}</h3>}
-            {description && (
-              <p className="mt-0.5 text-xs text-neutral-500">{description}</p>
-            )}
+            {title && <h3 className="text-sm font-semibold text-app-text">{title}</h3>}
+            {description && <p className="mt-0.5 text-xs text-app-text-muted">{description}</p>}
           </div>
           {action}
         </div>

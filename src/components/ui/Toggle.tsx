@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 interface ToggleProps {
@@ -31,8 +32,8 @@ export function Toggle({ label, description, defaultOn = false, checked, onChang
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <div>
-        <div className="text-sm text-neutral-200">{label}</div>
-        {description && <div className="text-xs text-neutral-600">{description}</div>}
+        <div className="text-sm text-app-text">{label}</div>
+        {description && <div className="text-xs text-app-text-subtle">{description}</div>}
       </div>
       <button
         type="button"
@@ -41,15 +42,15 @@ export function Toggle({ label, description, defaultOn = false, checked, onChang
         disabled={disabled}
         onClick={toggle}
         className={cn(
-          "relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-          on ? "bg-sky-500" : "bg-neutral-700"
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+          on ? "bg-app-primary" : "bg-app-border-strong"
         )}
       >
-        <span
-          className={cn(
-            "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all",
-            on ? "left-[18px]" : "left-0.5"
-          )}
+        <motion.span
+          layout
+          transition={{ type: "spring", stiffness: 500, damping: 32 }}
+          className="absolute top-0.5 h-4 w-4 rounded-full bg-white"
+          style={{ left: on ? 18 : 2 }}
         />
       </button>
     </div>

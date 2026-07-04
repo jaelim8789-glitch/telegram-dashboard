@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Design system tokens — premium dark dashboard palette. */
+  --color-app-bg: #0b0f17;
+  --color-app-card: #121826;
+  --color-app-card-hover: #161d2c;
+  --color-app-border: #232b3a;
+  --color-app-border-strong: #2e3849;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-app-primary: #3b82f6;
+  --color-app-primary-hover: #60a5fa;
+  --color-app-primary-muted: #3b82f61a;
+
+  --color-app-success: #10b981;
+  --color-app-success-muted: #10b9811a;
+  --color-app-danger: #ef4444;
+  --color-app-danger-muted: #ef44441a;
+  --color-app-warning: #f59e0b;
+  --color-app-warning-muted: #f59e0b1a;
+
+  --color-app-text: #e8ebf1;
+  --color-app-text-muted: #94a3b8;
+  --color-app-text-subtle: #64748b;
+
+  --animate-fade-in: fade-in 0.15s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-app-bg);
+  color: var(--color-app-text);
+}
+
+* {
+  scrollbar-color: var(--color-app-border-strong) transparent;
 }

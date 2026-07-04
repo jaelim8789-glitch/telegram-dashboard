@@ -10,15 +10,18 @@ interface FieldProps {
 export function Field({ label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-neutral-400">{label}</span>
+      <span className="mb-1.5 block text-xs font-medium text-app-text-muted">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-neutral-600">{hint}</span>}
+      {hint && <span className="mt-1 block text-[11px] text-app-text-subtle">{hint}</span>}
     </label>
   );
 }
 
-const inputStyle =
-  "w-full rounded-md border border-neutral-700 bg-neutral-800/60 px-2.5 py-1.5 text-sm text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-sky-500/60";
+const inputStyle = cn(
+  "w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text",
+  "placeholder:text-app-text-subtle outline-none transition-colors duration-150",
+  "focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+);
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputStyle, props.className)} />;
