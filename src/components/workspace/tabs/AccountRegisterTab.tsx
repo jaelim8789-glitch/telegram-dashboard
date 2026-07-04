@@ -126,7 +126,7 @@ export function AccountRegisterTab() {
               </Field>
             </div>
 
-            {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
 
             <div className="mt-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
@@ -159,7 +159,7 @@ export function AccountRegisterTab() {
               />
             </Field>
 
-            {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
 
             <div className="mt-4 flex justify-between gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
@@ -196,7 +196,7 @@ export function AccountRegisterTab() {
               />
             </Field>
 
-            {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
 
             <div className="mt-4 flex justify-between gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
@@ -212,7 +212,7 @@ export function AccountRegisterTab() {
 
       {step === "done" && (
         <Panel title="등록 완료">
-          <p className="text-sm text-neutral-300">
+          <p className="text-sm text-app-text-muted">
             계정 인증이 완료되어 사이드바에 활성 상태로 표시됩니다.
           </p>
           <div className="mt-4 flex justify-end">

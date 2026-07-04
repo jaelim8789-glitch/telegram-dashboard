@@ -12,7 +12,7 @@ export function ProfileTab() {
   if (!account) {
     return (
       <Panel title="프로필 편집">
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-app-text-muted">
           먼저 &ldquo;계정 등록&rdquo; 탭에서 계정을 추가해주세요.
         </p>
       </Panel>
@@ -26,7 +26,7 @@ export function ProfileTab() {
     >
       <div className="flex items-start gap-6">
         <div className="flex flex-col items-center gap-2">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-neutral-700 text-xl font-semibold text-neutral-200">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-app-card-hover text-xl font-semibold text-app-text">
             {getAccountInitials(account)}
           </div>
           <Button variant="ghost" className="text-xs">

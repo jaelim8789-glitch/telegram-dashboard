@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ScrollText } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Field";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { getAccountDisplayName, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
@@ -75,13 +78,9 @@ export function LogTab() {
       }
     >
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-xs text-neutral-400">
+        <label className="flex items-center gap-2 text-xs text-app-text-muted">
           계정 필터
-          <Select
-            value={accountFilter}
-            onChange={(e) => setAccountFilter(e.target.value)}
-            className="w-48"
-          >
+          <Select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className="w-48">
             <option value="">전체</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -90,13 +89,9 @@ export function LogTab() {
             ))}
           </Select>
         </label>
-        <label className="flex items-center gap-2 text-xs text-neutral-400">
+        <label className="flex items-center gap-2 text-xs text-app-text-muted">
           상태 필터
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as BroadcastStatus | "")}
-            className="w-32"
-          >
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as BroadcastStatus | "")} className="w-32">
             <option value="">전체</option>
             <option value="pending">대기 중</option>
             <option value="sending">발송 중</option>
@@ -106,10 +101,16 @@ export function LogTab() {
         </label>
       </div>
 
-      {loading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {loading && (
+        <div className="space-y-1.5">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
+      )}
+      {error && <p className="text-xs text-app-danger">{error}</p>}
       {!loading && !error && logs.length === 0 && (
-        <p className="text-xs text-neutral-500">조건에 맞는 발송 로그가 없습니다.</p>
+        <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다" />
       )}
       <div className="space-y-1.5 font-mono text-xs">
         {logs.map((log) => {
@@ -119,16 +120,16 @@ export function LogTab() {
           return (
             <div
               key={log.id}
-              className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2"
+              className="flex items-center gap-3 rounded-xl border border-app-border bg-app-bg/60 px-3 py-2"
             >
-              <span className="shrink-0 text-neutral-600">{formatTimestamp(log.createdAt)}</span>
+              <span className="shrink-0 text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
               <Badge tone={isFutureSchedule ? "info" : meta.tone}>{isFutureSchedule ? "예약됨" : meta.label}</Badge>
-              <span className="shrink-0 text-neutral-500">{accountLabel(log.accountId)}</span>
-              <span className="min-w-0 flex-1 truncate text-neutral-300">{log.message}</span>
+              <span className="shrink-0 text-app-text-muted">{accountLabel(log.accountId)}</span>
+              <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
               {isFutureSchedule && log.scheduledAt && (
-                <span className="shrink-0 text-sky-400">{formatTimestamp(log.scheduledAt)} 예정</span>
+                <span className="shrink-0 text-app-primary-hover">{formatTimestamp(log.scheduledAt)} 예정</span>
               )}
-              <span className="shrink-0 text-neutral-600">수신 {log.recipients.length}명</span>
+              <span className="shrink-0 text-app-text-subtle">수신 {log.recipients.length}명</span>
             </div>
           );
         })}
