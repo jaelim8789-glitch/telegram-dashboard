@@ -57,16 +57,16 @@ function UsersContent() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-neutral-100">사용자 관리</h1>
-        <Link href="/admin/dashboard" className="text-xs text-sky-400 hover:underline">
+        <h1 className="text-lg font-semibold text-app-text">사용자 관리</h1>
+        <Link href="/admin/dashboard" className="text-xs text-app-primary-hover hover:underline">
           관리자 홈으로
         </Link>
       </div>
 
       {reissuedKey && (
         <Panel title="재발급된 API 키">
-          <p className="text-xs text-emerald-400">지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.</p>
-          <code className="mt-1 block break-all text-sm text-neutral-100">{reissuedKey}</code>
+          <p className="text-xs text-app-success">지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.</p>
+          <code className="mt-1 block break-all text-sm text-app-text">{reissuedKey}</code>
           <Button variant="ghost" className="mt-2 text-xs" onClick={() => setReissuedKey(null)}>
             닫기
           </Button>
@@ -74,20 +74,20 @@ function UsersContent() {
       )}
 
       <Panel title="전화번호 인증 사용자" description="본인 전화번호를 인증해 API 키를 발급받은 사용자 목록입니다.">
-        {loading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {loading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
+        {error && <p className="text-xs text-app-danger">{error}</p>}
         {!loading && !error && users.length === 0 && (
-          <p className="text-xs text-neutral-500">가입한 사용자가 없습니다.</p>
+          <p className="text-xs text-app-text-muted">가입한 사용자가 없습니다.</p>
         )}
-        <div className="divide-y divide-neutral-800">
+        <div className="divide-y divide-app-border">
           {users.map((u) => (
             <div key={u.id} className="flex items-center justify-between py-2.5 text-sm">
               <div className="min-w-0 flex-1 pr-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-neutral-200">{u.phone}</span>
+                  <span className="text-app-text">{u.phone}</span>
                   <Badge tone={u.isActive ? "success" : "neutral"}>{u.isActive ? "활성" : "비활성"}</Badge>
                 </div>
-                <div className="text-xs text-neutral-600">
+                <div className="text-xs text-app-text-subtle">
                   가입 {formatDateTime(u.createdAt)}
                   {u.lastLogin && <> · 마지막 로그인 {formatDateTime(u.lastLogin)}</>}
                 </div>

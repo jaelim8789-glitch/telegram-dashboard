@@ -41,7 +41,7 @@ function AdminLoginForm() {
         <Field label="비밀번호">
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </Field>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-app-danger">{error}</p>}
         <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
           {submitting ? "로그인 중..." : "로그인"}
         </Button>
@@ -102,11 +102,11 @@ function PhoneVerificationForm() {
   if (issuedKey) {
     return (
       <div className="space-y-3">
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-          <p className="text-xs text-emerald-400">
+        <div className="rounded-xl border border-app-success/30 bg-app-success-muted p-3">
+          <p className="text-xs text-app-success">
             API 키가 발급되었습니다. 지금만 전체가 표시되니 안전한 곳에 복사해두세요.
           </p>
-          <code className="mt-1 block break-all text-sm text-neutral-100">{issuedKey}</code>
+          <code className="mt-1 block break-all text-sm text-app-text">{issuedKey}</code>
         </div>
         <Button variant="secondary" className="w-full" onClick={reset}>
           처음으로
@@ -129,7 +129,7 @@ function PhoneVerificationForm() {
             autoFocus
           />
         </Field>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-app-danger">{error}</p>}
         <div className="flex gap-2">
           <Button type="button" variant="ghost" onClick={() => setCodeSent(false)} disabled={verifying}>
             뒤로
@@ -147,7 +147,7 @@ function PhoneVerificationForm() {
       <Field label="전화번호" hint="예: +821012345678">
         <Input value={phone} onChange={(e) => setPhone(e.target.value)} required autoFocus />
       </Field>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-app-danger">{error}</p>}
       <Button type="submit" variant="primary" className="w-full" disabled={sending}>
         {sending ? "발송 중..." : "인증번호 요청"}
       </Button>
@@ -188,14 +188,14 @@ function ApiKeyLoginForm() {
       <Button type="submit" variant="primary" disabled={submitting}>
         {submitting ? "확인 중..." : "API 키로 로그인"}
       </Button>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-app-danger">{error}</p>}
     </form>
   );
 }
 
 export default function AdminLoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-app-bg px-4 py-10">
       <div className="w-full max-w-sm space-y-4">
         <AdminLoginForm />
         <Panel title="일반 사용자 로그인" description="본인 전화번호를 인증하면 API 키가 발급됩니다.">

@@ -18,9 +18,9 @@ function AdminDashboardContent() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-neutral-100">관리자</h1>
+        <h1 className="text-lg font-semibold text-app-text">관리자</h1>
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-xs text-sky-400 hover:underline">
+          <Link href="/" className="text-xs text-app-primary-hover hover:underline">
             대시보드로 돌아가기
           </Link>
           <Button variant="ghost" onClick={handleLogout}>

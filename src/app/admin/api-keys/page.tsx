@@ -68,8 +68,8 @@ function ApiKeysContent() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-neutral-100">API 키 관리</h1>
-        <Link href="/" className="text-xs text-sky-400 hover:underline">
+        <h1 className="text-lg font-semibold text-app-text">API 키 관리</h1>
+        <Link href="/" className="text-xs text-app-primary-hover hover:underline">
           대시보드로 돌아가기
         </Link>
       </div>
@@ -87,24 +87,24 @@ function ApiKeysContent() {
         </form>
 
         {justCreatedKey && (
-          <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-            <p className="text-xs text-emerald-400">
+          <div className="mt-3 rounded-xl border border-app-success/30 bg-app-success-muted p-3">
+            <p className="text-xs text-app-success">
               발급된 키는 지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.
             </p>
-            <code className="mt-1 block break-all text-sm text-neutral-100">{justCreatedKey}</code>
+            <code className="mt-1 block break-all text-sm text-app-text">{justCreatedKey}</code>
             <Button variant="ghost" className="mt-2 text-xs" onClick={() => setJustCreatedKey(null)}>
               닫기
             </Button>
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
       </Panel>
 
       <Panel title="발급된 키 목록">
-        {loading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
-        {!loading && keys.length === 0 && <p className="text-xs text-neutral-500">발급된 API 키가 없습니다.</p>}
-        <div className="divide-y divide-neutral-800">
+        {loading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
+        {!loading && keys.length === 0 && <p className="text-xs text-app-text-muted">발급된 API 키가 없습니다.</p>}
+        <div className="divide-y divide-app-border">
           {keys.map((k) => (
             <div
               key={k.id}
@@ -112,8 +112,8 @@ function ApiKeysContent() {
               className="flex items-center justify-between py-2.5 text-sm"
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate text-neutral-200">{k.name}</div>
-                <div className="text-xs text-neutral-500">
+                <div className="truncate text-app-text">{k.name}</div>
+                <div className="text-xs text-app-text-muted">
                   <code>{k.maskedKey}</code> · 생성 {formatDateTime(k.createdAt)}
                   {k.lastUsed && <> · 마지막 사용 {formatDateTime(k.lastUsed)}</>}
                 </div>
