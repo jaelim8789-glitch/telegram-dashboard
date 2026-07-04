@@ -152,6 +152,8 @@ export function AccountRegisterTab() {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="12345"
                 inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={10}
                 required
                 autoFocus
               />

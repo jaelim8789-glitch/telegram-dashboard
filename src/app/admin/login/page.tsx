@@ -123,6 +123,7 @@ function PhoneVerificationForm() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
             required
             autoFocus
