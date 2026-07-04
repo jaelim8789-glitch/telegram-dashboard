@@ -53,8 +53,8 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
 
   if (!checked) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-950">
-        <p className="text-sm text-neutral-500">인증 확인 중...</p>
+      <div className="flex min-h-screen items-center justify-center bg-app-bg">
+        <p className="text-sm text-app-text-muted">인증 확인 중...</p>
       </div>
     );
   }

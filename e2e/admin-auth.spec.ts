@@ -16,7 +16,7 @@ test.describe("관리자 인증", () => {
     await page.goto("/admin/login");
     await page.getByLabel("아이디").fill(ADMIN_USERNAME);
     await page.getByLabel("비밀번호").fill("완전히-틀린-비밀번호");
-    await page.getByRole("button", { name: "로그인" }).click();
+    await page.getByRole("button", { name: "로그인", exact: true }).click();
 
     await expect(page.getByText(/올바르지 않습니다/)).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/login/);
@@ -26,7 +26,7 @@ test.describe("관리자 인증", () => {
     await page.goto("/admin/login");
     await page.getByLabel("아이디").fill(ADMIN_USERNAME);
     await page.getByLabel("비밀번호").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "로그인" }).click();
+    await page.getByRole("button", { name: "로그인", exact: true }).click();
 
     await page.waitForURL("/");
     await expect(page.getByText(/^계정 목록 \(\d+\)$/)).toBeVisible();
@@ -36,7 +36,7 @@ test.describe("관리자 인증", () => {
     await page.goto("/admin/login");
     await page.getByLabel("아이디").fill(ADMIN_USERNAME);
     await page.getByLabel("비밀번호").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "로그인" }).click();
+    await page.getByRole("button", { name: "로그인", exact: true }).click();
     await page.waitForURL("/");
 
     await page.getByTitle("로그아웃").click();

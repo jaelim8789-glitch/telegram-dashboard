@@ -110,7 +110,7 @@ export function LogTab() {
       )}
       {error && <p className="text-xs text-app-danger">{error}</p>}
       {!loading && !error && logs.length === 0 && (
-        <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다" />
+        <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다." />
       )}
       <div className="space-y-1.5 font-mono text-xs">
         {logs.map((log) => {

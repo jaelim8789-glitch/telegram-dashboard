@@ -8,7 +8,7 @@ setup("관리자로 로그인해 세션을 저장해둔다", async ({ page }) =>
   await page.goto("/admin/login");
   await page.getByLabel("아이디").fill(ADMIN_USERNAME);
   await page.getByLabel("비밀번호").fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "로그인" }).click();
+  await page.getByRole("button", { name: "로그인", exact: true }).click();
 
   await page.waitForURL("/");
   await expect(page.getByText(/^계정 목록 \(\d+\)$/)).toBeVisible();
