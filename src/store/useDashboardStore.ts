@@ -17,6 +17,7 @@ interface DashboardState {
 
   fetchAccounts: () => Promise<void>;
   registerAccount: (input: api.CreateAccountInput) => Promise<Account>;
+  removeAccount: (id: string) => Promise<void>;
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -53,5 +54,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     const account = await api.createAccount(input);
     await get().fetchAccounts();
     return account;
+  },
+
+  removeAccount: async (id) => {
+    await api.deleteAccount(id);
+    set((state) => ({
+      accounts: state.accounts.filter((a) => a.id !== id),
+      selectedAccountId: state.selectedAccountId === id ? null : state.selectedAccountId,
+    }));
   },
 }));
