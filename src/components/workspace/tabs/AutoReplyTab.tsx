@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { MessageSquareOff } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
@@ -153,7 +156,7 @@ export function AutoReplyTab() {
   if (!account) {
     return (
       <Panel title="자동 응답">
-        <p className="text-sm text-neutral-500">먼저 사이드바에서 계정을 선택해주세요.</p>
+        <p className="text-sm text-app-text-muted">먼저 사이드바에서 계정을 선택해주세요.</p>
       </Panel>
     );
   }
@@ -171,7 +174,7 @@ export function AutoReplyTab() {
           onChange={handleToggleMaster}
           disabled={toggling}
         />
-        {toggleError && <p className="mt-2 text-xs text-red-400">{toggleError}</p>}
+        {toggleError && <p className="mt-2 text-xs text-app-danger">{toggleError}</p>}
       </Panel>
 
       <Panel title="새 규칙 추가">
@@ -220,7 +223,7 @@ export function AutoReplyTab() {
             </div>
           </div>
 
-          {submitError && <p className="mt-3 text-xs text-red-400">{submitError}</p>}
+          {submitError && <p className="mt-3 text-xs text-app-danger">{submitError}</p>}
 
           <div className="mt-4 flex justify-end">
             <Button type="submit" variant="primary" disabled={submitting}>
@@ -231,25 +234,34 @@ export function AutoReplyTab() {
       </Panel>
 
       <Panel title="등록된 규칙">
-        {rulesLoading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
-        {rulesError && <p className="text-xs text-red-400">{rulesError}</p>}
-        {!rulesLoading && !rulesError && rules.length === 0 && (
-          <p className="text-xs text-neutral-500">등록된 자동 응답 규칙이 없습니다.</p>
+        {rulesLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
         )}
-        <div className="divide-y divide-neutral-800">
+        {rulesError && <p className="text-xs text-app-danger">{rulesError}</p>}
+        {!rulesLoading && !rulesError && rules.length === 0 && (
+          <EmptyState icon={MessageSquareOff} title="등록된 자동 응답 규칙이 없습니다" description="위 폼에서 첫 규칙을 추가해보세요." />
+        )}
+        <div className="space-y-2">
           {rules.map((rule) => (
-            <div key={rule.id} data-testid={`auto-reply-rule-${rule.id}`} className="py-3">
+            <div
+              key={rule.id}
+              data-testid={`auto-reply-rule-${rule.id}`}
+              className="rounded-2xl border border-app-border bg-app-card p-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-200">{rule.name}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-app-text">{rule.name}</span>
                     <Badge tone="neutral">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
                     <Badge tone={rule.isActive ? "success" : "neutral"}>{rule.isActive ? "사용 중" : "중지됨"}</Badge>
                   </div>
-                  <div className="mt-1 text-xs text-neutral-500">
+                  <div className="mt-1 text-xs text-app-text-muted">
                     &ldquo;{rule.matchValue}&rdquo; → {rule.replyContent}
                   </div>
-                  <div className="mt-1 text-[11px] text-neutral-600">
+                  <div className="mt-1 text-[11px] text-app-text-subtle">
                     쿨다운 {rule.cooldownHours}시간 · 일일 최대 {rule.maxRepliesPerDay}회
                   </div>
                 </div>
@@ -268,18 +280,23 @@ export function AutoReplyTab() {
       </Panel>
 
       <Panel title="응답 로그" description="최근 자동 응답 시도 기록입니다.">
-        {logsLoading && <p className="text-xs text-neutral-500">불러오는 중...</p>}
-        {!logsLoading && logs.length === 0 && <p className="text-xs text-neutral-500">아직 기록이 없습니다.</p>}
-        <div className="divide-y divide-neutral-800">
+        {logsLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        )}
+        {!logsLoading && logs.length === 0 && <p className="text-xs text-app-text-muted">아직 기록이 없습니다.</p>}
+        <div className="divide-y divide-app-border">
           {logs.map((log) => {
             const meta = LOG_STATUS_TONE[log.status];
             return (
               <div key={log.id} className="flex items-center justify-between py-2.5 text-sm">
                 <div className="min-w-0 flex-1 pr-3">
-                  <div className="truncate text-neutral-300">
+                  <div className="truncate text-app-text">
                     {log.userName ?? log.userId}: {log.triggerMessage}
                   </div>
-                  <div className="text-xs text-neutral-600">{formatDateTime(log.createdAt)}</div>
+                  <div className="text-xs text-app-text-subtle">{formatDateTime(log.createdAt)}</div>
                 </div>
                 <Badge tone={meta.tone}>{meta.label}</Badge>
               </div>
