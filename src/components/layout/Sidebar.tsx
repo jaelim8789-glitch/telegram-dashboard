@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 
 export function Sidebar() {
@@ -30,38 +32,40 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-800 bg-neutral-900">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-app-border bg-app-card/40">
       <div className="flex items-center justify-between px-3 py-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <span className="text-xs font-semibold uppercase tracking-wide text-app-text-subtle">
           계정 목록 ({accounts.length})
         </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => fetchAccounts()}
-            className="flex h-6 w-6 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", accountsLoading && "animate-spin")} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => fetchAccounts()}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-app-text-muted transition-colors duration-150 hover:bg-app-card-hover hover:text-app-text"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", accountsLoading && "animate-spin")} />
+        </button>
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
         {accountsError && (
-          <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <div className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">
             {accountsError}
           </div>
         )}
         {deleteError && (
-          <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <div className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">
             {deleteError}
           </div>
         )}
         {!accountsError && accountsLoading && accounts.length === 0 && (
-          <div className="px-1 py-2 text-xs text-neutral-500">불러오는 중...</div>
+          <div className="space-y-1.5 px-1 py-1">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
         )}
         {!accountsLoading && !accountsError && accounts.length === 0 && (
-          <div className="px-1 py-2 text-xs text-neutral-500">등록된 계정이 없습니다.</div>
+          <EmptyState icon={Users} title="등록된 계정이 없습니다" description="계정 등록 탭에서 첫 계정을 추가해보세요." />
         )}
         {accounts.map((account) => (
           <AccountCard
@@ -74,8 +78,8 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="border-t border-neutral-800 px-3 py-2.5">
-        <p className="text-[11px] leading-relaxed text-neutral-600">
+      <div className="border-t border-app-border px-3 py-2.5">
+        <p className="text-[11px] leading-relaxed text-app-text-subtle">
           계정에 마우스를 올리면 삭제 버튼이 나타납니다. 삭제 후에는 같은 전화번호로 다시 등록할 수 있습니다.
         </p>
       </div>

@@ -24,12 +24,10 @@ export function Inspector() {
   const tabLabel = TABS.find((t) => t.id === activeTab)?.label;
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-neutral-800 bg-neutral-900">
-      <div className="border-b border-neutral-800 px-4 py-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          인스펙터
-        </span>
-        <div className="mt-0.5 text-sm text-neutral-300">{tabLabel}</div>
+    <aside className="flex w-80 shrink-0 flex-col border-l border-app-border bg-app-card/40">
+      <div className="border-b border-app-border px-4 py-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-app-text-subtle">인스펙터</span>
+        <div className="mt-0.5 text-sm text-app-text-muted">{tabLabel}</div>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         <ActiveInspector />

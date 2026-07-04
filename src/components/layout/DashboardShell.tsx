@@ -5,7 +5,7 @@ import { Inspector } from "@/components/layout/Inspector";
 
 export function DashboardShell() {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-neutral-950 text-neutral-100">
+    <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
       <Header />
       <div className="flex min-h-0 flex-1">
         <Sidebar />

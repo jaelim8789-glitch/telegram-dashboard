@@ -16,29 +16,27 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-800 bg-neutral-900 px-4">
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sky-500/15 text-sky-400">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-app-border bg-app-card/80 px-4 backdrop-blur-md">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-app-primary-muted text-app-primary-hover">
           <Radio className="h-4 w-4" />
         </div>
-        <span className="text-sm font-semibold tracking-tight text-neutral-100">
-          Management Dashboard
-        </span>
-        <span className="ml-2 rounded-full border border-neutral-700 px-2 py-0.5 text-[11px] font-medium text-neutral-400">
+        <span className="text-sm font-semibold tracking-tight text-app-text">Management Dashboard</span>
+        <span className="ml-1 rounded-full border border-app-border px-2 py-0.5 text-[11px] font-medium text-app-text-muted">
           연구용 · 개인 프로젝트
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="flex items-center gap-1.5 text-xs text-neutral-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          Sprint 5.5 · Admin Auth
+      <div className="flex items-center gap-2">
+        <span className="mr-1 flex items-center gap-1.5 text-xs text-app-text-subtle">
+          <span className="h-1.5 w-1.5 rounded-full bg-app-success" />
+          Online
         </span>
         {role === "admin" && (
           <Link
             href="/admin/dashboard"
             title="관리자"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors duration-150 hover:bg-app-card-hover hover:text-app-text"
           >
             <Settings className="h-4 w-4" />
           </Link>
@@ -47,7 +45,7 @@ export function Header() {
           type="button"
           onClick={handleLogout}
           title="로그아웃"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors duration-150 hover:bg-app-danger-muted hover:text-app-danger"
         >
           <LogOut className="h-4 w-4" />
         </button>
