@@ -82,7 +82,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `?붿껌???ㅽ뙣?덉뒿?덈떎 (${res.status})`);
+    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
   }
 
   if (res.status === 204) return undefined as T;
@@ -246,7 +246,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `?붿껌???ㅽ뙣?덉뒿?덈떎 (${res.status})`);
+    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
   }
   return toBroadcast(await res.json());
 }
