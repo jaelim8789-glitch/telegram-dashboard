@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ScrollText } from "lucide-react";
+import { RefreshCw, ScrollText } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +30,8 @@ export function LogTab() {
   const [logs, setLogs] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retryError, setRetryError] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<BroadcastStatus | "">("");
 
@@ -61,6 +63,20 @@ export function LogTab() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logs]);
+
+  async function handleRetry(failed: Broadcast) {
+    if (retrying) return;
+    setRetrying(failed.id);
+    setRetryError(null);
+    try {
+      await api.retryBroadcast(failed);
+      await load();
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : "재발송 요청에 실패했습니다.");
+    } finally {
+      setRetrying(null);
+    }
+  }
 
   function accountLabel(accountId: string): string {
     const account = accounts.find((a) => a.id === accountId);
@@ -109,18 +125,28 @@ export function LogTab() {
         </div>
       )}
       {error && <p className="text-xs text-app-danger">{error}</p>}
+      {retryError && (
+        <div className="mb-2 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">
+          {retryError}
+        </div>
+      )}
       {!loading && !error && logs.length === 0 && (
         <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다." />
       )}
       <div className="space-y-1.5 font-mono text-xs">
         {logs.map((log) => {
           const meta = STATUS_TONE[log.status];
+          const isFailed = log.status === "failed";
           const isFutureSchedule =
             log.status === "pending" && log.scheduledAt && new Date(`${log.scheduledAt}Z`) > new Date();
           return (
             <div
               key={log.id}
-              className="flex items-center gap-3 rounded-xl border border-app-border bg-app-bg/60 px-3 py-2"
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                isFailed
+                  ? "border-app-danger/20 bg-app-danger-muted/20"
+                  : "border-app-border bg-app-bg/60"
+              }`}
             >
               <span className="shrink-0 text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
               <Badge tone={isFutureSchedule ? "info" : meta.tone}>{isFutureSchedule ? "예약됨" : meta.label}</Badge>
@@ -130,6 +156,17 @@ export function LogTab() {
                 <span className="shrink-0 text-app-primary-hover">{formatTimestamp(log.scheduledAt)} 예정</span>
               )}
               <span className="shrink-0 text-app-text-subtle">수신 {log.recipients.length}명</span>
+              {isFailed && (
+                <button
+                  type="button"
+                  onClick={() => handleRetry(log)}
+                  disabled={retrying === log.id}
+                  title="재발송"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+                >
+                  <RefreshCw className={`h-3 w-3 ${retrying === log.id ? "animate-spin" : ""}`} />
+                </button>
+              )}
             </div>
           );
         })}

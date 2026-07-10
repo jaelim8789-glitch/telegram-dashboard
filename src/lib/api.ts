@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Account,
   AccountStatus,
   AutoReplyLog,
@@ -9,12 +9,14 @@ import type {
   Broadcast,
   BroadcastStatus,
   Group,
+  ReplyMacro,
+  ReplyMacroLog,
 } from "@/types";
 import { getToken } from "@/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-/** Every /api/* route requires either this (an admin session) or an X-API-Key — see
+/** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -70,7 +72,7 @@ function toAccount(api: ApiAccount): Account {
   };
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
@@ -78,7 +80,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    throw new Error(extractDetailMessage(body) ?? `?붿껌???ㅽ뙣?덉뒿?덈떎 (${res.status})`);
   }
 
   if (res.status === 204) return undefined as T;
@@ -207,7 +209,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    throw new Error(extractDetailMessage(body) ?? `?붿껌???ㅽ뙣?덉뒿?덈떎 (${res.status})`);
   }
   return toBroadcast(await res.json());
 }
@@ -235,6 +237,18 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
 export async function fetchUpcomingBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/scheduler/upcoming");
   return logs.map(toBroadcast);
+}
+
+/**
+ * Retry a failed broadcast using the existing POST /api/broadcast.
+ * Copies the original message and recipients — no dedicated retry endpoint needed.
+ */
+export async function retryBroadcast(failed: Broadcast): Promise<Broadcast> {
+  return createBroadcast({
+    accountId: failed.accountId,
+    message: failed.message,
+    recipients: failed.recipients,
+  });
 }
 
 // === Admin auth ===
@@ -440,7 +454,7 @@ export async function fetchAutoReplyLogs(accountId: string): Promise<AutoReplyLo
   return logs.map(toAutoReplyLog);
 }
 
-// === 일반 사용자 로그인 (전화번호 인증 + API 키) ===
+// === ?쇰컲 ?ъ슜??濡쒓렇??(?꾪솕踰덊샇 ?몄쬆 + API ?? ===
 
 export async function sendVerificationCode(phone: string): Promise<void> {
   await request<{ sent: boolean }>("/api/auth/send-code", { method: "POST", body: JSON.stringify({ phone }) });
@@ -471,7 +485,7 @@ export async function fetchAuthMe(): Promise<AuthMe> {
   return request("/api/auth/me");
 }
 
-// === 사용자 관리 (관리자 전용) ===
+// === ?ъ슜??愿由?(愿由ъ옄 ?꾩슜) ===
 
 export interface DashboardUser {
   id: string;
@@ -518,3 +532,131 @@ export async function reissueUserApiKey(id: string): Promise<string> {
   });
   return result.api_key;
 }
+
+// ─── Reply Macro (답장매크로) ──────────────────────────────────────
+
+interface ApiReplyMacro {
+  id: string;
+  account_id: string;
+  name: string;
+  is_active: boolean;
+  target_chats: string;
+  message_content: string;
+  media_path: string | null;
+  schedule_type: string;
+  interval_hours: number;
+  fixed_time: string | null;
+  max_sends_per_day: number;
+  last_sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function toReplyMacro(api: ApiReplyMacro): ReplyMacro {
+  return {
+    id: api.id,
+    accountId: api.account_id,
+    name: api.name,
+    isActive: api.is_active,
+    targetChats: api.target_chats,
+    messageContent: api.message_content,
+    mediaPath: api.media_path,
+    scheduleType: api.schedule_type as ReplyMacro["scheduleType"],
+    intervalHours: api.interval_hours,
+    fixedTime: api.fixed_time,
+    maxSendsPerDay: api.max_sends_per_day,
+    lastSentAt: api.last_sent_at,
+    createdAt: api.created_at,
+    updatedAt: api.updated_at,
+  };
+}
+
+export interface ReplyMacroInput {
+  name: string;
+  targetChats: string[];
+  messageContent: string;
+  scheduleType?: "interval" | "fixed";
+  intervalHours?: number;
+  fixedTime?: string;
+  maxSendsPerDay?: number;
+  isActive?: boolean;
+}
+
+export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]> {
+  const macros = await request<ApiReplyMacro[]>(`/api/accounts/${accountId}/reply-macros`);
+  return macros.map(toReplyMacro);
+}
+
+export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
+  const macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      target_chats: input.targetChats,
+      message_content: input.messageContent,
+      schedule_type: input.scheduleType ?? "interval",
+      interval_hours: input.intervalHours ?? 24,
+      fixed_time: input.fixedTime ?? null,
+      max_sends_per_day: input.maxSendsPerDay ?? 10,
+      is_active: input.isActive ?? true,
+    }),
+  });
+  return toReplyMacro(macro);
+}
+
+export async function updateReplyMacro(accountId: string, macroId: string, input: Partial<ReplyMacroInput>): Promise<ReplyMacro> {
+  const body: Record<string, unknown> = {};
+  if (input.name !== undefined) body.name = input.name;
+  if (input.targetChats !== undefined) body.target_chats = input.targetChats;
+  if (input.messageContent !== undefined) body.message_content = input.messageContent;
+  if (input.scheduleType !== undefined) body.schedule_type = input.scheduleType;
+  if (input.intervalHours !== undefined) body.interval_hours = input.intervalHours;
+  if (input.fixedTime !== undefined) body.fixed_time = input.fixedTime;
+  if (input.maxSendsPerDay !== undefined) body.max_sends_per_day = input.maxSendsPerDay;
+  if (input.isActive !== undefined) body.is_active = input.isActive;
+
+  const macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros/${macroId}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  return toReplyMacro(macro);
+}
+
+export async function deleteReplyMacro(accountId: string, macroId: string): Promise<void> {
+  await request<void>(`/api/accounts/${accountId}/reply-macros/${macroId}`, { method: "DELETE" });
+}
+
+export async function executeReplyMacro(accountId: string, macroId: string): Promise<void> {
+  await request<void>(`/api/accounts/${accountId}/reply-macros/${macroId}/execute`, { method: "POST" });
+}
+
+interface ApiReplyMacroLog {
+  id: string;
+  macro_id: string;
+  account_id: string;
+  target_chat_id: string;
+  message_sent: string;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
+function toReplyMacroLog(api: ApiReplyMacroLog): ReplyMacroLog {
+  return {
+    id: api.id,
+    macroId: api.macro_id,
+    accountId: api.account_id,
+    targetChatId: api.target_chat_id,
+    messageSent: api.message_sent,
+    status: api.status,
+    errorMessage: api.error_message,
+    createdAt: api.created_at,
+  };
+}
+
+export async function fetchReplyMacroLogs(accountId: string, macroId: string): Promise<ReplyMacroLog[]> {
+  const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
+  return logs.map(toReplyMacroLog);
+}
+
+

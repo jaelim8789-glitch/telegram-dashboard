@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, Send as SendIcon, Users2, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, RefreshCw, Send as SendIcon, Users2, XCircle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -69,6 +69,7 @@ export function SendTab() {
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [retrying, setRetrying] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
 
@@ -181,6 +182,23 @@ export function SendTab() {
       setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  /** Retry a failed broadcast using the existing create-broadcast API. */
+  async function handleRetry(failed: Broadcast) {
+    if (retrying || selectedAccountId !== failed.accountId) return;
+    setRetrying(failed.id);
+    setSubmitError(null);
+    setSubmitNotice(null);
+    try {
+      await api.retryBroadcast(failed);
+      setSubmitNotice("재발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
+      await loadHistory(selectedAccountId);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "재발송 요청에 실패했습니다.");
+    } finally {
+      setRetrying(null);
     }
   }
 
@@ -371,12 +389,16 @@ export function SendTab() {
           <div className="divide-y divide-app-border">
             {history.map((h) => {
               const meta = STATUS_TONE[h.status];
+              const isFailed = h.status === "failed";
               const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
               return (
-                <div key={h.id} className="flex items-center justify-between py-2.5 text-sm">
+                <div
+                  key={h.id}
+                  className={`flex items-center justify-between py-2.5 text-sm ${isFailed ? "rounded-lg bg-app-danger-muted/30 -mx-2 px-2" : ""}`}
+                >
                   <div className="min-w-0 flex-1 pr-3">
                     <div className="truncate text-app-text">{h.message}</div>
-                    <div className="text-xs text-app-text-subtle">
+                    <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-app-text-subtle">
                       {isFutureSchedule && h.scheduledAt
                         ? `${formatDateTime(h.scheduledAt)} 예약`
                         : formatRelativeTime(h.createdAt)}{" "}
@@ -384,9 +406,22 @@ export function SendTab() {
                       {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
                     </div>
                   </div>
-                  <Badge tone={isFutureSchedule ? "info" : meta.tone}>
-                    {isFutureSchedule ? "예약됨" : meta.label}
-                  </Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge tone={isFutureSchedule ? "info" : meta.tone}>
+                      {isFutureSchedule ? "예약됨" : meta.label}
+                    </Badge>
+                    {isFailed && (
+                      <button
+                        type="button"
+                        onClick={() => handleRetry(h)}
+                        disabled={retrying === h.id}
+                        title="재발송"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
