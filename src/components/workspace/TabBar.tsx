@@ -2,7 +2,7 @@
 
 import {
   LayoutDashboard, UserPlus, Send, Users, Search,
-  Bot, Zap, User, FileText,
+  Bot, Zap, User, FileText, BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS } from "@/types";
@@ -17,6 +17,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   groupsearch: Search,
   autoreply: Bot,
   replymacro: Zap,
+  deliveryanalytics: BarChart3,
   profile: User,
   log: FileText,
 };

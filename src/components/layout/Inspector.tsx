@@ -20,6 +20,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   groupsearch: GroupSearchInspector,
   autoreply: AutoReplyInspector,
   replymacro: ReplyMacroInspector,
+  deliveryanalytics: DashboardInspector,
   profile: ProfileInspector,
   log: LogInspector,
 };

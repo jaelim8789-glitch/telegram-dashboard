@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics";
 
 export interface TabDef {
   id: TabId;
@@ -15,6 +15,7 @@ export const TABS: TabDef[] = [
   { id: "replymacro", label: "답장매크로" },
   { id: "profile", label: "프로필" },
   { id: "log", label: "로그" },
+  { id: "deliveryanalytics", label: "전달 분석" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned";
@@ -161,4 +162,84 @@ export interface ReplyMacroLog {
   status: string;
   errorMessage: string | null;
   createdAt: string;
+}
+
+// ─── Delivery Analytics ─────────────────────────────────────────────
+
+export interface DeliverySummary {
+  total_attempted: number;
+  successful: number;
+  failed: number;
+  success_rate: number;
+}
+
+export interface AccountPerformanceItem {
+  account_id: string;
+  attempted: number;
+  successful: number;
+  failed: number;
+  success_rate: number;
+}
+
+export interface TimelineItem {
+  period: string;
+  attempted: number;
+  successful: number;
+  failed: number;
+}
+
+export interface FailureIntelligenceItem {
+  status: string;
+  count: number;
+  percentage: number;
+  affected_accounts: number;
+  latest_occurrence: string | null;
+}
+
+export interface SourceAnalyticsItem {
+  source: string;
+  total: number;
+  successful: number;
+  failed: number;
+  success_rate: number;
+}
+
+export interface DeliveryOverview {
+  summary: DeliverySummary | null;
+  by_source: SourceAnalyticsItem[] | null;
+  top_accounts: AccountPerformanceItem[] | null;
+  failure_breakdown: FailureIntelligenceItem[] | null;
+  timeline: TimelineItem[] | null;
+  logical: LogicalSummaryResult | null;
+  latency: LatencyResult | null;
+  latency_by_source: LatencyBySourceItem[] | null;
+  latency_by_account: LatencyByAccountItem[] | null;
+}
+
+export interface LogicalSummaryResult {
+  total_recipients: number;
+  successful: number;
+  failed: number;
+  success_rate: number;
+}
+
+export interface LatencyResult {
+  average_latency_ms: number;
+  p95_latency_ms: number;
+  total_measured: number;
+  rows_without_timing: number;
+}
+
+export interface LatencyBySourceItem {
+  source: string;
+  average_latency_ms: number;
+  p95_latency_ms: number;
+  total_measured: number;
+}
+
+export interface LatencyByAccountItem {
+  account_id: string;
+  average_latency_ms: number;
+  p95_latency_ms: number;
+  total_measured: number;
 }

@@ -12,6 +12,7 @@ import { GroupSearchTab } from "@/components/workspace/tabs/GroupSearchTab";
 import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
 import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
 import { LogTab } from "@/components/workspace/tabs/LogTab";
+import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -22,6 +23,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   groupsearch: GroupSearchTab,
   autoreply: AutoReplyTab,
   replymacro: ReplyMacroTab,
+  deliveryanalytics: DeliveryAnalyticsTab,
   profile: ProfileTab,
   log: LogTab,
 };
