@@ -52,13 +52,13 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
         className={cn(
           "group flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
           selected
-            ? "border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 to-purple-500/5 shadow-sm shadow-indigo-500/5"
+            ? "border-app-primary/30 bg-gradient-to-r from-app-primary/10 to-app-primary/5 shadow-sm shadow-app-primary/5"
             : "border-transparent hover:border-white/5 hover:bg-white/[0.02]"
         )}
       >
         <div className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-all",
-          selected ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-sm" : "bg-white/5 text-app-text-secondary"
+          selected ? "bg-gradient-to-br from-app-primary to-orange-600 text-white shadow-sm" : "bg-white/5 text-app-text-secondary"
         )}>
           {getAccountInitials(account)}
         </div>

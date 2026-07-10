@@ -9,6 +9,7 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
@@ -315,58 +316,56 @@ export function DashboardTab() {
             <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-app-border text-left text-xs font-medium text-app-text-muted">
-                  <th className="pb-2 pr-3">계정</th>
-                  <th className="pb-2 pr-3">상태</th>
-                  <th className="pb-2 pr-3">자동 응답</th>
-                  <th className="pb-2 pr-3">오늘 발송</th>
-                  <th className="pb-2 pr-3">그룹</th>
-                  <th className="pb-2 pr-3">최근 활동</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-app-border">
-                {accounts.map((a) => (
-                  <tr key={a.id} className="text-app-text hover:bg-app-card-hover/50 transition-colors">
-                    <td className="py-2.5 pr-3">
-                      <div className="text-sm font-medium">{a.name || a.phone}</div>
-                      {a.name && <div className="text-xs text-app-text-muted">{a.phone}</div>}
-                    </td>
-                    <td className="py-2.5 pr-3">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>계정</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>자동 응답</TableHead>
+                <TableHead>오늘 발송</TableHead>
+                <TableHead>그룹</TableHead>
+                <TableHead>최근 활동</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {accounts.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell>
+                    <div className="text-sm font-medium">{a.name || a.phone}</div>
+                    {a.name && <div className="text-xs text-app-text-muted">{a.phone}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <span className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                      a.status === "active" && "bg-app-success-muted text-app-success",
+                      a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
+                      a.status === "banned" && "bg-app-danger-muted text-app-danger",
+                    )}>
                       <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                        a.status === "active" && "bg-app-success-muted text-app-success",
-                        a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
-                        a.status === "banned" && "bg-app-danger-muted text-app-danger",
-                      )}>
-                        <span className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          a.status === "active" && "bg-app-success",
-                          a.status === "inactive" && "bg-app-text-subtle",
-                          a.status === "banned" && "bg-app-danger",
-                        )} />
-                        {a.status === "active" ? "활성" : a.status === "inactive" ? "비활성" : "차단"}
-                      </span>
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      {a.autoReplyEnabled ? (
-                        <span className="text-app-success">켜짐</span>
-                      ) : (
-                        <span className="text-app-text-subtle">꺼짐</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 font-medium tabular-nums">{a.todaySent}</td>
-                    <td className="py-2.5 pr-3 tabular-nums text-app-text-muted">{a.groupCount}</td>
-                    <td className="py-2.5 pr-3 text-xs text-app-text-muted">
-                      {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        "h-1.5 w-1.5 rounded-full",
+                        a.status === "active" && "bg-app-success",
+                        a.status === "inactive" && "bg-app-text-subtle",
+                        a.status === "banned" && "bg-app-danger",
+                      )} />
+                      {a.status === "active" ? "활성" : a.status === "inactive" ? "비활성" : "차단"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {a.autoReplyEnabled ? (
+                      <span className="text-app-success">켜짐</span>
+                    ) : (
+                      <span className="text-app-text-subtle">꺼짐</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium tabular-nums">{a.todaySent}</TableCell>
+                  <TableCell className="tabular-nums text-app-text-muted">{a.groupCount}</TableCell>
+                  <TableCell className="text-xs text-app-text-muted">
+                    {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </Panel>
     </div>

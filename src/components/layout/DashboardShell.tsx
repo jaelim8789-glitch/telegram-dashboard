@@ -11,8 +11,14 @@ export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
-  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
-  const toggleInspector = useCallback(() => setInspectorOpen((v) => !v), []);
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((v) => !v);
+    setInspectorOpen(false);
+  }, []);
+  const toggleInspector = useCallback(() => {
+    setInspectorOpen((v) => !v);
+    setSidebarOpen(false);
+  }, []);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
