@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
-  Activity, BarChart3, CheckCircle2, Clock, MessageSquare, RefreshCw,
-  SendHorizonal, ShieldCheck, Users, XCircle, Zap,
+  Activity, AlertTriangle, ArrowUp, ArrowDown, BarChart3, CheckCircle2, Clock, MessageSquare,
+  RefreshCw, SendHorizonal, ShieldCheck, Users, XCircle, Zap, TrendingUp, Gauge,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -13,7 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
-import type { Broadcast, BroadcastStatus } from "@/types";
+import type { Broadcast, BroadcastStatus, DeliveryOverview } from "@/types";
 import { isRecurringActive, isRecurringBroadcast } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 
@@ -35,41 +35,106 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(hours / 24)}일 전`;
 }
 
+function formatCompact(n: number): string {
+  if (n >= 10000) return `${(n / 1000).toFixed(1)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toLocaleString();
+}
+
+function successTone(rate: number): "success" | "warning" | "danger" {
+  if (rate >= 90) return "success";
+  if (rate >= 70) return "warning";
+  return "danger";
+}
+
+// ── Premium Stat Card ───────────────────────────────────────────
+
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
-  trend?: "up" | "down" | "neutral";
-  accent?: string;
+  trend?: { direction: "up" | "down" | "neutral"; value: string };
+  accent: string;
+  gradient?: boolean;
 }
 
-function StatCard({ icon, label, value, sub, trend, accent = "from-indigo-500 to-purple-500" }: StatCardProps) {
+function StatCard({ icon, label, value, sub, trend, accent, gradient = true }: StatCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-app-border bg-app-card p-4 transition-all duration-200 hover:border-app-border-strong hover:bg-app-card-hover">
-      <div className="flex items-start justify-between">
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm", `bg-gradient-to-br ${accent}`)}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group relative overflow-hidden rounded-2xl border border-app-border bg-app-card p-4 transition-all duration-300 hover:border-app-border-strong hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5"
+    >
+      {/* Background gradient accent */}
+      <div className={cn(
+        "absolute inset-0 opacity-[0.03] transition-opacity group-hover:opacity-[0.06]",
+        gradient && `bg-gradient-to-br ${accent}`
+      )} />
+      <div className="relative flex items-start justify-between">
+        <div className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm",
+          gradient ? `bg-gradient-to-br ${accent}` : `bg-${accent}`
+        )}>
           {icon}
         </div>
         {trend && (
-          <span className={cn(
+          <div className={cn(
             "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-            trend === "up" && "bg-app-success-muted text-app-success",
-            trend === "down" && "bg-app-danger-muted text-app-danger",
-            trend === "neutral" && "bg-app-card-hover text-app-text-muted",
+            trend.direction === "up" && "bg-app-success-muted text-app-success",
+            trend.direction === "down" && "bg-app-danger-muted text-app-danger",
+            trend.direction === "neutral" && "bg-app-card-hover text-app-text-muted",
           )}>
-            {trend === "up" && "▲"} {trend === "down" && "▼"} {trend === "neutral" && "―"}
-          </span>
+            {trend.direction === "up" ? <ArrowUp className="h-2.5 w-2.5" /> :
+             trend.direction === "down" ? <ArrowDown className="h-2.5 w-2.5" /> : null}
+            {trend.value}
+          </div>
         )}
       </div>
-      <div className="mt-3">
+      <div className="relative mt-3">
         <div className="text-2xl font-bold tracking-tight text-app-text">{value}</div>
         <div className="mt-0.5 text-xs text-app-text-muted">{label}</div>
         {sub && <div className="mt-0.5 text-[11px] text-app-text-subtle">{sub}</div>}
       </div>
+    </motion.div>
+  );
+}
+
+// ── Mini Sparkline/Bar ─────────────────────────────────────────
+
+function MiniTimeline({ items }: { items: { label: string; success: number; fail: number }[] }) {
+  const maxVal = Math.max(...items.map((t) => t.success + t.fail), 1);
+  return (
+    <div className="flex items-end gap-1.5 h-20">
+      {items.map((t) => {
+        const total = t.success + t.fail;
+        const totalH = Math.max((total / maxVal) * 72, 4);
+        const successH = total > 0 ? (t.success / total) * totalH : 0;
+        const failH = totalH - successH;
+        return (
+          <div key={t.label} className="group relative flex flex-1 flex-col items-center">
+            <div className="flex w-full items-end justify-center" style={{ height: 72 }}>
+              <div className="relative w-full rounded-t overflow-hidden" style={{ height: totalH }}>
+                {failH > 0 && (
+                  <div className="absolute bottom-0 w-full bg-app-danger/60 rounded-t transition-all group-hover:bg-app-danger/80" style={{ height: `${(failH / totalH) * 100}%` }} />
+                )}
+                {successH > 0 && (
+                  <div className="absolute bottom-0 w-full bg-app-success/70 rounded-t transition-all group-hover:bg-app-success/90" style={{ height: `${(successH / totalH) * 100}%` }} />
+                )}
+              </div>
+            </div>
+            <span className="mt-1 text-[10px] text-app-text-subtle whitespace-nowrap">{t.label}</span>
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 hidden group-hover:block bg-app-card border border-app-border rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-lg">
+              성공 {t.success} · 실패 {t.fail}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+// ── Recurring Card ──────────────────────────────────────────────
 
 function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; name: string | null; phone: string }[] }) {
   const countdown = useCountdown(b.nextScheduledAt);
@@ -78,27 +143,32 @@ function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; 
     ? account.name?.trim() || account.phone
     : b.accountId.slice(0, 8);
   return (
-    <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2">
+    <div className="flex items-center justify-between rounded-xl border border-app-border bg-gradient-to-r from-app-bg to-app-card px-3 py-2.5 transition-all hover:border-app-border-strong hover:shadow-sm">
       <div className="min-w-0 flex-1 pr-2">
         <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
-        <p className="text-[11px] text-app-text-subtle space-x-1">
-          <span>{intervalLabel(b.recurringIntervalMinutes)}</span>
+        <p className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-app-text-subtle">
+          <span className="inline-flex items-center gap-1">
+            <RefreshCw className="h-3 w-3 text-app-info" />
+            {intervalLabel(b.recurringIntervalMinutes)}
+          </span>
           <span>·</span>
           <span>{accLabel}</span>
           <span>·</span>
           <span>{b.recipients.length}명</span>
           {countdown && (
-            <>
-              <span>·</span>
-              <span className="font-mono text-app-info">{countdown}</span>
-            </>
+            <span className="font-mono text-app-info flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {countdown}
+            </span>
           )}
         </p>
       </div>
-      <Badge tone="info">반복 중</Badge>
+      <Badge tone="info" className="shrink-0">반복 중</Badge>
     </div>
   );
 }
+
+// ── Main Dashboard ────────────────────────────────────────────
 
 export function DashboardTab() {
   const accounts = useDashboardStore((s) => s.accounts);
@@ -106,98 +176,127 @@ export function DashboardTab() {
   const accountsError = useDashboardStore((s) => s.accountsError);
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
+  // Broadcast logs
   const [logs, setLogs] = useState<Broadcast[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [upcoming, setUpcoming] = useState<Broadcast[]>([]);
   const [upcomingLoading, setUpcomingLoading] = useState(false);
 
-  useEffect(() => {
-    fetchAccounts();
-    loadLogs();
-    loadUpcoming();
-  }, [fetchAccounts]);
-
-  async function loadLogs() {
-    setLogsLoading(true);
-    try {
-      setLogs(await api.fetchLogs());
-    } catch { setLogs([]); }
-    finally { setLogsLoading(false); }
-  }
-
-  async function loadUpcoming() {
-    setUpcomingLoading(true);
-    try {
-      setUpcoming(await api.fetchUpcomingBroadcasts());
-    } catch { setUpcoming([]); }
-    finally { setUpcomingLoading(false); }
-  }
-
+  // Recurring
   const [recurring, setRecurring] = useState<Broadcast[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(false);
   const recurringPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function loadRecurring() {
+  // Delivery analytics overview
+  const [overview, setOverview] = useState<DeliveryOverview | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+
+  const loadLogs = async () => {
+    setLogsLoading(true);
+    try { setLogs(await api.fetchLogs()); } catch { setLogs([]); }
+    finally { setLogsLoading(false); }
+  };
+
+  const loadUpcoming = async () => {
+    setUpcomingLoading(true);
+    try { setUpcoming(await api.fetchUpcomingBroadcasts()); } catch { setUpcoming([]); }
+    finally { setUpcomingLoading(false); }
+  };
+
+  const loadRecurring = async () => {
     setRecurringLoading(true);
-    try {
-      setRecurring(await api.fetchRecurringBroadcasts());
-    } catch { setRecurring([]); }
+    try { setRecurring(await api.fetchRecurringBroadcasts()); } catch { setRecurring([]); }
     finally { setRecurringLoading(false); }
-  }
+  };
 
-  // Load recurring on mount and poll every 30s while any recurring broadcast is active.
+  const loadOverview = async () => {
+    setOverviewLoading(true);
+    try { setOverview(await api.fetchDeliveryOverview(undefined, 30)); } catch { setOverview(null); }
+    finally { setOverviewLoading(false); }
+  };
+
   useEffect(() => {
+    fetchAccounts();
+    loadLogs();
+    loadUpcoming();
     loadRecurring();
-  }, []);
+    loadOverview();
+  }, [fetchAccounts]);
 
+  // Poll recurring every 30s
   useEffect(() => {
     if (recurringPollRef.current) clearTimeout(recurringPollRef.current);
     if (recurring.length === 0) return;
-
-    recurringPollRef.current = setTimeout(() => {
-      loadRecurring();
-    }, 30000);
-
-    return () => {
-      if (recurringPollRef.current) clearTimeout(recurringPollRef.current);
-    };
+    recurringPollRef.current = setTimeout(loadRecurring, 30000);
+    return () => { if (recurringPollRef.current) clearTimeout(recurringPollRef.current); };
   }, [recurring]);
 
+  // Computed
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
   const bannedAccounts = useMemo(() => accounts.filter((a) => a.status === "banned"), [accounts]);
   const totalSentToday = useMemo(() => accounts.reduce((sum, a) => sum + a.todaySent, 0), [accounts]);
   const autoReplyEnabled = useMemo(() => accounts.filter((a) => a.autoReplyEnabled), [accounts]);
 
   const sentCount = useMemo(() => logs.filter((l) => l.status === "sent").length, [logs]);
+  const failedCount = useMemo(() => logs.filter((l) => l.status === "failed").length, [logs]);
   const totalBroadcasts = logs.length;
   const successRate = totalBroadcasts > 0 ? Math.round((sentCount / totalBroadcasts) * 100) : 0;
 
-  const recentLogs = useMemo(() => [...logs].sort((a, b) => new Date(`${b.createdAt}Z`).getTime() - new Date(`${a.createdAt}Z`).getTime()).slice(0, 10), [logs]);
+  const recentLogs = useMemo(
+    () => [...logs].sort((a, b) => new Date(`${b.createdAt}Z`).getTime() - new Date(`${a.createdAt}Z`).getTime()).slice(0, 8),
+    [logs]
+  );
 
+  // Build mini timeline from overview
+  const timelineData = useMemo(() => {
+    const items = overview?.timeline ?? [];
+    return items.slice(-14).map((t) => ({
+      label: t.period.slice(5),
+      success: t.successful,
+      fail: t.failed,
+    }));
+  }, [overview]);
+
+  // Failure types from overview
+  const failureTypes = useMemo(() => {
+    return (overview?.failure_breakdown ?? []).slice(0, 5);
+  }, [overview]);
+
+  const summary = overview?.summary;
+  const latency = overview?.latency;
+
+  // Skeleton loading state
   if (accountsLoading && accounts.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))}
         </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
         <Skeleton className="h-64 w-full rounded-2xl" />
-        <Skeleton className="h-48 w-full rounded-2xl" />
       </div>
     );
   }
 
+  // Error state
   if (accountsError && accounts.length === 0) {
     return (
       <Panel title="시스템 상태">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <XCircle className="mb-3 h-10 w-10 text-app-danger" />
-          <p className="text-sm font-medium text-app-danger">서버에 연결할 수 없습니다</p>
-          <p className="mt-1 text-xs text-app-text-muted">{accountsError}</p>
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-danger-muted">
+            <XCircle className="h-8 w-8 text-app-danger" />
+          </div>
+          <p className="text-sm font-semibold text-app-danger">서버에 연결할 수 없습니다</p>
+          <p className="mt-1 text-xs text-app-text-muted max-w-xs">{accountsError}</p>
           <button
-            onClick={() => fetchAccounts()}
-            className="mt-4 flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover"
+            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); loadRecurring(); loadOverview(); }}
+            className="mt-4 flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors"
           >
             <RefreshCw className="h-3.5 w-3.5" /> 다시 시도
           </button>
@@ -208,72 +307,120 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Stat Cards */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-app-text">운영 개요</h2>
-          <button
-            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); loadRecurring(); }}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text transition-colors"
-          >
-            <RefreshCw className="h-3 w-3" /> 새로고침
-          </button>
+      {/* ── Header Section ───────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-app-text">운영 대시보드</h1>
+          <p className="text-xs text-app-text-muted">실시간 운영 현황 및 전달 분석</p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <StatCard
-            icon={<Users className="h-5 w-5" />}
-            label="연결된 계정"
-            value={activeAccounts.length}
-            sub={`전체 ${accounts.length}개${bannedAccounts.length > 0 ? ` · ${bannedAccounts.length}개 차단` : ""}`}
-            accent="from-indigo-500 to-purple-500"
-          />
-          <StatCard
-            icon={<Zap className="h-5 w-5" />}
-            label="자동 응답 활성"
-            value={autoReplyEnabled.length}
-            sub={`전체 ${accounts.length}개 중`}
-            accent="from-emerald-500 to-teal-500"
-          />
-          <StatCard
-            icon={<SendHorizonal className="h-5 w-5" />}
-            label="오늘 발송"
-            value={totalSentToday}
-            sub="계정 전체 합계"
-            accent="from-cyan-500 to-blue-500"
-          />
-          <StatCard
-            icon={<BarChart3 className="h-5 w-5" />}
-            label="발송 성공률"
-            value={totalBroadcasts > 0 ? `${successRate}%` : "-"}
-            sub={`${sentCount}건 성공 / ${totalBroadcasts}건 전체`}
-            accent="from-orange-500 to-amber-500"
-          />
-          <StatCard
-            icon={<ShieldCheck className="h-5 w-5" />}
-            label="시스템 상태"
-            value={accountsError ? "오류" : "정상"}
-            sub={activeAccounts.length > 0 ? "모든 서비스 운영 중" : "계정 연결 필요"}
-            accent="from-violet-500 to-pink-500"
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-lg bg-app-card border border-app-border px-2.5 py-1.5">
+            <span className={cn(
+              "h-2 w-2 rounded-full",
+              accountsError ? "bg-app-danger animate-pulse" : "bg-app-success"
+            )} />
+            <span className="text-[11px] font-medium text-app-text-muted">
+              {accountsError ? "연결 오류" : "운영 중"}
+            </span>
+          </div>
+          <button
+            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); loadRecurring(); loadOverview(); }}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", logsLoading && "animate-spin")} /> 새로고침
+          </button>
         </div>
       </div>
 
-      {/* Middle row: Scheduled + Recurring + Activity feed */}
+      {/* ── Premium KPI Cards ─────────────────────────────────── */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+      >
+        <StatCard
+          icon={<Users className="h-5 w-5" />}
+          label="활성 계정"
+          value={activeAccounts.length}
+          sub={`전체 ${accounts.length}개${bannedAccounts.length > 0 ? ` · ${bannedAccounts.length}개 차단` : ""}`}
+          accent="from-indigo-500 to-purple-600"
+        />
+        <StatCard
+          icon={<Zap className="h-5 w-5" />}
+          label="자동 응답"
+          value={autoReplyEnabled.length}
+          sub={`전체 ${accounts.length}개 중`}
+          accent="from-emerald-500 to-teal-600"
+        />
+        <StatCard
+          icon={<SendHorizonal className="h-5 w-5" />}
+          label="오늘 발송"
+          value={totalSentToday}
+          sub="계정 전체 합계"
+          accent="from-cyan-500 to-blue-600"
+          trend={totalSentToday > 0 ? { direction: "up", value: `${totalSentToday}건` } : undefined}
+        />
+        <StatCard
+          icon={<BarChart3 className="h-5 w-5" />}
+          label="발송 성공률"
+          value={totalBroadcasts > 0 ? `${successRate}%` : "-"}
+          sub={`${sentCount}건 성공 / ${totalBroadcasts}건 전체`}
+          accent="from-orange-500 to-amber-600"
+          trend={totalBroadcasts > 0 ? {
+            direction: successRate >= 90 ? "up" : successRate >= 70 ? "neutral" : "down",
+            value: `${summary?.total_attempted ?? 0}회 시도`
+          } : undefined}
+        />
+        <StatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label="고유 수신자"
+          value={overview?.logical?.total_recipients != null ? formatCompact(overview.logical.total_recipients) : "-"}
+          sub={overview?.logical ? `성공률 ${overview.logical.success_rate.toFixed(0)}%` : undefined}
+          accent="from-violet-500 to-pink-600"
+          trend={overview?.logical ? {
+            direction: overview.logical.success_rate >= 90 ? "up" : "neutral",
+            value: `${overview.logical.success_rate.toFixed(0)}%`
+          } : undefined}
+        />
+        <StatCard
+          icon={<Gauge className="h-5 w-5" />}
+          label="평균 지연"
+          value={latency && latency.total_measured > 0 ? `${latency.average_latency_ms.toFixed(0)}ms` : "-"}
+          sub={latency && latency.total_measured > 0 ? `${latency.p95_latency_ms.toFixed(0)}ms P95` : undefined}
+          accent="from-rose-500 to-pink-600"
+          gradient={true}
+        />
+      </motion.div>
+
+      {/* ── Alert Banner for failures ───────────────────────── */}
+      {failedCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2.5 rounded-xl border border-app-danger/20 bg-app-danger-muted/50 px-4 py-2.5"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 text-app-danger" />
+          <span className="text-xs text-app-danger">
+            최근 {failedCount}건의 발송 실패가 있습니다.{" "}
+            {failureTypes.length > 0 && (
+              <>주요 원인: {failureTypes.slice(0, 2).map((f) => `${f.status} (${f.count}건)`).join(", ")}</>
+            )}
+          </span>
+        </motion.div>
+      )}
+
+      {/* ── Middle Section: 3 columns ────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Upcoming scheduled broadcasts */}
+        {/* Upcoming scheduled */}
         <Panel
-          title={
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              예약된 발송
-            </div>
-          }
+          title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" /> 예약된 발송</div>}
           className="lg:col-span-1"
         >
           {upcomingLoading ? (
             <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
             </div>
           ) : upcoming.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -283,10 +430,7 @@ export function DashboardTab() {
           ) : (
             <div className="space-y-1.5">
               {upcoming.map((b) => (
-                <div
-                  key={b.id}
-                  className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2"
-                >
+                <div key={b.id} className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2 transition-colors hover:border-app-border-strong">
                   <div className="min-w-0 flex-1 pr-2">
                     <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
                     <p className="text-[11px] text-app-text-subtle">
@@ -301,20 +445,15 @@ export function DashboardTab() {
           )}
         </Panel>
 
-        {/* Active recurring broadcasts */}
+        {/* Active recurring */}
         <Panel
-          title={
-            <div className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              반복 발송
-            </div>
-          }
+          title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-primary" /> 반복 발송</div>}
           className="lg:col-span-1"
         >
           {recurringLoading ? (
             <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
             </div>
           ) : recurring.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -330,21 +469,101 @@ export function DashboardTab() {
           )}
         </Panel>
 
-        {/* Recent activity */}
+        {/* Delivery Health mini panel */}
         <Panel
-          title={
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              최근 활동
+          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-success" /> 전달 건강</div>}
+          className="lg:col-span-1"
+        >
+          {overviewLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-full rounded-xl" />
+              <Skeleton className="h-8 w-full rounded-xl" />
+              <Skeleton className="h-8 w-full rounded-xl" />
             </div>
-          }
-          className="lg:col-span-2"
+          ) : !summary ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Activity className="mb-2 h-6 w-6 text-app-text-subtle" />
+              <p className="text-xs text-app-text-muted">전달 데이터가 아직 없습니다</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {/* Health gauge */}
+              <div className="flex items-center gap-3">
+                <div className="relative h-16 w-16 shrink-0">
+                  <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" className="text-app-border" />
+                    <circle
+                      cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3"
+                      strokeDasharray={`${summary.success_rate * 0.97} 100`}
+                      className={cn(
+                        "transition-all duration-1000",
+                        summary.success_rate >= 90 ? "text-app-success" :
+                        summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger"
+                      )}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className={cn(
+                      "text-sm font-bold",
+                      summary.success_rate >= 90 ? "text-app-success" :
+                      summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger"
+                    )}>
+                      {summary.success_rate.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-app-text-muted">총 시도</span>
+                    <span className="font-medium tabular-nums text-app-text">{summary.total_attempted}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs">
+                    <span className="text-app-success">성공</span>
+                    <span className="font-medium tabular-nums text-app-success">{summary.successful}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs">
+                    <span className="text-app-danger">실패</span>
+                    <span className="font-medium tabular-nums text-app-danger">{summary.failed}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Source breakdown */}
+              {(overview?.by_source?.length ?? 0) > 0 && (
+                <div className="border-t border-app-border pt-2.5">
+                  <p className="mb-1.5 text-[11px] font-medium text-app-text-muted">소스별</p>
+                  <div className="space-y-1">
+                    {(overview?.by_source ?? []).map((s) => (
+                      <div key={s.source} className="flex items-center justify-between text-xs">
+                        <span className="text-app-text capitalize">{s.source === "broadcast" ? "발송" : s.source}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="tabular-nums text-app-text-muted">{s.total}건</span>
+                          <span className={cn(
+                            "tabular-nums font-medium",
+                            s.success_rate >= 90 ? "text-app-success" :
+                            s.success_rate >= 70 ? "text-app-warning" : "text-app-danger"
+                          )}>{s.success_rate.toFixed(0)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      {/* ── Recent Activity + Timeline ───────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel
+          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" /> 최근 활동</div>}
+          className="lg:col-span-1"
         >
           {logsLoading ? (
             <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
             </div>
           ) : recentLogs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -356,29 +575,30 @@ export function DashboardTab() {
             <div className="divide-y divide-app-border">
               {recentLogs.map((b, i) => {
                 const meta = STATUS_TONE[b.status];
-                const recurring = isRecurringActive(b);
+                const recurringActive = isRecurringActive(b);
                 return (
                   <motion.div
                     key={b.id}
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
+                    transition={{ delay: i * 0.04 }}
                     className="flex items-center justify-between py-2.5 text-sm"
                   >
                     <div className="min-w-0 flex-1 pr-3">
                       <div className="truncate text-app-text">{b.message}</div>
-                    <div className="text-xs text-app-text-muted">
-                      {formatRelativeTime(b.createdAt)}
-                      {isRecurringBroadcast(b) && b.recurringIntervalMinutes != null
-                        ? ` · ${intervalLabel(b.recurringIntervalMinutes)}`
-                        : b.scheduledAt && new Date(`${b.scheduledAt}Z`) > new Date()
-                          ? ` · ${new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })} 예약`
-                          : ` · 수신자 ${b.recipients.length}명`
-                      }
-                      {b.errorMessage && <span className="ml-1 text-app-danger">· {b.errorMessage}</span>}
+                      <div className="flex flex-wrap items-center gap-x-1 text-xs text-app-text-muted">
+                        <span>{formatRelativeTime(b.createdAt)}</span>
+                        {isRecurringBroadcast(b) && b.recurringIntervalMinutes != null ? (
+                          <><span>·</span><span className="text-app-info">{intervalLabel(b.recurringIntervalMinutes)}</span></>
+                        ) : b.scheduledAt && new Date(`${b.scheduledAt}Z`) > new Date() ? (
+                          <><span>·</span><span>{new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })} 예약</span></>
+                        ) : (
+                          <><span>·</span><span>수신자 {b.recipients.length}명</span></>
+                        )}
+                        {b.errorMessage && <><span>·</span><span className="text-app-danger truncate max-w-[120px]">{b.errorMessage}</span></>}
+                      </div>
                     </div>
-                    </div>
-                    {recurring ? (
+                    {recurringActive ? (
                       <Badge tone="info">반복 중</Badge>
                     ) : isRecurringBroadcast(b) && b.status === "cancelled" ? (
                       <Badge tone="warning">반복 취소</Badge>
@@ -386,6 +606,8 @@ export function DashboardTab() {
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-app-success" />
                     ) : b.status === "failed" ? (
                       <XCircle className="h-4 w-4 shrink-0 text-app-danger" />
+                    ) : b.status === "sending" ? (
+                      <Badge tone="info"><RefreshCw className="mr-0.5 h-3 w-3 animate-spin" />발송 중</Badge>
                     ) : (
                       <Badge tone={meta.tone}>{meta.label}</Badge>
                     )}
@@ -395,16 +617,62 @@ export function DashboardTab() {
             </div>
           )}
         </Panel>
+
+        <Panel
+          title={<div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-app-primary" /> 전달 트렌드 (최근 14일)</div>}
+          className="lg:col-span-1"
+        >
+          {overviewLoading ? (
+            <Skeleton className="h-24 w-full rounded-xl" />
+          ) : timelineData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarChart3 className="mb-2 h-6 w-6 text-app-text-subtle" />
+              <p className="text-xs text-app-text-muted">전달 데이터가 아직 없습니다</p>
+            </div>
+          ) : (
+            <MiniTimeline items={timelineData} />
+          )}
+        </Panel>
       </div>
 
-      {/* Account overview */}
-      <Panel
-        title={
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            계정 현황
+      {/* ── Failure Intelligence ─────────────────────────────── */}
+      {failureTypes.length > 0 && (
+        <Panel
+          title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-danger" /> 실패 분석</div>}
+          description="주요 실패 유형 및 영향"
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {failureTypes.map((f) => (
+              <div key={f.status} className="rounded-xl border border-app-border bg-app-card p-3 transition-colors hover:border-app-border-strong">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-app-text">{f.status}</span>
+                  <span className={cn(
+                    "text-xs font-bold tabular-nums",
+                    f.percentage > 30 ? "text-app-danger" : f.percentage > 10 ? "text-app-warning" : "text-app-text-muted"
+                  )}>{f.percentage.toFixed(0)}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-app-border overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      f.percentage > 30 ? "bg-app-danger" : f.percentage > 10 ? "bg-app-warning" : "bg-app-text-subtle"
+                    )}
+                    style={{ width: `${Math.min(f.percentage, 100)}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-[11px] text-app-text-muted">
+                  <span>{f.count}건</span>
+                  <span>{f.affected_accounts}개 계정</span>
+                </div>
+              </div>
+            ))}
           </div>
-        }
+        </Panel>
+      )}
+
+      {/* ── Account Overview Table ──────────────────────────── */}
+      <Panel
+        title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" /> 계정 현황</div>}
         description="연결된 모든 Telegram 계정의 상태와 주요 지표"
       >
         {accounts.length === 0 ? (
@@ -450,9 +718,9 @@ export function DashboardTab() {
                   </TableCell>
                   <TableCell>
                     {a.autoReplyEnabled ? (
-                      <span className="text-app-success">켜짐</span>
+                      <span className="text-app-success text-xs font-medium">켜짐</span>
                     ) : (
-                      <span className="text-app-text-subtle">꺼짐</span>
+                      <span className="text-app-text-subtle text-xs">꺼짐</span>
                     )}
                   </TableCell>
                   <TableCell className="font-medium tabular-nums">{a.todaySent}</TableCell>

@@ -11,12 +11,13 @@ const TONE_STYLE: Record<Tone, string> = {
   info: "bg-app-info-muted text-app-info border-app-info/20",
 };
 
-export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
+export function Badge({ tone = "neutral", className, children }: { tone?: Tone; className?: string; children: ReactNode }) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-        TONE_STYLE[tone]
+        TONE_STYLE[tone],
+        className
       )}
     >
       {children}

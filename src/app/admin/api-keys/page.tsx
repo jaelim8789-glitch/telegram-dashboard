@@ -2,12 +2,16 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { ChevronLeft, Key, KeyRound, Plus, RefreshCw, Shield, Trash2, XCircle } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
+import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { ApiKey } from "@/lib/api";
 
@@ -36,14 +40,11 @@ function ApiKeysContent() {
     }
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     if (!name.trim() || creating) return;
-
     setCreating(true);
     setError(null);
     try {
@@ -71,34 +72,63 @@ function ApiKeysContent() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-app-text">API 키 관리</h1>
-          <Link href="/admin/dashboard" className="text-xs text-app-primary-hover hover:underline">
-            관리자 홈으로
+        <div>
+          <h1 className="text-xl font-bold text-app-text">API 키 관리</h1>
+          <p className="mt-0.5 text-sm text-app-text-muted">{keys.length}개 키 발급됨</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/admin/dashboard" className="flex items-center gap-1 text-xs text-app-primary-hover hover:underline transition-colors">
+            <ChevronLeft className="h-3 w-3" /> 관리자 홈
           </Link>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs text-app-text-muted transition-all duration-150 hover:border-app-border-strong hover:text-app-text"
+          >
+            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> 새로고침
+          </button>
+        </div>
       </div>
 
-      <Panel title="새 API 키 발급" description="외부 프로그램/스크립트가 X-API-Key 헤더로 사용할 키입니다.">
-        <form onSubmit={handleCreate} className="flex items-end gap-2">
+      <Panel
+        accent="violet"
+        title={
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4 text-violet-400" />
+            새 API 키 발급
+          </div>
+        }
+        description="외부 프로그램/스크립트가 X-API-Key 헤더로 사용할 키입니다."
+      >
+        <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <Field label="이름">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 외부 연동용" required />
+            <Field label="키 이름">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="예: 외부 연동용"
+                required
+              />
             </Field>
           </div>
-          <Button type="submit" variant="primary" disabled={creating}>
-            {creating ? "발급 중..." : "발급"}
+          <Button type="submit" variant="primary" disabled={creating} loading={creating}>
+            <Key className="h-3.5 w-3.5" /> 발급
           </Button>
         </form>
 
         {justCreatedKey && (
-          <div className="mt-3 rounded-xl border border-app-success/30 bg-app-success-muted p-3">
-            <p className="text-xs text-app-success">
-              발급된 키는 지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.
-            </p>
-            <code className="mt-1 block break-all text-sm text-app-text">{justCreatedKey}</code>
-            <Button variant="ghost" className="mt-2 text-xs" onClick={() => setJustCreatedKey(null)}>
-              닫기
+          <div className="mt-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+            <div className="flex items-center gap-2 text-xs font-medium text-violet-600 dark:text-violet-400">
+              <KeyRound className="h-4 w-4" />
+              발급된 키는 지금만 전체가 표시됩니다
+            </div>
+            <code className="mt-3 block break-all rounded-lg border border-violet-500/10 bg-app-card px-3 py-2.5 text-sm text-app-text font-mono shadow-sm">
+              {justCreatedKey}
+            </code>
+            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setJustCreatedKey(null)}>
+              확인했습니다
             </Button>
           </div>
         )}
@@ -106,25 +136,54 @@ function ApiKeysContent() {
         {error && <InlineError className="mt-3">{error}</InlineError>}
       </Panel>
 
-      <Panel title="발급된 키 목록">
-        {loading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
-        {!loading && keys.length === 0 && <p className="text-xs text-app-text-muted">발급된 API 키가 없습니다.</p>}
+      <Panel
+        title={
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            발급된 키 목록
+          </div>
+        }
+        description="모든 키는 SHA-256 해시로 저장되어 원본을 다시 조회할 수 없습니다."
+      >
+        {loading && (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-14 animate-pulse rounded-xl bg-app-card-hover" />
+            ))}
+          </div>
+        )}
+        {!loading && keys.length === 0 && (
+          <EmptyState
+            icon={KeyRound}
+            title="발급된 API 키 없음"
+            description="위 폼에서 새 키를 발급해주세요."
+          />
+        )}
         <div className="divide-y divide-app-border">
           {keys.map((k) => (
             <div
               key={k.id}
               data-testid={`api-key-row-${k.id}`}
-              className="flex items-center justify-between py-2.5 text-sm"
+              className="flex items-center justify-between py-3 text-sm transition-colors hover:bg-app-card-hover -mx-4 px-4 first:rounded-t-lg last:rounded-b-lg"
             >
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-app-text">{k.name}</div>
-                <div className="text-xs text-app-text-muted">
-                  <code>{k.maskedKey}</code> · 생성 {formatDateTime(k.createdAt)}
-                  {k.lastUsed && <> · 마지막 사용 {formatDateTime(k.lastUsed)}</>}
+              <div className="min-w-0 flex-1 pr-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-app-text truncate">{k.name}</span>
+                  <Badge tone="neutral">API 키</Badge>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-app-text-muted">
+                  <code className="font-mono text-app-text-subtle">{k.maskedKey}</code>
+                  <span>생성 {formatDateTime(k.createdAt)}</span>
+                  {k.lastUsed && <span>· 마지막 사용 {formatDateTime(k.lastUsed)}</span>}
+                  {!k.lastUsed && <span className="text-app-text-subtle">· 사용 기록 없음</span>}
                 </div>
               </div>
-              <Button variant="danger" className="px-2 py-1 text-xs" onClick={() => setDeleteTarget(k)}>
-                삭제
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setDeleteTarget(k)}
+              >
+                <Trash2 className="h-3 w-3" /> 삭제
               </Button>
             </div>
           ))}
