@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   fetchReplyMacros,
@@ -17,8 +17,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
-import { Play, RefreshCw, Trash2, Edit3, Clock, SendHorizonal, AlertCircle } from "lucide-react";
+import { Play, RefreshCw, Trash2, Edit3, Clock, SendHorizonal } from "lucide-react";
 
 export function ReplyMacroInspector() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -39,11 +41,11 @@ export function ReplyMacroInspector() {
   const [maxSendsPerDay, setMaxSendsPerDay] = useState(10);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedAccount) loadMacros();
-  }, [selectedAccount]);
+  // Confirm dialog state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [executeMessage, setExecuteMessage] = useState<string | null>(null);
 
-  async function loadMacros() {
+  const loadMacros = useCallback(async () => {
     if (!selectedAccount) return;
     setLoading(true);
     setError(null);
@@ -55,7 +57,11 @@ export function ReplyMacroInspector() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedAccount]);
+
+  useEffect(() => {
+    if (selectedAccount) loadMacros();
+  }, [selectedAccount, loadMacros]);
 
   async function loadLogs(macroId: string) {
     if (!selectedAccount) return;
@@ -102,22 +108,30 @@ export function ReplyMacroInspector() {
     finally { setLoading(false); }
   }
 
-  async function handleDelete(macroId: string) {
-    if (!selectedAccount) return;
-    if (!confirm("정말 삭제하시겠습니까?")) return;
+  async function handleConfirmDelete() {
+    if (!selectedAccount || !confirmDeleteId) return;
     try {
-      await deleteReplyMacro(selectedAccount.id, macroId);
+      await deleteReplyMacro(selectedAccount.id, confirmDeleteId);
       await loadMacros();
-      if (selectedMacroId === macroId) { setSelectedMacroId(null); setLogs([]); }
+      if (selectedMacroId === confirmDeleteId) { setSelectedMacroId(null); setLogs([]); }
     } catch (err) { setError(err instanceof Error ? err.message : "삭제 실패"); }
+    finally { setConfirmDeleteId(null); }
   }
 
-  async function handleExecute(macroId: string) {
-    if (!selectedAccount) return;
+  async function handleConfirmExecute() {
+    if (!selectedAccount || !executeMessage) return;
     try {
-      await executeReplyMacro(selectedAccount.id, macroId);
-      alert("답장매크로가 실행되었습니다.");
+      await executeReplyMacro(selectedAccount.id, executeMessage);
+      setExecuteMessage(null);
     } catch (err) { setError(err instanceof Error ? err.message : "실행 실패"); }
+  }
+
+  function handleDelete(macroId: string) {
+    setConfirmDeleteId(macroId);
+  }
+
+  function handleExecute(macroId: string) {
+    setExecuteMessage(macroId);
   }
 
   if (!selectedAccount) {
@@ -138,28 +152,10 @@ export function ReplyMacroInspector() {
         </Button>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-1.5 rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {error}
-        </div>
-      )}
+      {error && <InlineError>{error}</InlineError>}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-2.5 rounded-xl border border-app-border bg-app-card p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-app-text-muted">
-            {editingId ? "매크로 수정" : "새 매크로"}
-          </span>
-          {editingId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-[11px] text-app-primary hover:text-app-primary-hover"
-            >
-              취소
-            </button>
-          )}
-        </div>
         <Field label="매크로 이름">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 아침 인사" required />
         </Field>
@@ -264,6 +260,27 @@ export function ReplyMacroInspector() {
           </div>
         ))}
       </div>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="매크로 삭제"
+        description="정말 삭제하시겠습니까?"
+        variant="danger"
+        confirmLabel="삭제"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      {/* Execute confirmation dialog */}
+      <ConfirmDialog
+        open={!!executeMessage}
+        title="답장매크로 실행"
+        description="답장매크로를 지금 실행하시겠습니까?"
+        confirmLabel="실행"
+        onConfirm={handleConfirmExecute}
+        onCancel={() => setExecuteMessage(null)}
+      />
     </div>
   );
 }
