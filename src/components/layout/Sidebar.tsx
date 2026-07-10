@@ -5,6 +5,7 @@ import { Ban, Clock, Plug, RefreshCw, ShieldAlert, Users, WifiOff } from "lucide
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { InlineError } from "@/components/ui/InlineError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
@@ -118,7 +119,7 @@ export function Sidebar() {
                 type="button"
                 onClick={() => setHealthFilter(f.key)}
                 className={cn(
-                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
                   healthFilter === f.key
                     ? "bg-app-primary text-white"
                     : "bg-app-card-hover text-app-text-muted hover:text-app-text"
@@ -134,16 +135,8 @@ export function Sidebar() {
       )}
 
       <div className="flex-1 space-y-1 overflow-y-auto p-3">
-        {accountsError && (
-          <div className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-4 py-3 text-xs text-app-danger">
-            {accountsError}
-          </div>
-        )}
-        {deleteError && (
-          <div className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-4 py-3 text-xs text-app-danger">
-            {deleteError}
-          </div>
-        )}
+        {accountsError && <InlineError>{accountsError}</InlineError>}
+        {deleteError && <InlineError>{deleteError}</InlineError>}
         {!accountsError && accountsLoading && accounts.length === 0 && (
           <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
         )}

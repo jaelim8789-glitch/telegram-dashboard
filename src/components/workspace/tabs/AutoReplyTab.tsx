@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
+import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 
 const MATCH_TYPE_LABEL: Record<AutoReplyMatchType, string> = {
@@ -244,39 +245,52 @@ export function AutoReplyTab() {
         {!rulesLoading && !rulesError && rules.length === 0 && (
           <EmptyState icon={MessageSquareOff} title="등록된 자동 응답 규칙이 없습니다" description="위 폼에서 첫 규칙을 추가해보세요." />
         )}
-        <div className="space-y-2">
-          {rules.map((rule) => (
-            <div
-              key={rule.id}
-              data-testid={`auto-reply-rule-${rule.id}`}
-              className="rounded-2xl border border-app-border bg-app-card p-3"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-app-text">{rule.name}</span>
-                    <Badge tone="neutral">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
-                    <Badge tone={rule.isActive ? "success" : "neutral"}>{rule.isActive ? "사용 중" : "중지됨"}</Badge>
+        {rules.length > 0 && (
+          <div className="space-y-2">
+            {rules.map((rule) => (
+              <div
+                key={rule.id}
+                data-testid={`auto-reply-rule-${rule.id}`}
+                className={cn(
+                  "rounded-2xl border p-3",
+                  rule.isActive ? "border-app-border bg-app-card" : "border-app-border/40 bg-app-card/60 opacity-70"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-app-text">{rule.name}</span>
+                      <Badge tone="neutral">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
+                      <Badge tone={rule.isActive ? "success" : "neutral"}>{rule.isActive ? "사용 중" : "중지됨"}</Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-app-text-muted">
+                      &ldquo;{rule.matchValue}&rdquo; → {rule.replyContent}
+                    </div>
+                    <div className="mt-1 text-[11px] text-app-text-subtle">
+                      쿨다운 {rule.cooldownHours}시간 · 일일 최대 {rule.maxRepliesPerDay}회
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-app-text-muted">
-                    &ldquo;{rule.matchValue}&rdquo; → {rule.replyContent}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleToggleRule(rule)}
+                      size="sm"
+                    >
+                      {rule.isActive ? "중지" : "재개"}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => handleDeleteRule(rule.id)}
+                      size="sm"
+                    >
+                      삭제
+                    </Button>
                   </div>
-                  <div className="mt-1 text-[11px] text-app-text-subtle">
-                    쿨다운 {rule.cooldownHours}시간 · 일일 최대 {rule.maxRepliesPerDay}회
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button variant="ghost" onClick={() => handleToggleRule(rule)}>
-                    {rule.isActive ? "중지" : "재개"}
-                  </Button>
-                  <Button variant="danger" onClick={() => handleDeleteRule(rule.id)}>
-                    삭제
-                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Panel>
 
       <Panel title="응답 로그" description="최근 자동 응답 시도 기록입니다.">

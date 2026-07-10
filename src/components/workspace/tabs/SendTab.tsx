@@ -302,7 +302,13 @@ export function SendTab() {
               />
               {selectedIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
                 <p className="mb-2 text-xs text-app-warning">
-                  최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택할 수 있습니다. 선택을 해제하려면 이미 선택한 항목을 클릭하세요.
+                  최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다. 선택 해제는 항목을 다시 클릭하세요.
+                </p>
+              )}
+
+              {!search.trim() && selectedIds.length > 0 && (
+                <p className="mb-2 text-xs text-app-text-muted">
+                  선택됨: {selectedIds.length}개
                 </p>
               )}
 
@@ -462,6 +468,7 @@ export function SendTab() {
             {filteredHistory.map((h) => {
               const meta = STATUS_TONE[h.status];
               const isFailed = h.status === "failed";
+              const isSending = h.status === "sending";
               const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
               return (
                 <div
@@ -474,14 +481,22 @@ export function SendTab() {
                       {isFutureSchedule && h.scheduledAt
                         ? `${formatDateTime(h.scheduledAt)} 예약`
                         : formatRelativeTime(h.createdAt)}{" "}
-                      · 수신자 {h.recipients.length}명
+                      · {h.recipients.length}명
+                      {isSending && <span className="text-app-primary">발송 중...</span>}
                       {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Badge tone={isFutureSchedule ? "info" : meta.tone}>
-                      {isFutureSchedule ? "예약됨" : meta.label}
-                    </Badge>
+                    {isSending ? (
+                      <Badge tone="info">
+                        <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                        발송 중
+                      </Badge>
+                    ) : (
+                      <Badge tone={isFutureSchedule ? "info" : meta.tone}>
+                        {isFutureSchedule ? "예약됨" : meta.label}
+                      </Badge>
+                    )}
                     {isFailed && (
                       <button
                         type="button"

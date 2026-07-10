@@ -36,17 +36,17 @@ export function DashboardShell() {
         {/* Sidebar — always visible on desktop, overlay on mobile */}
         <div className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}>
           {sidebarOpen && (
-            <div className="absolute inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
           )}
           <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`}>
             <Sidebar />
           </div>
         </div>
         <Workspace />
-        {/* Inspector — always visible on desktop, toggle on mobile */}
-        <div className={`${inspectorOpen ? "fixed inset-0 z-40 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}>
+        {/* Inspector — always visible on desktop, toggle on mobile (higher z than sidebar) */}
+        <div className={`${inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}>
           {inspectorOpen && (
-            <div className="absolute inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
+            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
           )}
           <div className={`relative z-10 ${inspectorOpen ? "block" : "hidden"} sm:block`}>
             <Inspector />

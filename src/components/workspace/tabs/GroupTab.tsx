@@ -212,7 +212,7 @@ export function GroupTab() {
                       "flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-150",
                       favorite
                         ? "text-app-warning"
-                        : "text-app-text-subtle opacity-0 hover:text-app-warning group-hover:opacity-100"
+                        : "text-app-text-subtle opacity-60 hover:text-app-warning hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     )}
                   >
                     <Star className={cn("h-3.5 w-3.5", favorite && "fill-current")} />

@@ -1,13 +1,24 @@
 "use client";
 
+import {
+  LayoutDashboard, UserPlus, Send, Users, Search,
+  Bot, Zap, User, FileText,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 
-const TAB_ICONS: Record<string, string> = {
-  dashboard: "📊", register: "📝", send: "📨", group: "👥", groupsearch: "🔍",
-  autoreply: "🤖", replymacro: "⚡", profile: "👤", log: "📊",
+const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  dashboard: LayoutDashboard,
+  register: UserPlus,
+  send: Send,
+  group: Users,
+  groupsearch: Search,
+  autoreply: Bot,
+  replymacro: Zap,
+  profile: User,
+  log: FileText,
 };
 
 export function TabBar() {
@@ -18,6 +29,7 @@ export function TabBar() {
     <div className="flex shrink-0 items-center gap-0.5 border-b border-app-border/50 bg-app-surface/30 px-2 overflow-x-auto">
       {TABS.map((tab) => {
         const active = tab.id === activeTab;
+        const Icon = TAB_ICONS[tab.id];
         return (
           <button
             key={tab.id}
@@ -28,13 +40,13 @@ export function TabBar() {
               active && "active"
             )}
           >
-            <span className="text-xs">{TAB_ICONS[tab.id] || "•"}</span>
+            {Icon && <Icon className="h-3.5 w-3.5" />}
             {tab.label}
             {active && (
               <motion.span
                 layoutId="tab-underline"
                 transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-app-primary"
               />
             )}
           </button>

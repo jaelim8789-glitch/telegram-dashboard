@@ -188,11 +188,11 @@ export function GroupSearchTab() {
 
       {/* Daily Join Info */}
       {joinInfo && (
-        <div className="flex items-center gap-3 rounded-xl border border-app-border bg-app-card px-4 py-3 text-sm">
-          <Clock className="h-4 w-4 text-app-text-muted" />
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-app-border bg-app-card px-4 py-3 text-sm">
+          <Clock className="h-4 w-4 text-app-text-muted shrink-0" />
           <span className="text-app-text-muted">일일 가입 현황:</span>
           <span className="font-medium text-app-text">
-            {joinInfo.joinedToday} / {joinInfo.maxDaily}회
+            {joinInfo.joinedToday}/{joinInfo.maxDaily}회
           </span>
           {joinInfo.remaining <= 0 ? (
             <span className="flex items-center gap-1 text-app-danger">
@@ -246,12 +246,12 @@ export function GroupSearchTab() {
           description="가입할 그룹을 선택한 후 하단의 [선택한 그룹 가입] 버튼을 클릭하세요."
         >
           {/* Selection controls */}
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex gap-1.5">
-              <Button variant="ghost" onClick={selectAll} disabled={results.every((r) => r.isJoined)}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              <Button variant="ghost" onClick={selectAll} disabled={results.every((r) => r.isJoined)} size="sm">
                 전체 선택
               </Button>
-              <Button variant="ghost" onClick={deselectAll}>
+              <Button variant="ghost" onClick={deselectAll} size="sm">
                 선택 해제
               </Button>
             </div>

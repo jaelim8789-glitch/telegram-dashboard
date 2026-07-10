@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, ScrollText } from "lucide-react";
+import { CheckCircle2, Clock, RefreshCw, ScrollText, XCircle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -13,11 +13,11 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getAccountDisplayName, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
 
-const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
-  pending: { tone: "neutral", label: "대기 중" },
-  sending: { tone: "info", label: "발송 중" },
-  sent: { tone: "success", label: "완료" },
-  failed: { tone: "danger", label: "실패" },
+const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
+  pending: { tone: "neutral", label: "대기 중", icon: Clock },
+  sending: { tone: "info", label: "발송 중", icon: RefreshCw },
+  sent: { tone: "success", label: "완료", icon: CheckCircle2 },
+  failed: { tone: "danger", label: "실패", icon: XCircle },
 };
 
 const POLL_INTERVAL_MS = 5000;
@@ -205,6 +205,7 @@ export function LogTab() {
             const isFailed = log.status === "failed";
             const isFutureSchedule =
               log.status === "pending" && log.scheduledAt && new Date(`${log.scheduledAt}Z`) > new Date();
+            const StatusIcon = meta.icon;
             return (
               <div
                 key={log.id}
@@ -215,13 +216,20 @@ export function LogTab() {
                 }`}
               >
                 <span className="shrink-0 font-mono text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
-                <Badge tone={isFutureSchedule ? "info" : meta.tone}>{isFutureSchedule ? "예약됨" : meta.label}</Badge>
+                <Badge tone={isFutureSchedule ? "info" : meta.tone}>
+                  {isFutureSchedule ? "예약됨" : (
+                    <span className="flex items-center gap-1">
+                      <StatusIcon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
+                      {meta.label}
+                    </span>
+                  )}
+                </Badge>
                 <span className="shrink-0 text-app-text-muted">{accountLabel(log.accountId)}</span>
                 <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
                 {isFutureSchedule && log.scheduledAt && (
                   <span className="shrink-0 text-app-primary-hover">{formatTimestamp(log.scheduledAt)} 예정</span>
                 )}
-                <span className="shrink-0 text-app-text-subtle">수신 {log.recipients.length}명</span>
+                <span className="shrink-0 text-app-text-subtle">{log.recipients.length}명</span>
                 {isFailed && (
                   <button
                     type="button"

@@ -86,7 +86,7 @@ export default function LandingPage() {
           </div>
 
           {/* Stats */}
-          <div className="mx-auto mt-16 max-w-3xl glass rounded-2xl p-8 animate-fade-in" style={{ animationDelay: "0.6s" }}>
+          <div className="mx-auto mt-16 max-w-3xl glass-card rounded-2xl p-8 animate-fade-in" style={{ animationDelay: "0.6s" }}>
             <div className="flex items-center justify-center gap-8 sm:gap-16 text-sm text-app-text-secondary">
               {[
                 { value: "1분", label: "설치 시간" },
@@ -176,7 +176,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/get-api-key"
+                  href={plan.name === "Free" ? "/signup" : "/get-api-key"}
                   className={`mt-8 flex h-12 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                     plan.popular
                       ? "btn-primary relative z-10"

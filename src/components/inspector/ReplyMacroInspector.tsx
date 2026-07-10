@@ -146,6 +146,20 @@ export function ReplyMacroInspector() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-2.5 rounded-xl border border-app-border bg-app-card p-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-app-text-muted">
+            {editingId ? "매크로 수정" : "새 매크로"}
+          </span>
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="text-[11px] text-app-primary hover:text-app-primary-hover"
+            >
+              취소
+            </button>
+          )}
+        </div>
         <Field label="매크로 이름">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 아침 인사" required />
         </Field>
