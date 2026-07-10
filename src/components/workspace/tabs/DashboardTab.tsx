@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Activity, BarChart3, CheckCircle2, Clock, MessageSquare, RefreshCw,
@@ -14,12 +14,15 @@ import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { Broadcast, BroadcastStatus } from "@/types";
+import { isRecurringActive, isRecurringBroadcast } from "@/types";
+import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
   sending: { tone: "info", label: "발송 중" },
   sent: { tone: "success", label: "완료" },
   failed: { tone: "danger", label: "실패" },
+  cancelled: { tone: "warning", label: "취소됨" },
 };
 
 function formatRelativeTime(iso: string): string {
@@ -68,6 +71,35 @@ function StatCard({ icon, label, value, sub, trend, accent = "from-indigo-500 to
   );
 }
 
+function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; name: string | null; phone: string }[] }) {
+  const countdown = useCountdown(b.nextScheduledAt);
+  const account = accounts.find((a) => a.id === b.accountId);
+  const accLabel = account
+    ? account.name?.trim() || account.phone
+    : b.accountId.slice(0, 8);
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2">
+      <div className="min-w-0 flex-1 pr-2">
+        <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
+        <p className="text-[11px] text-app-text-subtle space-x-1">
+          <span>{intervalLabel(b.recurringIntervalMinutes)}</span>
+          <span>·</span>
+          <span>{accLabel}</span>
+          <span>·</span>
+          <span>{b.recipients.length}명</span>
+          {countdown && (
+            <>
+              <span>·</span>
+              <span className="font-mono text-app-info">{countdown}</span>
+            </>
+          )}
+        </p>
+      </div>
+      <Badge tone="info">반복 중</Badge>
+    </div>
+  );
+}
+
 export function DashboardTab() {
   const accounts = useDashboardStore((s) => s.accounts);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
@@ -100,6 +132,36 @@ export function DashboardTab() {
     } catch { setUpcoming([]); }
     finally { setUpcomingLoading(false); }
   }
+
+  const [recurring, setRecurring] = useState<Broadcast[]>([]);
+  const [recurringLoading, setRecurringLoading] = useState(false);
+  const recurringPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function loadRecurring() {
+    setRecurringLoading(true);
+    try {
+      setRecurring(await api.fetchRecurringBroadcasts());
+    } catch { setRecurring([]); }
+    finally { setRecurringLoading(false); }
+  }
+
+  // Load recurring on mount and poll every 30s while any recurring broadcast is active.
+  useEffect(() => {
+    loadRecurring();
+  }, []);
+
+  useEffect(() => {
+    if (recurringPollRef.current) clearTimeout(recurringPollRef.current);
+    if (recurring.length === 0) return;
+
+    recurringPollRef.current = setTimeout(() => {
+      loadRecurring();
+    }, 30000);
+
+    return () => {
+      if (recurringPollRef.current) clearTimeout(recurringPollRef.current);
+    };
+  }, [recurring]);
 
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
   const bannedAccounts = useMemo(() => accounts.filter((a) => a.status === "banned"), [accounts]);
@@ -151,7 +213,7 @@ export function DashboardTab() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-app-text">운영 개요</h2>
           <button
-            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); }}
+            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); loadRecurring(); }}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text transition-colors"
           >
             <RefreshCw className="h-3 w-3" /> 새로고침
@@ -196,7 +258,7 @@ export function DashboardTab() {
         </div>
       </div>
 
-      {/* Middle row: Scheduled + Activity feed */}
+      {/* Middle row: Scheduled + Recurring + Activity feed */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Upcoming scheduled broadcasts */}
         <Panel
@@ -239,6 +301,35 @@ export function DashboardTab() {
           )}
         </Panel>
 
+        {/* Active recurring broadcasts */}
+        <Panel
+          title={
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              반복 발송
+            </div>
+          }
+          className="lg:col-span-1"
+        >
+          {recurringLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : recurring.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" />
+              <p className="text-xs text-app-text-muted">활성 중인 반복 발송이 없습니다</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {recurring.map((b) => (
+                <RecurringCard key={b.id} b={b} accounts={accounts} />
+              ))}
+            </div>
+          )}
+        </Panel>
+
         {/* Recent activity */}
         <Panel
           title={
@@ -265,6 +356,7 @@ export function DashboardTab() {
             <div className="divide-y divide-app-border">
               {recentLogs.map((b, i) => {
                 const meta = STATUS_TONE[b.status];
+                const recurring = isRecurringActive(b);
                 return (
                   <motion.div
                     key={b.id}
@@ -275,16 +367,22 @@ export function DashboardTab() {
                   >
                     <div className="min-w-0 flex-1 pr-3">
                       <div className="truncate text-app-text">{b.message}</div>
-                      <div className="text-xs text-app-text-muted">
-                        {formatRelativeTime(b.createdAt)}
-                        {b.scheduledAt && new Date(`${b.scheduledAt}Z`) > new Date()
-                          ? ` · ${new Date(b.scheduledAt).toLocaleString("ko-KR", { hour12: false })} 예약`
+                    <div className="text-xs text-app-text-muted">
+                      {formatRelativeTime(b.createdAt)}
+                      {isRecurringBroadcast(b) && b.recurringIntervalMinutes != null
+                        ? ` · ${intervalLabel(b.recurringIntervalMinutes)}`
+                        : b.scheduledAt && new Date(`${b.scheduledAt}Z`) > new Date()
+                          ? ` · ${new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })} 예약`
                           : ` · 수신자 ${b.recipients.length}명`
-                        }
-                        {b.errorMessage && <span className="ml-1 text-app-danger">· {b.errorMessage}</span>}
-                      </div>
+                      }
+                      {b.errorMessage && <span className="ml-1 text-app-danger">· {b.errorMessage}</span>}
                     </div>
-                    {b.status === "sent" ? (
+                    </div>
+                    {recurring ? (
+                      <Badge tone="info">반복 중</Badge>
+                    ) : isRecurringBroadcast(b) && b.status === "cancelled" ? (
+                      <Badge tone="warning">반복 취소</Badge>
+                    ) : b.status === "sent" ? (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-app-success" />
                     ) : b.status === "failed" ? (
                       <XCircle className="h-4 w-4 shrink-0 text-app-danger" />

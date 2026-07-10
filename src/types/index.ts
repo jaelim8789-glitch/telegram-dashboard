@@ -74,7 +74,7 @@ export interface Group {
   participantsCount: number | null;
 }
 
-export type BroadcastStatus = "pending" | "sending" | "sent" | "failed";
+export type BroadcastStatus = "pending" | "sending" | "sent" | "failed" | "cancelled";
 
 export interface Broadcast {
   id: string;
@@ -87,6 +87,12 @@ export interface Broadcast {
   sentAt: string | null;
   createdAt: string;
   errorMessage: string | null;
+  /** Minutes between recurring sends. Null = one-time broadcast. */
+  recurringIntervalMinutes: number | null;
+  /** When a recurring broadcast was last cancelled (null = still active or never cancelled). */
+  cancelledAt: string | null;
+  /** ISO 8601 of the next scheduled occurrence for recurring broadcasts. */
+  nextScheduledAt: string | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -94,7 +100,25 @@ export function isBroadcastInFlight(broadcast: Broadcast): boolean {
   return broadcast.status === "pending" || broadcast.status === "sending";
 }
 
+export function isRecurringBroadcast(broadcast: Broadcast): boolean {
+  return broadcast.recurringIntervalMinutes != null && broadcast.recurringIntervalMinutes > 0;
+}
+
+export function isRecurringActive(broadcast: Broadcast): boolean {
+  return isRecurringBroadcast(broadcast) && broadcast.status !== "cancelled" && broadcast.status !== "failed";
+}
+
 export const MAX_BROADCAST_RECIPIENTS = 10;
+
+export const RECURRING_INTERVALS = [
+  { value: 30, label: "30분" },
+  { value: 60, label: "1시간" },
+  { value: 120, label: "2시간" },
+  { value: 180, label: "3시간" },
+  { value: 360, label: "6시간" },
+  { value: 720, label: "12시간" },
+  { value: 1440, label: "24시간" },
+] as const;
 
 export type AutoReplyMatchType = "keyword" | "exact";
 export type AutoReplyLogStatus = "success" | "failed" | "rate_limited";

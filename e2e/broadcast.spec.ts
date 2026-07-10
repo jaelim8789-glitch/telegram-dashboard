@@ -71,4 +71,43 @@ test.describe("발송 흐름 (예약 포함)", () => {
     // fails it *cleanly*, which is what's actually being verified here.
     await expect(page.getByText("실패")).toBeVisible({ timeout: 15000 });
   });
+
+  test("반복 발송 체크박스를 켜면 간격 선택 드롭다운이 나타나고, 끄면 사라진다", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    await expect(page.locator('select')).toHaveCount(0);
+    await page.getByText("반복 발송").click();
+    await expect(page.locator('select')).toHaveCount(1);
+    await page.getByText("반복 발송").click();
+    await expect(page.locator('select')).toHaveCount(0);
+  });
+
+  test("API로 생성한 반복 발송이 발송 이력에 반복 중 배지로 표시된다", async ({ page, request }) => {
+    await createBroadcast(request, {
+      accountId,
+      message: "E2E 반복 발송 확인용 메시지",
+      recipients: ["-100123456"],
+      recurringIntervalMinutes: 60,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    await expect(page.getByText("E2E 반복 발송 확인용 메시지")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("반복 중")).toBeVisible();
+  });
+
+  test("취소된 반복 발송은 발송 이력에 취소됨 배지로 표시된다", async ({ page, request }) => {
+    const broadcastId = await createBroadcast(request, {
+      accountId,
+      message: "E2E 취소 확인용 메시지",
+      recipients: ["-100123456"],
+      recurringIntervalMinutes: 60,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+    await expect(page.getByText("E2E 취소 확인용 메시지")).toBeVisible({ timeout: 10000 });
+  });
 });
