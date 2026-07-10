@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler";
 
 export interface TabDef {
   id: TabId;
@@ -9,6 +9,7 @@ export const TABS: TabDef[] = [
   { id: "dashboard", label: "대시보드" },
   { id: "register", label: "계정 등록" },
   { id: "send", label: "발송" },
+  { id: "scheduler", label: "스케줄러" },
   { id: "group", label: "그룹" },
   { id: "groupsearch", label: "그룹 검색" },
   { id: "autoreply", label: "자동 응답" },
@@ -93,6 +94,8 @@ export interface Broadcast {
   cancelledAt: string | null;
   /** ISO 8601 of the next scheduled occurrence for recurring broadcasts. */
   nextScheduledAt: string | null;
+  /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
+  isRecurringPaused: boolean;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -106,6 +109,30 @@ export function isRecurringBroadcast(broadcast: Broadcast): boolean {
 
 export function isRecurringActive(broadcast: Broadcast): boolean {
   return isRecurringBroadcast(broadcast) && broadcast.status !== "cancelled" && broadcast.status !== "failed";
+}
+
+export function isRecurringPaused(broadcast: Broadcast): boolean {
+  return isRecurringActive(broadcast) && broadcast.isRecurringPaused === true;
+}
+
+export type RecurringState = "active" | "paused" | "cancelled" | "error";
+
+export function getRecurringState(broadcast: Broadcast): RecurringState {
+  if (broadcast.status === "cancelled") return "cancelled";
+  if (broadcast.isRecurringPaused) return "paused";
+  if (broadcast.status === "failed") return "error";
+  return "active";
+}
+
+export interface BroadcastChild {
+  id: string;
+  accountId: string;
+  message: string;
+  status: BroadcastStatus;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  errorMessage: string | null;
 }
 
 export const MAX_BROADCAST_RECIPIENTS = 10;

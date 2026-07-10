@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  LayoutDashboard, UserPlus, Send, Users, Search,
+  LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
   Bot, Zap, User, FileText, BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
   register: UserPlus,
   send: Send,
+  scheduler: CalendarClock,
   group: Users,
   groupsearch: Search,
   autoreply: Bot,

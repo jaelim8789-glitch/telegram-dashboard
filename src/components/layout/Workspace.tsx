@@ -7,6 +7,7 @@ import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
 import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
 import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
 import { SendTab } from "@/components/workspace/tabs/SendTab";
+import { RecurringScheduleTab } from "@/components/workspace/tabs/RecurringScheduleTab";
 import { GroupTab } from "@/components/workspace/tabs/GroupTab";
 import { GroupSearchTab } from "@/components/workspace/tabs/GroupSearchTab";
 import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
@@ -19,6 +20,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   dashboard: DashboardTab,
   register: AccountRegisterTab,
   send: SendTab,
+  scheduler: RecurringScheduleTab,
   group: GroupTab,
   groupsearch: GroupSearchTab,
   autoreply: AutoReplyTab,

@@ -16,6 +16,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   dashboard: DashboardInspector,
   register: RegisterInspector,
   send: SendInspector,
+  scheduler: DashboardInspector,
   group: GroupInspector,
   groupsearch: GroupSearchInspector,
   autoreply: AutoReplyInspector,

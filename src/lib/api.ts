@@ -9,6 +9,7 @@
   AutoReplyRule,
   AutoReplySettings,
   Broadcast,
+  BroadcastChild,
   BroadcastStatus,
   Group,
   ReplyMacro,
@@ -212,6 +213,7 @@ interface ApiBroadcast {
   recurring_interval_minutes: number | null;
   cancelled_at: string | null;
   next_scheduled_at: string | null;
+  is_recurring_paused: boolean;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -229,6 +231,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     recurringIntervalMinutes: api.recurring_interval_minutes ?? null,
     cancelledAt: api.cancelled_at ?? null,
     nextScheduledAt: api.next_scheduled_at ?? null,
+    isRecurringPaused: api.is_recurring_paused,
   };
 }
 
@@ -310,6 +313,48 @@ export async function cancelRecurringBroadcast(broadcastId: string): Promise<Bro
 export async function fetchRecurringBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/broadcast/recurring");
   return logs.map(toBroadcast);
+}
+
+/**
+ * Pause a recurring broadcast. POST /api/broadcast/{broadcastId}/pause
+ */
+export async function pauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/pause`, { method: "POST" }));
+}
+
+/**
+ * Unpause a recurring broadcast. POST /api/broadcast/{broadcastId}/unpause
+ */
+export async function unpauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/unpause`, { method: "POST" }));
+}
+
+/**
+ * Fetch execution history for a recurring broadcast. GET /api/broadcast/{broadcastId}/children
+ */
+export async function fetchRecurringChildren(
+  broadcastId: string,
+  limit?: number,
+  offset?: number,
+): Promise<BroadcastChild[]> {
+  const params = new URLSearchParams();
+  if (limit != null) params.set("limit", String(limit));
+  if (offset != null) params.set("offset", String(offset));
+  const qs = params.toString();
+  const items = await request<{
+    id: string; account_id: string; message: string; status: BroadcastStatus;
+    scheduled_at: string | null; sent_at: string | null; created_at: string; error_message: string | null;
+  }[]>(`/api/broadcast/${broadcastId}/children${qs ? `?${qs}` : ""}`);
+  return items.map((api) => ({
+    id: api.id,
+    accountId: api.account_id,
+    message: api.message,
+    status: api.status,
+    scheduledAt: api.scheduled_at,
+    sentAt: api.sent_at,
+    createdAt: api.created_at,
+    errorMessage: api.error_message,
+  }));
 }
 
 // === Admin auth ===
