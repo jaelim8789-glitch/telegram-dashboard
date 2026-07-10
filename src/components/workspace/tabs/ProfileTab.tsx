@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +9,7 @@ export function ProfileTab() {
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId) ?? accounts[0];
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (!account) {
     return (
@@ -47,9 +49,18 @@ export function ProfileTab() {
           </Field>
         </div>
       </div>
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost">취소</Button>
-        <Button variant="primary">저장</Button>
+      <div className="mt-4 flex items-center justify-between">
+        {notice && (
+          <p className="text-xs text-app-text-muted">{notice}</p>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button variant="ghost" onClick={() => setNotice(null)}>
+            취소
+          </Button>
+          <Button variant="primary" onClick={() => setNotice("프로필 저장은 현재 개발 중입니다.")}>
+            저장
+          </Button>
+        </div>
       </div>
     </Panel>
   );

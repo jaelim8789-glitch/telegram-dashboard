@@ -488,7 +488,7 @@ export async function fetchAutoReplyLogs(accountId: string): Promise<AutoReplyLo
   return logs.map(toAutoReplyLog);
 }
 
-// === ?쇰컲 ?ъ슜??濡쒓렇??(?꾪솕踰덊샇 ?몄쬆 + API ?? ===
+// === Auth (send code / verify code / API key) ===
 
 export async function sendVerificationCode(phone: string): Promise<void> {
   await request<{ sent: boolean }>("/api/auth/send-code", { method: "POST", body: JSON.stringify({ phone }) });
@@ -519,7 +519,7 @@ export async function fetchAuthMe(): Promise<AuthMe> {
   return request("/api/auth/me");
 }
 
-// === ?ъ슜??愿由?(愿由ъ옄 ?꾩슜) ===
+// === User management (admin only) ===
 
 export interface DashboardUser {
   id: string;

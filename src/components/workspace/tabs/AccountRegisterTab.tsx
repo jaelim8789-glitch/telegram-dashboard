@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { InlineError } from "@/components/ui/InlineError";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 
@@ -126,7 +127,7 @@ export function AccountRegisterTab() {
               </Field>
             </div>
 
-            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
+            {error && <InlineError className="mt-3">{error}</InlineError>}
 
             <div className="mt-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
@@ -159,7 +160,7 @@ export function AccountRegisterTab() {
               />
             </Field>
 
-            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
+            {error && <InlineError className="mt-3">{error}</InlineError>}
 
             <div className="mt-4 flex justify-between gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
@@ -196,7 +197,7 @@ export function AccountRegisterTab() {
               />
             </Field>
 
-            {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
+            {error && <InlineError className="mt-3">{error}</InlineError>}
 
             <div className="mt-4 flex justify-between gap-2">
               <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>

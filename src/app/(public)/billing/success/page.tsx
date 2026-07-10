@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 export default function BillingSuccessPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -32,11 +33,10 @@ export default function BillingSuccessPage() {
         )}
 
         <div className="mt-8 space-y-4">
-          <Link
-            href="/admin/login"
-            className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-base font-semibold text-white"
-          >
-            대시보드로 이동
+          <Link href="/admin/login">
+            <Button variant="primary" className="w-full h-12 text-base font-semibold">
+              대시보드로 이동
+            </Button>
           </Link>
           <Link href="/features" className="block text-sm text-app-text-secondary hover:text-app-text">
             프리미엄 기능 살펴보기
