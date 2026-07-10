@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { SITE } from "@/lib/site";
 
 export default function BillingSuccessPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function BillingSuccessPage() {
         )}
 
         <div className="mt-8 space-y-4">
-          <Link href="/app">
+          <Link href={`${SITE.app}/app`}>
             <Button variant="primary" className="w-full h-12 text-base font-semibold">
               대시보드로 이동
             </Button>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { InlineError } from "@/components/ui/InlineError";
+import { SITE } from "@/lib/site";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -188,7 +189,7 @@ export default function GetApiKeyPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                <Link href="/admin/login" className="btn-primary flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold">
+                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold">
                   API 키로 로그인
                 </Link>
                 <Link href="/pricing" className="block text-sm text-app-text-secondary hover:text-app-text">요금제 업그레이드</Link>

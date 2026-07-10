@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
+import { SITE } from "@/lib/site";
 
 export default function SignupPage() {
   const [step, setStep] = useState<"plan" | "phone" | "code" | "done">("plan");
@@ -148,7 +149,7 @@ export default function SignupPage() {
                 <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
               </div>
               <div className="space-y-3 pt-2">
-                <Link href="/admin/login" className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">대시보드로 이동</Link>
+                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">대시보드로 이동</Link>
                 <Link href="/pricing" className="block text-sm text-app-text-muted hover:text-app-text transition-colors">요금제 업그레이드</Link>
               </div>
             </div>

@@ -9,12 +9,19 @@ RUN npm ci
 COPY . .
 
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time, not read at
-# container runtime. Default is empty/relative — the browser then calls same-origin
-# paths like `/api/accounts`, which nginx reverse-proxies to the backend container.
-# Only override this at build time if the frontend is served from a different origin
-# than the one nginx proxies /api on.
+# container runtime.
+#
+# Build-time overrides (all optional — defaults work for same-origin nginx proxy):
+#   NEXT_PUBLIC_API_BASE_URL — set to "https://api.telemon.online" when frontend is
+#     served from a different origin than the backend.
+#   NEXT_PUBLIC_SITE_URL    — public marketing domain for cross-domain links.
+#   NEXT_PUBLIC_APP_URL     — application dashboard domain for cross-domain links.
 ARG NEXT_PUBLIC_API_BASE_URL=""
+ARG NEXT_PUBLIC_SITE_URL=""
+ARG NEXT_PUBLIC_APP_URL=""
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 RUN npm run build
 
