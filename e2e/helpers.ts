@@ -64,14 +64,15 @@ export async function fetchAccountByPhone(
 
 export async function createBroadcast(
   request: APIRequestContext,
-  params: { accountId: string; message: string; recipients: string[]; scheduledAt?: string }
+  params: { accountId: string; message: string; recipients: string[]; scheduledAt?: string; recurringIntervalMinutes?: number }
 ): Promise<string> {
-  const form = {
+  const form: Record<string, string> = {
     account_id: params.accountId,
     message: params.message,
     recipients: JSON.stringify(params.recipients),
-    ...(params.scheduledAt ? { scheduled_at: params.scheduledAt } : {}),
   };
+  if (params.scheduledAt) form.scheduled_at = params.scheduledAt;
+  if (params.recurringIntervalMinutes != null) form.recurring_interval_minutes = String(params.recurringIntervalMinutes);
   const res = await request.post("/api/broadcast", { multipart: form, headers: await authHeaders(request) });
   if (!res.ok()) {
     throw new Error(`발송 생성 실패 (setup): ${res.status()} ${await res.text()}`);

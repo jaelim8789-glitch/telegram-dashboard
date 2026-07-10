@@ -11,20 +11,21 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { getAccountDisplayName, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
+import { getAccountDisplayName, isBroadcastInFlight, isRecurringActive, type Broadcast, type BroadcastStatus } from "@/types";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Clock },
   sending: { tone: "info", label: "발송 중", icon: RefreshCw },
   sent: { tone: "success", label: "완료", icon: CheckCircle2 },
   failed: { tone: "danger", label: "실패", icon: XCircle },
+  cancelled: { tone: "warning", label: "취소됨", icon: XCircle },
 };
 
 const POLL_INTERVAL_MS = 5000;
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
 type HistoryFilter = BroadcastStatus | "all";
 
-const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed"];
+const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed", "cancelled"];
 
 const FILTER_LABEL: Record<HistoryFilter, string> = {
   all: "전체",
@@ -32,6 +33,7 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
   sending: "발송 중",
   sent: "완료",
   failed: "실패",
+  cancelled: "취소",
 };
 
 function formatTimestamp(iso: string): string {
@@ -203,8 +205,10 @@ export function LogTab() {
           {filteredLogs.map((log) => {
             const meta = STATUS_TONE[log.status];
             const isFailed = log.status === "failed";
+            const isCancelled = log.status === "cancelled";
             const isFutureSchedule =
               log.status === "pending" && log.scheduledAt && new Date(`${log.scheduledAt}Z`) > new Date();
+            const recurring = isRecurringActive(log);
             const StatusIcon = meta.icon;
             return (
               <div
@@ -212,12 +216,14 @@ export function LogTab() {
                 className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
                   isFailed
                     ? "border-app-danger/20 bg-app-danger-muted/20"
-                    : "border-app-border bg-app-bg/60"
+                    : isCancelled
+                      ? "border-app-warning/20 bg-app-warning-muted/20"
+                      : "border-app-border bg-app-bg/60"
                 }`}
               >
                 <span className="shrink-0 font-mono text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
-                <Badge tone={isFutureSchedule ? "info" : meta.tone}>
-                  {isFutureSchedule ? "예약됨" : (
+                <Badge tone={isFutureSchedule ? "info" : recurring ? "info" : meta.tone}>
+                  {isFutureSchedule ? "예약됨" : recurring ? "반복 중" : (
                     <span className="flex items-center gap-1">
                       <StatusIcon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
                       {meta.label}
@@ -228,6 +234,9 @@ export function LogTab() {
                 <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
                 {isFutureSchedule && log.scheduledAt && (
                   <span className="shrink-0 text-app-primary-hover">{formatTimestamp(log.scheduledAt)} 예정</span>
+                )}
+                {recurring && log.nextScheduledAt && (
+                  <span className="shrink-0 text-app-primary-hover">다음: {formatTimestamp(log.nextScheduledAt)}</span>
                 )}
                 <span className="shrink-0 text-app-text-subtle">{log.recipients.length}명</span>
                 {isFailed && (

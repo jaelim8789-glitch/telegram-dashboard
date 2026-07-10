@@ -16,13 +16,14 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { MAX_BROADCAST_RECIPIENTS, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, RECURRING_INTERVALS, isBroadcastInFlight, isRecurringActive, type Broadcast, type BroadcastStatus } from "@/types";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
   sending: { tone: "info", label: "발송 중" },
   sent: { tone: "success", label: "완료" },
   failed: { tone: "danger", label: "실패" },
+  cancelled: { tone: "warning", label: "취소됨" },
 };
 
 const POLL_INTERVAL_MS = 3000;
@@ -30,7 +31,7 @@ const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
 type HistoryFilter = BroadcastStatus | "all";
 
-const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed"];
+const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed", "cancelled"];
 
 const FILTER_LABEL: Record<HistoryFilter, string> = {
   all: "전체",
@@ -38,6 +39,7 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
   sending: "발송 중",
   sent: "완료",
   failed: "실패",
+  cancelled: "취소",
 };
 
 function formatRelativeTime(iso: string): string {
@@ -81,8 +83,11 @@ export function SendTab() {
   const [sortMode, setSortMode] = useState<SortMode>("default");
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState<number>(60);
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
 
@@ -216,6 +221,7 @@ export function SendTab() {
     e.preventDefault();
     if (!selectedAccountId || selectedIds.length === 0 || !message.trim() || submitting) return;
     if (isScheduled && !scheduledAtLocal) return;
+    if (isRecurring && !recurringInterval) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -230,16 +236,23 @@ export function SendTab() {
         recipients: selectedIds,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
+        recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
       });
       markUsed(selectedIds);
-      setSubmitNotice(
-        scheduledAtIso
-          ? "발송이 예약되었습니다. 아래 발송 이력에서 확인하세요."
-          : "발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요."
-      );
+      if (isRecurring) {
+        setSubmitNotice("반복 발송이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.");
+      } else {
+        setSubmitNotice(
+          scheduledAtIso
+            ? "발송이 예약되었습니다. 아래 발송 이력에서 확인하세요."
+            : "발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요."
+        );
+      }
       clearSendDraft();
       setIsScheduled(false);
       setScheduledAtLocal("");
+      setIsRecurring(false);
+      setRecurringInterval(60);
       await loadHistory(selectedAccountId);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
@@ -265,6 +278,23 @@ export function SendTab() {
     }
   }
 
+  /** Cancel an active recurring broadcast. */
+  async function handleCancelRecurring(b: Broadcast) {
+    if (cancelling || !selectedAccountId) return;
+    setCancelling(b.id);
+    setSubmitError(null);
+    setSubmitNotice(null);
+    try {
+      await api.cancelRecurringBroadcast(b.id);
+      setSubmitNotice("반복 발송이 취소되었습니다.");
+      await loadHistory(selectedAccountId);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "반복 발송 취소에 실패했습니다.");
+    } finally {
+      setCancelling(null);
+    }
+  }
+
   if (!account) {
     return (
       <Panel title="메시지 작성" description="발송을 시작하려면 계정을 선택하세요.">
@@ -273,7 +303,7 @@ export function SendTab() {
     );
   }
 
-  const canSubmit = !submitting && selectedIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal);
+  const canSubmit = !submitting && selectedIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -395,6 +425,35 @@ export function SendTab() {
                 </div>
               )}
             </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm text-app-text">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                />
+                반복 발송
+              </label>
+              {isRecurring && (
+                <div className="mt-2">
+                  <Field label="반복 간격">
+                    <select
+                      value={recurringInterval}
+                      onChange={(e) => setRecurringInterval(Number(e.target.value))}
+                      required={isRecurring}
+                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60"
+                    >
+                      {RECURRING_INTERVALS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              )}
+            </div>
           </div>
 
           {submitError && (
@@ -469,19 +528,28 @@ export function SendTab() {
               const meta = STATUS_TONE[h.status];
               const isFailed = h.status === "failed";
               const isSending = h.status === "sending";
+              const isCancelled = h.status === "cancelled";
               const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
+              const recurring = isRecurringActive(h);
               return (
                 <div
                   key={h.id}
-                  className={`flex items-center justify-between py-2.5 text-sm ${isFailed ? "rounded-lg bg-app-danger-muted/30 -mx-2 px-2" : ""}`}
+                  className={`flex items-center justify-between py-2.5 text-sm ${isFailed ? "rounded-lg bg-app-danger-muted/30 -mx-2 px-2" : ""} ${isCancelled ? "rounded-lg bg-app-warning-muted/20 -mx-2 px-2" : ""}`}
                 >
                   <div className="min-w-0 flex-1 pr-3">
                     <div className="truncate text-app-text">{h.message}</div>
                     <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-app-text-subtle">
                       {isFutureSchedule && h.scheduledAt
                         ? `${formatDateTime(h.scheduledAt)} 예약`
-                        : formatRelativeTime(h.createdAt)}{" "}
+                        : recurring && h.nextScheduledAt
+                          ? `${formatDateTime(h.nextScheduledAt)} 반복 예정`
+                          : isCancelled
+                            ? "반복 취소됨"
+                            : h.createdAt
+                              ? formatRelativeTime(h.createdAt)
+                              : ""}{" "}
                       · {h.recipients.length}명
+                      {recurring && <Badge tone="info">반복</Badge>}
                       {isSending && <span className="text-app-primary">발송 중...</span>}
                       {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
                     </div>
@@ -492,10 +560,25 @@ export function SendTab() {
                         <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
                         발송 중
                       </Badge>
+                    ) : isCancelled ? (
+                      <Badge tone="warning">취소됨</Badge>
+                    ) : recurring ? (
+                      <Badge tone="info">반복 중</Badge>
                     ) : (
                       <Badge tone={isFutureSchedule ? "info" : meta.tone}>
                         {isFutureSchedule ? "예약됨" : meta.label}
                       </Badge>
+                    )}
+                    {recurring && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancelRecurring(h)}
+                        disabled={cancelling === h.id}
+                        title="반복 취소"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${cancelling === h.id ? "animate-spin" : ""}`} />
+                      </button>
                     )}
                     {isFailed && (
                       <button
@@ -534,7 +617,7 @@ export function SendTab() {
           disabled={!canSubmit}
         >
           <SendIcon className="h-4 w-4" />
-          {submitting ? "처리 중..." : isScheduled ? "예약하기" : "발송"}
+          {submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
         </Button>
       </motion.div>
     </div>

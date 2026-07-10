@@ -209,6 +209,9 @@ interface ApiBroadcast {
   sent_at: string | null;
   created_at: string;
   error_message: string | null;
+  recurring_interval_minutes: number | null;
+  cancelled_at: string | null;
+  next_scheduled_at: string | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -223,6 +226,9 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     sentAt: api.sent_at,
     createdAt: api.created_at,
     errorMessage: api.error_message,
+    recurringIntervalMinutes: api.recurring_interval_minutes,
+    cancelledAt: api.cancelled_at,
+    nextScheduledAt: api.next_scheduled_at,
   };
 }
 
@@ -233,6 +239,8 @@ export interface CreateBroadcastInput {
   image?: File;
   /** ISO 8601 datetime. Omit to send as soon as the queue/rate-limit allow it. */
   scheduledAt?: string;
+  /** Minutes between recurring sends. Null = one-time broadcast. */
+  recurringIntervalMinutes?: number;
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -242,6 +250,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   form.append("recipients", JSON.stringify(input.recipients));
   if (input.image) form.append("image", input.image);
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
+  if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
 
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) {
@@ -283,6 +292,24 @@ export async function fetchUpcomingBroadcasts(): Promise<Broadcast[]> {
  */
 export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/retry`, { method: "POST" }));
+}
+
+/**
+ * Cancel a recurring broadcast. POST /api/broadcast/{broadcast_id}/cancel
+ * sets status to "cancelled" so the scheduler stops dispatching it.
+ */
+export async function cancelRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/cancel`, { method: "POST" }));
+}
+
+/**
+ * Fetch active recurring broadcasts. GET /api/broadcast/recurring
+ * Returns all broadcasts with non-null recurring_interval_minutes that
+ * are still active (not cancelled/failed).
+ */
+export async function fetchRecurringBroadcasts(): Promise<Broadcast[]> {
+  const logs = await request<ApiBroadcast[]>("/api/broadcast/recurring");
+  return logs.map(toBroadcast);
 }
 
 // === Admin auth ===

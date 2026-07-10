@@ -14,12 +14,14 @@ import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { Broadcast, BroadcastStatus } from "@/types";
+import { isRecurringActive } from "@/types";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
   sending: { tone: "info", label: "발송 중" },
   sent: { tone: "success", label: "완료" },
   failed: { tone: "danger", label: "실패" },
+  cancelled: { tone: "warning", label: "취소됨" },
 };
 
 function formatRelativeTime(iso: string): string {
@@ -101,6 +103,21 @@ export function DashboardTab() {
     finally { setUpcomingLoading(false); }
   }
 
+  const [recurring, setRecurring] = useState<Broadcast[]>([]);
+  const [recurringLoading, setRecurringLoading] = useState(false);
+
+  async function loadRecurring() {
+    setRecurringLoading(true);
+    try {
+      setRecurring(await api.fetchRecurringBroadcasts());
+    } catch { setRecurring([]); }
+    finally { setRecurringLoading(false); }
+  }
+
+  useEffect(() => {
+    loadRecurring();
+  }, []);
+
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
   const bannedAccounts = useMemo(() => accounts.filter((a) => a.status === "banned"), [accounts]);
   const totalSentToday = useMemo(() => accounts.reduce((sum, a) => sum + a.todaySent, 0), [accounts]);
@@ -151,7 +168,7 @@ export function DashboardTab() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-app-text">운영 개요</h2>
           <button
-            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); }}
+            onClick={() => { fetchAccounts(); loadLogs(); loadUpcoming(); loadRecurring(); }}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text transition-colors"
           >
             <RefreshCw className="h-3 w-3" /> 새로고침
@@ -196,7 +213,7 @@ export function DashboardTab() {
         </div>
       </div>
 
-      {/* Middle row: Scheduled + Activity feed */}
+      {/* Middle row: Scheduled + Recurring + Activity feed */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Upcoming scheduled broadcasts */}
         <Panel
@@ -239,6 +256,47 @@ export function DashboardTab() {
           )}
         </Panel>
 
+        {/* Active recurring broadcasts */}
+        <Panel
+          title={
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              반복 발송
+            </div>
+          }
+          className="lg:col-span-1"
+        >
+          {recurringLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : recurring.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" />
+              <p className="text-xs text-app-text-muted">활성 중인 반복 발송이 없습니다</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {recurring.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
+                    <p className="text-[11px] text-app-text-subtle">
+                      {b.recurringIntervalMinutes}분 간격
+                      {b.nextScheduledAt && ` · 다음: ${new Date(`${b.nextScheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })}`}
+                    </p>
+                  </div>
+                  <Badge tone="info">반복 중</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
         {/* Recent activity */}
         <Panel
           title={
@@ -265,6 +323,7 @@ export function DashboardTab() {
             <div className="divide-y divide-app-border">
               {recentLogs.map((b, i) => {
                 const meta = STATUS_TONE[b.status];
+                const recurring = isRecurringActive(b);
                 return (
                   <motion.div
                     key={b.id}
@@ -279,12 +338,16 @@ export function DashboardTab() {
                         {formatRelativeTime(b.createdAt)}
                         {b.scheduledAt && new Date(`${b.scheduledAt}Z`) > new Date()
                           ? ` · ${new Date(b.scheduledAt).toLocaleString("ko-KR", { hour12: false })} 예약`
-                          : ` · 수신자 ${b.recipients.length}명`
+                          : recurring
+                            ? ` · ${b.recurringIntervalMinutes}분 간격 반복`
+                            : ` · 수신자 ${b.recipients.length}명`
                         }
                         {b.errorMessage && <span className="ml-1 text-app-danger">· {b.errorMessage}</span>}
                       </div>
                     </div>
-                    {b.status === "sent" ? (
+                    {recurring ? (
+                      <Badge tone="info">반복 중</Badge>
+                    ) : b.status === "sent" ? (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-app-success" />
                     ) : b.status === "failed" ? (
                       <XCircle className="h-4 w-4 shrink-0 text-app-danger" />
