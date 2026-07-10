@@ -240,15 +240,12 @@ export async function fetchUpcomingBroadcasts(): Promise<Broadcast[]> {
 }
 
 /**
- * Retry a failed broadcast using the existing POST /api/broadcast.
- * Copies the original message and recipients — no dedicated retry endpoint needed.
+ * Retry a failed broadcast via the Sprint 24 retry API.
+ * POST /api/broadcast/{broadcast_id}/retry resets status to "pending"
+ * and clears the error message so the scheduler re-dispatches it.
  */
-export async function retryBroadcast(failed: Broadcast): Promise<Broadcast> {
-  return createBroadcast({
-    accountId: failed.accountId,
-    message: failed.message,
-    recipients: failed.recipients,
-  });
+export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/retry`, { method: "POST" }));
 }
 
 // === Admin auth ===

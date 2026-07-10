@@ -185,14 +185,14 @@ export function SendTab() {
     }
   }
 
-  /** Retry a failed broadcast using the existing create-broadcast API. */
+  /** Retry a failed broadcast via the real retry API. */
   async function handleRetry(failed: Broadcast) {
     if (retrying || selectedAccountId !== failed.accountId) return;
     setRetrying(failed.id);
     setSubmitError(null);
     setSubmitNotice(null);
     try {
-      await api.retryBroadcast(failed);
+      await api.retryBroadcast(failed.id);
       setSubmitNotice("재발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
       await loadHistory(selectedAccountId);
     } catch (err) {

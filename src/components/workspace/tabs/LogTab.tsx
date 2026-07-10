@@ -69,7 +69,7 @@ export function LogTab() {
     setRetrying(failed.id);
     setRetryError(null);
     try {
-      await api.retryBroadcast(failed);
+      await api.retryBroadcast(failed.id);
       await load();
     } catch (err) {
       setRetryError(err instanceof Error ? err.message : "재발송 요청에 실패했습니다.");
