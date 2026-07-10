@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Megaphone, Star, Users, Users2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Megaphone, RefreshCw, Star, Users, Users2 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -22,6 +22,7 @@ const TYPE_LABEL: Record<GroupType, string> = {
 };
 
 type SortMode = "default" | "members" | "favorites";
+const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
 export function GroupTab() {
   const accounts = useDashboardStore((s) => s.accounts);
@@ -31,11 +32,22 @@ export function GroupTab() {
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const [typeFilter, setTypeFilter] = useState<GroupType | "all">("all");
+  const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function load(accountId: string) {
+  async function load(accountId: string, silent = false) {
+    if (silent) {
+      try {
+        setGroups(await api.fetchGroups(accountId));
+      } catch {
+        // ignore
+      }
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -48,6 +60,13 @@ export function GroupTab() {
     }
   }
 
+  async function handleRefresh() {
+    if (!selectedAccountId || refreshing) return;
+    setRefreshing(true);
+    await load(selectedAccountId);
+    setRefreshing(false);
+  }
+
   useEffect(() => {
     if (selectedAccountId) {
       load(selectedAccountId);
@@ -56,28 +75,49 @@ export function GroupTab() {
     }
   }, [selectedAccountId]);
 
+  // 30s background polling
+  useEffect(() => {
+    if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
+    if (!selectedAccountId) return;
+    bgPollTimer.current = setTimeout(() => load(selectedAccountId, true), BACKGROUND_POLL_INTERVAL_MS);
+    return () => {
+      if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
+    };
+  }, [groups, selectedAccountId]);
+
   const visibleGroups = useMemo(() => {
-    const filtered = groups.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
+    let filtered = groups;
+    if (typeFilter !== "all") filtered = filtered.filter((g) => g.type === typeFilter);
+    filtered = filtered.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
     return sorted;
-  }, [groups, search, sortMode, isFavorite]);
+  }, [groups, search, sortMode, isFavorite, typeFilter]);
+
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: groups.length };
+    for (const g of groups) counts[g.type] = (counts[g.type] ?? 0) + 1;
+    return counts as Record<GroupType | "all", number>;
+  }, [groups]);
 
   if (!account) {
     return (
-      <Panel title="그룹 목록">
-        <p className="text-sm text-app-text-muted">먼저 사이드바에서 계정을 선택해주세요.</p>
+      <Panel title="그룹 목록" description="발송 대상을 확인하려면 계정을 선택하세요.">
+        <EmptyState icon={Users2} title="선택된 계정이 없습니다" description="왼쪽 사이드바에서 계정을 선택한 후 참여 중인 그룹/채널을 확인할 수 있습니다." />
       </Panel>
     );
   }
+
+  const isBusy = loading || refreshing;
 
   return (
     <Panel
       title="그룹 목록"
       description={`${account.name ?? account.phone} 계정이 참여 중인 그룹/채널입니다.`}
       action={
-        <Button variant="ghost" onClick={() => load(account.id)} disabled={loading}>
+        <Button variant="ghost" onClick={handleRefresh} disabled={isBusy}>
+          <RefreshCw className={`h-3.5 w-3.5 ${isBusy ? "animate-spin" : ""}`} />
           새로고침
         </Button>
       }
@@ -91,6 +131,38 @@ export function GroupTab() {
         </Select>
       </div>
 
+      {!loading && groups.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTypeFilter("all")}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+              typeFilter === "all" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+            )}
+          >
+            전체 <span className="ml-0.5 opacity-70">{groups.length}</span>
+          </button>
+          {(["group", "megagroup", "channel"] as GroupType[]).map((t) => {
+            const count = typeCounts[t] ?? 0;
+            if (count === 0) return null;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTypeFilter(t)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                  typeFilter === t ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+                )}
+              >
+                {TYPE_LABEL[t]} <span className="ml-0.5 opacity-70">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loading && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -103,7 +175,7 @@ export function GroupTab() {
         <EmptyState icon={Users2} title="참여 중인 그룹/채널이 없습니다" />
       )}
       {!loading && !error && groups.length > 0 && visibleGroups.length === 0 && (
-        <p className="text-xs text-app-text-subtle">검색 결과가 없습니다.</p>
+        <p className="text-xs text-app-text-subtle">조건에 맞는 그룹이 없습니다.</p>
       )}
       {visibleGroups.length > 0 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
