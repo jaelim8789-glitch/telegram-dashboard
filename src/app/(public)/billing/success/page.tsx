@@ -33,7 +33,7 @@ export default function BillingSuccessPage() {
         )}
 
         <div className="mt-8 space-y-4">
-          <Link href="/admin/login">
+          <Link href="/app">
             <Button variant="primary" className="w-full h-12 text-base font-semibold">
               대시보드로 이동
             </Button>

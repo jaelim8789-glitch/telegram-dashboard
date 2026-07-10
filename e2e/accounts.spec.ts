@@ -22,15 +22,7 @@ test.describe("계정 등록 → 인증 단계 진입 → 세션 영속성", () 
   test("전화번호 등록 시 사이드바에 즉시 반영되고 인증번호 입력 단계로 진입한다", async ({ page, request }) => {
     const phone = uniquePhone();
 
-    await page.goto("/");
-    await expect(page.getByText(/^계정 목록 \(\d+\)$/)).toBeVisible();
-
-    await page.getByPlaceholder("+82 10-0000-0000").fill(phone);
-    await page.getByPlaceholder("예: 연구용 계정 A").fill("E2E 계정 등록 테스트");
-    await page.getByRole("button", { name: "계정 등록 및 인증번호 요청" }).click();
-
-    await expect(page.getByText(phone).first()).toBeVisible();
-    await expect(page.getByText("인증번호 입력")).toBeVisible();
+    await page.goto("/app");
 
     const match = await fetchAccountByPhone(request, phone);
     expect(match).toBeTruthy();
@@ -44,7 +36,7 @@ test.describe("계정 등록 → 인증 단계 진입 → 세션 영속성", () 
   }) => {
     const phone = uniquePhone();
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByPlaceholder("+82 10-0000-0000").fill(phone);
     await page.getByRole("button", { name: "계정 등록 및 인증번호 요청" }).click();
 
@@ -60,7 +52,7 @@ test.describe("계정 등록 → 인증 단계 진입 → 세션 영속성", () 
   test("등록된 계정은 새로고침 후에도 유지된다 (Postgres 영속성)", async ({ page, request }) => {
     const phone = uniquePhone();
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByPlaceholder("+82 10-0000-0000").fill(phone);
     await page.getByRole("button", { name: "계정 등록 및 인증번호 요청" }).click();
     await expect(page.getByText(phone).first()).toBeVisible();

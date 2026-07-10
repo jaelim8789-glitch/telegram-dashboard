@@ -21,7 +21,7 @@ test.describe("발송 흐름 (예약 포함)", () => {
   });
 
   test("인증되지 않은 계정은 발송 탭에서 그룹 목록 에러와 비활성화된 발송 버튼을 보여준다", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
     await expect(page.getByText(/인증되지 않았습니다/)).toBeVisible({ timeout: 10000 });
 
@@ -30,7 +30,7 @@ test.describe("발송 흐름 (예약 포함)", () => {
   });
 
   test("예약 발송 체크박스를 켜면 날짜/시간 입력이 나타나고, 끄면 사라진다", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
 
     await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
@@ -49,7 +49,7 @@ test.describe("발송 흐름 (예약 포함)", () => {
       scheduledAt,
     });
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
 
     await expect(page.getByText("E2E 예약 발송 확인용 메시지")).toBeVisible({ timeout: 10000 });
@@ -63,7 +63,7 @@ test.describe("발송 흐름 (예약 포함)", () => {
       recipients: ["-100654321"],
     });
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
     await expect(page.getByText("E2E 즉시 발송 확인용 메시지")).toBeVisible({ timeout: 10000 });
 

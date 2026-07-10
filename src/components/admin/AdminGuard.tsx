@@ -35,7 +35,7 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
         if (cancelled) return;
         setRole(me.role);
         if (requireAdmin && me.role !== "admin") {
-          router.replace("/");
+          router.replace("/app");
           return;
         }
         setChecked(true);

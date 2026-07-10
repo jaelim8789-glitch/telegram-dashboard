@@ -74,7 +74,7 @@ function ApiKeysContent() {
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-app-text">API 키 관리</h1>
-        <Link href="/" className="text-xs text-app-primary-hover hover:underline">
+        <Link href="/app" className="text-xs text-app-primary-hover hover:underline">
           대시보드로 돌아가기
         </Link>
       </div>

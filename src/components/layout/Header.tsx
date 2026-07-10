@@ -17,7 +17,7 @@ export function Header() {
 
   return (
     <header className="dashboard-header flex h-14 shrink-0 items-center justify-between px-4 sm:px-5">
-      <div className="flex items-center gap-3">
+      <Link href="/app" className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-app-primary to-orange-600 text-xs font-bold text-white shadow-lg shadow-app-primary/30">
           TM
         </div>
@@ -29,7 +29,7 @@ export function Header() {
             v2.0
           </span>
         </div>
-      </div>
+      </Link>
 
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-1.5">

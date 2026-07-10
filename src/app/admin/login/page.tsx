@@ -26,7 +26,7 @@ function AdminLoginForm() {
     try {
       const token = await api.adminLogin(username, password);
       setToken(token);
-      router.replace("/");
+      router.replace("/app");
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인 실패");
     } finally { setSubmitting(false); }
@@ -142,7 +142,7 @@ function ApiKeyLoginForm() {
     e.preventDefault();
     if (!apiKey.trim() || submitting) return;
     setSubmitting(true); setError(null);
-    try { const token = await api.loginWithApiKey(apiKey.trim()); setToken(token); router.replace("/"); }
+    try { const token = await api.loginWithApiKey(apiKey.trim()); setToken(token); router.replace("/app"); }
     catch (err) { setError(err instanceof Error ? err.message : "로그인 실패"); }
     finally { setSubmitting(false); }
   }
