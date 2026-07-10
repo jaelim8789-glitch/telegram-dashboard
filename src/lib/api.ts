@@ -1,5 +1,7 @@
 ﻿import type {
   Account,
+  AccountHealthItem,
+  AccountHealthState,
   AccountStatus,
   AutoReplyLog,
   AutoReplyLogStatus,
@@ -102,6 +104,41 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
 
 export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
+}
+
+interface ApiAccountHealthItem {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  status: AccountHealthState;
+  has_session: boolean;
+  last_activity: string | null;
+  last_error: string | null;
+  last_error_status: string | null;
+  recent_success_count: number;
+  recent_failure_count: number;
+  total_delivery_attempts: number;
+}
+
+function toAccountHealthItem(api: ApiAccountHealthItem): AccountHealthItem {
+  return {
+    accountId: api.account_id,
+    phone: api.phone,
+    name: api.name,
+    status: api.status,
+    hasSession: api.has_session,
+    lastActivity: api.last_activity,
+    lastError: api.last_error,
+    lastErrorStatus: api.last_error_status,
+    recentSuccessCount: api.recent_success_count,
+    recentFailureCount: api.recent_failure_count,
+    totalDeliveryAttempts: api.total_delivery_attempts,
+  };
+}
+
+export async function fetchAccountHealth(): Promise<AccountHealthItem[]> {
+  const items = await request<ApiAccountHealthItem[]>("/api/account-health");
+  return items.map(toAccountHealthItem);
 }
 
 interface ApiAuthStepResult {

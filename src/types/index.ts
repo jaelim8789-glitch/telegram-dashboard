@@ -1,4 +1,4 @@
-export type TabId = "register" | "send" | "group" | "profile" | "log" | "autoreply";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro";
 
 export interface TabDef {
   id: TabId;
@@ -6,15 +6,41 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
+  { id: "dashboard", label: "대시보드" },
   { id: "register", label: "계정 등록" },
   { id: "send", label: "발송" },
   { id: "group", label: "그룹" },
+  { id: "groupsearch", label: "그룹 검색" },
   { id: "autoreply", label: "자동 응답" },
+  { id: "replymacro", label: "답장매크로" },
   { id: "profile", label: "프로필" },
   { id: "log", label: "로그" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned";
+
+export type AccountHealthState =
+  | "healthy"
+  | "unauthorized"
+  | "banned"
+  | "rate_limited"
+  | "error"
+  | "unknown"
+  | "not_configured";
+
+export interface AccountHealthItem {
+  accountId: string;
+  phone: string;
+  name: string | null;
+  status: AccountHealthState;
+  hasSession: boolean;
+  lastActivity: string | null;
+  lastError: string | null;
+  lastErrorStatus: string | null;
+  recentSuccessCount: number;
+  recentFailureCount: number;
+  totalDeliveryAttempts: number;
+}
 
 export interface Account {
   id: string;
@@ -62,7 +88,7 @@ export interface Broadcast {
   errorMessage: string | null;
 }
 
-/** Broadcasts not yet finished — poll these until they reach a terminal status. */
+/** Broadcasts not yet finished -- poll these until they reach a terminal status. */
 export function isBroadcastInFlight(broadcast: Broadcast): boolean {
   return broadcast.status === "pending" || broadcast.status === "sending";
 }
@@ -102,5 +128,37 @@ export interface AutoReplyLog {
   triggerMessage: string;
   replySent: string;
   status: AutoReplyLogStatus;
+  createdAt: string;
+}
+
+// ─── Reply Macro (답장매크로) ──────────────────────────────────────
+
+export type ReplyMacroScheduleType = "interval" | "fixed";
+
+export interface ReplyMacro {
+  id: string;
+  accountId: string;
+  name: string;
+  isActive: boolean;
+  targetChats: string;  // JSON string or comma-separated
+  messageContent: string;
+  mediaPath: string | null;
+  scheduleType: ReplyMacroScheduleType;
+  intervalHours: number;
+  fixedTime: string | null;
+  maxSendsPerDay: number;
+  lastSentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReplyMacroLog {
+  id: string;
+  macroId: string;
+  accountId: string;
+  targetChatId: string;
+  messageSent: string;
+  status: string;
+  errorMessage: string | null;
   createdAt: string;
 }
