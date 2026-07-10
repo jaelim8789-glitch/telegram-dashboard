@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 interface FieldProps {
@@ -46,15 +46,18 @@ interface InputExtraProps {
   invalid?: boolean;
 }
 
-export function Input({ invalid, className, ...props }: InputHTMLAttributes<HTMLInputElement> & InputExtraProps) {
-  return (
-    <input
-      {...props}
-      aria-invalid={invalid || undefined}
-      className={cn(inputStyle(invalid), className)}
-    />
-  );
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputExtraProps>(
+  function Input({ invalid, className, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        {...props}
+        aria-invalid={invalid || undefined}
+        className={cn(inputStyle(invalid), className)}
+      />
+    );
+  }
+);
 
 export function Textarea({
   invalid,
