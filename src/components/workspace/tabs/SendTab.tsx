@@ -15,6 +15,7 @@ import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCar
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
+import { cn } from "@/lib/cn";
 import { MAX_BROADCAST_RECIPIENTS, isBroadcastInFlight, type Broadcast, type BroadcastStatus } from "@/types";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
@@ -25,7 +26,19 @@ const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warn
 };
 
 const POLL_INTERVAL_MS = 3000;
+const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
+type HistoryFilter = BroadcastStatus | "all";
+
+const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed"];
+
+const FILTER_LABEL: Record<HistoryFilter, string> = {
+  all: "전체",
+  pending: "대기",
+  sending: "발송 중",
+  sent: "완료",
+  failed: "실패",
+};
 
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
@@ -75,7 +88,10 @@ export function SendTab() {
 
   const [history, setHistory] = useState<Broadcast[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyRefreshing, setHistoryRefreshing] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
 
   async function loadGroups(accountId: string) {
     setGroupsLoading(true);
@@ -90,7 +106,16 @@ export function SendTab() {
     }
   }
 
-  async function loadHistory(accountId: string) {
+  async function loadHistory(accountId: string, silent = false) {
+    if (silent) {
+      try {
+        const logs = await api.fetchLogs({ accountId });
+        setHistory(logs);
+      } catch {
+        // silent refresh — ignore transient errors
+      }
+      return;
+    }
     setHistoryLoading(true);
     try {
       const logs = await api.fetchLogs({ accountId });
@@ -102,7 +127,7 @@ export function SendTab() {
     }
   }
 
-  // Poll while anything is pending/sending — real-time-ish status without a websocket.
+  // Poll while anything is pending/sending for real-time status updates.
   useEffect(() => {
     if (pollTimer.current) {
       clearTimeout(pollTimer.current);
@@ -111,7 +136,7 @@ export function SendTab() {
     if (!selectedAccountId || !history.some(isBroadcastInFlight)) return;
 
     pollTimer.current = setTimeout(() => {
-      loadHistory(selectedAccountId);
+      loadHistory(selectedAccountId, true);
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -119,10 +144,35 @@ export function SendTab() {
     };
   }, [history, selectedAccountId]);
 
+  // 30s background polling independent of in-flight status.
+  useEffect(() => {
+    if (historyPollTimer.current) {
+      clearTimeout(historyPollTimer.current);
+      historyPollTimer.current = null;
+    }
+    if (!selectedAccountId) return;
+
+    historyPollTimer.current = setTimeout(() => {
+      loadHistory(selectedAccountId, true);
+    }, HISTORY_POLL_INTERVAL_MS);
+
+    return () => {
+      if (historyPollTimer.current) clearTimeout(historyPollTimer.current);
+    };
+  }, [history, selectedAccountId]);
+
+  async function handleManualRefresh() {
+    if (!selectedAccountId || historyRefreshing) return;
+    setHistoryRefreshing(true);
+    await loadHistory(selectedAccountId);
+    setHistoryRefreshing(false);
+  }
+
   useEffect(() => {
     clearSendDraft();
     setSubmitError(null);
     setSubmitNotice(null);
+    setHistoryFilter("all");
     if (selectedAccountId) {
       loadGroups(selectedAccountId);
       loadHistory(selectedAccountId);
@@ -148,6 +198,17 @@ export function SendTab() {
     }
     return sorted;
   }, [groups, search, sortMode, isFavorite]);
+
+  const filteredHistory = useMemo(() => {
+    if (historyFilter === "all") return history;
+    return history.filter((h) => h.status === historyFilter);
+  }, [history, historyFilter]);
+
+  const statusCounts = useMemo((): Record<HistoryFilter, number> => {
+    const counts: Record<string, number> = { all: history.length };
+    for (const h of history) counts[h.status] = (counts[h.status] ?? 0) + 1;
+    return counts as Record<HistoryFilter, number>;
+  }, [history]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -343,9 +404,47 @@ export function SendTab() {
         </form>
       </Panel>
 
-      <Panel title="발송 이력" description="이 계정의 최근 발송 작업 목록입니다. 진행 중인 작업은 자동으로 갱신됩니다.">
+      <Panel
+        title="발송 이력"
+        description="이 계정의 최근 발송 작업 목록입니다."
+        action={
+          <Button
+            variant="ghost"
+            onClick={handleManualRefresh}
+            disabled={historyLoading || historyRefreshing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${historyLoading || historyRefreshing ? "animate-spin" : ""}`} />
+            새로고침
+          </Button>
+        }
+      >
 
-        {historyLoading && (
+        {!historyLoading && history.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {FILTER_ORDER.map((f) => {
+              const count = statusCounts[f] ?? 0;
+              if (f !== "all" && count === 0) return null;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setHistoryFilter(f)}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                    historyFilter === f
+                      ? "bg-app-primary text-white"
+                      : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+                  )}
+                >
+                  {FILTER_LABEL[f]}
+                  {f !== "all" && <span className="ml-1 opacity-70">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {historyLoading && filteredHistory.length === 0 && (
           <div className="space-y-1.5">
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
@@ -383,11 +482,11 @@ export function SendTab() {
         })()}
 
         {!historyLoading && history.length === 0 && (
-          <p className="text-xs text-app-text-muted">아직 발송 이력이 없습니다.</p>
+          <EmptyState icon={SendIcon} title="아직 발송 이력이 없습니다" description="위 양식에서 메시지를 작성하고 발송 버튼을 눌러주세요." />
         )}
-        {history.length > 0 && (
+        {filteredHistory.length > 0 && (
           <div className="divide-y divide-app-border">
-            {history.map((h) => {
+            {filteredHistory.map((h) => {
               const meta = STATUS_TONE[h.status];
               const isFailed = h.status === "failed";
               const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
@@ -426,6 +525,9 @@ export function SendTab() {
               );
             })}
           </div>
+        )}
+        {filteredHistory.length === 0 && history.length > 0 && (
+          <p className="py-4 text-center text-xs text-app-text-subtle">선택한 상태의 발송 내역이 없습니다.</p>
         )}
       </Panel>
 
