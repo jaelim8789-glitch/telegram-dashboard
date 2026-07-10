@@ -567,7 +567,62 @@ export async function reissueUserApiKey(id: string): Promise<string> {
   return result.api_key;
 }
 
-// ─── Reply Macro (답장매크로) ──────────────────────────────────────
+// ─── Delivery Analytics ──────────────────────────────────────────────
+
+export async function fetchDeliveryOverview(
+  accountId?: string,
+  days?: number
+): Promise<import("@/types").DeliveryOverview> {
+  const params = new URLSearchParams();
+  if (days && days !== 30) params.set("days", String(days));
+  if (accountId) params.set("account_id", accountId);
+  const qs = params.toString();
+  return request<import("@/types").DeliveryOverview>(`/api/delivery-analytics/overview${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchDeliverySummary(
+  accountId?: string,
+  days?: number
+): Promise<import("@/types").DeliverySummary> {
+  const params = new URLSearchParams();
+  if (days && days !== 30) params.set("days", String(days));
+  if (accountId) params.set("account_id", accountId);
+  const qs = params.toString();
+  return request<import("@/types").DeliverySummary>(`/api/delivery-analytics/summary${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchDeliveryTimeline(
+  accountId?: string,
+  days?: number,
+  interval?: "hour" | "day"
+): Promise<import("@/types").TimelineItem[]> {
+  const params = new URLSearchParams();
+  if (days && days !== 30) params.set("days", String(days));
+  if (accountId) params.set("account_id", accountId);
+  if (interval && interval !== "day") params.set("interval", interval);
+  const qs = params.toString();
+  return request<import("@/types").TimelineItem[]>(`/api/delivery-analytics/timeline${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchDeliveryAccountPerformance(
+  days?: number
+): Promise<import("@/types").AccountPerformanceItem[]> {
+  const params = new URLSearchParams();
+  if (days && days !== 30) params.set("days", String(days));
+  const qs = params.toString();
+  return request<import("@/types").AccountPerformanceItem[]>(`/api/delivery-analytics/accounts${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchDeliveryFailureIntelligence(
+  accountId?: string,
+  days?: number
+): Promise<import("@/types").FailureIntelligenceItem[]> {
+  const params = new URLSearchParams();
+  if (days && days !== 30) params.set("days", String(days));
+  if (accountId) params.set("account_id", accountId);
+  const qs = params.toString();
+  return request<import("@/types").FailureIntelligenceItem[]>(`/api/delivery-analytics/failures/intelligence${qs ? `?${qs}` : ""}`);
+}
 
 interface ApiReplyMacro {
   id: string;
