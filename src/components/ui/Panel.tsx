@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 interface PanelProps {
-  title?: string;
+  title?: ReactNode;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
@@ -25,3 +25,4 @@ export function Panel({ title, description, action, children, className }: Panel
     </section>
   );
 }
+

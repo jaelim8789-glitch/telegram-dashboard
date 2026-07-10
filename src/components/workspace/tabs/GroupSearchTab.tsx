@@ -64,6 +64,10 @@ export function GroupSearchTab() {
       setJoinInfo(null);
       setJoinLogs([]);
     }
+    setKeyword("");
+    setSelectedIds(new Set());
+    setJoinResults(null);
+    setError(null);
   }, [selectedAccountId, loadJoinInfo, loadJoinLogs, loadSavedResults]);
 
   // 30s background polling for join info, logs, and saved results.
@@ -340,16 +344,18 @@ export function GroupSearchTab() {
       )}
 
       {/* Join history */}
-      {joinLogs.length > 0 && (
-        <Panel
-          title="가입 기록"
-          description="최근 가입 내역 (최대 50건)"
-          action={
-            <Button variant="ghost" onClick={handleManualRefresh}>
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-          }
-        >
+      <Panel
+        title="가입 기록"
+        description={joinLogs.length > 0 ? `최근 가입 내역 (최대 50건)` : undefined}
+        action={
+          <Button variant="ghost" onClick={handleManualRefresh}>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        }
+      >
+        {joinLogs.length === 0 ? (
+          <p className="text-xs text-app-text-muted">아직 가입 기록이 없습니다.</p>
+        ) : (
           <div className="space-y-1">
             {joinLogs.map((log) => (
               <div
@@ -377,8 +383,8 @@ export function GroupSearchTab() {
               </div>
             ))}
           </div>
-        </Panel>
-      )}
+        )}
+      </Panel>
     </div>
   );
 }

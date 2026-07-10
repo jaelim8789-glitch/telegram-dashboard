@@ -22,7 +22,7 @@ export function ProfileTab() {
   return (
     <Panel
       title="프로필 편집"
-      description={`선택된 계정: ${getAccountDisplayName(account)} (목업 화면 — 저장 시 동작 없음)`}
+      description={`선택된 계정: ${getAccountDisplayName(account)}`}
     >
       <div className="flex items-start gap-6">
         <div className="flex flex-col items-center gap-2">

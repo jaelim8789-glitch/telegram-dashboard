@@ -5,7 +5,7 @@ import { ImageIcon, ShieldCheck } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { MAX_BROADCAST_RECIPIENTS, getAccountInitials, type AccountStatus } from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, getAccountDisplayName, getAccountInitials, type AccountStatus } from "@/types";
 
 const ACCOUNT_STATUS_LABEL: Record<AccountStatus, { label: string; tone: "success" | "warning" | "danger" }> = {
   active: { label: "활성", tone: "success" },
@@ -47,6 +47,9 @@ export function SendInspector() {
       <Panel title="실시간 미리보기" description="실제 Telegram 메시지 화면과 동일하게 보입니다.">
         {account ? (
           <div className="rounded-2xl bg-app-bg p-3">
+            <div className="mb-1.5 text-[11px] font-medium text-app-text-muted">
+              발신: {getAccountDisplayName(account)}
+            </div>
             <div className="flex items-start gap-2">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-app-card-hover text-xs font-semibold text-app-text">
                 {getAccountInitials(account)}

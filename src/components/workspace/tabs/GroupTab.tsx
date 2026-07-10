@@ -132,6 +132,12 @@ export function GroupTab() {
         </Select>
       </div>
 
+      {sortMode === "favorites" && !loading && (
+        <div className="mb-2 text-[11px] text-app-text-muted">
+          즐겨찾기 {visibleGroups.filter((g) => isFavorite(g.id)).length}개 · 전체 {visibleGroups.length}개
+        </div>
+      )}
+
       {!loading && groups.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button

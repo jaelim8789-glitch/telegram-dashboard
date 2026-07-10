@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, RefreshCw, Send as SendIcon, Users2, XCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, Send as SendIcon, Users2, XCircle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -300,7 +300,7 @@ export function SendTab() {
                 placeholder="그룹/채널 이름 검색"
                 className="mb-2"
               />
-              {selectedIds.length >= MAX_BROADCAST_RECIPIENTS && (
+              {selectedIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
                 <p className="mb-2 text-xs text-app-warning">
                   최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택할 수 있습니다. 선택을 해제하려면 이미 선택한 항목을 클릭하세요.
                 </p>
@@ -453,35 +453,6 @@ export function SendTab() {
             <Skeleton className="h-9 w-full" />
           </div>
         )}
-
-        {!historyLoading && history.length > 0 && (() => {
-          const sentCount = history.filter((h) => h.status === "sent").length;
-          const failedCount = history.filter((h) => h.status === "failed").length;
-          const inFlight = history.filter(isBroadcastInFlight).length;
-          return (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {inFlight > 0 && (
-                <Badge tone="info">
-                  <Clock className="mr-1 inline h-3 w-3" />
-                  진행 중 {inFlight}건
-                </Badge>
-              )}
-              {sentCount > 0 && (
-                <Badge tone="success">
-                  <CheckCircle2 className="mr-1 inline h-3 w-3" />
-                  완료 {sentCount}건
-                </Badge>
-              )}
-              {failedCount > 0 && (
-                <Badge tone="danger">
-                  <XCircle className="mr-1 inline h-3 w-3" />
-                  실패 {failedCount}건
-                </Badge>
-              )}
-              <Badge tone="neutral">총 {history.length}건</Badge>
-            </div>
-          );
-        })()}
 
         {!historyLoading && history.length === 0 && (
           <EmptyState icon={SendIcon} title="아직 발송 이력이 없습니다" description="위 양식에서 메시지를 작성하고 발송 버튼을 눌러주세요." />

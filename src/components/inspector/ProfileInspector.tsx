@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, ShieldAlert, User } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -29,14 +29,31 @@ export function ProfileInspector() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
   const [health, setHealth] = useState<AccountHealthItem | null>(null);
+  const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
-  useEffect(() => {
+  const loadHealth = useCallback(async () => {
     if (!selectedAccountId) { setHealth(null); return; }
-    api.fetchAccountHealth().then((items) => {
+    try {
+      const items = await api.fetchAccountHealth();
       const found = items.find((h) => h.accountId === selectedAccountId);
       setHealth(found ?? null);
-    }).catch(() => {});
+    } catch { /* ignore */ }
   }, [selectedAccountId]);
+
+  useEffect(() => {
+    loadHealth();
+  }, [loadHealth]);
+
+  // 30s background polling
+  useEffect(() => {
+    if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
+    if (!selectedAccountId) return;
+    bgPollTimer.current = setTimeout(() => { loadHealth(); setPollTick((t) => t + 1); }, 30000);
+    return () => {
+      if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
+    };
+  }, [pollTick, selectedAccountId, loadHealth]);
 
   if (!account) {
     return (

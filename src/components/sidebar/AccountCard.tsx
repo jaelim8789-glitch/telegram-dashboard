@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Ban, Clock, Plug, ShieldAlert, Trash2, WifiOff } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Plug, ShieldAlert, Trash2, WifiOff } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 
@@ -10,7 +10,7 @@ const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = 
 };
 
 const HEALTH_ICON: Record<AccountHealthState, { icon: typeof AlertTriangle; color: string; title: string }> = {
-  healthy: { icon: AlertTriangle, color: "text-green-400", title: "정상" },
+  healthy: { icon: CheckCircle2, color: "text-green-400", title: "정상" },
   unauthorized: { icon: Plug, color: "text-yellow-400", title: "세션 만료 - 재인증 필요" },
   banned: { icon: Ban, color: "text-red-400", title: "차단됨" },
   rate_limited: { icon: Clock, color: "text-yellow-400", title: "제한 초과" },
@@ -40,7 +40,7 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
     try { await onDelete(account.id); } finally { setDeleting(false); }
   }
 
-  const healthMeta = health && health !== "healthy" ? HEALTH_ICON[health] : null;
+  const healthMeta = health ? HEALTH_ICON[health] : null;
   const HealthIcon = healthMeta?.icon;
 
   return (
@@ -71,12 +71,15 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
             <HealthIcon className={cn("h-3.5 w-3.5", healthMeta.color)} />
           </span>
         )}
-        <span className={cn("hidden h-1.5 w-1.5 rounded-full sm:block", status.dot, selected && "animate-pulse")} />
-        <span className="hidden text-[11px] text-app-text-muted sm:inline">{status.label}</span>
+        <span className={cn("h-1.5 w-1.5 rounded-full", status.dot, selected && "animate-pulse")} />
+        <span className="text-[11px] text-app-text-muted">{status.label}</span>
       </div>
       <button
         type="button" title="삭제" onClick={handleDelete} disabled={deleting}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-app-text-muted opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50",
+          selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

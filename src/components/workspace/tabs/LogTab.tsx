@@ -46,7 +46,6 @@ export function LogTab() {
   const [retrying, setRetrying] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<BroadcastStatus | "">("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
@@ -57,7 +56,6 @@ export function LogTab() {
         setLogs(
           await api.fetchLogs({
             accountId: accountFilter || undefined,
-            status: statusFilter || undefined,
           })
         );
       } catch {
@@ -71,7 +69,6 @@ export function LogTab() {
       setLogs(
         await api.fetchLogs({
           accountId: accountFilter || undefined,
-          status: statusFilter || undefined,
         })
       );
     } catch (err) {
@@ -85,7 +82,7 @@ export function LogTab() {
     load();
     setStatusPillFilter("all");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountFilter, statusFilter]);
+  }, [accountFilter]);
 
   // Real-time poll while in-flight, background poll otherwise.
   useEffect(() => {
@@ -103,7 +100,7 @@ export function LogTab() {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pollTick, accountFilter, statusFilter]);
+  }, [pollTick, accountFilter]);
 
   async function handleRetry(failed: Broadcast) {
     if (retrying) return;
@@ -158,16 +155,6 @@ export function LogTab() {
             ))}
           </Select>
         </label>
-        <label className="flex items-center gap-2 text-xs text-app-text-muted">
-          상태 필터
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as BroadcastStatus | "")} className="w-32">
-            <option value="">전체</option>
-            <option value="pending">대기 중</option>
-            <option value="sending">발송 중</option>
-            <option value="sent">완료</option>
-            <option value="failed">실패</option>
-          </Select>
-        </label>
       </div>
 
       {!loading && logs.length > 0 && (
@@ -212,7 +199,7 @@ export function LogTab() {
         <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다." />
       )}
       {filteredLogs.length > 0 && (
-        <div className="space-y-1.5 font-mono text-xs">
+        <div className="space-y-1.5 text-xs">
           {filteredLogs.map((log) => {
             const meta = STATUS_TONE[log.status];
             const isFailed = log.status === "failed";
@@ -227,7 +214,7 @@ export function LogTab() {
                     : "border-app-border bg-app-bg/60"
                 }`}
               >
-                <span className="shrink-0 text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
+                <span className="shrink-0 font-mono text-app-text-subtle">{formatTimestamp(log.createdAt)}</span>
                 <Badge tone={isFutureSchedule ? "info" : meta.tone}>{isFutureSchedule ? "예약됨" : meta.label}</Badge>
                 <span className="shrink-0 text-app-text-muted">{accountLabel(log.accountId)}</span>
                 <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>

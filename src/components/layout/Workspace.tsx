@@ -1,21 +1,27 @@
-"use client";
+﻿"use client";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
+import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
+import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
 import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
 import { SendTab } from "@/components/workspace/tabs/SendTab";
 import { GroupTab } from "@/components/workspace/tabs/GroupTab";
+import { GroupSearchTab } from "@/components/workspace/tabs/GroupSearchTab";
 import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
 import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
 import { LogTab } from "@/components/workspace/tabs/LogTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
+  dashboard: DashboardTab,
   register: AccountRegisterTab,
   send: SendTab,
   group: GroupTab,
+  groupsearch: GroupSearchTab,
   autoreply: AutoReplyTab,
+  replymacro: ReplyMacroTab,
   profile: ProfileTab,
   log: LogTab,
 };
@@ -43,3 +49,4 @@ export function Workspace() {
     </main>
   );
 }
+
