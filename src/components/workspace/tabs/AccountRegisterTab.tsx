@@ -12,14 +12,14 @@ import {
   Shield,
   Smartphone,
   UserPlus,
-  XCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { useDashboardStore } from "@/store/useDashboardStore";
-import { useToast } from "@/components/ui/Toast";
+import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
+import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 
 type Step = "form" | "code" | "2fa" | "done";
@@ -66,7 +66,6 @@ function validatePassword(password: string): string | null {
 export function AccountRegisterTab() {
   const registerAccount = useDashboardStore((s) => s.registerAccount);
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
-  const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("form");
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -76,15 +75,17 @@ export function AccountRegisterTab() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ phone?: string; code?: string; password?: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const codeInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Resend cooldown timer
+  // Resend cooldown timer — always cleaned up on unmount or when cooldown expires
   useEffect(() => {
     if (resendCooldown <= 0) {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
@@ -102,12 +103,18 @@ export function AccountRegisterTab() {
     return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, [resendCooldown]);
 
-  // Auto-focus on step transition
+  // Auto-focus code input when entering code step
   useEffect(() => {
-    if (step === "code" && codeInputRef.current) codeInputRef.current.focus();
+    if (step === "code" && codeInputRef.current) {
+      codeInputRef.current.focus();
+    }
   }, [step]);
+
+  // Auto-focus password input when entering 2FA step
   useEffect(() => {
-    if (step === "2fa" && passwordInputRef.current) passwordInputRef.current.focus();
+    if (step === "2fa" && passwordInputRef.current) {
+      passwordInputRef.current.focus();
+    }
   }, [step]);
 
   const resetAll = useCallback(() => {
@@ -118,12 +125,16 @@ export function AccountRegisterTab() {
     setCode("");
     setPassword("");
     setError(null);
+    setSuccessMessage(null);
+    setInfoMessage(null);
     setFieldErrors({});
     setShowPassword(false);
     setResendCooldown(0);
   }, []);
 
-  const startResendCooldown = useCallback(() => setResendCooldown(30), []);
+  const startResendCooldown = useCallback(() => {
+    setResendCooldown(30);
+  }, []);
 
   async function handleResendCode(id: string) {
     if (resendCooldown > 0 || submitting) return;
@@ -131,12 +142,11 @@ export function AccountRegisterTab() {
     setError(null);
     try {
       await api.sendCode(id);
-      toast("success", "인증번호가 재전송되었습니다.");
+      setSuccessMessage("인증번호가 재전송되었습니다.");
       startResendCooldown();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "인증번호 요청에 실패했습니다.";
       setError(msg);
-      toast("error", msg);
     } finally {
       setSubmitting(false);
     }
@@ -155,17 +165,18 @@ export function AccountRegisterTab() {
 
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
+    setInfoMessage(null);
     try {
       const account = await registerAccount({ phone: phone.trim(), name: name.trim() || undefined });
       setAccountId(account.id);
       setStep("code");
       await api.sendCode(account.id);
       startResendCooldown();
-      toast("success", "인증번호가 전송되었습니다. Telegram 앱을 확인하세요.");
+      setSuccessMessage("인증번호가 전송되었습니다. Telegram 앱을 확인하세요.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "계정 등록에 실패했습니다.";
       setError(msg);
-      toast("error", msg);
     } finally {
       setSubmitting(false);
     }
@@ -184,20 +195,21 @@ export function AccountRegisterTab() {
 
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
+    setInfoMessage(null);
     try {
       const result = await api.verifyCode(accountId, code.replace(/\D/g, ""));
       if (result.requiresTwoFactor) {
         setStep("2fa");
-        toast("info", "2단계 인증이 필요합니다. 클라우드 비밀번호를 입력하세요.");
+        setInfoMessage("2단계 인증이 필요합니다. 클라우드 비밀번호를 입력하세요.");
       } else {
         await fetchAccounts();
         setStep("done");
-        toast("success", "계정 인증이 완료되었습니다.");
+        setSuccessMessage("계정 인증이 완료되었습니다.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "인증번호 확인에 실패했습니다.";
       setError(msg);
-      toast("error", msg);
     } finally {
       setSubmitting(false);
     }
@@ -216,21 +228,20 @@ export function AccountRegisterTab() {
 
     setSubmitting(true);
     setError(null);
+    setInfoMessage(null);
     try {
       await api.verifyTwoFactor(accountId, password.trim());
       await fetchAccounts();
       setStep("done");
-      toast("success", "2단계 인증이 완료되었습니다.");
+      setSuccessMessage("2단계 인증이 완료되었습니다.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "2단계 인증에 실패했습니다.";
       setError(msg);
-      toast("error", msg);
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Handle OTP paste
   function handleCodePaste(e: React.ClipboardEvent) {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
     if (pasted.length >= 4) {
@@ -238,43 +249,42 @@ export function AccountRegisterTab() {
     }
   }
 
+  function handleCodeChange(value: string) {
+    const digits = value.replace(/\D/g, "");
+    setCode(digits);
+    setFieldErrors((prev) => ({ ...prev, code: undefined }));
+  }
+
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Step Progress Indicator — preserved master's gradient style */}
+      {/* Step Progress Indicator */}
       <div className="flex items-center justify-center gap-0">
         {STEPS.map((s, i) => {
           const Icon = s.icon;
           const isActive = i <= currentStepIndex;
           const isCurrent = i === currentStepIndex;
-          const isCompleted = i < currentStepIndex;
           return (
             <div key={s.key} className="flex items-center">
               <div className="flex flex-col items-center gap-1.5">
                 <div className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
-                  isCompleted && "bg-app-success text-white shadow-sm shadow-app-success/30",
-                  isActive && !isCompleted
+                  isActive
                     ? "bg-gradient-to-br from-app-primary to-orange-500 text-white shadow-md"
-                    : !isCompleted && !isActive && "bg-app-card-hover text-app-text-muted border border-app-border"
+                    : "bg-app-card-hover text-app-text-muted border border-app-border"
                 )}>
-                  {isCompleted ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <Icon className={cn("h-4 w-4", isCurrent && "animate-pulse")} />
-                  )}
+                  <Icon className={cn("h-4 w-4", isCurrent && "animate-pulse")} />
                 </div>
                 <span className={cn(
                   "text-[10px] font-medium whitespace-nowrap",
-                  isCompleted && "text-app-success",
                   isActive ? "text-app-text" : "text-app-text-subtle"
                 )}>{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
                 <div className={cn(
                   "mx-2 h-px w-12 sm:w-20 transition-colors duration-300",
-                  i < currentStepIndex ? "bg-app-success" : "bg-app-border"
+                  i < currentStepIndex ? "bg-app-primary" : "bg-app-border"
                 )} />
               )}
             </div>
@@ -297,14 +307,18 @@ export function AccountRegisterTab() {
             >
               <form onSubmit={handleSubmitForm}>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="전화번호" hint="국가 코드를 포함해 입력 (예: +821012345678)" error={fieldErrors.phone}>
+                  <Field
+                    label="전화번호"
+                    hint="국가 코드를 포함해 입력 (예: +821012345678)"
+                    error={fieldErrors.phone}
+                  >
                     <Input
                       value={phone}
                       onChange={(e) => {
                         setPhone(e.target.value);
                         setFieldErrors((prev) => ({ ...prev, phone: undefined }));
                       }}
-                      placeholder="+82 10-0000-0000"
+                      placeholder="+821012345678"
                       inputMode="tel"
                       autoComplete="tel"
                       required
@@ -321,11 +335,16 @@ export function AccountRegisterTab() {
                   </Field>
                 </div>
 
-                {error && (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2.5">
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-app-danger" />
-                    <p className="text-xs text-app-danger">{error}</p>
-                  </div>
+                {error && <InlineError className="mt-3">{error}</InlineError>}
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-app-success" />
+                    <p className="text-xs text-app-success">{successMessage}</p>
+                  </motion.div>
                 )}
 
                 <div className="mt-4 flex justify-end gap-2">
@@ -353,26 +372,26 @@ export function AccountRegisterTab() {
               title={<div className="flex items-center gap-2"><Smartphone className="h-4 w-4 text-app-primary" /> 인증번호 입력</div>}
               description={`${phone}(으)로 전송된 Telegram 인증번호를 입력하세요.`}
             >
-              <div className="rounded-xl border border-app-border bg-app-card-hover px-4 py-3 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Smartphone className="h-4 w-4 text-app-primary" />
-                  <span className="text-app-text-muted">
-                    <span className="font-medium text-app-text">{formatPhone(phone)}</span>
-                    으로 인증번호를 전송했습니다
-                  </span>
-                </div>
-              </div>
-
               <form onSubmit={handleSubmitCode}>
-                <Field label="인증번호" hint="Telegram 앱에서 받은 5-6자리 숫자를 입력하세요" error={fieldErrors.code}>
+                <div className="rounded-xl border border-app-border bg-app-card-hover px-4 py-3 mb-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Smartphone className="h-4 w-4 text-app-primary" />
+                    <span className="text-app-text-muted">
+                      <span className="font-medium text-app-text">{formatPhone(phone)}</span>
+                      으로 인증번호를 전송했습니다
+                    </span>
+                  </div>
+                </div>
+
+                <Field
+                  label="인증번호"
+                  hint="Telegram 앱에서 받은 5-6자리 숫자를 입력하세요"
+                  error={fieldErrors.code}
+                >
                   <Input
                     ref={codeInputRef}
                     value={code}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, "");
-                      setCode(digits);
-                      setFieldErrors((prev) => ({ ...prev, code: undefined }));
-                    }}
+                    onChange={(e) => handleCodeChange(e.target.value)}
                     onPaste={handleCodePaste}
                     placeholder="000000"
                     inputMode="numeric"
@@ -381,20 +400,25 @@ export function AccountRegisterTab() {
                     required
                     autoFocus
                     invalid={!!fieldErrors.code}
-                    className="text-lg tracking-[0.3em] text-center font-mono"
+                    className="otp-input text-lg tracking-[0.3em]"
                   />
                 </Field>
 
-                {error && (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2.5">
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-app-danger" />
-                    <p className="text-xs text-app-danger">{error}</p>
-                  </div>
+                {error && <InlineError className="mt-3">{error}</InlineError>}
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-app-success" />
+                    <p className="text-xs text-app-success">{successMessage}</p>
+                  </motion.div>
                 )}
 
                 <div className="mt-4 flex justify-between gap-2">
                   <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
-                    처음으로
+                    <ArrowLeft className="mr-1 h-4 w-4" /> 처음으로
                   </Button>
                   <div className="flex gap-2">
                     <Button
@@ -403,17 +427,8 @@ export function AccountRegisterTab() {
                       onClick={() => handleResendCode(accountId)}
                       disabled={submitting || resendCooldown > 0}
                     >
-                      {resendCooldown > 0 ? (
-                        <span className="flex items-center gap-1">
-                          <RefreshCw className="h-3 w-3" />
-                          {resendCooldown}초 후 재전송
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <RefreshCw className="h-3 w-3" />
-                          재전송
-                        </span>
-                      )}
+                      <RefreshCw className="mr-1 h-4 w-4" />
+                      {resendCooldown > 0 ? `${resendCooldown}초` : "재전송"}
                     </Button>
                     <Button type="submit" variant="primary" loading={submitting}>
                       {submitting ? "확인 중..." : "확인"}
@@ -437,18 +452,29 @@ export function AccountRegisterTab() {
               title={<div className="flex items-center gap-2"><Shield className="h-4 w-4 text-app-warning" /> 2단계 인증</div>}
               description="이 계정은 2단계 인증(클라우드 비밀번호)이 설정되어 있습니다."
             >
-              <div className="rounded-xl border border-app-warning/20 bg-app-warning-muted px-4 py-3 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Shield className="h-4 w-4 text-app-warning" />
-                  <span className="text-app-warning font-medium">2단계 인증 필요</span>
-                </div>
-                <p className="mt-1 text-xs text-app-text-muted">
-                  이 계정은 Telegram 클라우드 비밀번호(2단계 인증)가 설정되어 있습니다.
-                  계속하려면 비밀번호를 입력하세요.
-                </p>
-              </div>
-
               <form onSubmit={handleSubmit2FA}>
+                <div className="rounded-xl border border-app-warning/20 bg-app-warning-muted px-4 py-3 mb-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield className="h-4 w-4 text-app-warning" />
+                    <span className="text-app-warning font-medium">2단계 인증 필요</span>
+                  </div>
+                  <p className="mt-1 text-xs text-app-text-muted">
+                    이 계정은 Telegram 클라우드 비밀번호(2단계 인증)가 설정되어 있습니다.
+                    계속하려면 비밀번호를 입력하세요.
+                  </p>
+                </div>
+
+                {infoMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mb-4 flex items-start gap-2 rounded-xl border border-app-info/20 bg-app-info-muted px-3 py-2.5"
+                  >
+                    <Shield className="mt-0.5 h-4 w-4 shrink-0 text-app-info" />
+                    <p className="text-xs text-app-info">{infoMessage}</p>
+                  </motion.div>
+                )}
+
                 <Field label="2단계 인증 비밀번호" error={fieldErrors.password}>
                   <div className="relative">
                     <Input
@@ -476,16 +502,11 @@ export function AccountRegisterTab() {
                   </div>
                 </Field>
 
-                {error && (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2.5">
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-app-danger" />
-                    <p className="text-xs text-app-danger">{error}</p>
-                  </div>
-                )}
+                {error && <InlineError className="mt-3">{error}</InlineError>}
 
                 <div className="mt-4 flex justify-between gap-2">
                   <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
-                    처음으로
+                    <ArrowLeft className="mr-1 h-4 w-4" /> 처음으로
                   </Button>
                   <Button type="submit" variant="primary" loading={submitting}>
                     {submitting ? "확인 중..." : "인증 완료"}
@@ -514,20 +535,22 @@ export function AccountRegisterTab() {
                 <p className="text-sm font-medium text-app-text">계정 인증이 완료되었습니다</p>
                 <p className="mt-1 text-xs text-app-text-muted max-w-sm">
                   <span className="font-medium text-app-text">{formatPhone(phone)}</span>
-                  {name ? ` (${name})` : ""} — 이제 발송 및 자동 응답에 사용할 수 있습니다.
+                  {name ? ` (${name})` : ""}
                 </p>
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-app-text-muted">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-app-success" />
+                  이제 발송 및 자동 응답에 사용할 수 있습니다
+                </div>
               </div>
               <div className="flex justify-center gap-3">
                 <Button variant="primary" onClick={resetAll}>
-                  <UserPlus className="h-4 w-4" />
-                  새 계정 등록
+                  <UserPlus className="mr-1.5 h-4 w-4" /> 새 계정 등록
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => useDashboardStore.getState().setActiveTab("dashboard")}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                  대시보드로 이동
+                  <ChevronRight className="mr-1 h-4 w-4" /> 대시보드로 이동
                 </Button>
               </div>
             </Panel>
