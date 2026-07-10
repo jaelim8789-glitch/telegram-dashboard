@@ -3,8 +3,15 @@
 import { useEffect, useState } from "react";
 import { ImageIcon, ShieldCheck } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
+import { Badge } from "@/components/ui/Badge";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { MAX_BROADCAST_RECIPIENTS, getAccountInitials } from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, getAccountInitials, type AccountStatus } from "@/types";
+
+const ACCOUNT_STATUS_LABEL: Record<AccountStatus, { label: string; tone: "success" | "warning" | "danger" }> = {
+  active: { label: "활성", tone: "success" },
+  inactive: { label: "비활성", tone: "warning" },
+  banned: { label: "차단됨", tone: "danger" },
+};
 
 function useObjectUrl(file: File | null): string | null {
   const [url, setUrl] = useState<string | null>(null);
@@ -73,6 +80,20 @@ export function SendInspector() {
               <ImageIcon className="h-3 w-3" /> 이미지 첨부됨
             </li>
           )}
+          {!message && selectedIds.length === 0 && (
+            <li className="text-app-text-subtle">메시지를 입력하고 발송 대상을 선택하세요.</li>
+          )}
+          {message && selectedIds.length === 0 && (
+            <li className="text-app-warning">발송 대상을 선택해주세요.</li>
+          )}
+          {!message && selectedIds.length > 0 && (
+            <li className="text-app-warning">메시지 내용을 입력해주세요.</li>
+          )}
+          {message && selectedIds.length > 0 && (
+            <li className="flex items-center gap-1 text-app-success">
+              <span>발송 가능</span>
+            </li>
+          )}
         </ul>
         {selectedGroups.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -93,6 +114,15 @@ export function SendInspector() {
             </li>
             <li>
               참여 그룹 수: <span className="text-app-text">{account.groupCount}개</span>
+            </li>
+            <li className="flex items-center gap-1.5">
+              계정 상태:{" "}
+              <Badge tone={ACCOUNT_STATUS_LABEL[account.status].tone}>
+                {ACCOUNT_STATUS_LABEL[account.status].label}
+              </Badge>
+            </li>
+            <li>
+              전체 대상 수: <span className="text-app-text">{groups.reduce((sum, g) => sum + (g.participantsCount ?? 0), 0).toLocaleString()}명</span>
             </li>
           </ul>
         </Panel>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Send as SendIcon, Users2 } from "lucide-react";
+import { CheckCircle2, Clock, Send as SendIcon, Users2, XCircle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -101,20 +101,6 @@ export function SendTab() {
     }
   }
 
-  useEffect(() => {
-    clearSendDraft();
-    setSubmitError(null);
-    setSubmitNotice(null);
-    if (selectedAccountId) {
-      loadGroups(selectedAccountId);
-      loadHistory(selectedAccountId);
-    } else {
-      setGroups([]);
-      setHistory([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAccountId]);
-
   // Poll while anything is pending/sending — real-time-ish status without a websocket.
   useEffect(() => {
     if (pollTimer.current) {
@@ -131,6 +117,20 @@ export function SendTab() {
       if (pollTimer.current) clearTimeout(pollTimer.current);
     };
   }, [history, selectedAccountId]);
+
+  useEffect(() => {
+    clearSendDraft();
+    setSubmitError(null);
+    setSubmitNotice(null);
+    if (selectedAccountId) {
+      loadGroups(selectedAccountId);
+      loadHistory(selectedAccountId);
+    } else {
+      setGroups([]);
+      setHistory([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
 
   function handleAddTag(groupId: string) {
     const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");
@@ -186,8 +186,8 @@ export function SendTab() {
 
   if (!account) {
     return (
-      <Panel title="메시지 작성">
-        <p className="text-sm text-app-text-muted">먼저 사이드바에서 계정을 선택해주세요.</p>
+      <Panel title="메시지 작성" description="발송을 시작하려면 계정을 선택하세요.">
+        <EmptyState icon={Users2} title="선택된 계정이 없습니다" description="왼쪽 사이드바에서 계정을 선택한 후 메시지를 발송할 수 있습니다." />
       </Panel>
     );
   }
@@ -219,6 +219,11 @@ export function SendTab() {
                 placeholder="그룹/채널 이름 검색"
                 className="mb-2"
               />
+              {selectedIds.length >= MAX_BROADCAST_RECIPIENTS && (
+                <p className="mb-2 text-xs text-app-warning">
+                  최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택할 수 있습니다. 선택을 해제하려면 이미 선택한 항목을 클릭하세요.
+                </p>
+              )}
 
               {groupsLoading && (
                 <div className="grid grid-cols-2 gap-2">
@@ -305,39 +310,88 @@ export function SendTab() {
             </div>
           </div>
 
-          {submitError && <p className="mt-3 text-xs text-app-danger">{submitError}</p>}
-          {submitNotice && <p className="mt-3 text-xs text-app-success">{submitNotice}</p>}
+          {submitError && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2.5 text-xs text-app-danger">
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+          {submitNotice && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5 text-xs text-app-success">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{submitNotice}</span>
+            </div>
+          )}
         </form>
       </Panel>
 
       <Panel title="발송 이력" description="이 계정의 최근 발송 작업 목록입니다. 진행 중인 작업은 자동으로 갱신됩니다.">
-        {historyLoading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
+
+        {historyLoading && (
+          <div className="space-y-1.5">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        )}
+
+        {!historyLoading && history.length > 0 && (() => {
+          const sentCount = history.filter((h) => h.status === "sent").length;
+          const failedCount = history.filter((h) => h.status === "failed").length;
+          const inFlight = history.filter(isBroadcastInFlight).length;
+          return (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {inFlight > 0 && (
+                <Badge tone="info">
+                  <Clock className="mr-1 inline h-3 w-3" />
+                  진행 중 {inFlight}건
+                </Badge>
+              )}
+              {sentCount > 0 && (
+                <Badge tone="success">
+                  <CheckCircle2 className="mr-1 inline h-3 w-3" />
+                  완료 {sentCount}건
+                </Badge>
+              )}
+              {failedCount > 0 && (
+                <Badge tone="danger">
+                  <XCircle className="mr-1 inline h-3 w-3" />
+                  실패 {failedCount}건
+                </Badge>
+              )}
+              <Badge tone="neutral">총 {history.length}건</Badge>
+            </div>
+          );
+        })()}
+
         {!historyLoading && history.length === 0 && (
           <p className="text-xs text-app-text-muted">아직 발송 이력이 없습니다.</p>
         )}
-        <div className="divide-y divide-app-border">
-          {history.map((h) => {
-            const meta = STATUS_TONE[h.status];
-            const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
-            return (
-              <div key={h.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div className="min-w-0 flex-1 pr-3">
-                  <div className="truncate text-app-text">{h.message}</div>
-                  <div className="text-xs text-app-text-subtle">
-                    {isFutureSchedule && h.scheduledAt
-                      ? `${formatDateTime(h.scheduledAt)} 예약`
-                      : formatRelativeTime(h.createdAt)}{" "}
-                    · 수신자 {h.recipients.length}명
-                    {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
+        {history.length > 0 && (
+          <div className="divide-y divide-app-border">
+            {history.map((h) => {
+              const meta = STATUS_TONE[h.status];
+              const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
+              return (
+                <div key={h.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div className="min-w-0 flex-1 pr-3">
+                    <div className="truncate text-app-text">{h.message}</div>
+                    <div className="text-xs text-app-text-subtle">
+                      {isFutureSchedule && h.scheduledAt
+                        ? `${formatDateTime(h.scheduledAt)} 예약`
+                        : formatRelativeTime(h.createdAt)}{" "}
+                      · 수신자 {h.recipients.length}명
+                      {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
+                    </div>
                   </div>
+                  <Badge tone={isFutureSchedule ? "info" : meta.tone}>
+                    {isFutureSchedule ? "예약됨" : meta.label}
+                  </Badge>
                 </div>
-                <Badge tone={isFutureSchedule ? "info" : meta.tone}>
-                  {isFutureSchedule ? "예약됨" : meta.label}
-                </Badge>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </Panel>
 
       <motion.div

@@ -1,7 +1,7 @@
 import { Check, Megaphone, Plus, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
-import type { Group, GroupType } from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, type Group, type GroupType } from "@/types";
 
 const TYPE_LABEL: Record<GroupType, string> = {
   group: "그룹",
@@ -38,6 +38,7 @@ export function GroupSelectCard({
     <div
       role="button"
       tabIndex={disabled ? -1 : 0}
+      title={disabled ? `최대 ${MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다.` : undefined}
       onClick={() => !disabled && onToggleSelect(group.id)}
       onKeyDown={(e) => e.key === "Enter" && !disabled && onToggleSelect(group.id)}
       className={cn(
