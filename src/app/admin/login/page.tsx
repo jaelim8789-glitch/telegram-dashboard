@@ -4,6 +4,9 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { KeyRound, Phone, ShieldCheck, Loader2 } from "lucide-react";
+import { Field, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
@@ -31,31 +34,17 @@ function AdminLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-app-text-muted">아이디</label>
-        <input
-          value={username} onChange={(e) => setUsername(e.target.value)}
-          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required autoFocus
-        />
-      </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-app-text-muted">비밀번호</label>
-        <input
-          type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required
-        />
-      </div>
-      {error && (
-        <div className="rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">
-          {error}
-        </div>
-      )}
-      <button type="submit" disabled={submitting}
-        className="btn-primary flex w-full h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold disabled:opacity-50"
-      >
+      <Field label="아이디">
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+      </Field>
+      <Field label="비밀번호">
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      </Field>
+      {error && <InlineError>{error}</InlineError>}
+      <Button type="submit" disabled={submitting} className="w-full h-11">
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitting ? "로그인 중..." : "로그인"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -109,38 +98,36 @@ function PhoneVerificationForm() {
 
   if (codeSent) return (
     <form onSubmit={handleVerifyCode} className="space-y-4">
-      <input
-        value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000"
-        maxLength={6} inputMode="numeric"
-        className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-center text-xl tracking-[0.5em] font-mono text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required autoFocus
-      />
-      {error && <div className="rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{error}</div>}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-app-text-muted">인증번호</label>
+        <input
+          value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000"
+          maxLength={6} inputMode="numeric"
+          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-center text-xl tracking-[0.5em] font-mono text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required autoFocus
+        />
+      </div>
+      {error && <InlineError>{error}</InlineError>}
       <div className="flex gap-2">
-        <button type="button" onClick={() => setCodeSent(false)} disabled={verifying}
-          className="btn-secondary flex-1 h-11 rounded-xl text-sm">뒤로</button>
-        <button type="submit" disabled={verifying}
-          className="btn-primary flex-1 h-11 rounded-xl text-sm font-semibold disabled:opacity-50">
+        <Button type="button" variant="ghost" onClick={() => setCodeSent(false)} disabled={verifying} className="flex-1 h-11">
+          뒤로
+        </Button>
+        <Button type="submit" variant="primary" disabled={verifying} className="flex-1 h-11">
           {verifying ? "확인 중..." : "API 키 발급"}
-        </button>
+        </Button>
       </div>
     </form>
   );
 
   return (
     <form onSubmit={handleSendCode} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-app-text-muted">전화번호</label>
-        <input
-          value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678"
-          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required autoFocus
-        />
-      </div>
-      {error && <div className="rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{error}</div>}
-      <button type="submit" disabled={sending}
-        className="btn-primary flex w-full h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold disabled:opacity-50">
+      <Field label="전화번호">
+        <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678" required autoFocus />
+      </Field>
+      {error && <InlineError>{error}</InlineError>}
+      <Button type="submit" disabled={sending} className="flex w-full h-11">
         {sending && <Loader2 className="h-4 w-4 animate-spin" />}
         {sending ? "발송 중..." : "인증번호 요청"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -162,19 +149,14 @@ function ApiKeyLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-app-text-muted">API 키</label>
-        <input
-          value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..."
-          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-2.5 text-sm font-mono text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required
-        />
-      </div>
-      {error && <div className="rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{error}</div>}
-      <button type="submit" disabled={submitting}
-        className="btn-primary flex w-full h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold disabled:opacity-50">
+      <Field label="API 키">
+        <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className="font-mono" required />
+      </Field>
+      {error && <InlineError>{error}</InlineError>}
+      <Button type="submit" disabled={submitting} className="flex w-full h-11">
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitting ? "확인 중..." : "로그인"}
-      </button>
+      </Button>
     </form>
   );
 }

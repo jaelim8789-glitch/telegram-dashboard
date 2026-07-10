@@ -6,6 +6,8 @@ import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import type { DashboardUser } from "@/lib/api";
 
@@ -18,6 +20,7 @@ function UsersContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reissuedKey, setReissuedKey] = useState<string | null>(null);
+  const [confirmUser, setConfirmUser] = useState<DashboardUser | null>(null);
 
   async function load() {
     setLoading(true);
@@ -45,12 +48,18 @@ function UsersContent() {
   }
 
   async function handleReissue(user: DashboardUser) {
-    if (!window.confirm(`${user.phone} 사용자의 API 키를 재발급하면 기존 키는 즉시 무효화됩니다. 계속할까요?`)) return;
+    setConfirmUser(user);
+  }
+
+  async function handleConfirmReissue() {
+    if (!confirmUser) return;
     try {
-      const key = await api.reissueUserApiKey(user.id);
+      const key = await api.reissueUserApiKey(confirmUser.id);
       setReissuedKey(key);
     } catch (err) {
       setError(err instanceof Error ? err.message : "API 키 재발급에 실패했습니다.");
+    } finally {
+      setConfirmUser(null);
     }
   }
 
@@ -75,7 +84,7 @@ function UsersContent() {
 
       <Panel title="전화번호 인증 사용자" description="본인 전화번호를 인증해 API 키를 발급받은 사용자 목록입니다.">
         {loading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
-        {error && <p className="text-xs text-app-danger">{error}</p>}
+        {error && <InlineError>{error}</InlineError>}
         {!loading && !error && users.length === 0 && (
           <p className="text-xs text-app-text-muted">가입한 사용자가 없습니다.</p>
         )}
@@ -108,6 +117,16 @@ function UsersContent() {
           ))}
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={!!confirmUser}
+        title="API 키 재발급"
+        description={confirmUser ? `${confirmUser.phone} 사용자의 API 키를 재발급하면 기존 키는 즉시 무효화됩니다. 계속할까요?` : ""}
+        variant="danger"
+        confirmLabel="재발급"
+        onConfirm={handleConfirmReissue}
+        onCancel={() => setConfirmUser(null)}
+      />
     </div>
   );
 }

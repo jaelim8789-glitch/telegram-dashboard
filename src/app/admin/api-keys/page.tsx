@@ -6,6 +6,8 @@ import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import type { ApiKey } from "@/lib/api";
 
@@ -20,6 +22,7 @@ function ApiKeysContent() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [justCreatedKey, setJustCreatedKey] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null);
 
   async function load() {
     setLoading(true);
@@ -55,13 +58,15 @@ function ApiKeysContent() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!window.confirm("이 API 키를 삭제하면 이 키를 쓰는 프로그램은 즉시 접근이 끊깁니다. 삭제할까요?")) return;
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
     try {
-      await api.deleteApiKey(id);
+      await api.deleteApiKey(deleteTarget.id);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "API 키 삭제에 실패했습니다.");
+    } finally {
+      setDeleteTarget(null);
     }
   }
 
@@ -98,7 +103,7 @@ function ApiKeysContent() {
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs text-app-danger">{error}</p>}
+        {error && <InlineError className="mt-3">{error}</InlineError>}
       </Panel>
 
       <Panel title="발급된 키 목록">
@@ -118,13 +123,23 @@ function ApiKeysContent() {
                   {k.lastUsed && <> · 마지막 사용 {formatDateTime(k.lastUsed)}</>}
                 </div>
               </div>
-              <Button variant="danger" className="px-2 py-1 text-xs" onClick={() => handleDelete(k.id)}>
+              <Button variant="danger" className="px-2 py-1 text-xs" onClick={() => setDeleteTarget(k)}>
                 삭제
               </Button>
             </div>
           ))}
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="API 키 삭제"
+        description={deleteTarget ? `"${deleteTarget.name}" 키를 삭제하면 이 키를 쓰는 프로그램은 즉시 접근이 끊깁니다. 삭제할까요?` : ""}
+        variant="danger"
+        confirmLabel="삭제"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

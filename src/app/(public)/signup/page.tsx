@@ -3,6 +3,9 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { Field, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { InlineError } from "@/components/ui/InlineError";
 
 export default function SignupPage() {
   const [step, setStep] = useState<"plan" | "phone" | "code" | "done">("plan");
@@ -70,11 +73,7 @@ export default function SignupPage() {
         </div>
 
         <div className="rounded-2xl border border-app-border bg-app-card p-6 sm:p-8 animate-scale-in">
-          {error && (
-            <div className="mb-4 rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-sm text-app-danger">
-              {error}
-            </div>
-          )}
+          {error && <InlineError className="mb-4">{error}</InlineError>}
 
           {step === "plan" && (
             <div className="space-y-5">
@@ -105,16 +104,14 @@ export default function SignupPage() {
             <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">전화번호 인증</h2>
               <form onSubmit={handleSendCode} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-app-text mb-1.5">전화번호</label>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678"
-                    className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required />
-                  <p className="mt-1.5 text-xs text-app-text-muted">국가코드 포함 (예: +82)</p>
-                </div>
-                <button type="submit" disabled={loading} className="btn-primary flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold relative z-10 disabled:opacity-50">
+                <Field label="전화번호">
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678" required />
+                </Field>
+                <p className="text-xs text-app-text-muted">국가코드 포함 (예: +82)</p>
+                <Button type="submit" disabled={loading} className="flex w-full h-12">
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loading ? "발송 중..." : "인증번호 요청"}
-                </button>
+                </Button>
                 <button type="button" onClick={() => setStep("plan")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
               </form>
             </div>
@@ -129,10 +126,10 @@ export default function SignupPage() {
                   <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000" maxLength={6} inputMode="numeric"
                     className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm text-center text-2xl tracking-[0.5em] text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required />
                 </div>
-                <button type="submit" disabled={loading} className="btn-primary flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold relative z-10 disabled:opacity-50">
+                <Button type="submit" disabled={loading} className="flex w-full h-12">
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loading ? "확인 중..." : "API 키 발급"}
-                </button>
+                </Button>
                 <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
               </form>
             </div>

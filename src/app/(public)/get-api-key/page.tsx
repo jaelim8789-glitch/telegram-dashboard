@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { InlineError } from "@/components/ui/InlineError";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -83,9 +84,7 @@ export default function GetApiKeyPage() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-app-border bg-app-card p-6 sm:p-8">
-          {error && (
-            <div className="mb-4 rounded-lg border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-sm text-app-danger">{error}</div>
-          )}
+          {error && <InlineError className="mb-4">{error}</InlineError>}
 
           {step === "plan" && (
             <div className="space-y-4">
