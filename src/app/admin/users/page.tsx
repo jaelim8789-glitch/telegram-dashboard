@@ -21,6 +21,7 @@ function UsersContent() {
   const [error, setError] = useState<string | null>(null);
   const [reissuedKey, setReissuedKey] = useState<string | null>(null);
   const [confirmUser, setConfirmUser] = useState<DashboardUser | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<DashboardUser | null>(null);
 
   async function load() {
     setLoading(true);
@@ -108,7 +109,7 @@ function UsersContent() {
                 <Button
                   variant={u.isActive ? "danger" : "secondary"}
                   className="px-2 py-1 text-xs"
-                  onClick={() => handleToggle(u)}
+                  onClick={() => setToggleConfirm(u)}
                 >
                   {u.isActive ? "비활성화" : "활성화"}
                 </Button>
@@ -126,6 +127,16 @@ function UsersContent() {
         confirmLabel="재발급"
         onConfirm={handleConfirmReissue}
         onCancel={() => setConfirmUser(null)}
+      />
+
+      <ConfirmDialog
+        open={!!toggleConfirm}
+        title={toggleConfirm?.isActive ? "사용자 비활성화" : "사용자 활성화"}
+        description={toggleConfirm ? `"${toggleConfirm.phone}" 사용자를 ${toggleConfirm.isActive ? "비활성화" : "활성화"}하시겠습니까?` : ""}
+        variant={toggleConfirm?.isActive ? "danger" : "default"}
+        confirmLabel={toggleConfirm?.isActive ? "비활성화" : "활성화"}
+        onConfirm={() => { const u = toggleConfirm; setToggleConfirm(null); if (u) handleToggle(u); }}
+        onCancel={() => setToggleConfirm(null)}
       />
     </div>
   );

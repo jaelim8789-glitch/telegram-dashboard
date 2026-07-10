@@ -74,9 +74,9 @@ function ApiKeysContent() {
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-app-text">API 키 관리</h1>
-        <Link href="/app" className="text-xs text-app-primary-hover hover:underline">
-          대시보드로 돌아가기
-        </Link>
+          <Link href="/admin/dashboard" className="text-xs text-app-primary-hover hover:underline">
+            관리자 홈으로
+          </Link>
       </div>
 
       <Panel title="새 API 키 발급" description="외부 프로그램/스크립트가 X-API-Key 헤더로 사용할 키입니다.">

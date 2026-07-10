@@ -26,7 +26,7 @@ function AdminLoginForm() {
     try {
       const token = await api.adminLogin(username, password);
       setToken(token);
-      router.replace("/app");
+      router.replace("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인 실패");
     } finally { setSubmitting(false); }

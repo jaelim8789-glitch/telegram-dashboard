@@ -2,7 +2,7 @@
 
 import { Panel } from "@/components/ui/Panel";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import {  Activity, MessageSquare, Users, Zap } from "lucide-react";
+import { Activity, MessageSquare, Users, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export function DashboardInspector() {
@@ -30,25 +30,6 @@ export function DashboardInspector() {
             </div>
           ))}
         </div>
-      </Panel>
-
-      <Panel title="시스템 정보">
-        <ul className="space-y-2 text-app-text-muted">
-          <li className="flex justify-between">
-            <span>대시보드</span>
-            <span className="text-app-text">v2.0</span>
-          </li>
-          <li className="flex justify-between">
-            <span>계정 제한</span>
-            <span className="text-app-text">발송당 {10}명</span>
-          </li>
-          <li className="flex justify-between">
-            <span>계정 상태</span>
-            <span className="text-app-text">
-              {activeAccounts.length}/{accounts.length} 활성
-            </span>
-          </li>
-        </ul>
       </Panel>
     </div>
   );
