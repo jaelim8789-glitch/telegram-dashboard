@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, RefreshCw, Send as SendIcon, Users2, XCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -88,6 +89,8 @@ export function SendTab() {
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
 
@@ -295,6 +298,11 @@ export function SendTab() {
     }
   }
 
+  function handleCancelClick(b: Broadcast) {
+    setCancelTarget(b);
+    setCancelConfirmOpen(true);
+  }
+
   if (!account) {
     return (
       <Panel title="메시지 작성" description="발송을 시작하려면 계정을 선택하세요.">
@@ -404,7 +412,10 @@ export function SendTab() {
                 <input
                   type="checkbox"
                   checked={isScheduled}
-                  onChange={(e) => setIsScheduled(e.target.checked)}
+                  onChange={(e) => {
+                    setIsScheduled(e.target.checked);
+                    if (e.target.checked) setIsRecurring(false);
+                  }}
                 />
                 예약 발송
               </label>
@@ -431,7 +442,10 @@ export function SendTab() {
                 <input
                   type="checkbox"
                   checked={isRecurring}
-                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  onChange={(e) => {
+                    setIsRecurring(e.target.checked);
+                    if (e.target.checked) setIsScheduled(false);
+                  }}
                 />
                 반복 발송
               </label>
@@ -441,7 +455,6 @@ export function SendTab() {
                     <select
                       value={recurringInterval}
                       onChange={(e) => setRecurringInterval(Number(e.target.value))}
-                      required={isRecurring}
                       className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60"
                     >
                       {RECURRING_INTERVALS.map((opt) => (
@@ -572,7 +585,7 @@ export function SendTab() {
                     {recurring && (
                       <button
                         type="button"
-                        onClick={() => handleCancelRecurring(h)}
+                        onClick={() => handleCancelClick(h)}
                         disabled={cancelling === h.id}
                         title="반복 취소"
                         className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
@@ -601,6 +614,25 @@ export function SendTab() {
           <p className="py-4 text-center text-xs text-app-text-subtle">선택한 상태의 발송 내역이 없습니다.</p>
         )}
       </Panel>
+
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        title="반복 발송 취소"
+        description={`"${cancelTarget?.message?.slice(0, 50)}"의 반복 발송을 취소할까요?`}
+        confirmLabel="취소하기"
+        cancelLabel="닫기"
+        variant="danger"
+        onConfirm={async () => {
+          if (!cancelTarget) return;
+          await handleCancelRecurring(cancelTarget);
+          setCancelConfirmOpen(false);
+          setCancelTarget(null);
+        }}
+        onCancel={() => {
+          setCancelConfirmOpen(false);
+          setCancelTarget(null);
+        }}
+      />
 
       <motion.div
         initial={false}

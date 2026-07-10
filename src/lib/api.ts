@@ -226,9 +226,9 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     sentAt: api.sent_at,
     createdAt: api.created_at,
     errorMessage: api.error_message,
-    recurringIntervalMinutes: api.recurring_interval_minutes,
-    cancelledAt: api.cancelled_at,
-    nextScheduledAt: api.next_scheduled_at,
+    recurringIntervalMinutes: api.recurring_interval_minutes ?? null,
+    cancelledAt: api.cancelled_at ?? null,
+    nextScheduledAt: api.next_scheduled_at ?? null,
   };
 }
 
