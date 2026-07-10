@@ -8,7 +8,7 @@ const TONE_STYLE: Record<Tone, string> = {
   success: "bg-app-success-muted text-app-success border-app-success/20",
   warning: "bg-app-warning-muted text-app-warning border-app-warning/20",
   danger: "bg-app-danger-muted text-app-danger border-app-danger/20",
-  info: "bg-app-primary-muted text-app-primary-hover border-app-primary/20",
+  info: "bg-app-info-muted text-app-info border-app-info/20",
 };
 
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {

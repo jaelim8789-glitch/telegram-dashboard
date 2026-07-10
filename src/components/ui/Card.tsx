@@ -23,7 +23,7 @@ export function Card({ children, selected, interactive = true, className, ...pro
   }
 
   return (
-    <button type="button" className={cn(base, "active:scale-[0.99]")} {...props}>
+    <button type="button" className={cn(base, "focus-ring active:scale-[0.99]")} {...props}>
       {children}
     </button>
   );
