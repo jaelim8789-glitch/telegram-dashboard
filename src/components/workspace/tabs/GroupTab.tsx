@@ -38,6 +38,7 @@ export function GroupTab() {
   const [sortMode, setSortMode] = useState<SortMode>("default");
   const [typeFilter, setTypeFilter] = useState<GroupType | "all">("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
   async function load(accountId: string, silent = false) {
     if (silent) {
@@ -79,11 +80,11 @@ export function GroupTab() {
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (!selectedAccountId) return;
-    bgPollTimer.current = setTimeout(() => load(selectedAccountId, true), BACKGROUND_POLL_INTERVAL_MS);
+    bgPollTimer.current = setTimeout(() => { load(selectedAccountId, true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
     return () => {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
-  }, [groups, selectedAccountId]);
+  }, [pollTick, selectedAccountId]);
 
   const visibleGroups = useMemo(() => {
     let filtered = groups;

@@ -15,6 +15,7 @@ export function GroupSearchInspector() {
   const [recentResults, setRecentResults] = useState<GroupSearchResult[]>([]);
   const [recentLogs, setRecentLogs] = useState<GroupJoinLog[]>([]);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
@@ -32,18 +33,17 @@ export function GroupSearchInspector() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadData]);
+  }, [loadData, selectedAccountId]);
 
   // 30s background polling
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (!selectedAccountId) return;
-    bgPollTimer.current = setTimeout(loadData, 30000);
+    bgPollTimer.current = setTimeout(() => { loadData(); setPollTick((t) => t + 1); }, 30000);
     return () => {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
-  }, [loadData, recentResults, recentLogs]);
+  }, [loadData, pollTick, selectedAccountId]);
 
   if (!selectedAccountId) {
     return (

@@ -49,6 +49,7 @@ export function LogTab() {
   const [statusFilter, setStatusFilter] = useState<BroadcastStatus | "">("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
   async function load(silent = false) {
     if (silent) {
@@ -97,12 +98,12 @@ export function LogTab() {
   // 30s background polling independent of in-flight status.
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
-    bgPollTimer.current = setTimeout(() => load(true), BACKGROUND_POLL_INTERVAL_MS);
+    bgPollTimer.current = setTimeout(() => { load(true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
     return () => {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logs, accountFilter, statusFilter]);
+  }, [pollTick, accountFilter, statusFilter]);
 
   async function handleRetry(failed: Broadcast) {
     if (retrying) return;

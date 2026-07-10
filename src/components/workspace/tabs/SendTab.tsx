@@ -92,6 +92,7 @@ export function SendTab() {
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const [bgPollTick, setBgPollTick] = useState(0);
 
   async function loadGroups(accountId: string) {
     setGroupsLoading(true);
@@ -154,12 +155,13 @@ export function SendTab() {
 
     historyPollTimer.current = setTimeout(() => {
       loadHistory(selectedAccountId, true);
+      setBgPollTick((t) => t + 1);
     }, HISTORY_POLL_INTERVAL_MS);
 
     return () => {
       if (historyPollTimer.current) clearTimeout(historyPollTimer.current);
     };
-  }, [history, selectedAccountId]);
+  }, [bgPollTick, selectedAccountId]);
 
   async function handleManualRefresh() {
     if (!selectedAccountId || historyRefreshing) return;

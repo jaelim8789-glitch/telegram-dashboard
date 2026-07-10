@@ -34,6 +34,7 @@ export function Sidebar() {
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
   async function loadHealth() {
     try {
@@ -48,15 +49,18 @@ export function Sidebar() {
     loadHealth();
   }, [accounts]);
 
-  // 30s background polling
+  // 30s background polling — uses a tick counter to survive API failures
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (accounts.length === 0) return;
-    bgPollTimer.current = setTimeout(loadHealth, BACKGROUND_POLL_INTERVAL_MS);
+    bgPollTimer.current = setTimeout(() => {
+      loadHealth();
+      setPollTick((t) => t + 1);
+    }, BACKGROUND_POLL_INTERVAL_MS);
     return () => {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
-  }, [healthItems, accounts]);
+  }, [pollTick, accounts]);
 
   const healthByAccountId = useMemo(() => {
     const map: Record<string, AccountHealthItem> = {};

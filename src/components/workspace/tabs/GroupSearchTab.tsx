@@ -26,6 +26,7 @@ export function GroupSearchTab() {
   const [joinLogs, setJoinLogs] = useState<GroupJoinLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pollTick, setPollTick] = useState(0);
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
@@ -73,11 +74,12 @@ export function GroupSearchTab() {
       loadJoinInfo();
       loadJoinLogs();
       loadSavedResults();
+      setPollTick((t) => t + 1);
     }, BACKGROUND_POLL_INTERVAL_MS);
     return () => {
       if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     };
-  }, [selectedAccountId, joinLogs, results, loadJoinInfo, loadJoinLogs, loadSavedResults]);
+  }, [selectedAccountId, pollTick, loadJoinInfo, loadJoinLogs, loadSavedResults]);
 
   async function handleManualRefresh() {
     if (!selectedAccountId) return;
