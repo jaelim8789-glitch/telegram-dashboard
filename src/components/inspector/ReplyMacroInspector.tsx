@@ -77,7 +77,7 @@ export function ReplyMacroInspector() {
   function startEdit(macro: ReplyMacro) {
     setEditingId(macro.id);
     setName(macro.name);
-    setTargetChats(macro.targetChats.replace(/,/g, "\n"));
+    setTargetChats(macro.targetChats.join("\n"));
     setMessageContent(macro.messageContent);
     setScheduleType(macro.scheduleType);
     setIntervalHours(macro.intervalHours);

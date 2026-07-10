@@ -574,7 +574,7 @@ interface ApiReplyMacro {
   account_id: string;
   name: string;
   is_active: boolean;
-  target_chats: string;
+  target_chats: string[];
   message_content: string;
   media_path: string | null;
   schedule_type: string;

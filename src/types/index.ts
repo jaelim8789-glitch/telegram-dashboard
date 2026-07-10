@@ -140,7 +140,7 @@ export interface ReplyMacro {
   accountId: string;
   name: string;
   isActive: boolean;
-  targetChats: string;  // JSON string or comma-separated
+  targetChats: string[];
   messageContent: string;
   mediaPath: string | null;
   scheduleType: ReplyMacroScheduleType;
