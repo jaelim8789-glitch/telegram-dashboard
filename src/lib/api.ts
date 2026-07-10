@@ -651,6 +651,81 @@ export async function fetchDeliveryFailureIntelligence(
   return request<import("@/types").FailureIntelligenceItem[]>(`/api/delivery-analytics/failures/intelligence${qs ? `?${qs}` : ""}`);
 }
 
+// ─── Per-endpoint Delivery Analytics methods (DeliveryAnalyticsTab) ──────
+
+export async function fetchAnalyticsSummary(params?: {
+  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string
+}): Promise<import("@/types").AnalyticsSummary> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  const qs = p.toString();
+  return request<import("@/types").AnalyticsSummary>(`/api/delivery-analytics/summary${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchAnalyticsAccounts(params?: {
+  days?: number; source?: string; status?: string; start_time?: string; end_time?: string
+}): Promise<import("@/types").AnalyticsAccountPerformance[]> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsAccountPerformance[]>(`/api/delivery-analytics/accounts?${p.toString()}`);
+}
+
+export async function fetchAnalyticsTimeline(params?: {
+  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string; granularity?: string
+}): Promise<import("@/types").AnalyticsTimelinePoint[]> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsTimelinePoint[]>(`/api/delivery-analytics/timeline?${p.toString()}`);
+}
+
+export async function fetchAnalyticsRecent(params?: {
+  account_id?: string; limit?: number; source?: string
+}): Promise<import("@/types").AnalyticsRecentActivity[]> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsRecentActivity[]>(`/api/delivery-analytics/recent?${p.toString()}`);
+}
+
+export async function fetchAnalyticsSource(params?: {
+  account_id?: string; days?: number; start_time?: string; end_time?: string
+}): Promise<import("@/types").AnalyticsSource[]> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsSource[]>(`/api/delivery-analytics/source?${p.toString()}`);
+}
+
+export async function fetchAnalyticsBroadcasts(params?: {
+  account_id?: string; days?: number; status?: string; limit?: number; offset?: number
+}): Promise<import("@/types").AnalyticsBroadcast[]> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsBroadcast[]>(`/api/delivery-analytics/broadcasts?${p.toString()}`);
+}
+
+export async function fetchAnalyticsFailureIntelligence(params?: {
+  account_id?: string; days?: number; start_time?: string; end_time?: string
+}): Promise<import("@/types").AnalyticsFailureIntelligence> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsFailureIntelligence>(`/api/delivery-analytics/failures/intelligence?${p.toString()}`);
+}
+
+export async function fetchAnalyticsOverview(params?: {
+  account_id?: string; days?: number
+}): Promise<import("@/types").AnalyticsOverview> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsOverview>(`/api/delivery-analytics/overview?${p.toString()}`);
+}
+
+export async function fetchAnalyticsLatency(params?: {
+  account_id?: string; days?: number; source?: string; start_time?: string; end_time?: string
+}): Promise<import("@/types").AnalyticsLatency> {
+  const p = new URLSearchParams();
+  if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
+  return request<import("@/types").AnalyticsLatency>(`/api/delivery-analytics/latency?${p.toString()}`);
+}
+
 interface ApiReplyMacro {
   id: string;
   account_id: string;

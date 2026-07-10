@@ -267,3 +267,96 @@ export interface LatencyByAccountItem {
   p95_latency_ms: number;
   total_measured: number;
 }
+
+// ─── Per-endpoint Delivery Analytics types (DeliveryAnalyticsTab) ─────────
+
+export interface AnalyticsSummary {
+  total_attempts: number;
+  success_count: number;
+  failure_count: number;
+  success_rate: number;
+  period_days: number;
+  unique_accounts: number;
+  by_source: Record<string, { success: number; failure: number; total: number }>;
+  by_status: Record<string, number>;
+}
+
+export interface AnalyticsFailureBreakdown {
+  failure_reasons: Record<string, number>;
+  by_account: Record<string, Record<string, number>>;
+  period_days: number;
+}
+
+export interface AnalyticsAccountPerformance {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  success_count: number;
+  failure_count: number;
+  total_attempts: number;
+  success_rate: number;
+  last_activity: string | null;
+}
+
+export interface AnalyticsTimelinePoint {
+  date: string;
+  success_count: number;
+  failure_count: number;
+  total_attempts: number;
+}
+
+export interface AnalyticsRecentActivity {
+  id: string;
+  account_id: string;
+  source: string;
+  recipient: string;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+  duration_seconds: number | null;
+}
+
+export interface AnalyticsSource {
+  source: string;
+  success_count: number;
+  failure_count: number;
+  total_attempts: number;
+  success_rate: number;
+}
+
+export interface AnalyticsBroadcast {
+  broadcast_id: string;
+  account_id: string;
+  message_preview: string;
+  recipient_count: number;
+  status: string;
+  success_count: number;
+  failure_count: number;
+  total_count: number;
+  created_at: string;
+}
+
+export interface AnalyticsFailureIntelligence {
+  top_failures: { error_message: string; count: number; accounts: string[]; suggestion: string }[];
+  systemic_issues: { pattern: string; affected_accounts: number; total_occurrences: number; severity: "high" | "medium" | "low" }[];
+}
+
+export interface AnalyticsOverview {
+  total_attempts: number;
+  success_count: number;
+  failure_count: number;
+  success_rate: number;
+  avg_latency_ms: number;
+  active_accounts: number;
+  period_hours: number;
+}
+
+export interface AnalyticsLatency {
+  avg_ms: number;
+  p50_ms: number;
+  p90_ms: number;
+  p99_ms: number;
+  by_source: Record<string, { avg_ms: number; p50_ms: number; p90_ms: number; count: number }>;
+  by_account: Record<string, { avg_ms: number; count: number }>;
+  period_days: number;
+}
