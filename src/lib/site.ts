@@ -5,9 +5,14 @@
  * No hardcoded domain strings should appear in page components.
  *
  * Production domain mapping (handled by nginx):
- *   telemon.online    → public marketing website (landing page at /)
- *   app.telemon.online → authenticated application (dashboard at /app/)
- *   api.telemon.online → FastAPI backend
+ *   telemon.online      → public marketing website (landing page at /)
+ *   app.telemon.online   → authenticated application (dashboard at /app/)
+ *
+ * API requests use same-origin /api/ proxy — no separate api.* domain.
+ *   telemon.online/api/      → FastAPI backend
+ *   app.telemon.online/api/  → FastAPI backend
+ *
+ * Reserved:
  *   telemon.space     → reserved
  *   telemon.store     → reserved
  */
