@@ -132,6 +132,55 @@ function ExecutionPanel({ parent, onClose }: { parent: Broadcast; onClose: () =>
   );
 }
 
+function ScheduleCard({
+  b, state, meta, childInfo, accounts,
+  onPause, onResume, onCancel, onToggleHistory, historyOpen,
+}: {
+  b: Broadcast; state: RState; meta: typeof STATE_META[RState];
+  childInfo: { count: number; last: BroadcastChild | null } | undefined;
+  accounts: Account[];
+  onPause: () => void; onResume: () => void; onCancel: () => void;
+  onToggleHistory: () => void; historyOpen: boolean;
+}) {
+  const cd = useCountdown(b.nextScheduledAt);
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className={cn("rounded-2xl border p-4 transition-all duration-200",
+        state === "active" && "border-app-border bg-app-card hover:border-app-border-strong hover:shadow-md",
+        state === "paused" && "border-app-warning/20 bg-app-warning-muted/10",
+        state === "cancelled" && "border-app-border bg-app-bg opacity-60",
+        state === "error" && "border-app-danger/20 bg-app-danger-muted/10",
+      )}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Badge tone={meta.tone} className="shrink-0 gap-1">{meta.icon}{meta.label}</Badge>
+            <span className="truncate text-[11px] text-app-text-subtle">{(accounts.find(a => a.id === b.accountId)?.name?.trim() || b.accountId.slice(0, 8))}</span>
+          </div>
+          <p className="mt-1.5 text-sm font-medium text-app-text leading-snug line-clamp-2">{b.message}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-app-text-muted">
+            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{intervalLabel(b.recurringIntervalMinutes)}</span>
+            <span className="inline-flex items-center gap-1"><SendHorizonal className="h-3 w-3" />{b.recipients.length}개 대상</span>
+            {childInfo && childInfo.count > 0 && <span className="inline-flex items-center gap-1"><RefreshCw className="h-3 w-3" />{childInfo.count}회 발송</span>}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {state === "active" && <button onClick={onPause} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30"><PauseCircle className="h-3.5 w-3.5" /> 중지</button>}
+          {state === "paused" && <button onClick={onResume} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-success hover:bg-app-success-muted/30"><PlayCircle className="h-3.5 w-3.5" /> 재개</button>}
+          {state !== "cancelled" && <button onClick={onCancel} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30"><Ban className="h-3.5 w-3.5" /> 취소</button>}
+          <button onClick={onToggleHistory} className="rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover">{historyOpen ? "닫기" : "기록"}</button>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-app-border pt-2.5 text-[11px]">
+        {(state === "active" || state === "paused") && <><span className="inline-flex items-center gap-1 text-app-text-muted"><CalendarClock className="h-3 w-3" />다음 실행:</span>
+          {b.nextScheduledAt ? <span className={cn("font-mono font-medium", cd ? "text-app-info" : "text-app-text-muted")}>{fmtDT(b.nextScheduledAt)}{cd && <span className="ml-1.5 text-app-info">({cd})</span>}</span> : <span className="text-app-text-muted">-</span>}</>}
+        {state === "cancelled" && <span className="text-app-text-muted">취소됨 {b.cancelledAt ? fmtDT(b.cancelledAt) : ""}</span>}
+        {childInfo?.last && <span className="inline-flex items-center gap-1 ml-auto"><span className="text-app-text-muted">마지막:</span><span className={cn("font-mono", childInfo.last.status === "sent" && "text-app-success", childInfo.last.status === "failed" && "text-app-danger")}>{CHILD_META[childInfo.last.status]?.label ?? childInfo.last.status}</span><span className="text-app-text-subtle">{fmtRel(childInfo.last.createdAt)}</span></span>}
+      </div>
+    </motion.div>
+  );
+}
+
 export function RecurringScheduleTab() {
   const accounts = useDashboardStore(s => s.accounts);
   const selectedAccountId = useDashboardStore(s => s.selectedAccountId);
@@ -274,44 +323,15 @@ export function RecurringScheduleTab() {
       : <div className="space-y-2">{visible.map(b => {
         const state = getRecurringState(b);
         const meta = STATE_META[state];
-        const cd = useCountdown(b.nextScheduledAt);
-        const cdKey = b.id;
         const childInfo = childData[b.id];
         return <div key={b.id}>
-          <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className={cn("rounded-2xl border p-4 transition-all duration-200",
-              state === "active" && "border-app-border bg-app-card hover:border-app-border-strong hover:shadow-md",
-              state === "paused" && "border-app-warning/20 bg-app-warning-muted/10",
-              state === "cancelled" && "border-app-border bg-app-bg opacity-60",
-              state === "error" && "border-app-danger/20 bg-app-danger-muted/10",
-            )}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <Badge tone={meta.tone} className="shrink-0 gap-1">{meta.icon}{meta.label}</Badge>
-                  <span className="truncate text-[11px] text-app-text-subtle">{(accounts.find(a => a.id === b.accountId)?.name?.trim() || b.accountId.slice(0, 8))}</span>
-                </div>
-                <p className="mt-1.5 text-sm font-medium text-app-text leading-snug line-clamp-2">{b.message}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-app-text-muted">
-                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{intervalLabel(b.recurringIntervalMinutes)}</span>
-                  <span className="inline-flex items-center gap-1"><SendHorizonal className="h-3 w-3" />{b.recipients.length}개 대상</span>
-                  {childInfo && childInfo.count > 0 && <span className="inline-flex items-center gap-1"><RefreshCw className="h-3 w-3" />{childInfo.count}회 발송</span>}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {state === "active" && <button onClick={() => setConfirm({ b, action: "pause" })} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30" title="일시중지"><PauseCircle className="h-3.5 w-3.5" /> 중지</button>}
-                {state === "paused" && <button onClick={() => handleResume(b)} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-success hover:bg-app-success-muted/30" title="재개"><PlayCircle className="h-3.5 w-3.5" /> 재개</button>}
-                {state !== "cancelled" && <button onClick={() => setConfirm({ b, action: "cancel" })} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30" title="취소"><Ban className="h-3.5 w-3.5" /> 취소</button>}
-                <button onClick={() => setHistoryId(historyId === b.id ? null : b.id)} className="rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover">{historyId === b.id ? "닫기" : "기록"}</button>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-app-border pt-2.5 text-[11px]">
-              {(state === "active" || state === "paused") && <><span className="inline-flex items-center gap-1 text-app-text-muted"><CalendarClock className="h-3 w-3" />다음 실행:</span>
-                {b.nextScheduledAt ? <span className={cn("font-mono font-medium", cd ? "text-app-info" : "text-app-text-muted")}>{fmtDT(b.nextScheduledAt)}{cd && <span className="ml-1.5 text-app-info">({cd})</span>}</span> : <span className="text-app-text-muted">-</span>}</>}
-              {state === "cancelled" && <span className="text-app-text-muted">취소됨 {b.cancelledAt ? fmtDT(b.cancelledAt) : ""}</span>}
-              {childInfo?.last && <span className="inline-flex items-center gap-1 ml-auto"><span className="text-app-text-muted">마지막:</span><span className={cn("font-mono", childInfo.last.status === "sent" && "text-app-success", childInfo.last.status === "failed" && "text-app-danger")}>{CHILD_META[childInfo.last.status]?.label ?? childInfo.last.status}</span><span className="text-app-text-subtle">{fmtRel(childInfo.last.createdAt)}</span></span>}
-            </div>
-          </motion.div>
+          <ScheduleCard b={b} state={state} meta={meta} childInfo={childInfo} accounts={accounts}
+            onPause={() => setConfirm({ b, action: "pause" })}
+            onResume={() => handleResume(b)}
+            onCancel={() => setConfirm({ b, action: "cancel" })}
+            onToggleHistory={() => setHistoryId(historyId === b.id ? null : b.id)}
+            historyOpen={historyId === b.id}
+          />
           <AnimatePresence>{historyId === b.id && <ExecutionPanel parent={b} onClose={() => setHistoryId(null)} />}</AnimatePresence>
         </div>;
       })}</div>}
