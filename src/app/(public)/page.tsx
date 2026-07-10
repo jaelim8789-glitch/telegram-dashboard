@@ -14,6 +14,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
+  Eye,
 } from "lucide-react";
 
 /* ─── Feature data (only real, implemented capabilities) ─── */
@@ -34,8 +35,8 @@ const CAPABILITIES = [
   {
     icon: CalendarClock,
     title: "예약 발송",
-    desc: "원하는 날짜와 시간에 메시지가 자동 발송되도록 예약하세요. 30초 주기로 정확히 디스패치됩니다.",
-    details: ["ISO 8601 시간 형식", "예약 상태 실시간 추적", "APScheduler 기반 정확한 실행", "즉시 발송 자동 전환"],
+    desc: "원하는 날짜와 시간에 메시지가 자동 발송되도록 예약하세요. 스케줄러가 정확히 디스패치합니다.",
+    details: ["ISO 8601 시간 형식", "예약 상태 실시간 추적", "스케줄러 기반 실행", "즉시 발송 자동 전환"],
   },
   {
     icon: Bot,
@@ -64,8 +65,8 @@ const CAPABILITIES = [
   {
     icon: BarChart3,
     title: "전달 분석 (Delivery Analytics)",
-    desc: "메시지 전달 성공률, 실패 원인, 계정별 성과, 전달 지연 시간까지 상세하게 분석합니다.",
-    details: ["전달 성공/실패/성공률", "실패 원인 인텔리전스", "계정별 성과 랭킹", "P95 전달 지연 측정"],
+    desc: "메시지 전달 성공률, 실패 원인, 계정별 성과, 전달 지연 시간까지 대시보드에서 상세하게 분석합니다.",
+    details: ["전달 성공/실패/성공률", "실패 원인 인텔리전스", "계정별 성과 랭킹", "전달 지연 측정"],
   },
   {
     icon: Shield,
@@ -155,19 +156,19 @@ const FAQS = [
   },
   {
     q: "자동 응답과 답장 매크로의 차이는 무엇인가요?",
-    a: "자동 응답은 들어오는 메시지에 키워드가 포함되면 자동으로 답변을 보내는 기능입니다. 답장 매크로는 설정한 시간/간격에 따라 지정된 채팅방으로 메시지를 발송합니다. 두 기능 모두 완전 자동화되어 있습니다.",
+    a: "자동 응답은 들어오는 메시지에 키워드가 포함되면 자동으로 답변을 보내는 기능입니다. 답장 매크로는 설정한 시간/간격에 따라 지정된 채팅방으로 메시지를 발송합니다. 두 기능 모두 대시보드에서 설정 가능합니다.",
   },
   {
     q: "전달 분석에서는 어떤 정보를 볼 수 있나요?",
-    a: "총 전달 시도, 성공/실패 수, 성공률, 실패 원인별 분석, 계정별 성과, 시간대별 전달 추이, 평균 및 P95 전달 지연 시간을 확인할 수 있습니다. 모든 분석은 선택한 기간(7/14/30/90일) 기준으로 필터링 가능합니다.",
+    a: "총 전달 시도, 성공/실패 수, 성공률, 실패 원인별 분석, 계정별 성과, 시간대별 전달 추이, 전달 지연 시간을 확인할 수 있습니다. 분석 기간(7/14/30/90일)을 선택하여 필터링할 수 있습니다.",
   },
   {
     q: "USDT 결제는 어떻게 하나요?",
-    a: "원하는 요금제를 선택하면 USDT(TRC20) 지갑 주소와 송금 금액이 표시됩니다. 송금 시 메모에 고유 코드를 반드시 입력해야 하며, 입금 확인 후 5~10분 내에 자동으로 API 키가 발급됩니다.",
+    a: "원하는 요금제를 선택하면 USDT(TRC20) 지갑 주소와 송금 금액이 표시됩니다. 송금 시 메모에 고유 코드를 반드시 입력해야 하며, 입금 확인 후 API 키가 발급됩니다.",
   },
   {
-    q: "서버는 어디에서 호스팅되나요?",
-    a: "자체 인프라에서 24/7 운영됩니다. 자동 응답 및 예약 발송 기능을 위해 항상 온라인 상태를 유지하며, 정기적인 백업과 모니터링이 이루어집니다.",
+    q: "가입 후 바로 사용할 수 있나요?",
+    a: "네. 무료 플랜으로 가입하면 즉시 API 키가 발급되며, 대시보드에 로그인하여 Telegram 계정을 연결한 후 바로 자동 응답과 발송 기능을 사용할 수 있습니다.",
   },
 ];
 
@@ -175,17 +176,17 @@ export default function LandingPage() {
   return (
     <div className="bg-app-bg">
       {/* ═══ Hero ═══ */}
-      <section className="relative overflow-hidden bg-grid">
-        <div className="hero-orb hero-orb-1" />
-        <div className="hero-orb hero-orb-2" />
-        <div className="hero-orb hero-orb-3" />
+      <section className="relative overflow-hidden bg-grid" aria-label="소개">
+        <div className="hero-orb hero-orb-1" aria-hidden="true" />
+        <div className="hero-orb hero-orb-2" aria-hidden="true" />
+        <div className="hero-orb hero-orb-3" aria-hidden="true" />
 
-        <div className="relative mx-auto max-w-6xl px-4 pt-32 pb-24 sm:px-6 lg:px-8 text-center">
-          <div className="badge-premium mx-auto w-fit mb-6 animate-fade-in">
-            v2.0 출시 · 지금 가입하면 1개월 무료
+        <div className="relative mx-auto max-w-6xl px-4 pt-28 pb-20 sm:pt-32 sm:pb-24 sm:px-6 lg:px-8 text-center">
+          <div className="badge-premium mx-auto w-fit mb-6 animate-fade-in" role="status">
+            지금 가입하면 즉시 사용 가능
           </div>
 
-          <h1 className="text-[clamp(2rem,5vw,3.75rem)] font-bold leading-[1.1] tracking-tight animate-slide-up">
+          <h1 className="text-[clamp(1.75rem,4.5vw,3.5rem)] font-bold leading-[1.15] tracking-tight animate-slide-up">
             텔레그램 자동화,
             <br />
             <span className="text-app-primary">코딩 없이</span>
@@ -193,41 +194,41 @@ export default function LandingPage() {
             하나의 대시보드에서
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-app-text-secondary animate-slide-up leading-relaxed">
-            Telegram 계정 관리, 자동 응답, 예약 발송, 전달 분석까지.
+          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-app-text-secondary animate-slide-up leading-relaxed">
+            여러 Telegram 계정을 연결하고, 자동 응답을 설정하고, 메시지를 예약 발송하며, 
             <br className="hidden sm:inline" />
-            복잡한 프로그래밍 없이 클릭 몇 번으로 텔레그램 운영을 완전 자동화하세요.
+            모든 전달 내역을 분석하세요. 복잡한 프로그래밍이 필요하지 않습니다.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-slide-up">
             <Link
               href="/signup"
-              className="btn-primary inline-flex h-12 items-center gap-2 rounded-xl px-8 text-base font-semibold relative z-10"
+              className="btn-primary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-semibold relative z-10"
             >
               무료로 시작하기
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
               href="/features"
-              className="btn-secondary inline-flex h-12 items-center gap-2 rounded-xl px-8 text-base font-medium"
+              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
             >
               기능 살펴보기
             </Link>
           </div>
 
-          {/* Trust indicators */}
-          <div className="mx-auto mt-16 max-w-3xl glass-card rounded-2xl p-8 animate-fade-in">
-            <div className="flex items-center justify-center gap-8 sm:gap-16 text-sm text-app-text-secondary">
+          {/* Trust indicators — factual only */}
+          <div className="mx-auto mt-14 sm:mt-16 max-w-3xl glass-card rounded-2xl p-6 sm:p-8 animate-fade-in">
+            <div className="flex items-center justify-center gap-6 sm:gap-12 text-sm text-app-text-secondary">
               {[
                 { value: "1분", label: "설치 시간" },
-                { value: "무제한", label: "계정 연결" },
-                { value: "99.9%", label: "가동률" },
+                { value: "1개", label: "Free 플랜 계정" },
+                { value: "5개", label: "Pro 플랜 계정" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold text-app-primary">
+                  <div className="text-2xl sm:text-3xl font-bold text-app-primary">
                     {stat.value}
                   </div>
-                  <div className="mt-1.5 text-xs sm:text-sm">{stat.label}</div>
+                  <div className="mt-1 text-xs sm:text-sm whitespace-nowrap">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -236,7 +237,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ Problems Solved ═══ */}
-      <section className="relative px-4 py-24 sm:px-6 lg:px-8 bg-app-surface/30">
+      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30" aria-label="해결하는 문제">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
@@ -244,7 +245,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 sm:mt-12 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 title: "반복적인 메시지 발송",
@@ -268,12 +269,12 @@ export default function LandingPage() {
               },
               {
                 title: "데이터 기반 의사결정",
-                desc: "어떤 계정이 가장 효과적인지, 어떤 시간대에 발송이 잘 되는지 데이터로 확인하세요.",
+                desc: "어떤 계정이 가장 효과적인지, 어떤 시간대에 발송이 잘 되는지 전달 분석 데이터로 확인하세요.",
               },
             ].map((item) => (
               <div
                 key={item.title}
-                className="glass-card rounded-2xl p-6 hover:border-app-border-strong transition-all"
+                className="glass-card rounded-2xl p-5 sm:p-6 hover:border-app-border-strong transition-all"
               >
                 <h3 className="text-sm font-semibold text-app-text">
                   {item.title}
@@ -288,31 +289,30 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ Core Features ═══ */}
-      <section className="relative px-4 py-24 sm:px-6 lg:px-8" id="features">
+      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" id="features" aria-label="핵심 기능">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
               실제 구현된{" "}
               <span className="text-app-primary">모든 기능</span>
             </h2>
-            <p className="mt-4 text-base sm:text-lg text-app-text-secondary max-w-2xl mx-auto">
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary max-w-2xl mx-auto">
               아래 기능은 모두 현재 대시보드에서 실제로 사용할 수 있습니다.
               허위 광고 없이, 실제 구동되는 기능만을 소개합니다.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-14 sm:mt-16 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {CAPABILITIES.map((feat, i) => {
               const Icon = feat.icon;
               return (
                 <div
                   key={feat.title}
-                  className="glass-card rounded-2xl p-6 animate-slide-up hover:border-app-border-strong transition-all"
-                  style={{ animationDelay: `${i * 0.05}s` }}
+                  className="glass-card rounded-2xl p-5 sm:p-6 animate-slide-up hover:border-app-border-strong transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-primary/10 text-app-primary">
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <h3 className="text-base font-semibold text-app-text">
                       {feat.title}
@@ -327,7 +327,7 @@ export default function LandingPage() {
                         key={d}
                         className="flex items-center gap-2 text-xs text-app-text-muted"
                       >
-                        <CheckCircle2 className="h-3 w-3 shrink-0 text-app-primary" />
+                        <CheckCircle2 className="h-3 w-3 shrink-0 text-app-primary" aria-hidden="true" />
                         {d}
                       </li>
                     ))}
@@ -340,21 +340,21 @@ export default function LandingPage() {
           <div className="mt-12 text-center">
             <Link
               href="/features"
-              className="btn-secondary inline-flex h-12 items-center gap-2 rounded-xl px-8 text-base font-medium"
+              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
             >
               모든 기능 상세 보기
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* ═══ Delivery Analytics Spotlight ═══ */}
-      <section className="relative px-4 py-24 sm:px-6 lg:px-8 bg-app-surface/30">
+      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30" aria-label="전달 분석">
         <div className="mx-auto max-w-5xl">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
+          <div className="grid gap-10 lg:gap-12 lg:grid-cols-2 items-center">
             <div>
-              <div className="badge-premium w-fit mb-4">신규</div>
+              <div className="badge-premium w-fit mb-4">대시보드 기능</div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
                 메시지 전달{" "}
                 <span className="text-app-primary">분석</span>
@@ -362,7 +362,7 @@ export default function LandingPage() {
               <p className="mt-4 text-base text-app-text-secondary leading-relaxed">
                 단순히 메시지를 발송하는 것에서 그치지 않습니다. 
                 모든 전달 결과를 수집하여 성공률, 실패 원인, 계정별 성과,
-                전달 지연 시간까지 상세하게 분석합니다.
+                전달 지연 시간까지 대시보드에서 상세하게 확인할 수 있습니다.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
@@ -370,46 +370,61 @@ export default function LandingPage() {
                   "실패 유형별 인텔리전스 분석",
                   "계정별 전달 성과 랭킹",
                   "시간대별 전달 타임라인",
-                  "P95 전달 지연 시간 측정",
+                  "전달 지연 시간 측정",
                   "소스별(발송/자동응답/매크로) 분석",
                 ].map((item) => (
                   <li
                     key={item}
                     className="flex items-center gap-3 text-sm text-app-text-secondary"
                   >
-                    <BarChart3 className="h-4 w-4 shrink-0 text-app-primary" />
+                    <BarChart3 className="h-4 w-4 shrink-0 text-app-primary" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="glass-card rounded-2xl p-8 sm:p-10">
-              <div className="space-y-4">
-                {/* Mock analytics card */}
+            {/* Visual representation — no fabricated numbers */}
+            <div className="glass-card rounded-2xl p-6 sm:p-8" aria-label="전달 분석 대시보드 미리보기">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="text-xs text-app-text-muted">전달 성공률</span>
-                  <div className="text-lg font-bold text-app-success">94.7%</div>
+                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
+                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                    총 전달 시도
+                  </span>
+                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="text-xs text-app-text-muted">평균 지연</span>
-                  <div className="text-lg font-bold text-app-text">1.2s</div>
+                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-app-success" aria-hidden="true" />
+                    성공
+                  </span>
+                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="text-xs text-app-text-muted">P95 지연</span>
-                  <div className="text-lg font-bold text-app-text">3.8s</div>
+                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                    전달 지연
+                  </span>
+                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="text-xs text-app-text-muted">영향받은 계정</span>
-                  <div className="text-lg font-bold text-app-text">2</div>
+                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
+                    <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                    계정별 성과
+                  </span>
+                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
                 </div>
               </div>
+              <p className="mt-4 text-center text-xs text-app-text-muted">
+                실제 데이터는 대시보드에서 확인할 수 있습니다
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══ How It Works ═══ */}
-      <section className="relative px-4 py-24 sm:px-6 lg:px-8">
+      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" aria-label="사용 방법">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
@@ -417,19 +432,19 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="mt-14 sm:mt-16 grid gap-10 md:gap-8 md:grid-cols-3">
             {HOW_IT_WORKS.map((item, i) => (
               <div key={item.step} className="relative text-center">
                 {i < 2 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-[70%] h-px bg-gradient-to-r from-app-primary/40 to-transparent" />
+                  <div className="hidden md:block absolute top-8 left-[60%] w-[65%] h-px bg-gradient-to-r from-app-primary/40 to-transparent" aria-hidden="true" />
                 )}
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-app-primary/10 text-2xl font-bold text-app-primary">
+                <div className="mx-auto flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-app-primary/10 text-xl sm:text-2xl font-bold text-app-primary">
                   {item.step}
                 </div>
-                <h3 className="mt-6 text-lg font-semibold text-app-text">
+                <h3 className="mt-5 sm:mt-6 text-base sm:text-lg font-semibold text-app-text">
                   {item.title}
                 </h3>
-                <p className="mt-3 text-sm text-app-text-secondary leading-relaxed max-w-xs mx-auto">
+                <p className="mt-2 sm:mt-3 text-sm text-app-text-secondary leading-relaxed max-w-xs mx-auto">
                   {item.desc}
                 </p>
               </div>
@@ -441,58 +456,59 @@ export default function LandingPage() {
       {/* ═══ Pricing ═══ */}
       <section
         id="pricing"
-        className="relative px-4 py-24 sm:px-6 lg:px-8 bg-app-surface/30"
+        className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30"
+        aria-label="요금제"
       >
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
               투명한 <span className="text-app-primary">가격</span>
             </h2>
-            <p className="mt-4 text-base sm:text-lg text-app-text-secondary">
-              필요한 만큼만 선택하세요. 언제든지 변경 가능합니다.
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary">
+              필요한 만큼만 선택하세요.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
+          <div className="mt-14 sm:mt-16 grid gap-6 md:gap-8 md:grid-cols-3 max-w-5xl mx-auto">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl p-8 transition-all duration-300 animate-scale-in ${
+                className={`relative rounded-2xl p-6 sm:p-8 transition-all duration-300 animate-scale-in ${
                   plan.popular
-                    ? "card-premium border-app-primary/30 shadow-xl shadow-app-primary/10 scale-105"
+                    ? "card-premium border-app-primary/30 shadow-xl shadow-app-primary/10 md:scale-105"
                     : "glass-card"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-app-primary px-5 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-app-primary px-4 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap">
                     가장 인기
                   </div>
                 )}
                 <h3 className="text-xl font-bold text-app-text">
                   {plan.name}
                 </h3>
-                <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-app-text">
+                <div className="mt-5 sm:mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl sm:text-5xl font-bold text-app-text">
                     ${plan.price}
                   </span>
                   <span className="text-sm text-app-text-secondary">
                     /{plan.period}
                   </span>
                 </div>
-                <ul className="mt-8 space-y-4">
+                <ul className="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
                   {plan.features.map((f) => (
                     <li
                       key={f}
                       className="flex items-center gap-3 text-sm text-app-text-secondary"
                     >
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-app-primary" />
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-app-primary" aria-hidden="true" />
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href={plan.href}
-                  className={`mt-8 flex h-12 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
+                  className={`mt-6 sm:mt-8 flex h-12 min-h-[48px] items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                     plan.popular
                       ? "btn-primary relative z-10"
                       : "btn-secondary"
@@ -507,23 +523,23 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FAQ ═══ */}
-      <section id="faq" className="relative px-4 py-24 sm:px-6 lg:px-8">
+      <section id="faq" className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" aria-label="자주 묻는 질문">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
             자주 묻는 <span className="text-app-primary">질문</span>
           </h2>
-          <div className="mt-12 space-y-3">
+          <div className="mt-10 sm:mt-12 space-y-3">
             {FAQS.map((faq, i) => (
               <details
                 key={i}
                 className="group glass-card rounded-xl overflow-hidden"
               >
-                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-medium text-app-text hover:text-app-primary transition-colors">
+                <summary className="flex cursor-pointer items-center justify-between px-4 py-4 sm:px-5 text-sm font-medium text-app-text hover:text-app-primary transition-colors min-h-[48px]">
                   {faq.q}
-                  <ChevronDown className="h-4 w-4 shrink-0 text-app-text-muted transition-transform group-open:rotate-180" />
+                  <ChevronDown className="h-4 w-4 shrink-0 ml-2 text-app-text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="divider-gradient" />
-                <div className="px-5 py-4 text-sm text-app-text-secondary leading-relaxed">
+                <div className="px-4 py-4 sm:px-5 text-sm text-app-text-secondary leading-relaxed">
                   {faq.a}
                 </div>
               </details>
@@ -533,27 +549,27 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ Final CTA ═══ */}
-      <section className="relative px-4 py-24 sm:px-6 lg:px-8 text-center bg-app-surface/30">
+      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 text-center bg-app-surface/30" aria-label="시작하기">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
             지금 바로 <span className="text-app-primary">시작</span>하세요
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-app-text-secondary max-w-xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary max-w-xl mx-auto">
             1분만에 계정을 연결하고 텔레그램 자동화를 경험해보세요.
             <br />
             신용카드 없이 무료로 시작할 수 있습니다.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link
               href="/signup"
-              className="btn-primary inline-flex h-12 items-center gap-2 rounded-xl px-10 text-base font-semibold relative z-10"
+              className="btn-primary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-10 text-base font-semibold relative z-10"
             >
               무료로 시작하기
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
               href="/get-api-key"
-              className="btn-secondary inline-flex h-12 items-center gap-2 rounded-xl px-8 text-base font-medium"
+              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
             >
               API 키 발급받기
             </Link>
