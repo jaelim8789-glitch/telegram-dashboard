@@ -17,7 +17,8 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { MAX_BROADCAST_RECIPIENTS, RECURRING_INTERVALS, isBroadcastInFlight, isRecurringActive, type Broadcast, type BroadcastStatus } from "@/types";
+import { MAX_BROADCAST_RECIPIENTS, RECURRING_INTERVALS, isBroadcastInFlight, isRecurringActive, isRecurringBroadcast, type Broadcast, type BroadcastStatus } from "@/types";
+import { useCountdown } from "@/lib/useRecurringCountdown";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
@@ -55,6 +56,96 @@ function formatRelativeTime(iso: string): string {
 
 function formatDateTime(iso: string): string {
   return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
+}
+
+function HistoryRow({
+  h,
+  cancelling,
+  retrying,
+  onCancelClick,
+  onRetry,
+}: {
+  h: Broadcast;
+  cancelling: string | null;
+  retrying: string | null;
+  onCancelClick: (b: Broadcast) => void;
+  onRetry: (b: Broadcast) => void;
+}) {
+  const meta = STATUS_TONE[h.status];
+  const isFailed = h.status === "failed";
+  const isSending = h.status === "sending";
+  const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
+  const recurring = isRecurringActive(h);
+  const recurringCancelled = h.status === "cancelled" && isRecurringBroadcast(h);
+  const countdown = useCountdown(recurring ? h.nextScheduledAt : null);
+
+  return (
+    <div
+      className={`flex items-center justify-between py-2.5 text-sm ${isFailed ? "rounded-lg bg-app-danger-muted/30 -mx-2 px-2" : ""} ${recurringCancelled ? "rounded-lg bg-app-warning-muted/20 -mx-2 px-2" : ""}`}
+    >
+      <div className="min-w-0 flex-1 pr-3">
+        <div className="truncate text-app-text">{h.message}</div>
+        <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-app-text-subtle">
+          {isFutureSchedule && h.scheduledAt
+            ? `${formatDateTime(h.scheduledAt)} 예약`
+            : recurring && h.nextScheduledAt
+              ? `${formatDateTime(h.nextScheduledAt)} 반복 예정`
+              : recurringCancelled
+                ? "반복 취소됨"
+                : h.createdAt
+                  ? formatRelativeTime(h.createdAt)
+                  : ""}{" "}
+          · {h.recipients.length}명
+          {recurring && <Badge tone="info">반복</Badge>}
+          {isSending && <span className="text-app-primary">발송 중...</span>}
+          {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
+          {countdown && <span className="font-mono text-app-info">{countdown}</span>}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {isSending ? (
+          <Badge tone="info">
+            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+            발송 중
+          </Badge>
+        ) : recurringCancelled ? (
+          <Badge tone="warning">반복 취소</Badge>
+        ) : recurring ? (
+          <Badge tone="info">반복 중</Badge>
+        ) : isFutureSchedule ? (
+          <Badge tone="info">예약됨</Badge>
+        ) : isFailed ? (
+          <Badge tone="danger">실패</Badge>
+        ) : h.status === "sent" ? (
+          <Badge tone="success">완료</Badge>
+        ) : (
+          <Badge tone="neutral">{meta.label}</Badge>
+        )}
+        {recurring && (
+          <button
+            type="button"
+            onClick={() => onCancelClick(h)}
+            disabled={cancelling === h.id}
+            title="반복 취소"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${cancelling === h.id ? "animate-spin" : ""}`} />
+          </button>
+        )}
+        {isFailed && (
+          <button
+            type="button"
+            onClick={() => onRetry(h)}
+            disabled={retrying === h.id}
+            title="재발송"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function SendTab() {
@@ -183,6 +274,10 @@ export function SendTab() {
     setSubmitError(null);
     setSubmitNotice(null);
     setHistoryFilter("all");
+    setIsScheduled(false);
+    setScheduledAtLocal("");
+    setIsRecurring(false);
+    setRecurringInterval(60);
     if (selectedAccountId) {
       loadGroups(selectedAccountId);
       loadHistory(selectedAccountId);
@@ -537,77 +632,16 @@ export function SendTab() {
         )}
         {filteredHistory.length > 0 && (
           <div className="divide-y divide-app-border">
-            {filteredHistory.map((h) => {
-              const meta = STATUS_TONE[h.status];
-              const isFailed = h.status === "failed";
-              const isSending = h.status === "sending";
-              const isCancelled = h.status === "cancelled";
-              const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
-              const recurring = isRecurringActive(h);
-              return (
-                <div
-                  key={h.id}
-                  className={`flex items-center justify-between py-2.5 text-sm ${isFailed ? "rounded-lg bg-app-danger-muted/30 -mx-2 px-2" : ""} ${isCancelled ? "rounded-lg bg-app-warning-muted/20 -mx-2 px-2" : ""}`}
-                >
-                  <div className="min-w-0 flex-1 pr-3">
-                    <div className="truncate text-app-text">{h.message}</div>
-                    <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-app-text-subtle">
-                      {isFutureSchedule && h.scheduledAt
-                        ? `${formatDateTime(h.scheduledAt)} 예약`
-                        : recurring && h.nextScheduledAt
-                          ? `${formatDateTime(h.nextScheduledAt)} 반복 예정`
-                          : isCancelled
-                            ? "반복 취소됨"
-                            : h.createdAt
-                              ? formatRelativeTime(h.createdAt)
-                              : ""}{" "}
-                      · {h.recipients.length}명
-                      {recurring && <Badge tone="info">반복</Badge>}
-                      {isSending && <span className="text-app-primary">발송 중...</span>}
-                      {h.errorMessage && <span className="text-app-danger"> · {h.errorMessage}</span>}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {isSending ? (
-                      <Badge tone="info">
-                        <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-                        발송 중
-                      </Badge>
-                    ) : isCancelled ? (
-                      <Badge tone="warning">취소됨</Badge>
-                    ) : recurring ? (
-                      <Badge tone="info">반복 중</Badge>
-                    ) : (
-                      <Badge tone={isFutureSchedule ? "info" : meta.tone}>
-                        {isFutureSchedule ? "예약됨" : meta.label}
-                      </Badge>
-                    )}
-                    {recurring && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancelClick(h)}
-                        disabled={cancelling === h.id}
-                        title="반복 취소"
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
-                      >
-                        <RefreshCw className={`h-3.5 w-3.5 ${cancelling === h.id ? "animate-spin" : ""}`} />
-                      </button>
-                    )}
-                    {isFailed && (
-                      <button
-                        type="button"
-                        onClick={() => handleRetry(h)}
-                        disabled={retrying === h.id}
-                        title="재발송"
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
-                      >
-                        <RefreshCw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {filteredHistory.map((h) => (
+              <HistoryRow
+                key={h.id}
+                h={h}
+                cancelling={cancelling}
+                retrying={retrying}
+                onCancelClick={handleCancelClick}
+                onRetry={handleRetry}
+              />
+            ))}
           </div>
         )}
         {filteredHistory.length === 0 && history.length > 0 && (
