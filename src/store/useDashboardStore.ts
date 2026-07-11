@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Account, Group, TabId } from "@/types";
+import type { Account, Broadcast, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
 import { MAX_BROADCAST_RECIPIENTS } from "@/types";
 
@@ -59,6 +59,9 @@ interface DashboardState {
   setSendSelectedGroupIds: (ids: string[]) => void;
   clearSendRecipients: () => void;
   clearSendDraft: () => void;
+  reuseBroadcast: (broadcast: Broadcast) => void;
+  reuseNotice: string | null;
+  setReuseNotice: (notice: string | null) => void;
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
@@ -166,5 +169,18 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }),
   setSendSelectedGroupIds: (ids) => set({ sendSelectedGroupIds: ids }),
   clearSendRecipients: () => set({ sendSelectedGroupIds: [] }),
-  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [] }),
+  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [], reuseNotice: null }),
+
+  reuseNotice: null,
+  setReuseNotice: (notice) => set({ reuseNotice: notice }),
+
+  reuseBroadcast: (broadcast) => {
+    set({
+      sendMessage: broadcast.message,
+      sendSelectedGroupIds: broadcast.recipients,
+      sendImageFile: null,
+      activeTab: "send",
+      reuseNotice: "설정을 불러왔습니다. 내용을 확인 후 발송하세요.",
+    });
+  },
 }));
