@@ -365,11 +365,14 @@ export function GroupSearchTab() {
                 <span className="text-xs text-app-text-muted sm:ml-2">
                   {hasSuccess ? `${successCount}개 그룹 가입 완료` : ""}
                 </span>
-                {hasSuccess && (
+                  {hasSuccess && (
                   <button
                     onClick={() => {
                       const store = useDashboardStore.getState();
-                      joinResults.filter(r => r.success).forEach(r => store.toggleSendGroupId(r.chat_id));
+                      joinResults.filter(r => r.success).forEach(r => {
+                        const id = r.result_id ?? r.chat_id;
+                        store.toggleSendGroupId(id);
+                      });
                       store.setActiveTab("send");
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-app-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors sm:ml-auto"

@@ -26,6 +26,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { Field, Select, Textarea } from "@/components/ui/Field";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
@@ -102,71 +104,6 @@ function CountPill({
       <div className={cn("mt-0.5 font-bold tabular-nums tracking-tight", tone === "danger" ? "text-app-danger" : "text-app-text")}>
         {value}
       </div>
-    </div>
-  );
-}
-
-function ConfirmDialog({
-  open,
-  title,
-  message,
-  confirmLabel,
-  tone,
-  loading,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel: string;
-  tone: "danger" | "warning" | "info";
-  loading?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm" onClick={onCancel}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-sm rounded-2xl border border-app-border bg-app-card p-5 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-              tone === "danger" && "bg-app-danger-muted text-app-danger",
-              tone === "warning" && "bg-app-warning-muted text-app-warning",
-              tone === "info" && "bg-app-info-muted text-app-info",
-            )}
-          >
-            {tone === "danger" && <AlertTriangle className="h-5 w-5" />}
-            {tone === "warning" && <AlertCircle className="h-5 w-5" />}
-            {tone === "info" && <Info className="h-5 w-5" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-app-text">{title}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-app-text-muted">{message}</p>
-          </div>
-        </div>
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="ghost" onClick={onCancel} className="min-h-[44px] sm:min-h-0">
-            취소
-          </Button>
-          <Button
-            variant={tone === "danger" ? "danger" : "primary"}
-            onClick={onConfirm}
-            loading={loading}
-            className="min-h-[44px] sm:min-h-0"
-          >
-            {confirmLabel}
-          </Button>
-        </div>
-      </motion.div>
     </div>
   );
 }
@@ -591,6 +528,7 @@ function ScheduleCard({
 export function RecurringScheduleTab() {
   const accounts = useDashboardStore((state) => state.accounts);
   const selectedAccountId = useDashboardStore((state) => state.selectedAccountId);
+  const { toast } = useToast();
 
   const [recurring, setRecurring] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(true);
@@ -667,7 +605,7 @@ export function RecurringScheduleTab() {
       });
       setConfirm(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "취소 실패");
+      toast("error", err instanceof Error ? err.message : "취소 실패");
     } finally {
       setActionLoading(null);
     }
@@ -679,7 +617,7 @@ export function RecurringScheduleTab() {
       const updated = await api.pauseRecurringBroadcast(broadcast.id);
       setRecurring((previous) => previous.map((item) => (item.id === broadcast.id ? { ...item, ...updated } : item)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "일시중지 실패");
+      toast("error", err instanceof Error ? err.message : "일시중지 실패");
     } finally {
       setActionLoading(null);
     }
@@ -691,7 +629,7 @@ export function RecurringScheduleTab() {
       const updated = await api.unpauseRecurringBroadcast(broadcast.id);
       setRecurring((previous) => previous.map((item) => (item.id === broadcast.id ? { ...item, ...updated } : item)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "재개 실패");
+      toast("error", err instanceof Error ? err.message : "재개 실패");
     } finally {
       setActionLoading(null);
     }
@@ -1047,10 +985,9 @@ export function RecurringScheduleTab() {
       <ConfirmDialog
         open={confirm?.action === "cancel"}
         title="반복 발송 취소"
-        message={`"${confirm?.broadcast.message.slice(0, 50)}" 반복 발송을 영구 취소합니다.`}
+        description={`"${confirm?.broadcast.message.slice(0, 50)}" 반복 발송을 영구 취소합니다.`}
         confirmLabel="취소하기"
-        tone="danger"
-        loading={actionLoading === confirm?.broadcast.id}
+        variant="danger"
         onConfirm={handleCancel}
         onCancel={() => setConfirm(null)}
       />
