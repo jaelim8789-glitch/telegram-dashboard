@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Users, UserPlus, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw,
   Filter, ExternalLink, Hash, MessageCircle, Ban, AlertTriangle, ChevronDown,
+  Send, RotateCcw,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,8 @@ import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api_group_search";
 import type { GroupSearchResult, GroupJoinLog, JoinInfo } from "@/lib/api_group_search";
+
+type JoinResultItem = { chat_id: string; title: string; success: boolean; error: string | null; result_id?: string };
 
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
@@ -53,6 +56,14 @@ const CHAT_TYPE_ICON: Record<string, typeof Users> = {
   channel: MessageCircle,
 };
 
+/** Reconcile new join results with previous results, preserving successes. */
+function reconcileResults(prev: JoinResultItem[], next: JoinResultItem[]): JoinResultItem[] {
+  const map = new Map<string, JoinResultItem>();
+  for (const r of prev) map.set(r.chat_id, r);
+  for (const r of next) map.set(r.chat_id, r);
+  return Array.from(map.values());
+}
+
 export function GroupSearchTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const accounts = useDashboardStore((s) => s.accounts);
@@ -63,13 +74,15 @@ export function GroupSearchTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [joinInfo, setJoinInfo] = useState<JoinInfo | null>(null);
   const [joinLoading, setJoinLoading] = useState(false);
-  const [joinResults, setJoinResults] = useState<{ title: string; success: boolean; error: string | null }[] | null>(null);
+  const [retryLoading, setRetryLoading] = useState(false);
+  const [joinResults, setJoinResults] = useState<JoinResultItem[] | null>(null);
   const [joinLogs, setJoinLogs] = useState<GroupJoinLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showJoined, setShowJoined] = useState(false);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const lastAccountIdRef = useRef<string | null>(null);
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
@@ -88,7 +101,12 @@ export function GroupSearchTab() {
     try { setResults(await api.fetchSearchResults(selectedAccountId)); } catch { /* ignore */ }
   }, [selectedAccountId]);
 
+  // Clear stale join results on account switch
   useEffect(() => {
+    if (lastAccountIdRef.current && lastAccountIdRef.current !== selectedAccountId) {
+      setJoinResults(null);
+    }
+    lastAccountIdRef.current = selectedAccountId ?? null;
     if (selectedAccountId) {
       loadJoinInfo();
       loadJoinLogs();
@@ -148,17 +166,42 @@ export function GroupSearchTab() {
 
   async function handleJoin() {
     if (!selectedAccountId || selectedIds.size === 0 || joinLoading) return;
+    const ids = Array.from(selectedIds);
     setJoinLoading(true);
     setError(null);
-    setJoinResults(null);
     try {
-      const result = await api.joinSelectedGroups(Array.from(selectedIds));
-      setJoinResults(result);
+      const rawResults = await api.joinSelectedGroups(ids);
+      const resultIdMap = new Map(results.filter(r => ids.includes(r.id)).map(r => [r.chatId, r.id]));
+      const enriched: JoinResultItem[] = rawResults.map(r => ({
+        ...r,
+        result_id: resultIdMap.get(r.chat_id),
+      }));
+      setJoinResults((prev) => prev ? reconcileResults(prev, enriched) : enriched);
       setSelectedIds(new Set());
       await Promise.all([loadJoinInfo(), loadJoinLogs(), loadSavedResults()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "그룹 가입에 실패했습니다.");
     } finally { setJoinLoading(false); }
+  }
+
+  async function handleRetryFailed() {
+    if (!selectedAccountId || !joinResults || retryLoading) return;
+    const failedResultIds = joinResults.filter(r => !r.success).map(r => r.result_id).filter((id): id is string => id != null);
+    if (failedResultIds.length === 0) return;
+    setRetryLoading(true);
+    setError(null);
+    try {
+      const rawResults = await api.joinSelectedGroups(failedResultIds);
+      const resultIdMap = new Map(results.filter(r => failedResultIds.includes(r.id)).map(r => [r.chatId, r.id]));
+      const enriched: JoinResultItem[] = rawResults.map(r => ({
+        ...r,
+        result_id: resultIdMap.get(r.chat_id),
+      }));
+      setJoinResults((prev) => prev ? reconcileResults(prev, enriched) : enriched);
+      await Promise.all([loadJoinInfo(), loadJoinLogs(), loadSavedResults()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "재시도에 실패했습니다.");
+    } finally { setRetryLoading(false); }
   }
 
   // Filter logic
@@ -173,6 +216,12 @@ export function GroupSearchTab() {
     const t = r.chatType ?? "unknown";
     typeCounts[t] = (typeCounts[t] ?? 0) + 1;
   }
+
+  // Computed join result state
+  const successCount = joinResults?.filter(r => r.success).length ?? 0;
+  const failCount = joinResults?.filter(r => !r.success).length ?? 0;
+  const hasSuccess = successCount > 0;
+  const hasFailures = failCount > 0;
 
   if (!selectedAccountId) {
     return (
@@ -278,7 +327,7 @@ export function GroupSearchTab() {
               <div className="space-y-1.5">
                 {joinResults.map((r, i) => (
                   <motion.div
-                    key={i}
+                    key={r.chat_id || i}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
@@ -291,11 +340,43 @@ export function GroupSearchTab() {
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       {r.success
                         ? <Badge tone="success"><CheckCircle className="mr-1 h-3 w-3" /> 가입 완료</Badge>
-                        : <Badge tone="danger"><XCircle className="mr-1 h-3 w-3" /> {r.error || "실패"}</Badge>
+                        : <Badge tone="danger" className="max-w-[200px] text-right"><span className="truncate">{r.error || "실패"}</span></Badge>
                       }
                     </div>
                   </motion.div>
                 ))}
+              </div>
+
+              {/* Action bar: Retry Failed + Continue to Send */}
+              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border-t border-app-border pt-3">
+                {hasFailures && (
+                  <button
+                    onClick={handleRetryFailed}
+                    disabled={retryLoading}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-50"
+                  >
+                    {retryLoading ? (
+                      <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> 재시도 중...</>
+                    ) : (
+                      <><RotateCcw className="h-3.5 w-3.5" /> 실패 {failCount}개만 다시 시도</>
+                    )}
+                  </button>
+                )}
+                <span className="text-xs text-app-text-muted sm:ml-2">
+                  {hasSuccess ? `${successCount}개 그룹 가입 완료` : ""}
+                </span>
+                {hasSuccess && (
+                  <button
+                    onClick={() => {
+                      const store = useDashboardStore.getState();
+                      joinResults.filter(r => r.success).forEach(r => store.toggleSendGroupId(r.chat_id));
+                      store.setActiveTab("send");
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-app-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors sm:ml-auto"
+                  >
+                    <Send className="h-3.5 w-3.5" /> 발송하러 가기
+                  </button>
+                )}
               </div>
             </Panel>
           </motion.div>
