@@ -3,20 +3,28 @@ import { PublicLayoutClient } from "./PublicLayoutClient";
 
 export const metadata: Metadata = {
   title: {
-    default: `TeleMon | 텔레그램 자동화 매크로 플랫폼`,
-    template: `%s | TeleMon`,
+    default: "TeleMon | Telegram operations workspace",
+    template: "%s | TeleMon",
   },
   description:
-    "Telegram 계정 관리, 자동 응답, 예약 발송, 그룹 검색, 계정 건강 모니터링, 전달 분석까지. 코딩 없이 하나의 대시보드에서 텔레그램을 완전 자동화하세요.",
-  keywords:
-    "텔레그램, 텔레그램 매크로, 텔레그램 자동응답, 텔레그램 발송, FAQ 봇, Telegram 자동화, 텔레그램 그룹 관리, 텔레그램 분석",
+    "TeleMon is a Telegram operations platform for managing accounts, broadcasts, groups, automation, scheduling, failure recovery, and delivery analytics.",
+  keywords: [
+    "TeleMon",
+    "Telegram operations",
+    "broadcast scheduling",
+    "group discovery",
+    "auto reply",
+    "reply macro",
+    "failure recovery",
+    "delivery analytics",
+  ],
   openGraph: {
-    title: "TeleMon | 텔레그램 자동화 플랫폼",
+    title: "TeleMon | Telegram operations workspace",
     description:
-      "하나의 대시보드에서 텔레그램 계정 관리, 자동 응답, 발송, 분석까지.",
+      "Manage Telegram accounts, broadcasts, groups, automation, scheduling, recovery, and analytics in one operational workspace.",
     siteName: "TeleMon",
     type: "website",
-    locale: "ko_KR",
+    locale: "en_US",
   },
 };
 

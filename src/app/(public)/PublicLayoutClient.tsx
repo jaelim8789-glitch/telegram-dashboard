@@ -5,6 +5,13 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { SITE } from "@/lib/site";
 
+const NAV_LINKS = [
+  { label: "Product", href: "#product" },
+  { label: "Workflows", href: "#workflows" },
+  { label: "Why TeleMon", href: "#why" },
+  { label: "FAQ", href: "#faq" },
+];
+
 export function PublicLayoutClient({
   children,
 }: {
@@ -12,183 +19,167 @@ export function PublicLayoutClient({
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const closeMobileNav = () => setMobileNavOpen(false);
+
   return (
-    <div className="min-h-screen flex flex-col bg-app-bg">
-      {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 dashboard-header">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-app-primary to-orange-600 text-sm font-bold text-white shadow-lg shadow-app-primary/25 group-hover:shadow-app-primary/40 transition-all">
+    <div className="flex min-h-screen flex-col bg-app-bg">
+      <header className="dashboard-header sticky top-0 z-50">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="focus-ring flex items-center gap-2.5 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-app-primary to-orange-600 text-sm font-bold text-white shadow-lg shadow-app-primary/25">
               TM
             </div>
-            <span className="text-lg font-bold">
+            <span className="text-lg font-bold tracking-tight">
               <span className="text-app-text">Tele</span>
               <span className="text-app-primary">Mon</span>
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex">
-            <Link href="/features" className="tab-premium">
-              기능
-            </Link>
-            <Link href="/pricing" className="tab-premium">
-              요금제
-            </Link>
-            <Link href="/get-api-key" className="tab-premium">
-              API 키 발급
-            </Link>
-            <a href="#faq" className="tab-premium">
-              FAQ
-            </a>
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+            {NAV_LINKS.map((item) => (
+              <a key={item.label} href={item.href} className="tab-premium focus-ring">
+                {item.label}
+              </a>
+            ))}
           </nav>
 
-          <div className="flex items-center gap-3">
-            {/* Mobile hamburger */}
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="flex items-center justify-center rounded-lg p-2 text-app-text-muted hover:text-app-text hover:bg-app-card transition-all md:hidden"
-              aria-label={mobileNavOpen ? "닫기" : "메뉴 열기"}
-            >
-              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/admin/login"
-              className="btn-secondary rounded-lg px-4 py-2 text-sm"
+              className="focus-ring hidden min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-card px-4 py-2 text-sm font-medium text-app-text transition-all hover:border-app-border-strong hover:bg-app-card-hover sm:inline-flex"
             >
-              로그인
+              Log in
             </Link>
             <Link
               href="/signup"
-              className="btn-primary rounded-lg px-5 py-2 text-sm font-medium relative z-10"
+              className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-app-primary-hover"
             >
-              시작하기
+              Start free
             </Link>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen((open) => !open)}
+              className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-card p-2 text-app-text-muted transition-all hover:border-app-border-strong hover:bg-app-card-hover md:hidden"
+              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileNavOpen}
+              aria-controls="public-mobile-nav"
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile nav overlay */}
         {mobileNavOpen && (
-          <div className="border-t border-app-border bg-app-card md:hidden">
-            <nav className="flex flex-col px-4 py-3 space-y-1">
-              <Link
-                href="/features"
-                className="rounded-lg px-3 py-2.5 text-sm text-app-text hover:bg-app-card-hover transition-colors"
-                onClick={() => setMobileNavOpen(false)}
-              >
-                기능
-              </Link>
-              <Link
-                href="/pricing"
-                className="rounded-lg px-3 py-2.5 text-sm text-app-text hover:bg-app-card-hover transition-colors"
-                onClick={() => setMobileNavOpen(false)}
-              >
-                요금제
-              </Link>
-              <Link
-                href="/get-api-key"
-                className="rounded-lg px-3 py-2.5 text-sm text-app-text hover:bg-app-card-hover transition-colors"
-                onClick={() => setMobileNavOpen(false)}
-              >
-                API 키 발급
-              </Link>
-              <a
-                href="#faq"
-                className="rounded-lg px-3 py-2.5 text-sm text-app-text hover:bg-app-card-hover transition-colors"
-                onClick={() => setMobileNavOpen(false)}
-              >
-                FAQ
-              </a>
+          <div id="public-mobile-nav" className="border-t border-app-border bg-app-card md:hidden">
+            <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6" aria-label="Mobile">
+              {NAV_LINKS.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="focus-ring rounded-xl px-3 py-3 text-sm font-medium text-app-text-secondary transition-colors hover:bg-app-card-hover hover:text-app-text"
+                  onClick={closeMobileNav}
+                >
+                  {item.label}
+                </a>
+              ))}
+              <div className="mt-2 flex gap-3">
+                <Link
+                  href="/admin/login"
+                  className="focus-ring flex min-h-11 flex-1 items-center justify-center rounded-xl border border-app-border bg-app-bg px-4 py-2 text-sm font-medium text-app-text"
+                  onClick={closeMobileNav}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="focus-ring flex min-h-11 flex-1 items-center justify-center rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white"
+                  onClick={closeMobileNav}
+                >
+                  Start free
+                </Link>
+              </div>
             </nav>
           </div>
         )}
       </header>
 
-      <main className="flex-1 pt-16">{children}</main>
+      <main className="flex-1 pt-0">{children}</main>
 
-      {/* Footer */}
-      <footer className="border-t border-app-border/50 bg-app-surface/50">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+      <footer className="border-t border-app-border/60 bg-app-surface/40">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-10 md:grid-cols-[1.1fr_0.9fr_0.9fr]">
             <div className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-app-primary to-orange-600 text-sm font-bold text-white">
                   TM
                 </div>
-                <span className="text-lg font-bold">
+                <span className="text-lg font-bold tracking-tight">
                   <span className="text-app-text">Tele</span>
                   <span className="text-app-primary">Mon</span>
                 </span>
               </div>
-              <p className="text-sm text-app-text-secondary leading-relaxed">
-                텔레그램 자동화의 모든 것.
-                <br />
-                하나의 대시보드로 관리하세요.
+              <p className="max-w-sm text-sm leading-6 text-app-text-secondary">
+                Telegram operations for accounts, broadcasts, groups, automation,
+                scheduling, failure recovery, and delivery analytics.
               </p>
             </div>
-            {[
-              {
-                title: "서비스",
-                links: [
-                  ["기능 소개", "/features"],
-                  ["요금제", "/pricing"],
-                  ["API 키 발급", "/get-api-key"],
-                ],
-              },
-              {
-                title: "문서",
-                links: [
-                  ["API 문서", "#"],
-                  ["사용 가이드", "#"],
-                  ["자주 묻는 질문", "#faq"],
-                ],
-              },
-              {
-                title: "문의",
-                links: [
-                  ["이메일", `mailto:${SITE.support.email}`],
-                  ["텔레그램", `https://t.me/${SITE.support.telegram.replace("@", "")}`],
-                ],
-              },
-            ].map((section) => (
-              <div key={section.title}>
-                <h3 className="mb-4 text-sm font-semibold text-app-text tracking-wide">
-                  {section.title}
-                </h3>
-                <ul className="space-y-3">
-                  {section.links.map(([label, href]) => (
-                    <li key={label}>
-                      <Link
-                        href={href}
-                        className="text-sm text-app-text-secondary hover:text-app-text transition-colors"
-                      >
-                        {label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+
+            <div>
+              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">Explore</h3>
+              <ul className="space-y-3">
+                {NAV_LINKS.slice(0, 3).map((item) => (
+                  <li key={item.label}>
+                    <a href={item.href} className="focus-ring text-sm text-app-text-secondary transition-colors hover:text-app-text">
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">Support</h3>
+              <ul className="space-y-3">
+                <li>
+                  <a
+                    href={`mailto:${SITE.support.email}`}
+                    className="focus-ring text-sm text-app-text-secondary transition-colors hover:text-app-text"
+                  >
+                    {SITE.support.email}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`https://t.me/${SITE.support.telegram.replace("@", "")}`}
+                    className="focus-ring text-sm text-app-text-secondary transition-colors hover:text-app-text"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {SITE.support.telegram}
+                  </a>
+                </li>
+                <li>
+                  <a href="#faq" className="focus-ring text-sm text-app-text-secondary transition-colors hover:text-app-text">
+                    FAQ
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="divider-gradient mt-12 mb-8" />
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+          <div className="divider-gradient my-8" />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-app-text-muted">
               &copy; {new Date().getFullYear()} TeleMon. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-sm text-app-text-muted">
-              <Link
-                href="#"
-                className="hover:text-app-text transition-colors"
-              >
-                이용약관
+            <div className="flex flex-wrap items-center gap-4 text-sm text-app-text-muted">
+              <Link href="/signup" className="focus-ring transition-colors hover:text-app-text">
+                Start free
               </Link>
-              <Link
-                href="#"
-                className="hover:text-app-text transition-colors"
-              >
-                개인정보처리방침
-              </Link>
+              <a href="#product" className="focus-ring transition-colors hover:text-app-text">
+                Review product
+              </a>
             </div>
           </div>
         </div>
