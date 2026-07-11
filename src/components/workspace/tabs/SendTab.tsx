@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Delete, FileWarning,
-  Hourglass, MessageSquare, RefreshCw, RotateCcw,
+  Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -12,13 +12,12 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { SearchInput } from "@/components/ui/SearchInput";
 import { Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
-import { useDashboardStore } from "@/store/useDashboardStore";
+import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -340,6 +339,7 @@ export function SendTab() {
 
   const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
   const toggleGroup = useDashboardStore((s) => s.toggleSendGroupId);
+  const setSendSelectedGroupIds = useDashboardStore((s) => s.setSendSelectedGroupIds);
   const clearSendRecipients = useDashboardStore((s) => s.clearSendRecipients);
   const message = useDashboardStore((s) => s.sendMessage);
   const setMessage = useDashboardStore((s) => s.setSendMessage);
@@ -364,6 +364,7 @@ export function SendTab() {
   const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
+  const [recentSets, setRecentSets] = useState<string[][]>([]);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -382,6 +383,12 @@ export function SendTab() {
   const { toast } = useToast();
   const draftRestoredRef = useRef(false);
   const isInitialMount = useRef(true);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // ── Recent recipient sets ──
+  useEffect(() => {
+    setRecentSets(getRecentRecipientSets().slice(0, 3));
+  }, []);
 
   // ── Draft persistence: auto-save on every meaningful state change ──
   useEffect(() => {
@@ -518,6 +525,7 @@ export function SendTab() {
     setHistoryFilter("all");
     setIsScheduled(false); setScheduledAtLocal("");
     setIsRecurring(false); setRecurringInterval(60);
+    setSearch("");
     if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
     else { setGroups([]); setHistory([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -529,7 +537,10 @@ export function SendTab() {
   }
 
   const visibleGroups = useMemo(() => {
-    const filtered = groups.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
+    const query = search.trim().toLowerCase();
+    const filtered = query
+      ? groups.filter((g) => g.title.toLowerCase().includes(query) || g.id.toLowerCase().includes(query))
+      : groups;
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     else if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
@@ -575,6 +586,55 @@ export function SendTab() {
     return groups.length > 0 ? groups : null;
   }, [history, historyFilter]);
 
+  // ── Select All Visible / Deselect All Visible ──
+  function handleSelectAllVisible() {
+    const available = visibleGroups.filter(
+      (g) => !selectedIds.includes(g.id)
+    );
+    const capacity = MAX_BROADCAST_RECIPIENTS - selectedIds.length;
+    if (capacity <= 0) {
+      toast("warning", `최대 ${MAX_BROADCAST_RECIPIENTS}개의 대상을 초과했습니다.`);
+      return;
+    }
+    const toSelect = available.slice(0, capacity);
+    if (toSelect.length === 0) return;
+    const next = [...selectedIds, ...toSelect.map((g) => g.id)];
+    setSendSelectedGroupIds(next);
+    if (available.length > capacity) {
+      toast("warning", `최대 ${MAX_BROADCAST_RECIPIENTS}개의 대상까지만 선택했습니다.`);
+    } else {
+      toast("success", `표시된 결과 ${toSelect.length}개를 선택했습니다.`);
+    }
+  }
+
+  function handleDeselectAllVisible() {
+    const visibleIds = new Set(visibleGroups.map((g) => g.id));
+    const next = selectedIds.filter((id) => !visibleIds.has(id));
+    if (next.length === selectedIds.length) return;
+    setSendSelectedGroupIds(next);
+    const count = selectedIds.length - next.length;
+    toast("info", `표시된 결과 ${count}개 선택을 해제했습니다.`);
+  }
+
+  // ── Recent recipient set restoration ──
+  function handleRestoreRecentSet(recentIds: string[]) {
+    const availableGroupIds = new Set(groups.map((g) => g.id));
+    const valid = recentIds.filter((id) => availableGroupIds.has(id)).slice(0, MAX_BROADCAST_RECIPIENTS);
+    if (valid.length === 0) {
+      toast("error", "복원 가능한 대상이 없습니다.");
+      return;
+    }
+    const restored = valid.filter((id) => !selectedIds.includes(id));
+    const next = [...selectedIds, ...restored];
+    setSendSelectedGroupIds(next);
+    if (restored.length < recentIds.length) {
+      const skipped = recentIds.length - valid.length;
+      toast("info", `최근 대상 ${valid.length}개를 복원했습니다${skipped > 0 ? ` (${skipped}개 대상은 현재 계정에서 사용할 수 없음)` : ""}.`);
+    } else {
+      toast("success", `최근 대상 ${valid.length}개를 복원했습니다.`);
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAccountId || selectedRecipientIds.length === 0 || !message.trim() || submitting) return;
@@ -595,6 +655,8 @@ export function SendTab() {
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
       });
       markUsed(selectedRecipientIds);
+      addRecentRecipientSet(selectedRecipientIds);
+      setRecentSets(getRecentRecipientSets().slice(0, 3));
       if (isRecurring) setSubmitNotice("반복 발송이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.");
       else if (scheduledAtIso) setSubmitNotice("발송이 예약되었습니다. 아래 발송 이력에서 확인하세요.");
       else setSubmitNotice("발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
@@ -603,6 +665,7 @@ export function SendTab() {
       clearPersistedDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
+      setSearch("");
       await loadHistory(selectedAccountId);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
@@ -667,6 +730,8 @@ export function SendTab() {
     );
   }
 
+  const remaining = MAX_BROADCAST_RECIPIENTS - selectedIds.length;
+
   const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
@@ -683,20 +748,112 @@ export function SendTab() {
       >
         <form id="send-form" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* ── Smart Selection Bar ── */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-app-border bg-app-card/50 px-3 py-2 text-xs">
+              <span className="flex items-center gap-1 whitespace-nowrap text-app-text-muted">
+                <Users className="h-3.5 w-3.5" />
+                전체 <span className="font-medium text-app-text">{groups.length}</span>
+              </span>
+              <span className="text-app-text-subtle">·</span>
+              <span className="whitespace-nowrap text-app-text-muted">
+                표시 <span className="font-medium text-app-text">{visibleGroups.length}</span>
+              </span>
+              <span className="text-app-text-subtle">·</span>
+              <span className="whitespace-nowrap text-app-text-muted">
+                선택 <span className={cn("font-medium", remaining === 0 ? "text-app-danger" : "text-app-text")}>
+                  {selectedRecipientIds.length}/{MAX_BROADCAST_RECIPIENTS}
+                </span>
+              </span>
+              {selectedRecipientIds.length > 0 && (
+                <>
+                  <span className="text-app-text-subtle">·</span>
+                  <span className="whitespace-nowrap text-app-text-muted">
+                    남음 <span className="font-medium text-app-text">{remaining}</span>
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* ── Recent Recipient Sets ── */}
+            {recentSets.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-medium text-app-text-muted">최근 대상:</span>
+                {recentSets.map((set, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleRestoreRecentSet(set)}
+                    className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-card px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
+                  >
+                    <Users2 className="h-3 w-3" />
+                    {set.length}개
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Group selector */}
             <div>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-app-text-muted">
                   <Users2 className="h-3.5 w-3.5" />
-                  발송 대상 ({selectedRecipientIds.length}/{MAX_BROADCAST_RECIPIENTS})
+                  발송 대상
                 </span>
-                <Select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)} className="w-auto">
-                  <option value="default">기본 정렬</option>
-                  <option value="members">멤버 많은순</option>
-                  <option value="favorites">즐겨찾기 우선</option>
-                </Select>
+                <div className="flex items-center gap-1.5">
+                  {visibleGroups.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSelectAllVisible}
+                        disabled={remaining <= 0}
+                        className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        현재 결과 전체 선택
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAllVisible}
+                        disabled={!visibleGroups.some((g) => selectedIds.includes(g.id))}
+                        className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        현재 결과 선택 해제
+                      </button>
+                    </>
+                  )}
+                  <Select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)} className="w-auto">
+                    <option value="default">기본 정렬</option>
+                    <option value="members">멤버 많은순</option>
+                    <option value="favorites">즐겨찾기 우선</option>
+                  </Select>
+                </div>
               </div>
-              <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="그룹/채널 이름 검색" className="mb-2" />
+
+              {/* Search bar */}
+              <div className="relative mb-2">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle"
+                />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="그룹/채널 이름 또는 ID 검색"
+                  className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
+                    title="검색 지우기"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
               {selectedRecipientIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
                 <p className="mb-2 text-xs text-app-warning">최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다.</p>
               )}
@@ -733,7 +890,17 @@ export function SendTab() {
                 </div>
               )}
               {!groupsLoading && !groupsError && groups.length > 0 && visibleGroups.length === 0 && (
-                <p className="text-xs text-app-text-subtle">검색 결과가 없습니다.</p>
+                <div className="flex flex-col items-center gap-2 py-6 text-app-text-muted">
+                  <SearchX className="h-8 w-8" />
+                  <p className="text-sm">일치하는 그룹이 없습니다.</p>
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-xs text-app-primary hover:underline"
+                  >
+                    검색 지우기
+                  </button>
+                </div>
               )}
             </div>
 
