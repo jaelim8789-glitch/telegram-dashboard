@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, MessageSquare,
   RefreshCw, SendHorizonal, Users, XCircle, Zap,
-  ArrowRight, Ban, Copy, PauseCircle, Plus, UserPlus, ShieldAlert,
+  ArrowRight, Ban, Copy, Plus, UserPlus, ShieldAlert, ShieldOff,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -14,7 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
-import type { Broadcast, BroadcastStatus, DeliveryOverview } from "@/types";
+import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview } from "@/types";
 import { isRecurringActive, isRecurringBroadcast, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 
@@ -103,6 +103,11 @@ export function DashboardTab() {
   const [overview, setOverview] = useState<DeliveryOverview | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
 
+  // Account health from real API
+  const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
 
   const loadLogs = async () => {
@@ -129,9 +134,16 @@ export function DashboardTab() {
     finally { setOverviewLoading(false); }
   };
 
+  const loadHealth = async () => {
+    setHealthLoading(true); setHealthError(false);
+    try { setHealthItems(await api.fetchAccountHealth()); }
+    catch { setHealthItems([]); setHealthError(true); }
+    finally { setHealthLoading(false); }
+  };
+
   const loadAll = async () => {
     setRefreshing(true);
-    await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview()]);
+    await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()]);
     setRefreshing(false);
   };
 
@@ -141,6 +153,7 @@ export function DashboardTab() {
     loadUpcoming();
     loadRecurring();
     loadOverview();
+    loadHealth();
   }, [fetchAccounts]);
 
   // Poll recurring every 30s
@@ -174,11 +187,24 @@ export function DashboardTab() {
     return recurring.filter(b => getRecurringState(b) === "error");
   }, [recurring]);
 
-  const pausedRecurring = useMemo(() => {
-    return recurring.filter(b => getRecurringState(b) === "paused");
-  }, [recurring]);
+  // Health-derived attention groups using real API data
+  const healthCritical = useMemo(() => {
+    return healthItems.filter(h => h.status === "unauthorized" || h.status === "banned" || h.status === "not_configured");
+  }, [healthItems]);
 
-  const unauthorizedAccounts = useMemo(() => accounts.filter(a => a.status === "inactive"), [recurring]);
+  const healthWarning = useMemo(() => {
+    return healthItems.filter(h => h.status === "rate_limited" || h.status === "error");
+  }, [healthItems]);
+
+  const healthMap = useMemo(() => {
+    const m = new Map<string, AccountHealthItem>();
+    for (const h of healthItems) m.set(h.accountId, h);
+    return m;
+  }, [healthItems]);
+
+  const recentFailures = useMemo(() => {
+    return [...logs].filter(l => l.status === "failed").sort((a, b) => new Date(`${b.createdAt}Z`).getTime() - new Date(`${a.createdAt}Z`).getTime()).slice(0, 4);
+  }, [logs]);
 
   const summary = overview?.summary;
 
@@ -250,83 +276,190 @@ export function DashboardTab() {
       </div>
 
       {/* ── Operational Attention Layer ───────────────────────── */}
-      {(bannedAccounts.length > 0 || unauthorizedAccounts.length > 0 || failedCount > 0 || erroredRecurring.length > 0) && (
+      {(() => {
+        const hasBlocking = healthCritical.length > 0 || bannedAccounts.length > 0 || erroredRecurring.length > 0;
+        const hasWarning = healthWarning.length > 0 || failedCount > 0;
+        if (!hasBlocking && !hasWarning) return null;
+        return (
+          <div className="rounded-2xl border border-app-border overflow-hidden">
+            <div className="divide-y divide-app-border">
+              {/* Real health: unauthorized */}
+              {healthCritical.filter(h => h.status === "unauthorized").map(h => {
+                const acct = accounts.find(a => a.id === h.accountId);
+                return (
+                  <div key={"unauth-" + h.accountId} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-warning-muted">
+                        <ShieldAlert className="h-3.5 w-3.5 text-app-warning" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone} — 인증 필요</p>
+                        <p className="text-[11px] text-app-text-muted">세션이 만료되었거나 인증되지 않았습니다</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setTab("register")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30 transition-colors">
+                      재인증 <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Real health: banned */}
+              {healthCritical.filter(h => h.status === "banned").map(h => {
+                const acct = accounts.find(a => a.id === h.accountId);
+                return (
+                  <div key={"banned-" + h.accountId} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
+                        <Ban className="h-3.5 w-3.5 text-app-danger" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone} — 차단됨</p>
+                        <p className="text-[11px] text-app-text-muted">Telegram 계정이 차단되었습니다</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setTab("register")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
+                      계정 관리 <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Real health: not configured */}
+              {healthCritical.filter(h => h.status === "not_configured").map(h => {
+                const acct = accounts.find(a => a.id === h.accountId);
+                return (
+                  <div key={"noconfig-" + h.accountId} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-card-hover">
+                        <ShieldOff className="h-3.5 w-3.5 text-app-text-muted" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone} — 설정 필요</p>
+                        <p className="text-[11px] text-app-text-muted">세션이 구성되지 않았습니다. 계정을 인증하세요.</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setTab("register")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors">
+                      설정하기 <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Real health: rate limited */}
+              {healthWarning.filter(h => h.status === "rate_limited").map(h => {
+                const acct = accounts.find(a => a.id === h.accountId);
+                return (
+                  <div key={"ratelimit-" + h.accountId} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-warning-muted">
+                        <Clock className="h-3.5 w-3.5 text-app-warning" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone} — 속도 제한</p>
+                        <p className="text-[11px] text-app-text-muted">너무 많은 요청으로 일시 제한됨</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setTab("log")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30 transition-colors">
+                      로그 보기 <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Real health: error */}
+              {healthWarning.filter(h => h.status === "error").map(h => {
+                const acct = accounts.find(a => a.id === h.accountId);
+                return (
+                  <div key={"error-" + h.accountId} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
+                        <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone} — 오류 발생</p>
+                        <p className="text-[11px] text-app-text-muted truncate">{h.lastError ?? "알 수 없는 오류"}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setTab("register")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
+                      계정 관리 <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Fallback: banned from account status if health API failed */}
+              {healthError && bannedAccounts.length > 0 && (
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
+                      <Ban className="h-3.5 w-3.5 text-app-danger" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-app-text">차단된 계정 {bannedAccounts.length}개</p>
+                      <p className="text-[11px] text-app-text-muted truncate">{bannedAccounts.map(a => a.name?.trim() || a.phone).join(", ")}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setTab("register")}
+                    className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
+                    계정 관리 <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {/* Errored recurring schedules */}
+              {erroredRecurring.length > 0 && (
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
+                      <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-app-text">반복 스케줄 오류 {erroredRecurring.length}개</p>
+                      <p className="text-[11px] text-app-text-muted truncate">{erroredRecurring.map(b => b.message).join(", ")}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setTab("scheduler")}
+                    className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
+                    스케줄러 <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Recent Failures Surface (compact, max 4 items) ──────────── */}
+      {recentFailures.length > 0 && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-app-border bg-app-card px-4 py-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
+            <span className="text-xs font-medium text-app-text">최근 발송 실패</span>
+            <span className="ml-auto text-[11px] text-app-text-muted">{recentFailures.length}건</span>
+          </div>
           <div className="divide-y divide-app-border">
-            {/* Banned / unauthorized accounts */}
-            {bannedAccounts.length > 0 && (
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
-                    <Ban className="h-3.5 w-3.5 text-app-danger" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-app-text">차단된 계정 {bannedAccounts.length}개</p>
-                    <p className="text-[11px] text-app-text-muted truncate">{bannedAccounts.map(a => a.name?.trim() || a.phone).join(", ")}</p>
-                  </div>
-                </div>
-                <button onClick={() => setTab("register")}
-                  className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
-                  계정 관리 <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            {unauthorizedAccounts.length > 0 && (
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-warning-muted">
-                    <ShieldAlert className="h-3.5 w-3.5 text-app-warning" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-app-text">인증되지 않은 계정 {unauthorizedAccounts.length}개</p>
-                    <p className="text-[11px] text-app-text-muted truncate">{unauthorizedAccounts.map(a => a.name?.trim() || a.phone).join(", ")}</p>
-                  </div>
-                </div>
-                <button onClick={() => setTab("register")}
-                  className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30 transition-colors">
-                  인증하기 <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            {/* Failed broadcasts */}
-            {failedCount > 0 && (
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
-                    <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-app-text">발송 실패 {failedCount}건</p>
-                    <p className="text-[11px] text-app-text-muted truncate">
-                      {failureTypes.length > 0 ? `주요 원인: ${failureTypes.slice(0, 2).map(f => f.status).join(", ")}` : "최근 발송 내역을 확인하세요"}
+            {recentFailures.map(f => {
+              const acct = accounts.find(a => a.id === f.accountId);
+              const acctLabel = acct ? (acct.name?.trim() || acct.phone) : f.accountId.slice(0, 8);
+              return (
+                <div key={f.id} className="flex items-center justify-between px-4 py-2">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="truncate text-xs text-app-text">{f.message}</p>
+                    <p className="flex flex-wrap gap-x-1.5 text-[11px] text-app-text-muted">
+                      <span>{acctLabel}</span>
+                      <span>·</span>
+                      <span>{formatRelativeTime(f.createdAt)}</span>
+                      {f.errorMessage && <><span>·</span><span className="text-app-danger truncate max-w-[120px]">{f.errorMessage}</span></>}
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setTab("log")}
-                  className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
-                  로그 보기 <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            {/* Errored recurring */}
-            {erroredRecurring.length > 0 && (
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-danger-muted">
-                    <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-app-text">반복 스케줄 오류 {erroredRecurring.length}개</p>
-                    <p className="text-[11px] text-app-text-muted truncate">{erroredRecurring.map(b => b.message).join(", ")}</p>
-                  </div>
-                </div>
-                <button onClick={() => setTab("scheduler")}
-                  className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30 transition-colors">
-                  스케줄러 <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            )}
+              );
+            })}
           </div>
+          <button onClick={() => setTab("log")}
+            className="flex w-full items-center justify-center gap-1 border-t border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors">
+            전체 로그 보기 <ArrowRight className="h-3 w-3" />
+          </button>
         </div>
       )}
 
