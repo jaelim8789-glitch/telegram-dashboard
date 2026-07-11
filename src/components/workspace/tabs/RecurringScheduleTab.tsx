@@ -134,7 +134,7 @@ function ExecutionPanel({ parent, onClose }: { parent: Broadcast; onClose: () =>
 
 function ScheduleCard({
   b, state, meta, childInfo, accounts,
-  onPause, onResume, onCancel, onToggleHistory, historyOpen,
+  onPause, onResume, onCancel, onToggleHistory, historyOpen, onDuplicate,
 }: {
   b: Broadcast; state: RState; meta: typeof STATE_META[RState];
   childInfo: { count: number; last: BroadcastChild | null } | undefined;
