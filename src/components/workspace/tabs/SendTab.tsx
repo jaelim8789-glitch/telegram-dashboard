@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle, CheckCircle2, Clock, Delete, FileWarning,
+  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle,
 } from "lucide-react";
@@ -174,12 +174,14 @@ function HistoryRow({
   retrying,
   onCancelClick,
   onRetry,
+  onReuse,
 }: {
   h: Broadcast;
   cancelling: string | null;
   retrying: string | null;
   onCancelClick: (b: Broadcast) => void;
   onRetry: (b: Broadcast) => void;
+  onReuse: (b: Broadcast) => void;
 }) {
   const meta = STATUS_META[h.status];
   const Icon = meta.icon;
@@ -286,6 +288,16 @@ function HistoryRow({
 
       {/* Action buttons */}
       <div className="flex shrink-0 items-start gap-1">
+        {/* Reuse button */}
+        <button
+          type="button"
+          onClick={() => onReuse(h)}
+          title="설정 불러오기"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+
         {/* Play button for future schedule */}
         {isFutureSchedule && (
           <button
@@ -365,6 +377,9 @@ export function SendTab() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [recentSets, setRecentSets] = useState<string[][]>([]);
+  const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
+  const reuseNotice = useDashboardStore((s) => s.reuseNotice);
+  const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -978,6 +993,20 @@ export function SendTab() {
               <span>{submitNotice}</span>
             </div>
           )}
+          {reuseNotice && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-info/20 bg-app-info-muted px-3 py-2.5 text-xs text-app-info">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="flex-1">{reuseNotice}</span>
+              <button
+                type="button"
+                onClick={() => setReuseNotice(null)}
+                className="shrink-0 rounded-full p-0.5 text-app-info/60 hover:text-app-info transition-colors"
+                aria-label="닫기"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </form>
       </Panel>
 
@@ -1050,6 +1079,7 @@ export function SendTab() {
                       key={h.id} h={h}
                       cancelling={cancelling} retrying={retrying}
                       onCancelClick={handleCancelClick} onRetry={handleRetry}
+                      onReuse={reuseBroadcast}
                     />
                   ))}
                 </div>
@@ -1066,6 +1096,7 @@ export function SendTab() {
                 key={h.id} h={h}
                 cancelling={cancelling} retrying={retrying}
                 onCancelClick={handleCancelClick} onRetry={handleRetry}
+                onReuse={reuseBroadcast}
               />
             ))}
           </div>
