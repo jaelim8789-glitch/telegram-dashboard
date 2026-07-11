@@ -99,8 +99,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
-  const data = await request<PaginatedResponse<ApiAccount>>("/api/accounts");
-  return data.items.map(toAccount);
+  const data = await request<ApiAccount[] | PaginatedResponse<ApiAccount>>("/api/accounts");
+  return Array.isArray(data) ? data.map(toAccount) : data.items.map(toAccount);
 }
 
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
@@ -203,8 +203,8 @@ function toGroup(api: ApiGroup): Group {
 }
 
 export async function fetchGroups(accountId: string): Promise<Group[]> {
-  const data = await request<PaginatedResponse<ApiGroup>>(`/api/accounts/${accountId}/groups`);
-  return data.items.map(toGroup);
+  const data = await request<ApiGroup[] | PaginatedResponse<ApiGroup>>(`/api/accounts/${accountId}/groups`);
+  return Array.isArray(data) ? data.map(toGroup) : data.items.map(toGroup);
 }
 
 interface ApiBroadcast {
