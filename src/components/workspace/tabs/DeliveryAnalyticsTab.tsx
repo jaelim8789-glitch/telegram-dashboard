@@ -1,22 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowDown, ArrowUp, BarChart3, CheckCircle2,
-  FileWarning, Gauge, RefreshCw, TrendingUp, Users, XCircle, Zap,
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  ExternalLink,
+  FileWarning,
+  Gauge,
+  RefreshCw,
+  TrendingUp,
+  Users,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
+import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type {
-  DeliveryOverview, AccountPerformanceItem,
-  FailureIntelligenceItem, TimelineItem,
-  SourceAnalyticsItem, LatencyResult, LatencyBySourceItem, LatencyByAccountItem,
+  DeliveryOverview,
+  AccountPerformanceItem,
+  FailureIntelligenceItem,
+  TimelineItem,
+  SourceAnalyticsItem,
+  LatencyResult,
+  LatencyBySourceItem,
+  LatencyByAccountItem,
 } from "@/types";
 
 const DAY_OPTIONS = [
@@ -26,15 +48,19 @@ const DAY_OPTIONS = [
   { value: 90, label: "90일" },
 ] as const;
 
-function pct(n: number): string { return `${Math.round(n)}%`; }
-function fmt(n: number): string { return n.toLocaleString("ko-KR"); }
+type TimeRange = (typeof DAY_OPTIONS)[number]["value"];
 
+function pct(n: number): string { return `${Math.round(n)}%`; }
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString("ko-KR");
+}
 function successTone(rate: number): "success" | "warning" | "danger" {
   if (rate >= 90) return "success";
   if (rate >= 70) return "warning";
   return "danger";
 }
-
 function relativeTime(iso: string | null): string {
   if (!iso) return "-";
   const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
@@ -46,31 +72,64 @@ function relativeTime(iso: string | null): string {
   return `${Math.floor(h / 24)}일 전`;
 }
 
-function StatCard({
-  icon, label, value, sub, accent, trend,
+function AccountLabel({ id }: { id: string }) {
+  const short = id.length > 14 ? `${id.slice(0, 12)}...` : id;
+  return <span title={id} className="block truncate max-w-[120px] sm:max-w-[160px]">{short}</span>;
+}
+
+function SummaryHierarchy({
+  summary,
+  logical,
+  days,
 }: {
-  icon: React.ReactNode; label: string; value: string | number; sub?: string; accent?: string; trend?: { dir: "up" | "down" | "neutral"; text: string };
+  summary: { total_attempted: number; successful: number; failed: number; success_rate: number } | null;
+  logical: { total_recipients: number; success_rate: number } | null;
+  days: TimeRange;
 }) {
+  const ta = summary?.total_attempted ?? 0;
+  const sr = summary?.success_rate ?? 0;
+  const fc = summary?.failed ?? 0;
+  if (ta === 0) return null;
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-app-border bg-app-card p-4 transition-all hover:border-app-border-strong hover:shadow-sm">
-      <div className={cn("absolute inset-0 opacity-[0.03]", accent && `bg-gradient-to-br ${accent}`)} />
-      <div className="relative flex items-start justify-between">
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm", accent)}>{icon}</div>
-        {trend && (
-          <div className={cn(
-            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-            trend.dir === "up" && "bg-app-success-muted text-app-success",
-            trend.dir === "down" && "bg-app-danger-muted text-app-danger",
-            trend.dir === "neutral" && "bg-app-card-hover text-app-text-muted",
-          )}>
-            {trend.dir === "up" ? <ArrowUp className="h-2.5 w-2.5" /> : trend.dir === "down" ? <ArrowDown className="h-2.5 w-2.5" /> : null}{trend.text}
-          </div>
-        )}
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="rounded-xl border border-app-border bg-app-card p-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+          <BarChart3 className="h-3 w-3" aria-hidden="true" />
+          총 시도
+        </div>
+        <div className="mt-1 text-xl font-bold tracking-tight text-app-text">{fmt(ta)}</div>
+        <div className="text-[10px] text-app-text-subtle">{days}일</div>
       </div>
-      <div className="relative mt-3">
-        <div className="text-2xl font-bold tracking-tight text-app-text">{value}</div>
-        <div className="mt-0.5 text-xs text-app-text-muted">{label}</div>
-        {sub && <div className="mt-0.5 text-[11px] text-app-text-subtle">{sub}</div>}
+      <div className="rounded-xl border border-app-border bg-app-card p-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+          성공
+        </div>
+        <div className="mt-1 text-xl font-bold tracking-tight text-app-success">{fmt(summary?.successful ?? 0)}</div>
+        <div className="flex items-center gap-1 text-[10px]">
+          <span className="text-app-text-subtle">{pct(sr)}</span>
+          <Badge tone={successTone(sr)} className="text-[9px] px-1 py-0">
+            {sr >= 90 ? "양호" : sr >= 70 ? "보통" : "저조"}
+          </Badge>
+        </div>
+      </div>
+      <div className="rounded-xl border border-app-border bg-app-card p-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+          <XCircle className="h-3 w-3" aria-hidden="true" />
+          실패
+        </div>
+        <div className="mt-1 text-xl font-bold tracking-tight text-app-danger">{fmt(fc)}</div>
+        <div className="text-[10px] text-app-text-subtle">{fc > 0 ? `${((fc / ta) * 100).toFixed(1)}%` : "0%"}</div>
+      </div>
+      <div className="rounded-xl border border-app-border bg-app-card p-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+          <TrendingUp className="h-3 w-3" aria-hidden="true" />
+          성공률
+        </div>
+        <div className="mt-1 text-xl font-bold tracking-tight text-app-text">{pct(sr)}</div>
+        <div className="text-[10px] text-app-text-subtle">
+          {logical ? `${fmt(logical.total_recipients)}명` : `${summary?.successful ?? 0}건`}
+        </div>
       </div>
     </div>
   );
@@ -80,22 +139,24 @@ function MiniTimeline({ items }: { items: TimelineItem[] }) {
   if (items.length === 0) return <EmptyState icon={BarChart3} title="기간 내 데이터 없음" />;
   const maxVal = Math.max(...items.map((t) => t.attempted), 1);
   return (
-    <div className="flex items-end gap-1 h-24">
+    <div className="flex items-end gap-1" style={{ height: 128 }} role="img" aria-label={`전달 추이: ${items.length}개 구간`}>
       {items.map((t) => {
-        const totalH = Math.max((t.attempted / maxVal) * 80, 4);
+        const totalH = Math.max((t.attempted / maxVal) * 104, 4);
         const successH = t.attempted > 0 ? (t.successful / t.attempted) * totalH : 0;
         const failH = totalH - successH;
         return (
           <div key={t.period} className="group relative flex flex-1 flex-col items-center">
-            <div className="flex w-full items-end justify-center" style={{ height: 80 }}>
+            <div className="flex w-full items-end justify-center" style={{ height: 104 }}>
               <div className="relative w-full rounded-t overflow-hidden" style={{ height: totalH }}>
                 {failH > 0 && <div className="absolute bottom-0 w-full bg-app-danger/60 rounded-t transition-all group-hover:bg-app-danger/80" style={{ height: `${(failH / totalH) * 100}%` }} />}
                 {successH > 0 && <div className="absolute bottom-0 w-full bg-app-success/70 rounded-t transition-all group-hover:bg-app-success/90" style={{ height: `${(successH / totalH) * 100}%` }} />}
               </div>
             </div>
-            <span className="mt-1 text-[10px] text-app-text-subtle">{t.period.slice(5)}</span>
-            <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10 hidden group-hover:block bg-app-card border border-app-border rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-lg">
-              성공 {t.successful} · 실패 {t.failed}
+            <span className="mt-1 text-[10px] text-app-text-subtle truncate max-w-full">{t.period.length > 10 ? t.period.slice(-5) : t.period}</span>
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 hidden group-hover:block bg-app-card border border-app-border rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-lg" role="tooltip">
+              <span className="text-app-success">성공 {t.successful}</span>
+              {" · "}
+              <span className="text-app-danger">실패 {t.failed}</span>
             </div>
           </div>
         );
@@ -111,12 +172,12 @@ function LatencyBlock({ latency, sources: src, accounts: acc }: { latency: Laten
   const color = (v: number) => pctFn(v) < 40 ? "bg-app-success" : pctFn(v) < 70 ? "bg-app-warning" : "bg-app-danger";
   return (
     <>
-      <div className="flex items-end gap-3 pb-3 mb-3 border-b border-app-border">
+      <div className="flex items-end gap-3 pb-3 mb-3 border-b border-app-border flex-wrap">
         <div>
           <div className="text-2xl font-bold tabular-nums text-app-text">{latency.average_latency_ms.toFixed(0)}ms</div>
           <div className="text-xs text-app-text-muted">평균</div>
         </div>
-        <div className="flex-1 space-y-1.5">
+        <div className="flex-1 space-y-1.5 min-w-[140px]">
           {[
             { label: "P50", value: latency.p95_latency_ms * 0.3 },
             { label: "P95", value: latency.p95_latency_ms },
@@ -166,8 +227,155 @@ function LatencyBlock({ latency, sources: src, accounts: acc }: { latency: Laten
   );
 }
 
+function FailureBreakdown({ items }: { items: FailureIntelligenceItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      {items.map((f) => (
+        <div key={f.status} className="rounded-xl border border-app-border bg-app-card p-3 transition-colors hover:border-app-border-strong">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-app-text truncate min-w-0 flex-1 pr-2">{f.status}</span>
+            <span className={cn("text-xs font-bold tabular-nums shrink-0", f.percentage > 30 ? "text-app-danger" : f.percentage > 10 ? "text-app-warning" : "text-app-text-muted")}>{pct(f.percentage)}</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-app-border overflow-hidden" role="progressbar" aria-valuenow={Math.round(f.percentage)} aria-valuemin={0} aria-valuemax={100} aria-label={`${f.status}: ${pct(f.percentage)}`}>
+            <div className={cn("h-full rounded-full transition-all", f.percentage > 30 ? "bg-app-danger" : f.percentage > 10 ? "bg-app-warning" : "bg-app-text-subtle")} style={{ width: `${Math.min(f.percentage, 100)}%` }} />
+          </div>
+          <div className="mt-1.5 flex items-center justify-between text-[11px] text-app-text-muted">
+            <span>{f.count}건</span>
+            <span>{f.affected_accounts}개 계정</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-app-text-subtle">
+            {f.latest_occurrence ? `최근 ${relativeTime(f.latest_occurrence)}` : ""}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SourceAnalysis({ items }: { items: SourceAnalyticsItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      {items.map((s) => (
+        <div key={s.source} className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2.5 hover:border-app-border-strong transition-colors">
+          <span className="text-xs font-medium text-app-text capitalize truncate min-w-0 flex-1">
+            {s.source === "broadcast" ? "발송" : s.source === "auto_reply" ? "자동 응답" : s.source === "reply_macro" ? "답장매크로" : s.source}
+          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-xs tabular-nums text-app-text-muted">{s.total}건</span>
+            <Badge tone={successTone(s.success_rate)}>{pct(s.success_rate)}</Badge>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OperationsAttention({
+  failureBreakdown,
+  accounts,
+  summary,
+  timeline,
+  onNavigateLog,
+}: {
+  failureBreakdown: FailureIntelligenceItem[];
+  accounts: AccountPerformanceItem[];
+  summary: { total_attempted: number; failed: number; success_rate: number } | null;
+  timeline: TimelineItem[];
+  onNavigateLog: () => void;
+}) {
+  const items: { icon: React.ReactNode; label: string; detail: string; tone: "warning" | "danger" | "info"; action?: { label: string; onClick: () => void } }[] = [];
+  const ta = summary?.total_attempted ?? 0;
+  const fc = summary?.failed ?? 0;
+  const sr = summary?.success_rate ?? 0;
+  if (ta > 0) {
+    const failureRate = (fc / ta) * 100;
+    if (failureRate > 15) {
+      items.push({
+        icon: <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />,
+        label: "실패율 증가",
+        detail: `실패율 ${failureRate.toFixed(1)}% (${fmt(fc)}/${fmt(ta)})`,
+        tone: "danger",
+        action: { label: "로그 확인", onClick: onNavigateLog },
+      });
+    }
+    if (failureBreakdown.length > 0) {
+      const topFailure = failureBreakdown[0];
+      if (topFailure.percentage > 30) {
+        items.push({
+          icon: <FileWarning className="h-3.5 w-3.5" aria-hidden="true" />,
+          label: "주요 실패 유형",
+          detail: `${topFailure.status} (${pct(topFailure.percentage)})`,
+          tone: "warning",
+        });
+      }
+      const problematicAccounts = accounts.filter((a) => a.success_rate < 70 && a.attempted > 0);
+      if (problematicAccounts.length > 0) {
+        items.push({
+          icon: <Users className="h-3.5 w-3.5" aria-hidden="true" />,
+          label: "관심 계정",
+          detail: `${problematicAccounts.length}개 계정 성공률 70% 미만`,
+          tone: "danger",
+          action: { label: "계정 확인", onClick: () => useDashboardStore.getState().setActiveTab("register") },
+        });
+      }
+    }
+    if (sr >= 95 && fc === 0) {
+      items.push({
+        icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />,
+        label: "모든 전달 정상",
+        detail: "최근 기간 내 실패 없음",
+        tone: "info",
+      });
+    }
+    const recentTimeline = timeline.slice(-3);
+    const allZero = recentTimeline.every((t) => t.attempted === 0);
+    if (timeline.length > 0 && allZero) {
+      items.push({
+        icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />,
+        label: "최근 활동 없음",
+        detail: "최근 3개 구간 전달 기록 없음",
+        tone: "warning",
+      });
+    }
+  } else {
+    items.push({
+      icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: "전달 데이터 없음",
+      detail: "선택한 기간에 활동 기록이 없습니다",
+      tone: "info",
+    });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      {items.map((item, i) => (
+        <div key={i} className={cn(
+          "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs",
+          item.tone === "danger" && "border-app-danger/20 bg-app-danger-muted/30 text-app-danger",
+          item.tone === "warning" && "border-app-warning/20 bg-app-warning-muted/30 text-app-warning",
+          item.tone === "info" && "border-app-border bg-app-card text-app-text-muted",
+        )}>
+          {item.icon}
+          <div className="min-w-0 flex-1">
+            <span className="font-medium">{item.label}</span>
+            <span className="ml-1.5 opacity-80">{item.detail}</span>
+          </div>
+          {item.action && (
+            <button onClick={item.action.onClick} className="flex items-center gap-1 shrink-0 rounded-lg bg-app-card-hover px-2 py-1 text-[10px] font-medium text-app-text hover:bg-app-border transition-colors focus-ring" aria-label={`${item.action.label}: ${item.label}`}>
+              {item.action.label}
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DeliveryAnalyticsTab() {
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState<TimeRange>(30);
   const [overview, setOverview] = useState<DeliveryOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,8 +389,9 @@ export function DeliveryAnalyticsTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const navigateToLog = useCallback(() => { useDashboardStore.getState().setActiveTab("log"); }, []);
+
   const summary = overview?.summary;
-  const accts = overview?.top_accounts ?? [];
   const failures = overview?.failure_breakdown ?? [];
   const timeline = overview?.timeline ?? [];
   const bySource = overview?.by_source ?? [];
@@ -191,181 +400,158 @@ export function DeliveryAnalyticsTab() {
   const latBySource = overview?.latency_by_source ?? [];
   const latByAccount = overview?.latency_by_account ?? [];
 
+  const accts = useMemo(() => overview?.top_accounts ?? [], [overview?.top_accounts]);
   const totalAttempted = summary?.total_attempted ?? 0;
-  const successRate = summary?.success_rate ?? 0;
   const failedCount = summary?.failed ?? 0;
 
-  const worstAccounts = [...accts].sort((a, b) => a.success_rate - b.success_rate).slice(0, 3);
+  const worstAccounts = useMemo(() => [...accts].sort((a, b) => a.success_rate - b.success_rate).slice(0, 3), [accts]);
+
+  const hasData = totalAttempted > 0;
+  const hasFailures = failures.length > 0 && failedCount > 0;
+  const hasAccounts = accts.length > 0;
+  const hasTimeline = timeline.length > 0;
+  const hasSourceData = bySource.length > 0;
 
   if (loading && !overview) {
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+      <div className="space-y-4" aria-busy="true" aria-label="전달 분석 로딩 중">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Skeleton className="h-40 w-full rounded-2xl" /><Skeleton className="h-40 w-full rounded-2xl" />
         </div>
         <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (error && !overview) {
     return (
-      <Panel title="전달 분석">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <XCircle className="mb-3 h-10 w-10 text-app-danger" />
-          <p className="text-sm font-medium text-app-danger">데이터를 불러올 수 없습니다</p>
-          <p className="mt-1 text-xs text-app-text-muted">{error}</p>
-          <button onClick={load} className="mt-4 flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover">
-            <RefreshCw className="h-3.5 w-3.5" /> 다시 시도
-          </button>
-        </div>
-      </Panel>
+      <section aria-label="전달 분석">
+        <Panel title="전달 분석">
+          <div className="flex flex-col items-center justify-center py-12 text-center" role="alert">
+            <XCircle className="mb-3 h-10 w-10 text-app-danger" aria-hidden="true" />
+            <p className="text-sm font-medium text-app-danger">데이터를 불러올 수 없습니다</p>
+            <p className="mt-1 text-xs text-app-text-muted">{error}</p>
+            <button onClick={load} className="mt-4 flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover focus-ring">
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> 다시 시도
+            </button>
+          </div>
+        </Panel>
+      </section>
     );
   }
 
-  const hasData = totalAttempted > 0;
-
   return (
     <div className="space-y-5 pb-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-app-text">전달 분석</h2>
           <p className="text-xs text-app-text-muted">최근 {days}일간의 전달 현황 및 성능</p>
         </div>
         <div className="flex items-center gap-2">
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))}
-            className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60">
+          <label className="sr-only" htmlFor="analytics-time-range">기간 선택</label>
+          <select id="analytics-time-range" value={days} onChange={(e) => setDays(Number(e.target.value) as TimeRange)}
+            className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60 focus-ring">
             {DAY_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
           </select>
-          <button onClick={load} disabled={loading}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text transition-colors disabled:opacity-50">
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> 새로고침
+          <button onClick={load} disabled={loading} aria-label="새로고침"
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text transition-colors disabled:opacity-50 focus-ring">
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} aria-hidden="true" /> 새로고침
           </button>
         </div>
-      </div>
+      </header>
 
-      {error && <InlineError>{error}</InlineError>}
-
-      {/* Summary KPIs */}
-      {hasData && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <StatCard icon={<BarChart3 className="h-5 w-5" />} label="총 시도" value={fmt(totalAttempted)}
-            sub={`기간 ${days}일`} accent="from-indigo-500 to-purple-600" />
-          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="성공" value={fmt(summary!.successful)}
-            sub={pct(successRate)} accent="from-emerald-500 to-teal-600"
-            trend={successRate >= 90 ? { dir: "up", text: "양호" } : successRate >= 70 ? { dir: "neutral", text: "보통" } : { dir: "down", text: "저조" }} />
-          <StatCard icon={<XCircle className="h-5 w-5" />} label="실패" value={fmt(failedCount)}
-            sub={failedCount > 0 ? `${((failedCount / totalAttempted) * 100).toFixed(1)}%` : "-"} accent="from-rose-500 to-pink-600" />
-          <StatCard icon={<TrendingUp className="h-5 w-5" />} label="성공률" value={pct(successRate)}
-            sub={`${fmt(summary!.successful)}건 성공`} accent="from-orange-500 to-amber-600" />
-          <StatCard icon={<Users className="h-5 w-5" />} label="고유 수신자" value={logical?.total_recipients != null ? fmt(logical.total_recipients) : "-"}
-            sub={logical ? `성공률 ${pct(logical.success_rate)}` : undefined} accent="from-cyan-500 to-blue-600" />
-        </div>
+      {error && (
+        <InlineError action={<button onClick={load} className="text-xs underline hover:no-underline">다시 시도</button>}>
+          {error}
+        </InlineError>
       )}
 
-      {/* No-data state */}
+      <SummaryHierarchy summary={summary ?? null} logical={logical ?? null} days={days} />
+
       {!hasData && !loading && (
         <EmptyState icon={BarChart3} title="전달 데이터가 없습니다"
           description="선택한 기간에 전달 시도 기록이 없습니다. 계정을 통해 메시지를 발송하면 자동으로 기록됩니다." />
       )}
 
-      {/* Two-column: Timeline + Source */}
+      {hasData && (
+        <Panel title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-warning" aria-hidden="true" /> 운영 주의</div>}>
+          <OperationsAttention failureBreakdown={failures} accounts={accts} summary={summary ?? null} timeline={timeline} onNavigateLog={navigateToLog} />
+        </Panel>
+      )}
+
       {hasData && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Panel title={<div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-app-primary" /> 전달 추이</div>}
-            description={timeline.length > 0 ? `${timeline.length}개 구간` : undefined}>
-            {timeline.length > 0 ? <MiniTimeline items={timeline} /> : (
-              <EmptyState icon={BarChart3} title="타임라인 데이터 없음" />
-            )}
+          <Panel title={<div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-app-primary" aria-hidden="true" /> 전달 추이</div>}
+            description={hasTimeline ? `${timeline.length}개 구간` : undefined}>
+            {hasTimeline ? <MiniTimeline items={timeline} /> : <EmptyState icon={BarChart3} title="타임라인 데이터 없음" />}
           </Panel>
 
-          <Panel title={<div className="flex items-center gap-2"><Zap className="h-4 w-4 text-app-primary" /> 소스별 분석</div>}>
-            {bySource.length === 0 ? (
-              <EmptyState icon={Zap} title="소스 데이터 없음" />
-            ) : (
-              <div className="space-y-2">
-                {bySource.map((s: SourceAnalyticsItem) => (
-                  <div key={s.source} className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2 hover:border-app-border-strong transition-colors">
-                    <span className="text-xs font-medium text-app-text capitalize">{s.source === "broadcast" ? "발송" : s.source === "auto_reply" ? "자동 응답" : s.source === "reply_macro" ? "답장매크로" : s.source}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs tabular-nums text-app-text-muted">{s.total}건</span>
-                      <Badge tone={successTone(s.success_rate)}>{pct(s.success_rate)}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <Panel title={<div className="flex items-center gap-2"><Zap className="h-4 w-4 text-app-primary" aria-hidden="true" /> 소스별 분석</div>}>
+            {hasSourceData ? <SourceAnalysis items={bySource} /> : <EmptyState icon={Zap} title="소스 데이터 없음" description="아직 소스 구분 데이터가 수집되지 않았습니다." />}
           </Panel>
         </div>
       )}
 
-      {/* Latency panel */}
+      {hasFailures && (
+        <Panel title={<div className="flex items-center gap-2"><FileWarning className="h-4 w-4 text-app-danger" aria-hidden="true" /> 실패 분석</div>}
+          description={`${failures.length}개 유형 · 전체 실패 ${fmt(failedCount)}건`}>
+          <FailureBreakdown items={failures} />
+        </Panel>
+      )}
+
+      {hasData && !hasFailures && failedCount > 0 && failures.length === 0 && (
+        <Panel title={<div className="flex items-center gap-2"><FileWarning className="h-4 w-4 text-app-danger" aria-hidden="true" /> 실패 분석</div>}>
+          <EmptyState icon={CheckCircle2} title="세분화된 실패 데이터 없음" description="실패 건수가 있으나 분류 데이터가 없습니다." />
+        </Panel>
+      )}
+
+      {hasData && failedCount === 0 && (
+        <Panel title={<div className="flex items-center gap-2"><FileWarning className="h-4 w-4 text-app-text-muted" aria-hidden="true" /> 실패 분석</div>}>
+          <EmptyState icon={CheckCircle2} title="실패 없음" description="선택한 기간 동안 전달 실패가 없습니다." />
+        </Panel>
+      )}
+
+      {hasAccounts && (
+        <Panel title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정별 성과</div>}
+          description={`${accts.length}개 계정${worstAccounts.length > 0 && worstAccounts[0].success_rate < 90 ? ` · 관심 필요 ${worstAccounts.filter((a) => a.success_rate < 70).length}개` : ""}`}>
+          <div className="overflow-x-auto -mx-1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>계정</TableHead>
+                  <TableHead className="text-right">시도</TableHead>
+                  <TableHead className="text-right">성공</TableHead>
+                  <TableHead className="text-right">실패</TableHead>
+                  <TableHead className="text-right">성공률</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accts.map((a) => (
+                  <TableRow key={a.account_id}
+                    className={a.success_rate < 70 ? "bg-app-danger-muted/10" : a.success_rate < 90 ? "bg-app-warning-muted/10" : undefined}>
+                    <TableCell className="font-medium text-app-text max-w-[120px] sm:max-w-[180px]">
+                      <AccountLabel id={a.account_id} />
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">{fmt(a.attempted)}</TableCell>
+                    <TableCell className="tabular-nums text-right text-app-success">{fmt(a.successful)}</TableCell>
+                    <TableCell className="tabular-nums text-right text-app-danger">{fmt(a.failed)}</TableCell>
+                    <TableCell className="text-right"><Badge tone={successTone(a.success_rate)}>{pct(a.success_rate)}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Panel>
+      )}
+
       {hasData && latency != null && latency.total_measured > 0 && (
-        <Panel title={<div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-app-primary" /> 전달 지연</div>}
+        <Panel title={<div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-app-primary" aria-hidden="true" /> 전달 지연</div>}
           description={`${latency.total_measured}건 측정`}>
           <LatencyBlock latency={latency} sources={latBySource} accounts={latByAccount} />
-        </Panel>
-      )}
-
-      {/* Account performance */}
-      {accts.length > 0 && (
-        <Panel title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" /> 계정별 성과</div>}
-          description={`${accts.length}개 계정${worstAccounts.length > 0 && worstAccounts[0].success_rate < 90 ? ` · 관심 필요 ${worstAccounts.filter((a) => a.success_rate < 70).length}개` : ""}`}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>계정</TableHead>
-                <TableHead>시도</TableHead>
-                <TableHead>성공</TableHead>
-                <TableHead>실패</TableHead>
-                <TableHead>성공률</TableHead>
-                <TableHead>최근 활동</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accts.map((a: AccountPerformanceItem) => (
-                <TableRow key={a.account_id} className={a.success_rate < 70 ? "bg-app-danger-muted/10" : a.success_rate < 90 ? "bg-app-warning-muted/10" : undefined}>
-                  <TableCell className="font-medium text-app-text">{a.account_id.slice(0, 8)}...</TableCell>
-                  <TableCell className="tabular-nums">{a.attempted}</TableCell>
-                  <TableCell className="tabular-nums text-app-success">{a.successful}</TableCell>
-                  <TableCell className="tabular-nums text-app-danger">{a.failed}</TableCell>
-                  <TableCell><Badge tone={successTone(a.success_rate)}>{pct(a.success_rate)}</Badge></TableCell>
-                  <TableCell className="text-xs text-app-text-muted tabular-nums">-</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
-      )}
-
-      {/* Failure intelligence */}
-      {failures.length > 0 && (
-        <Panel title={<div className="flex items-center gap-2"><FileWarning className="h-4 w-4 text-app-danger" /> 실패 분석</div>}
-          description={`${failures.length}개 유형 · 전체 실패 ${fmt(failedCount)}건`}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {failures.map((f: FailureIntelligenceItem) => (
-              <div key={f.status} className="rounded-xl border border-app-border bg-app-card p-3 transition-colors hover:border-app-border-strong">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-app-text truncate min-w-0 flex-1 pr-2">{f.status}</span>
-                  <span className={cn("text-xs font-bold tabular-nums shrink-0", f.percentage > 30 ? "text-app-danger" : f.percentage > 10 ? "text-app-warning" : "text-app-text-muted")}>{pct(f.percentage)}</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-app-border overflow-hidden">
-                  <div className={cn("h-full rounded-full transition-all", f.percentage > 30 ? "bg-app-danger" : f.percentage > 10 ? "bg-app-warning" : "bg-app-text-subtle")} style={{ width: `${Math.min(f.percentage, 100)}%` }} />
-                </div>
-                <div className="mt-1.5 flex items-center justify-between text-[11px] text-app-text-muted">
-                  <span>{f.count}건</span>
-                  <span>{f.affected_accounts}개 계정</span>
-                </div>
-                <div className="mt-0.5 text-[10px] text-app-text-subtle">
-                  {f.latest_occurrence ? `최근 ${relativeTime(f.latest_occurrence)}` : ""}
-                </div>
-              </div>
-            ))}
-          </div>
         </Panel>
       )}
     </div>
