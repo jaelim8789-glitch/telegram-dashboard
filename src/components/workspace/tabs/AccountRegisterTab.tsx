@@ -12,7 +12,6 @@ import {
   Send,
   Shield,
   Smartphone,
-  Target,
   UserPlus,
   Users,
   ArrowLeft,
