@@ -43,8 +43,6 @@ interface DashboardState {
   registerAccount: (input: api.CreateAccountInput) => Promise<Account>;
   removeAccount: (id: string) => Promise<void>;
 
-  // Send-tab draft state, lifted here (rather than local to SendTab) purely so the
-  // Inspector's live preview / send summary can read it too — no backend involvement.
   sendGroups: Group[];
   sendGroupsLoading: boolean;
   setSendGroups: (groups: Group[]) => void;
@@ -58,8 +56,39 @@ interface DashboardState {
 
   sendSelectedGroupIds: string[];
   toggleSendGroupId: (id: string) => void;
+  setSendSelectedGroupIds: (ids: string[]) => void;
   clearSendRecipients: () => void;
   clearSendDraft: () => void;
+}
+
+const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
+
+function saveRecentRecipientSets(sets: string[][]): void {
+  try {
+    localStorage.setItem(RECENT_SETS_KEY, JSON.stringify(sets.slice(0, 3)));
+  } catch { }
+}
+
+function loadRecentRecipientSets(): string[][] {
+  try {
+    const raw = localStorage.getItem(RECENT_SETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((s: unknown) => Array.isArray(s) ? s.filter((x: unknown) => typeof x === "string") : []);
+  } catch {
+    return [];
+  }
+}
+
+export function addRecentRecipientSet(ids: string[]): void {
+  const existing = loadRecentRecipientSets();
+  const deduped = existing.filter((set) => JSON.stringify(set) !== JSON.stringify(ids));
+  saveRecentRecipientSets([ids, ...deduped]);
+}
+
+export function getRecentRecipientSets(): string[][] {
+  return loadRecentRecipientSets();
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -135,6 +164,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       if (state.sendSelectedGroupIds.length >= MAX_BROADCAST_RECIPIENTS) return state;
       return { sendSelectedGroupIds: [...state.sendSelectedGroupIds, id] };
     }),
+  setSendSelectedGroupIds: (ids) => set({ sendSelectedGroupIds: ids }),
   clearSendRecipients: () => set({ sendSelectedGroupIds: [] }),
   clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [] }),
 }));

@@ -299,6 +299,14 @@ export function LogTab() {
     if (store.clearSendDraft) store.clearSendDraft();
     if (store.setSendMessage) store.setSendMessage(failed.message);
     if (store.selectAccount) store.selectAccount(failed.accountId);
+    const validRecipients = failed.recipients.filter((gid) =>
+      store.sendGroups.some((g) => g.id === gid)
+    );
+    for (const gid of validRecipients) {
+      if (!store.sendSelectedGroupIds.includes(gid)) {
+        store.toggleSendGroupId(gid);
+      }
+    }
     store.setActiveTab("send");
     toast("info", "실패한 발송 내용을 불러왔습니다. 대상을 확인하고 다시 발송하세요.");
   }
