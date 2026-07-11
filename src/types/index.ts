@@ -1,22 +1,33 @@
 ﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler";
 
+// Navigation/IA grouping only — does not change routing, storage, or any
+// backend contract. "operate" = the loop an operator runs through daily
+// (check status, send, monitor recurring sends, review what happened,
+// review performance). "manage" = account setup and automation
+// configuration, touched far less often once established. TabBar renders
+// these as two visually distinct clusters; every other TABS consumer
+// (Inspector's .find()-by-id, Workspace's TAB_CONTENT record) is
+// order/grouping-agnostic.
+export type TabGroup = "operate" | "manage";
+
 export interface TabDef {
   id: TabId;
   label: string;
+  group: TabGroup;
 }
 
 export const TABS: TabDef[] = [
-  { id: "dashboard", label: "대시보드" },
-  { id: "register", label: "계정 등록" },
-  { id: "send", label: "발송" },
-  { id: "scheduler", label: "스케줄러" },
-  { id: "group", label: "그룹" },
-  { id: "groupsearch", label: "그룹 검색" },
-  { id: "autoreply", label: "자동 응답" },
-  { id: "replymacro", label: "답장매크로" },
-  { id: "profile", label: "프로필" },
-  { id: "log", label: "로그" },
-  { id: "deliveryanalytics", label: "전달 분석" },
+  { id: "dashboard", label: "대시보드", group: "operate" },
+  { id: "send", label: "발송", group: "operate" },
+  { id: "scheduler", label: "스케줄러", group: "operate" },
+  { id: "log", label: "로그", group: "operate" },
+  { id: "deliveryanalytics", label: "전달 분석", group: "operate" },
+  { id: "register", label: "계정 등록", group: "manage" },
+  { id: "group", label: "그룹", group: "manage" },
+  { id: "groupsearch", label: "그룹 검색", group: "manage" },
+  { id: "autoreply", label: "자동 응답", group: "manage" },
+  { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "profile", label: "프로필", group: "manage" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned";
