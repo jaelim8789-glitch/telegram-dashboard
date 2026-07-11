@@ -96,8 +96,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
-  const accounts = await request<ApiAccount[]>("/api/accounts");
-  return accounts.map(toAccount);
+  const body = await request<{ items: ApiAccount[] }>("/api/accounts");
+  return (body.items ?? body).map(toAccount);
 }
 
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
@@ -200,8 +200,8 @@ function toGroup(api: ApiGroup): Group {
 }
 
 export async function fetchGroups(accountId: string): Promise<Group[]> {
-  const groups = await request<ApiGroup[]>(`/api/accounts/${accountId}/groups`);
-  return groups.map(toGroup);
+  const body = await request<{ items: ApiGroup[] }>(`/api/accounts/${accountId}/groups`);
+  return (body.items ?? body).map(toGroup);
 }
 
 interface ApiBroadcast {
