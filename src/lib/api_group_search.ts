@@ -99,16 +99,16 @@ function toJoinLog(api: ApiGroupJoinLog): GroupJoinLog {
 }
 
 export async function searchGroups(accountId: string, keyword: string): Promise<GroupSearchResult[]> {
-  const results = await request<ApiGroupSearchResult[]>("/api/group-search/search", {
+  const body = await request<{ items: ApiGroupSearchResult[] }>("/api/group-search/search", {
     method: "POST",
     body: JSON.stringify({ account_id: accountId, keyword }),
   });
-  return results.map(toSearchResult);
+  return (body.items ?? body).map(toSearchResult);
 }
 
 export async function fetchSearchResults(accountId: string): Promise<GroupSearchResult[]> {
-  const results = await request<ApiGroupSearchResult[]>(`/api/group-search/results/${accountId}`);
-  return results.map(toSearchResult);
+  const body = await request<{ items: ApiGroupSearchResult[] }>(`/api/group-search/results/${accountId}`);
+  return (body.items ?? body).map(toSearchResult);
 }
 
 export async function joinSelectedGroups(resultIds: string[]): Promise<{ chat_id: string; title: string; success: boolean; error: string | null }[]> {
@@ -124,7 +124,7 @@ export async function getJoinInfo(accountId: string): Promise<JoinInfo> {
 }
 
 export async function fetchJoinLogs(accountId: string): Promise<GroupJoinLog[]> {
-  const logs = await request<ApiGroupJoinLog[]>(`/api/group-search/join-logs/${accountId}`);
-  return logs.map(toJoinLog);
+  const body = await request<{ items: ApiGroupJoinLog[] }>(`/api/group-search/join-logs/${accountId}`);
+  return (body.items ?? body).map(toJoinLog);
 }
 
