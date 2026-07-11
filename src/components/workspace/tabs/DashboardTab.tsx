@@ -14,7 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
-import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview } from "@/types";
+import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId } from "@/types";
 import { isRecurringActive, isRecurringBroadcast, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 
@@ -450,7 +450,7 @@ export function DashboardTab() {
               const fi = f.failureInfo;
               const { summary: failureSummary, action: recoveryTarget } = failureInfoSummary(fi);
               const displayError = failureSummary || f.errorMessage || "알 수 없는 오류";
-              const recoveryTab = recoveryTarget ?? "log";
+              const recoveryTab: TabId = (recoveryTarget === "register" ? "register" : "log") as TabId;
               return (
                 <div key={f.id} className="flex items-center justify-between px-4 py-2">
                   <div className="min-w-0 flex-1 pr-2">
