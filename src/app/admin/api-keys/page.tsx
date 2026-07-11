@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useCallback, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, Key, KeyRound, Plus, RefreshCw, Shield, Trash2, XCircle } from "lucide-react";
+import { ChevronLeft, Copy, Key, KeyRound, Plus, RefreshCw, Shield, Trash2 } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { ApiKey } from "@/lib/api";
@@ -27,8 +29,11 @@ function ApiKeysContent() {
   const [creating, setCreating] = useState(false);
   const [justCreatedKey, setJustCreatedKey] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -38,9 +43,9 @@ function ApiKeysContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -52,8 +57,11 @@ function ApiKeysContent() {
       setJustCreatedKey(created.key);
       setName("");
       await load();
+      toast("success", "API 키가 발급되었습니다. 지금 복사해두세요.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "API 키 생성에 실패했습니다.");
+      const msg = err instanceof Error ? err.message : "API 키 생성에 실패했습니다.";
+      setError(msg);
+      toast("error", msg);
     } finally {
       setCreating(false);
     }
@@ -61,13 +69,29 @@ function ApiKeysContent() {
 
   async function handleConfirmDelete() {
     if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
     try {
       await api.deleteApiKey(deleteTarget.id);
       await load();
+      toast("success", `"${deleteTarget.name}" 키가 삭제되었습니다.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "API 키 삭제에 실패했습니다.");
+      const msg = err instanceof Error ? err.message : "API 키 삭제에 실패했습니다.";
+      setError(msg);
+      toast("error", msg);
     } finally {
       setDeleteTarget(null);
+      setDeletingId(null);
+    }
+  }
+
+  async function copyToClipboard(text: string, keyId: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(keyId);
+      toast("success", "클립보드에 복사되었습니다.");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast("error", "복사에 실패했습니다. 수동으로 복사해주세요.");
     }
   }
 
@@ -93,10 +117,9 @@ function ApiKeysContent() {
       </div>
 
       <Panel
-        accent="violet"
         title={
           <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-violet-400" />
+            <Plus className="h-4 w-4 text-app-primary" />
             새 API 키 발급
           </div>
         }
@@ -113,23 +136,36 @@ function ApiKeysContent() {
               />
             </Field>
           </div>
-          <Button type="submit" variant="primary" disabled={creating} loading={creating}>
+          <Button type="submit" variant="primary" loading={creating} disabled={creating || !name.trim()}>
             <Key className="h-3.5 w-3.5" /> 발급
           </Button>
         </form>
 
         {justCreatedKey && (
-          <div className="mt-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-violet-600 dark:text-violet-400">
+          <div className="mt-4 rounded-xl border border-app-warning/20 bg-app-warning-muted p-4">
+            <div className="flex items-center gap-2 text-xs font-medium text-app-warning">
               <KeyRound className="h-4 w-4" />
-              발급된 키는 지금만 전체가 표시됩니다
+              <span>⚠ 이 키는 지금만 전체가 표시됩니다. 안전한 곳에 저장하세요.</span>
             </div>
-            <code className="mt-3 block break-all rounded-lg border border-violet-500/10 bg-app-card px-3 py-2.5 text-sm text-app-text font-mono shadow-sm">
-              {justCreatedKey}
-            </code>
-            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setJustCreatedKey(null)}>
-              확인했습니다
-            </Button>
+            <div className="mt-3 flex items-center gap-2">
+              <code className="flex-1 break-all rounded-lg border border-app-warning/10 bg-app-card px-3 py-2.5 text-sm text-app-text font-mono shadow-sm">
+                {justCreatedKey}
+              </code>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => copyToClipboard(justCreatedKey, "new-key")}
+                className="shrink-0"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                {copiedId === "new-key" ? "복사됨" : "복사"}
+              </Button>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setJustCreatedKey(null)}>
+                확인했습니다
+              </Button>
+            </div>
           </div>
         )}
 
@@ -148,54 +184,73 @@ function ApiKeysContent() {
         {loading && (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-xl bg-app-card-hover" />
+              <Skeleton key={i} className="h-16 w-full rounded-xl" />
             ))}
           </div>
         )}
-        {!loading && keys.length === 0 && (
+
+        {!loading && error && <InlineError>{error}</InlineError>}
+
+        {!loading && !error && keys.length === 0 && (
           <EmptyState
             icon={KeyRound}
             title="발급된 API 키 없음"
             description="위 폼에서 새 키를 발급해주세요."
           />
         )}
-        <div className="divide-y divide-app-border">
-          {keys.map((k) => (
-            <div
-              key={k.id}
-              data-testid={`api-key-row-${k.id}`}
-              className="flex items-center justify-between py-3 text-sm transition-colors hover:bg-app-card-hover -mx-4 px-4 first:rounded-t-lg last:rounded-b-lg"
-            >
-              <div className="min-w-0 flex-1 pr-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-app-text truncate">{k.name}</span>
-                  <Badge tone="neutral">API 키</Badge>
+        {!loading && keys.length > 0 && (
+          <div className="divide-y divide-app-border">
+            {keys.map((k) => {
+              const isDeleting = deletingId === k.id;
+              return (
+                <div
+                  key={k.id}
+                  data-testid={`api-key-row-${k.id}`}
+                  className={cn(
+                    "flex items-center justify-between py-3 text-sm transition-colors -mx-4 px-4 first:rounded-t-lg last:rounded-b-lg",
+                    isDeleting ? "opacity-50" : "hover:bg-app-card-hover"
+                  )}
+                >
+                  <div className="min-w-0 flex-1 pr-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-app-text truncate">{k.name}</span>
+                      <Badge tone={k.isActive ? "success" : "neutral"}>
+                        {k.isActive ? "활성" : "비활성"}
+                      </Badge>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-app-text-muted">
+                      <code className="font-mono text-app-text-subtle">{k.maskedKey}</code>
+                      <span>생성 {formatDateTime(k.createdAt)}</span>
+                      {k.lastUsed && <span>· 마지막 사용 {formatDateTime(k.lastUsed)}</span>}
+                      {!k.lastUsed && <span className="text-app-text-subtle">· 사용 기록 없음</span>}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeleteTarget(k)}
+                      loading={isDeleting}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-3 w-3" /> 삭제
+                    </Button>
+                  </div>
                 </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-app-text-muted">
-                  <code className="font-mono text-app-text-subtle">{k.maskedKey}</code>
-                  <span>생성 {formatDateTime(k.createdAt)}</span>
-                  {k.lastUsed && <span>· 마지막 사용 {formatDateTime(k.lastUsed)}</span>}
-                  {!k.lastUsed && <span className="text-app-text-subtle">· 사용 기록 없음</span>}
-                </div>
-              </div>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setDeleteTarget(k)}
-              >
-                <Trash2 className="h-3 w-3" /> 삭제
-              </Button>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </Panel>
 
       <ConfirmDialog
         open={!!deleteTarget}
         title="API 키 삭제"
-        description={deleteTarget ? `"${deleteTarget.name}" 키를 삭제하면 이 키를 쓰는 프로그램은 즉시 접근이 끊깁니다. 삭제할까요?` : ""}
+        description={deleteTarget
+          ? `"${deleteTarget.name}" 키를 삭제하면 이 키를 사용하는 모든 프로그램의 접근이 즉시 차단됩니다. 이 작업은 되돌릴 수 없습니다.`
+          : ""}
         variant="danger"
-        confirmLabel="삭제"
+        confirmLabel="영구 삭제"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
