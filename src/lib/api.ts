@@ -19,7 +19,15 @@ import { getToken } from "@/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-/** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
+interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+/** Every /api/* route requires either this (an admin session) or an X-API-Key — see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -91,8 +99,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
-  const accounts = await request<ApiAccount[]>("/api/accounts");
-  return accounts.map(toAccount);
+  const data = await request<PaginatedResponse<ApiAccount>>("/api/accounts");
+  return data.items.map(toAccount);
 }
 
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
@@ -195,8 +203,8 @@ function toGroup(api: ApiGroup): Group {
 }
 
 export async function fetchGroups(accountId: string): Promise<Group[]> {
-  const groups = await request<ApiGroup[]>(`/api/accounts/${accountId}/groups`);
-  return groups.map(toGroup);
+  const data = await request<PaginatedResponse<ApiGroup>>(`/api/accounts/${accountId}/groups`);
+  return data.items.map(toGroup);
 }
 
 interface ApiBroadcast {
