@@ -65,7 +65,7 @@ export function FailureRecoveryPanel({
       meta.tone === "warning" && "border-app-warning/20 bg-app-warning-muted/10",
       meta.tone === "neutral" && "border-app-border bg-app-card",
     )}>
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2.5 sm:gap-3">
         <Icon className={cn(
           "mt-0.5 h-5 w-5 shrink-0",
           meta.tone === "danger" && "text-app-danger",
@@ -83,12 +83,12 @@ export function FailureRecoveryPanel({
           </div>
 
           {/* Summary */}
-          <p className="text-sm text-app-text">{failureInfo.summary}</p>
+          <p className="text-sm leading-snug text-app-text">{failureInfo.summary}</p>
 
           {/* Raw error (for debugging context, only when useful) */}
           {errorMessage && errorMessage !== failureInfo.summary && (
             <details className="group">
-              <summary className="cursor-pointer text-[11px] text-app-text-subtle hover:text-app-text transition-colors">
+              <summary className="cursor-pointer text-[11px] text-app-text-subtle hover:text-app-text transition-colors py-0.5">
                 원본 오류 메시지
               </summary>
               <p className="mt-1 whitespace-pre-wrap break-words text-[11px] text-app-text-muted">
@@ -104,68 +104,51 @@ export function FailureRecoveryPanel({
 
           {/* Recovery actions */}
           {!readonly && !accountDead && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {/* Retry (only when actually retryable) */}
-              {(isRetryable || isConditional) && action === "wait_and_retry" && (
-                <Button variant="secondary" size="sm" onClick={onRetry}>
-                  <RefreshCw className="h-3.5 w-3.5" /> 재시도
+            <div className="flex flex-col gap-1.5 pt-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+              {(isRetryable || isConditional) && (action === "wait_and_retry" || action === "retry_broadcast") && (
+                <Button variant="secondary" size="md" className="justify-center" onClick={onRetry}>
+                  <RefreshCw className="h-4 w-4" /> 재시도
                 </Button>
               )}
 
-              {/* Retry broadcast for timeout/unknown */}
-              {(isRetryable || isConditional) && (action === "retry_broadcast") && (
-                <Button variant="secondary" size="sm" onClick={onRetry}>
-                  <RefreshCw className="h-3.5 w-3.5" /> 재시도
-                </Button>
-              )}
-
-              {/* Re-authenticate */}
               {action === "reauthenticate_account" && onReauthenticate && (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="primary" size="sm" onClick={onReauthenticate}>
-                    <ExternalLink className="h-3.5 w-3.5" /> 계정 재인증
+                <>
+                  <Button variant="primary" size="md" className="justify-center" onClick={onReauthenticate}>
+                    <ExternalLink className="h-4 w-4" /> 계정 재인증
                   </Button>
                   {isConditional && (
-                    <Button variant="secondary" size="sm" onClick={onRetry}>
-                      <RefreshCw className="h-3.5 w-3.5" /> 재시도
+                    <Button variant="secondary" size="md" className="justify-center" onClick={onRetry}>
+                      <RefreshCw className="h-4 w-4" /> 재시도
                     </Button>
                   )}
-                </div>
+                </>
               )}
 
-              {/* Banned — no retry, just explanation */}
               {action === "account_is_banned" && (
-                <div className="flex items-center gap-2 text-xs text-app-text-muted">
-                  <Ban className="h-3.5 w-3.5 text-app-danger" />
+                <div className="flex items-center gap-2 text-xs text-app-text-muted py-1">
+                  <Ban className="h-4 w-4 shrink-0 text-app-danger" />
                   <span>재시도해도 차단이 해제되지 않습니다.</span>
                 </div>
               )}
 
-              {/* Edit & resend for invalid_recipient, media_error, configuration, timeout */}
               {["check_recipient", "check_media", "check_configuration"].includes(action) && (
-                <Button variant="secondary" size="sm" onClick={onEditResend}>
-                  <SendHorizonal className="h-3.5 w-3.5" /> 편집 후 재발송
+                <Button variant="secondary" size="md" className="justify-center" onClick={onEditResend}>
+                  <SendHorizonal className="h-4 w-4" /> 편집 후 재발송
                 </Button>
               )}
 
-              {/* Contact support */}
               {action === "contact_support" && (
-                <span className="text-xs text-app-text-muted">
+                <span className="text-xs text-app-text-muted py-1">
                   관리자에게 문의하거나 새 발송을 생성하세요.
                 </span>
               )}
 
-              {/* Retry with retry_broadcast for configuration timeout */}
-              {action === "retry_broadcast" && (
-                <Button variant="secondary" size="sm" onClick={onRetry}>
-                  <RefreshCw className="h-3.5 w-3.5" /> 재시도
+              {/* Always-show fallback edit & resend (only when no specialized action applies) */}
+              {!["check_recipient", "check_media", "check_configuration", "account_is_banned", "contact_support"].includes(action) && (
+                <Button variant="ghost" size="md" className="justify-center" onClick={onEditResend}>
+                  <SendHorizonal className="h-4 w-4" /> 편집 후 재발송
                 </Button>
               )}
-
-              {/* always show edit & resend for failed broadcasts */}
-              <Button variant="ghost" size="sm" onClick={onEditResend}>
-                <SendHorizonal className="h-3.5 w-3.5" /> 편집 후 재발송
-              </Button>
             </div>
           )}
 
