@@ -123,7 +123,7 @@ function ExecutionPanel({ parent, onClose }: { parent: Broadcast; onClose: () =>
         : children.length === 0 ? <div className="flex flex-col items-center py-6 text-center"><RefreshCw className="mb-2 h-5 w-5 text-app-text-subtle" /><p className="text-xs text-app-text-muted">아직 실행 기록이 없습니다</p></div>
         : <div className="max-h-64 overflow-y-auto -mx-1"><Table><TableHeader><TableRow><TableHead className="text-[11px]">시간</TableHead><TableHead className="text-[11px]">상태</TableHead><TableHead className="text-[11px]">메시지</TableHead><TableHead className="text-[11px]">오류</TableHead></TableRow></TableHeader><TableBody>{children.map(c => <TableRow key={c.id}>
           <TableCell className="font-mono text-[11px] text-app-text-muted whitespace-nowrap">{fmtDT(c.createdAt)}</TableCell>
-          <TableCell><Badge tone={(CHILD_META[c.status]?.tone ?? "neutral") as any}>{CHILD_META[c.status]?.label ?? c.status}</Badge></TableCell>
+          <TableCell><Badge tone={(CHILD_META[c.status]?.tone ?? "neutral") as "neutral" | "success" | "warning" | "danger" | "info"}>{CHILD_META[c.status]?.label ?? c.status}</Badge></TableCell>
           <TableCell className="text-xs text-app-text max-w-[140px] truncate">{c.message}</TableCell>
           <TableCell className="text-[11px] text-app-danger max-w-[100px] truncate">{c.errorMessage ?? "-"}</TableCell>
         </TableRow>)}</TableBody></Table></div>}
@@ -370,8 +370,8 @@ export function RecurringScheduleTab() {
         </motion.div>}
       </AnimatePresence>
 
-      <ConfirmDialog open={confirm?.action === "cancel" ?? false} title="반복 발송 취소" message={`"${confirm?.b.message.slice(0, 50)}" 반복 발송을 영구 취소합니다.`} confirmLabel="취소하기" tone="danger" loading={actionLoading === confirm?.b.id} onConfirm={handleCancel} onCancel={() => setConfirm(null)} />
-      <ConfirmDialog open={confirm?.action === "pause" ?? false} title="반복 발송 일시중지" message={`"${confirm?.b.message.slice(0, 50)}" 반복 발송을 일시중지합니다. 일정은 유지됩니다.`} confirmLabel="일시중지" tone="warning" loading={actionLoading === confirm?.b.id} onConfirm={() => { if (confirm) handlePause(confirm.b); }} onCancel={() => setConfirm(null)} />
+      <ConfirmDialog open={confirm?.action === "cancel"} title="반복 발송 취소" message={`"${confirm?.b.message.slice(0, 50)}" 반복 발송을 영구 취소합니다.`} confirmLabel="취소하기" tone="danger" loading={actionLoading === confirm?.b.id} onConfirm={handleCancel} onCancel={() => setConfirm(null)} />
+      <ConfirmDialog open={confirm?.action === "pause"} title="반복 발송 일시중지" message={`"${confirm?.b.message.slice(0, 50)}" 반복 발송을 일시중지합니다. 일정은 유지됩니다.`} confirmLabel="일시중지" tone="warning" loading={actionLoading === confirm?.b.id} onConfirm={() => { if (confirm) handlePause(confirm.b); }} onCancel={() => setConfirm(null)} />
     </div>
   );
 }
