@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, type FormEvent } from "react";
-import { MessageSquareOff, Plus, X, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState, useRef, useMemo, type FormEvent } from "react";
+import { MessageSquareOff, Plus, X, Search, RotateCcw, Copy } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -10,10 +10,12 @@ import { Toggle } from "@/components/ui/Toggle";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
+import { useToast } from "@/components/ui/Toast";
 
 const MATCH_TYPE_LABEL: Record<AutoReplyMatchType, string> = {
   keyword: "키워드 포함",
@@ -52,6 +54,8 @@ function getValidationErrors(name: string, matchValue: string, replyContent: str
   return errors;
 }
 
+type FilterMode = "all" | "active" | "inactive";
+
 export function AutoReplyTab() {
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -84,10 +88,14 @@ export function AutoReplyTab() {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // ── New features ──
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+
   const formRef = useRef<HTMLDivElement>(null);
   const submitLockRef = useRef(false);
 
-  const [visibleContentId, setVisibleContentId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   async function loadSettings(accountId: string) {
     setRulesLoading(true);
@@ -119,6 +127,8 @@ export function AutoReplyTab() {
     setToggleError(null);
     setSubmitError(null);
     setActionError(null);
+    setSearchQuery("");
+    setFilterMode("all");
     if (selectedAccountId) {
       loadSettings(selectedAccountId);
       loadLogs(selectedAccountId);
@@ -128,6 +138,25 @@ export function AutoReplyTab() {
     }
   }, [selectedAccountId]);
 
+  // ── Filtered & searched rules ──
+  const filteredRules = useMemo(() => {
+    let result = rules;
+    // Filter by active/inactive
+    if (filterMode === "active") result = result.filter((r) => r.isActive);
+    else if (filterMode === "inactive") result = result.filter((r) => !r.isActive);
+    // Search
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.matchValue.toLowerCase().includes(q) ||
+          r.replyContent.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [rules, filterMode, searchQuery]);
+
   async function handleToggleMaster(next: boolean) {
     if (!selectedAccountId || toggling) return;
     setToggling(true);
@@ -135,8 +164,10 @@ export function AutoReplyTab() {
     try {
       const result = await api.toggleAutoReply(selectedAccountId, next);
       setEnabled(result);
+      toast("success", next ? "자동 응답이 켜졌습니다" : "자동 응답이 꺼졌습니다");
     } catch (err) {
       setToggleError(err instanceof Error ? err.message : "설정을 변경하지 못했습니다.");
+      toast("error", "자동 응답 설정 변경에 실패했습니다");
     } finally {
       setToggling(false);
     }
@@ -148,8 +179,10 @@ export function AutoReplyTab() {
     try {
       const updated = await api.updateAutoReplyRule(selectedAccountId, rule.id, { isActive: !rule.isActive });
       setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      toast("success", updated.isActive ? "규칙이 활성화되었습니다" : "규칙이 비활성화되었습니다");
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "규칙을 수정하지 못했습니다.");
+      toast("error", "규칙 상태 변경에 실패했습니다");
     }
   }
 
@@ -170,6 +203,20 @@ export function AutoReplyTab() {
   function openEditForm(rule: AutoReplyRule) {
     setEditingRuleId(rule.id);
     setName(rule.name);
+    setMatchType(rule.matchType);
+    setMatchValue(rule.matchValue);
+    setReplyContent(rule.replyContent);
+    setCooldownHours(rule.cooldownHours);
+    setMaxRepliesPerDay(rule.maxRepliesPerDay);
+    setSubmitError(null);
+    setValidationErrors({});
+    setShowForm(true);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openDuplicateForm(rule: AutoReplyRule) {
+    setEditingRuleId(null);
+    setName(rule.name + " (사본)");
     setMatchType(rule.matchType);
     setMatchValue(rule.matchValue);
     setReplyContent(rule.replyContent);
@@ -210,6 +257,7 @@ export function AutoReplyTab() {
           maxRepliesPerDay,
         });
         setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+        toast("success", "규칙이 수정되었습니다");
       } else {
         const rule = await api.createAutoReplyRule(selectedAccountId, {
           name: name.trim(),
@@ -220,10 +268,12 @@ export function AutoReplyTab() {
           maxRepliesPerDay,
         });
         setRules((prev) => [rule, ...prev]);
+        toast("success", "규칙이 추가되었습니다");
       }
       closeForm();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "규칙을 저장하지 못했습니다.");
+      toast("error", "규칙 저장에 실패했습니다");
     } finally {
       setSubmitting(false);
       submitLockRef.current = false;
@@ -236,11 +286,20 @@ export function AutoReplyTab() {
     try {
       await api.deleteAutoReplyRule(selectedAccountId, confirmDeleteId);
       setRules((prev) => prev.filter((r) => r.id !== confirmDeleteId));
+      toast("success", "규칙이 삭제되었습니다");
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "규칙을 삭제하지 못했습니다.");
+      toast("error", "규칙 삭제에 실패했습니다");
     } finally {
       setConfirmDeleteId(null);
     }
+  }
+
+  function handleCopyReply(text: string) {
+    navigator.clipboard.writeText(text).then(
+      () => toast("success", "응답 내용이 복사되었습니다"),
+      () => toast("error", "클립보드 복사에 실패했습니다")
+    );
   }
 
   if (!account) {
@@ -252,7 +311,7 @@ export function AutoReplyTab() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5 pb-8">
       {/* Master toggle */}
       <Panel title="자동 응답" description={`${account.name ?? account.phone} 계정의 자동 응답을 켜거나 끕니다`}>
         <Toggle
@@ -269,21 +328,61 @@ export function AutoReplyTab() {
 
       {/* Rules list */}
       <div>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-app-text">
-            규칙 {!rulesLoading && `(${rules.length})`}
+            규칙 {!rulesLoading && `(${filteredRules.length}/${rules.length})`}
           </h3>
           {!showForm && (
-            <Button variant="primary" size="sm" onClick={openCreateForm}>
+            <Button variant="primary" size="sm" onClick={openCreateForm} className="shrink-0">
               <Plus className="h-3.5 w-3.5" /> 새 규칙
             </Button>
           )}
         </div>
 
+        {/* Search & filter */}
+        {!rulesLoading && rules.length > 0 && (
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <SearchInput
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="규칙 이름 / 키워드 / 응답 검색"
+                className="w-full"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-app-text-muted hover:text-app-text transition-colors"
+                  aria-label="검색 초기화"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {(["all", "active", "inactive"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilterMode(f)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[32px]",
+                    filterMode === f
+                      ? "bg-app-primary text-white"
+                      : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+                  )}
+                >
+                  {f === "all" ? "전체" : f === "active" ? "사용 중" : "중지됨"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {rulesLoading && (
           <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
           </div>
         )}
 
@@ -295,6 +394,7 @@ export function AutoReplyTab() {
           <div className="mb-3 rounded-lg bg-app-danger-muted px-4 py-3 text-xs text-app-danger">{actionError}</div>
         )}
 
+        {/* Empty: no rules at all */}
         {!rulesLoading && !rulesError && rules.length === 0 && !showForm && (
           <EmptyState
             icon={MessageSquareOff}
@@ -308,6 +408,32 @@ export function AutoReplyTab() {
           />
         )}
 
+        {/* Empty: search/filter with no results */}
+        {!rulesLoading && !rulesError && rules.length > 0 && filteredRules.length === 0 && !showForm && (
+          <EmptyState
+            icon={Search}
+            title="검색 결과가 없습니다"
+            description={
+              searchQuery
+                ? `"${searchQuery}"와 일치하는 규칙이 없습니다`
+                : filterMode !== "all"
+                  ? `${filterMode === "active" ? "사용 중" : "중지된"} 규칙이 없습니다`
+                  : ""
+            }
+            action={
+              searchQuery || filterMode !== "all" ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSearchQuery(""); setFilterMode("all"); }}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> 필터 초기화
+                </Button>
+              ) : undefined
+            }
+          />
+        )}
+
         {/* Inline create/edit form */}
         {showForm && (
           <div ref={formRef} className="mb-3 rounded-xl border border-app-border bg-app-card">
@@ -317,7 +443,7 @@ export function AutoReplyTab() {
               </span>
               <button
                 onClick={closeForm}
-                className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+                className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
                 aria-label="취소"
               >
                 <X className="h-4 w-4" />
@@ -330,6 +456,7 @@ export function AutoReplyTab() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="예: 가격 문의"
                   invalid={!!validationErrors.name}
+                  autoComplete="off"
                 />
               </Field>
 
@@ -349,6 +476,7 @@ export function AutoReplyTab() {
                     onChange={(e) => setMatchValue(e.target.value)}
                     placeholder="가격"
                     invalid={!!validationErrors.matchValue}
+                    autoComplete="off"
                   />
                 </Field>
               </div>
@@ -372,6 +500,7 @@ export function AutoReplyTab() {
                     value={cooldownHours}
                     onChange={(e) => setCooldownHours(Number(e.target.value))}
                     invalid={!!validationErrors.cooldownHours}
+                    inputMode="numeric"
                   />
                 </Field>
                 <Field label="일일 최대 응답" hint="이 규칙의 하루 최대 응답 횟수">
@@ -381,6 +510,7 @@ export function AutoReplyTab() {
                     value={maxRepliesPerDay}
                     onChange={(e) => setMaxRepliesPerDay(Number(e.target.value))}
                     invalid={!!validationErrors.maxRepliesPerDay}
+                    inputMode="numeric"
                   />
                 </Field>
               </div>
@@ -389,7 +519,7 @@ export function AutoReplyTab() {
                 <div className="rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{submitError}</div>
               )}
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="ghost" onClick={closeForm}>취소</Button>
                 <Button type="submit" variant="primary" loading={submitting}>
                   {editingRuleId ? "수정 완료" : "규칙 추가"}
@@ -399,91 +529,85 @@ export function AutoReplyTab() {
           </div>
         )}
 
-        {/* Rule cards */}
-        {rules.length > 0 && (
-          <div className="space-y-2">
-            {rules.map((rule) => (
+        {/* Rule list - compact operational rows */}
+        {filteredRules.length > 0 && (
+          <div className="space-y-1.5">
+            {filteredRules.map((rule) => (
               <div
                 key={rule.id}
                 data-testid={`auto-reply-rule-${rule.id}`}
                 className={cn(
-                  "rounded-xl border p-4",
+                  "flex flex-col gap-2 rounded-xl border px-3 py-2.5 text-sm transition-all sm:flex-row sm:items-center sm:gap-3",
                   rule.isActive
                     ? "border-app-border bg-app-card"
                     : "border-app-border/30 bg-app-card/50 opacity-60"
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-app-text">{rule.name}</span>
-                      <Badge tone="neutral">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
-                      <Badge tone={rule.isActive ? "success" : "neutral"}>
-                        {rule.isActive ? "사용 중" : "중지됨"}
-                      </Badge>
-                    </div>
-                    <div className="mt-1.5 flex items-start gap-1.5 text-xs text-app-text-muted">
-                      <span className="shrink-0 rounded bg-app-card-hover px-1.5 py-0.5 font-mono text-[11px]">
-                        {rule.matchValue}
-                      </span>
-                      <span className="mt-0.5">→</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVisibleContentId(
-                            visibleContentId === rule.id ? null : rule.id
-                          )
-                        }
-                        className="flex-1 truncate text-left hover:text-app-text transition-colors"
-                        title={rule.replyContent}
-                      >
-                        {visibleContentId === rule.id
-                          ? rule.replyContent
-                          : rule.replyContent.length > 80
-                            ? `${rule.replyContent.slice(0, 80)}...`
-                            : rule.replyContent}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setVisibleContentId(visibleContentId === rule.id ? null : rule.id)}
-                        className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors"
-                        aria-label={visibleContentId === rule.id ? "내용 숨기기" : "전체 내용 보기"}
-                      >
-                        {visibleContentId === rule.id
-                          ? <EyeOff className="h-3 w-3" />
-                          : <Eye className="h-3 w-3" />}
-                      </button>
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-app-text-subtle">
-                      <span>쿨다운 {rule.cooldownHours}시간</span>
-                      <span>일일 최대 {rule.maxRepliesPerDay}회</span>
-                      <span>만든 날짜 {formatRuleDateTime(rule.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-0 sm:shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditForm(rule)}
-                      aria-label="규칙 수정"
-                    >
-                      수정
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                {/* Left: info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium text-app-text truncate max-w-[160px]" title={rule.name}>{rule.name}</span>
+                    <Badge tone="neutral" className="shrink-0 text-[10px]">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
+                    <button
+                      type="button"
                       onClick={() => handleToggleRule(rule)}
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                        rule.isActive
+                          ? "bg-app-success-muted text-app-success hover:bg-app-success-muted/60"
+                          : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+                      )}
                     >
-                      {rule.isActive ? "중지" : "재개"}
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setConfirmDeleteId(rule.id)}
-                    >
-                      삭제
-                    </Button>
+                      {rule.isActive ? "사용 중" : "중지됨"}
+                    </button>
                   </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded bg-app-card-hover px-1.5 py-0.5 font-mono text-[11px] text-app-text-muted truncate max-w-[140px]" title={rule.matchValue}>
+                      {rule.matchValue}
+                    </span>
+                    <span className="text-[11px] text-app-text-subtle">→</span>
+                    <span className="truncate text-[11px] text-app-text-muted flex-1 min-w-0" title={rule.replyContent}>
+                      {rule.replyContent.length > 60 ? rule.replyContent.slice(0, 60) + "..." : rule.replyContent}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyReply(rule.replyContent)}
+                      className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors min-h-[24px] min-w-[24px] flex items-center justify-center"
+                      aria-label="응답 내용 복사"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-app-text-subtle">
+                    <span>쿨다운 {rule.cooldownHours}시간</span>
+                    <span>일 {rule.maxRepliesPerDay}회</span>
+                    <span>{formatRuleDateTime(rule.createdAt)}</span>
+                  </div>
+                </div>
+                {/* Right: actions */}
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openEditForm(rule)}
+                    className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px]"
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openDuplicateForm(rule)}
+                    className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px]"
+                    title="규칙 복제"
+                  >
+                    복제
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(rule.id)}
+                    className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted transition-colors min-h-[32px]"
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
             ))}
