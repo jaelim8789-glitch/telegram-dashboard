@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
+import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
 import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
 import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
@@ -50,6 +51,7 @@ export function Workspace() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <CommandPalette />
     </main>
   );
 }
