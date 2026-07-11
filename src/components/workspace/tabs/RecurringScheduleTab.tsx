@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertTriangle, AlertCircle, Ban, CalendarClock, CheckCircle2, Clock, Info,
-  PauseCircle, PlayCircle, Plus, RefreshCw, SendHorizonal, Trash2, X, XCircle,
+  AlertTriangle, AlertCircle, Ban, CalendarClock, CheckCircle2, Clock, Copy, Info,
+  PauseCircle, PlayCircle, Plus, RefreshCw, SendHorizonal, X, XCircle,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
@@ -141,6 +141,7 @@ function ScheduleCard({
   accounts: Account[];
   onPause: () => void; onResume: () => void; onCancel: () => void;
   onToggleHistory: () => void; historyOpen: boolean;
+  onDuplicate: () => void;
 }) {
   const cd = useCountdown(b.nextScheduledAt);
   return (
@@ -168,6 +169,7 @@ function ScheduleCard({
           {state === "active" && <button onClick={onPause} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-warning hover:bg-app-warning-muted/30"><PauseCircle className="h-3.5 w-3.5" /> 중지</button>}
           {state === "paused" && <button onClick={onResume} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-success hover:bg-app-success-muted/30"><PlayCircle className="h-3.5 w-3.5" /> 재개</button>}
           {state !== "cancelled" && <button onClick={onCancel} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted/30"><Ban className="h-3.5 w-3.5" /> 취소</button>}
+          <button onClick={onDuplicate} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover"><Copy className="h-3.5 w-3.5" /> 복제</button>
           <button onClick={onToggleHistory} className="rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover">{historyOpen ? "닫기" : "기록"}</button>
         </div>
       </div>
@@ -194,6 +196,7 @@ export function RecurringScheduleTab() {
   const [childData, setChildData] = useState<Record<string, { count: number; last: BroadcastChild | null }>>({});
 
   const [showCreate, setShowCreate] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<string | null>(null);
   const [formAccountId, setFormAccountId] = useState("");
   const [formRecipients, setFormRecipients] = useState("");
   const [formMessage, setFormMessage] = useState("");
@@ -259,11 +262,26 @@ export function RecurringScheduleTab() {
       await api.createBroadcast({
         accountId: formAccountId, message: formMessage.trim(), recipients, recurringIntervalMinutes: formInterval,
       });
-      setShowCreate(false); setFormAccountId(""); setFormRecipients(""); setFormMessage(""); setFormInterval(60);
+      clearCreateForm();
       await loadRecurring();
     } catch (e) { setFormError(e instanceof Error ? e.message : "생성 실패"); }
     finally { setFormSubmitting(false); }
   };
+
+  function handleDuplicate(b: Broadcast) {
+    setFormAccountId(b.accountId);
+    setFormRecipients(b.recipients.join("\n"));
+    setFormMessage(b.message);
+    setFormInterval(b.recurringIntervalMinutes ?? 60);
+    setDuplicateSource(b.id);
+    setShowCreate(true);
+    setFormError(null);
+  }
+
+  function clearCreateForm() {
+    setShowCreate(false); setDuplicateSource(null); setFormAccountId(""); setFormRecipients("");
+    setFormMessage(""); setFormInterval(60); setFormError(null);
+  }
 
   const stats = useMemo(() => {
     if (recurring.length === 0) return null;
@@ -340,6 +358,7 @@ export function RecurringScheduleTab() {
             onCancel={() => setConfirm({ b, action: "cancel" })}
             onToggleHistory={() => setHistoryId(historyId === b.id ? null : b.id)}
             historyOpen={historyId === b.id}
+            onDuplicate={() => handleDuplicate(b)}
           />
           <AnimatePresence>{historyId === b.id && <ExecutionPanel parent={b} onClose={() => setHistoryId(null)} />}</AnimatePresence>
         </div>;
@@ -347,9 +366,15 @@ export function RecurringScheduleTab() {
 
       <AnimatePresence>
         {showCreate && <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}>
-          <Panel title="새 반복 발송 생성">
+          <Panel title={duplicateSource ? "반복 발송 복제" : "새 반복 발송 생성"}>
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
+                {duplicateSource && (
+                  <div className="flex items-start gap-2 rounded-xl border border-app-primary/20 bg-app-primary-muted/20 px-3 py-2.5 text-xs text-app-primary">
+                    <Copy className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>기존 반복 발송 설정을 불러왔습니다. 내용을 확인하고 수정한 뒤 새 일정으로 생성하세요.</span>
+                  </div>
+                )}
                 <Field label="계정"><select value={formAccountId} onChange={e => setFormAccountId(e.target.value)} required className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60">
                   <option value="">계정 선택</option>
                   {accounts.map(a => <option key={a.id} value={a.id}>{a.name?.trim() || a.phone}</option>)}
@@ -361,7 +386,7 @@ export function RecurringScheduleTab() {
                 </select></Field>
                 {formError && <p className="text-xs text-app-danger">{formError}</p>}
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>취소</Button>
+                  <Button type="button" variant="ghost" onClick={clearCreateForm}>취소</Button>
                   <Button type="submit" variant="primary" disabled={formSubmitting}>{formSubmitting ? "생성 중..." : "생성"}</Button>
                 </div>
               </div>
