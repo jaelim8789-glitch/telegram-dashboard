@@ -17,7 +17,12 @@
 } from "@/types";
 import { getToken } from "@/lib/auth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// NEXT_PUBLIC_API_BASE_URL is inlined at build time.  When empty (the Dockerfile
+// default), the frontend uses relative URLs through the nginx reverse proxy
+// (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
+// frontend calls the API directly at that origin.
+// The fallback "http://localhost:8000" is for local dev without nginx.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 /** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
