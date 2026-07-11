@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/components/ui/Toast";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getAccountDisplayName, isBroadcastInFlight, isRecurringActive, isRecurringBroadcast, type Broadcast, type BroadcastStatus } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
+import { FailureRecoveryPanel } from "@/components/workspace/tabs/log/FailureRecoveryPanel";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -46,12 +49,15 @@ function formatDuration(start: string | null, end: string | null): string | null
 }
 
 function LogRow({
-  log, retrying, accountLabel, onRetry,
+  log, retrying, accountLabel, accounts, onRetry, onEditResend, onNavigate,
 }: {
   log: Broadcast;
   retrying: string | null;
   accountLabel: (id: string) => string;
+  accounts: { id: string; name: string | null; phone: string }[];
   onRetry: (b: Broadcast) => void;
+  onEditResend: (b: Broadcast) => void;
+  onNavigate: (tab: string) => void;
 }) {
   const meta = STATUS_META[log.status];
   const Icon = meta.icon;
@@ -65,105 +71,173 @@ function LogRow({
   const countdown = useCountdown(recurring ? log.nextScheduledAt : null);
   const duration = formatDuration(log.scheduledAt || log.createdAt, log.sentAt);
   const hasTiming = isSent && duration;
+  const [expanded, setExpanded] = useState(false);
+  const [retryConfirmOpen, setRetryConfirmOpen] = useState(false);
+
+  const hasFailureInfo = isFailed && log.failureInfo != null;
+  const accountExists = accounts.some((a) => a.id === log.accountId);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all",
-        isFailed && "border-app-danger/20 bg-app-danger-muted/20",
-        recurringCancelled && "border-app-warning/20 bg-app-warning-muted/20",
-        isSending && "border-app-info/20 bg-app-info-muted/10",
-        !isFailed && !recurringCancelled && !isSending && "border-app-border bg-app-bg/60 hover:border-app-border-strong",
-      )}
-    >
-      {/* Icon column */}
-      <Icon className={cn(
-        "h-4 w-4 shrink-0",
-        isSending && "animate-spin text-app-info",
-        isFailed && "text-app-danger",
-        isSent && "text-app-success",
-        isCancelled && "text-app-warning",
-        !isFailed && !isSending && !isSent && !isCancelled && "text-app-text-subtle",
-      )} />
+    <>
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all",
+          isFailed && "border-app-danger/20 bg-app-danger-muted/20",
+          recurringCancelled && "border-app-warning/20 bg-app-warning-muted/20",
+          isSending && "border-app-info/20 bg-app-info-muted/10",
+          !isFailed && !recurringCancelled && !isSending && "border-app-border bg-app-bg/60 hover:border-app-border-strong",
+        )}
+      >
+        {/* Status icon */}
+        <Icon className={cn(
+          "h-4 w-4 shrink-0",
+          isSending && "animate-spin text-app-info",
+          isFailed && "text-app-danger",
+          isSent && "text-app-success",
+          isCancelled && "text-app-warning",
+          !isFailed && !isSending && !isSent && !isCancelled && "text-app-text-subtle",
+        )} />
 
-      {/* Timestamp */}
-      <span className="shrink-0 font-mono text-[11px] text-app-text-subtle tabular-nums">
-        {formatTimestamp(log.createdAt)}
-      </span>
+        {/* Timestamp */}
+        <span className="shrink-0 font-mono text-[11px] text-app-text-subtle tabular-nums">
+          {formatTimestamp(log.createdAt)}
+        </span>
 
-      {/* Status badge */}
-      <Badge tone={
-        recurring ? "info" : isFutureSchedule ? "info" : isFailed ? "danger" : isCancelled ? "warning" : meta.tone
-      }>
-        {recurring ? "반복 중" : isFutureSchedule ? "예약됨" : (
-          <span className="flex items-center gap-1">
-            <Icon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
-            {meta.label}
+        {/* Status badge */}
+        <Badge tone={recurring ? "info" : isFutureSchedule ? "info" : isFailed ? "danger" : isCancelled ? "warning" : meta.tone}>
+          {recurring ? "반복 중" : isFutureSchedule ? "예약됨" : (
+            <span className="flex items-center gap-1">
+              <Icon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
+              {meta.label}
+            </span>
+          )}
+        </Badge>
+
+        {/* Account */}
+        <span className="hidden shrink-0 text-app-text-muted sm:inline">
+          {accountLabel(log.accountId)}
+          {!accountExists && <span className="ml-1 text-app-danger">(삭제됨)</span>}
+        </span>
+
+        {/* Message */}
+        <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
+
+        {/* Recipients */}
+        <span className="shrink-0 text-[11px] text-app-text-subtle tabular-nums">{log.recipients.length}명</span>
+
+        {/* Timing */}
+        {hasTiming && (
+          <span className="shrink-0 rounded-md bg-app-card-hover px-1.5 py-0.5 text-[10px] font-mono text-app-text-muted">
+            {duration}
           </span>
         )}
-      </Badge>
 
-      {/* Account */}
-      <span className="hidden shrink-0 text-app-text-muted sm:inline">
-        {accountLabel(log.accountId)}
-      </span>
+        {/* Future schedule time */}
+        {isFutureSchedule && log.scheduledAt && (
+          <span className="shrink-0 text-xs text-app-primary-hover tabular-nums">
+            {formatTimestamp(log.scheduledAt)}
+          </span>
+        )}
 
-      {/* Message */}
-      <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
+        {/* Recurring next countdown */}
+        {recurring && log.nextScheduledAt && (
+          <span className="shrink-0 text-xs text-app-info tabular-nums">
+            {countdown ? `다음: ${countdown}` : `다음: ${formatTimestamp(log.nextScheduledAt)}`}
+          </span>
+        )}
 
-      {/* Recipients */}
-      <span className="shrink-0 text-[11px] text-app-text-subtle tabular-nums">{log.recipients.length}명</span>
+        {/* Recurring interval */}
+        {recurring && (
+          <span className="hidden shrink-0 text-app-text-subtle lg:inline">
+            {intervalLabel(log.recurringIntervalMinutes)}
+          </span>
+        )}
 
-      {/* Timing */}
-      {hasTiming && (
-        <span className="shrink-0 rounded-md bg-app-card-hover px-1.5 py-0.5 text-[10px] font-mono text-app-text-muted">
-          {duration}
-        </span>
+        {/* Error detail toggle */}
+        {(isFailed && (log.errorMessage || log.failureInfo)) && (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            title={log.errorMessage ?? ""}
+            className={cn(
+              "shrink-0 transition-colors",
+              expanded ? "text-app-text" : "text-app-danger hover:text-app-danger/80",
+            )}
+          >
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <FileWarning className="h-3.5 w-3.5" />}
+          </button>
+        )}
+
+        {/* Retry button (legacy/generic retry) */}
+        {isFailed && (
+          <button
+            type="button"
+            onClick={() => setRetryConfirmOpen(true)}
+            disabled={retrying === log.id || !accountExists}
+            title={accountExists ? "재발송" : "계정이 삭제되어 재발송할 수 없습니다"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${retrying === log.id ? "animate-spin" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {/* Expanded failure detail */}
+      {expanded && isFailed && hasFailureInfo && (
+        <div className="mt-1">
+          <FailureRecoveryPanel
+            failureInfo={log.failureInfo!}
+            errorMessage={log.errorMessage}
+            accountDead={!accountExists}
+            onRetry={() => { setExpanded(false); setRetryConfirmOpen(true); }}
+            onEditResend={() => { setExpanded(false); onEditResend(log); }}
+            onReauthenticate={() => { onNavigate("register"); }}
+          />
+        </div>
       )}
 
-      {/* Future schedule time */}
-      {isFutureSchedule && log.scheduledAt && (
-        <span className="shrink-0 text-xs text-app-primary-hover tabular-nums">
-          {formatTimestamp(log.scheduledAt)}
-        </span>
+      {/* Expanded legacy error (no failureInfo) */}
+      {expanded && isFailed && !hasFailureInfo && log.errorMessage && (
+        <div className="mt-1 flex items-start gap-3 rounded-xl border border-app-danger/20 bg-app-danger-muted/10 px-4 py-3 text-xs">
+          <FileWarning className="mt-0.5 h-4 w-4 shrink-0 text-app-danger" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-app-danger">발송 실패</p>
+            <p className="mt-1 text-app-text-muted whitespace-pre-wrap break-words">{log.errorMessage}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {!accountExists && <Badge tone="danger">계정 삭제됨</Badge>}
+              <Button variant="ghost" size="sm" onClick={() => { setExpanded(false); onEditResend(log); }}>
+                <SendHorizonal className="h-3.5 w-3.5" /> 편집 후 재발송
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Recurring next countdown */}
-      {recurring && log.nextScheduledAt && (
-        <span className="shrink-0 text-xs text-app-info tabular-nums">
-          {countdown ? `다음: ${countdown}` : `다음: ${formatTimestamp(log.nextScheduledAt)}`}
-        </span>
-      )}
-
-      {/* Recurring interval label */}
-      {recurring && (
-        <span className="hidden shrink-0 text-app-text-subtle lg:inline">
-          {intervalLabel(log.recurringIntervalMinutes)}
-        </span>
-      )}
-
-      {/* Error */}
-      {log.errorMessage && (
-        <span className="hidden shrink-0 text-app-danger md:inline" title={log.errorMessage}>
-          <FileWarning className="h-3.5 w-3.5" />
-        </span>
-      )}
-
-      {/* Retry button */}
-      {isFailed && (
-        <button type="button" onClick={() => onRetry(log)} disabled={retrying === log.id}
-          title="재발송"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
-        >
-          <RotateCcw className={`h-3.5 w-3.5 ${retrying === log.id ? "animate-spin" : ""}`} />
-        </button>
-      )}
-    </div>
+      {/* Retry confirmation */}
+      <ConfirmDialog
+        open={retryConfirmOpen}
+        title="이 발송을 다시 시도할까요?"
+        description={
+          !accountExists
+            ? "계정이 삭제되어 재발송할 수 없습니다."
+            : `"${log.message}" — ${log.recipients.length}개 대상, ${accountLabel(log.accountId)} 계정으로 재발송합니다.`
+        }
+        variant="danger"
+        confirmLabel={accountExists ? "재발송" : "확인"}
+        cancelLabel="취소"
+        onConfirm={async () => {
+          setRetryConfirmOpen(false);
+          if (accountExists) onRetry(log);
+        }}
+        onCancel={() => setRetryConfirmOpen(false)}
+      />
+    </>
   );
 }
 
 export function LogTab() {
   const accounts = useDashboardStore((s) => s.accounts);
+  const { toast } = useToast();
   const [logs, setLogs] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +269,6 @@ export function LogTab() {
     return () => clearTimeout(timer);
   }, [logs]);
 
-  // 30s background polling
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     bgPollTimer.current = setTimeout(() => { load(true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
@@ -206,9 +279,30 @@ export function LogTab() {
     if (retrying) return;
     setRetrying(failed.id);
     setRetryError(null);
-    try { await api.retryBroadcast(failed.id); await load(); }
-    catch (err) { setRetryError(err instanceof Error ? err.message : "재발송 요청에 실패했습니다."); }
-    finally { setRetrying(null); }
+    try {
+      await api.retryBroadcast(failed.id);
+      await load();
+      toast("success", "재발송이 예약되었습니다.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "재발송 요청에 실패했습니다.";
+      setRetryError(msg);
+      toast("error", msg);
+    } finally {
+      setRetrying(null);
+    }
+  }
+
+  function handleEditResend(failed: Broadcast) {
+    const store = useDashboardStore.getState();
+    if (store.clearSendDraft) store.clearSendDraft();
+    if (store.setSendMessage) store.setSendMessage(failed.message);
+    if (store.selectAccount) store.selectAccount(failed.accountId);
+    store.setActiveTab("send");
+    toast("info", "실패한 발송 내용을 불러왔습니다. 대상을 확인하고 다시 발송하세요.");
+  }
+
+  function handleNavigateTab(tab: string) {
+    useDashboardStore.getState().setActiveTab(tab as import("@/types").TabId);
   }
 
   function accountLabel(accountId: string): string {
@@ -251,7 +345,7 @@ export function LogTab() {
         </Button>
       }
     >
-      {/* Account filter + summary */}
+      {/* Account filter + mini stats */}
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs text-app-text-muted">
           계정
@@ -263,7 +357,6 @@ export function LogTab() {
           </Select>
         </label>
 
-        {/* Mini stats */}
         {summaryStats.total > 0 && (
           <div className="flex items-center gap-2 text-[11px] text-app-text-muted">
             {summaryStats.sent > 0 && (
@@ -334,7 +427,10 @@ export function LogTab() {
               log={log}
               retrying={retrying}
               accountLabel={accountLabel}
+              accounts={accounts}
               onRetry={handleRetry}
+              onEditResend={handleEditResend}
+              onNavigate={handleNavigateTab}
             />
           ))}
         </div>

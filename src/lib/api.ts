@@ -214,7 +214,7 @@ interface ApiBroadcast {
   cancelled_at: string | null;
   next_scheduled_at: string | null;
   is_recurring_paused: boolean;
-  failure_info: Record<string, unknown> | null;
+  failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -233,7 +233,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     cancelledAt: api.cancelled_at ?? null,
     nextScheduledAt: api.next_scheduled_at ?? null,
     isRecurringPaused: api.is_recurring_paused,
-    failureInfo: api.failure_info ?? null,
+    failureInfo: api.failure_info as Broadcast["failureInfo"] | null ?? null,
   };
 }
 
@@ -346,7 +346,11 @@ export async function fetchRecurringChildren(
   const items = await request<{
     id: string; account_id: string; message: string; status: BroadcastStatus;
     scheduled_at: string | null; sent_at: string | null; created_at: string; error_message: string | null;
+<<<<<<< HEAD
     failure_info: Record<string, unknown> | null;
+=======
+    failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+>>>>>>> 5e0cb9c (feat: Broadcast Failure Intelligence frontend recovery workflow)
   }[]>(`/api/broadcast/${broadcastId}/children${qs ? `?${qs}` : ""}`);
   return items.map((api) => ({
     id: api.id,
@@ -357,7 +361,11 @@ export async function fetchRecurringChildren(
     sentAt: api.sent_at,
     createdAt: api.created_at,
     errorMessage: api.error_message,
+<<<<<<< HEAD
     failureInfo: api.failure_info ?? null,
+=======
+    failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
+>>>>>>> 5e0cb9c (feat: Broadcast Failure Intelligence frontend recovery workflow)
   }));
 }
 

@@ -88,6 +88,13 @@ export interface Group {
 
 export type BroadcastStatus = "pending" | "sending" | "sent" | "failed" | "cancelled";
 
+export interface FailureInfo {
+  category: "unauthorized" | "banned" | "rate_limited" | "invalid_recipient" | "media_error" | "temporary_network" | "configuration" | "timeout" | "unknown";
+  retryable: "retryable" | "not_retryable" | "conditional";
+  recovery_action: "reauthenticate_account" | "account_is_banned" | "wait_and_retry" | "check_recipient" | "check_media" | "check_configuration" | "retry_broadcast" | "contact_support" | "none";
+  summary: string;
+}
+
 export interface Broadcast {
   id: string;
   accountId: string;
@@ -107,8 +114,8 @@ export interface Broadcast {
   nextScheduledAt: string | null;
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
-  /** Normalized failure metadata when available. */
-  failureInfo: Record<string, unknown> | null;
+  /** Normalized failure intelligence for failed broadcasts (null for non-failed or legacy records). */
+  failureInfo: FailureInfo | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -146,8 +153,8 @@ export interface BroadcastChild {
   sentAt: string | null;
   createdAt: string;
   errorMessage: string | null;
-  /** Normalized failure metadata when available. */
-  failureInfo: Record<string, unknown> | null;
+  /** Normalized failure intelligence for failed child broadcasts. */
+  failureInfo: FailureInfo | null;
 }
 
 export const MAX_BROADCAST_RECIPIENTS = 10;
