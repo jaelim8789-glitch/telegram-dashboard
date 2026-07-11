@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
+import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +32,7 @@ export function DashboardShell() {
         >
           <Menu className="h-3.5 w-3.5" /> 계정
         </button>
+        <CommandPaletteTrigger />
         <button
           onClick={toggleInspector}
           className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all ml-auto"
