@@ -207,9 +207,18 @@ export function RecurringScheduleTab() {
       const list = await api.fetchRecurringBroadcasts();
       setRecurring(list);
       const data: Record<string, { count: number; last: BroadcastChild | null }> = {};
-      for (const b of list) {
-        try { const children = await api.fetchRecurringChildren(b.id, 1); data[b.id] = { count: children.length + (childData[b.id]?.count ?? 0), last: children[0] ?? childData[b.id]?.last ?? null }; }
-        catch { data[b.id] = { count: childData[b.id]?.count ?? 0, last: childData[b.id]?.last ?? null }; }
+      const results = await Promise.allSettled(list.map(async (b) => {
+        const children = await api.fetchRecurringChildren(b.id, 1);
+        return { id: b.id, children };
+      }));
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          const { id, children } = result.value;
+          data[id] = { count: children.length + (childData[id]?.count ?? 0), last: children[0] ?? childData[id]?.last ?? null };
+        } else {
+          const failedId = list.find(b => !data[b.id])?.id;
+          if (failedId) data[failedId] = { count: childData[failedId]?.count ?? 0, last: childData[failedId]?.last ?? null };
+        }
       }
       setChildData(data);
     } catch (e) { setError(e instanceof Error ? e.message : "로드 실패"); }
