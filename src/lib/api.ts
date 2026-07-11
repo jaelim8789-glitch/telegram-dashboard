@@ -728,7 +728,7 @@ export async function fetchAnalyticsAccounts(params?: {
 }
 
 export async function fetchAnalyticsTimeline(params?: {
-  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string; granularity?: string
+  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string; interval?: string
 }): Promise<import("@/types").AnalyticsTimelinePoint[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
