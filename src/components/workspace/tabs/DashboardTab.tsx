@@ -42,6 +42,18 @@ function formatCompact(n: number): string {
   return n.toLocaleString();
 }
 
+/** Derive failure summary and recovery action from failure_info if available. */
+function failureInfoSummary(info: Record<string, unknown> | null | undefined): { summary: string; action: string | null } {
+  if (!info || !info.category) return { summary: "", action: null };
+  const cat = String(info.category);
+  const summary = String(info.summary ?? info.category ?? "");
+  const recovery = String(info.recovery_action ?? "");
+  let action: string | null = null;
+  if (recovery === "reauthenticate_account" || recovery === "account_is_banned" || recovery === "check_configuration") action = "register";
+  if (recovery === "wait_and_retry" || recovery === "check_recipient" || recovery === "check_media" || recovery === "retry_broadcast" || recovery === "contact_support") action = "log";
+  return { summary, action };
+}
+
 function successTone(rate: number): "success" | "warning" | "danger" {
   if (rate >= 90) return "success";
   if (rate >= 70) return "warning";
@@ -194,12 +206,6 @@ export function DashboardTab() {
 
   const healthWarning = useMemo(() => {
     return healthItems.filter(h => h.status === "rate_limited" || h.status === "error");
-  }, [healthItems]);
-
-  const healthMap = useMemo(() => {
-    const m = new Map<string, AccountHealthItem>();
-    for (const h of healthItems) m.set(h.accountId, h);
-    return m;
   }, [healthItems]);
 
   const recentFailures = useMemo(() => {
@@ -441,6 +447,10 @@ export function DashboardTab() {
             {recentFailures.map(f => {
               const acct = accounts.find(a => a.id === f.accountId);
               const acctLabel = acct ? (acct.name?.trim() || acct.phone) : f.accountId.slice(0, 8);
+              const fi = f.failureInfo;
+              const { summary: failureSummary, action: recoveryTarget } = failureInfoSummary(fi);
+              const displayError = failureSummary || f.errorMessage || "알 수 없는 오류";
+              const recoveryTab = recoveryTarget ?? "log";
               return (
                 <div key={f.id} className="flex items-center justify-between px-4 py-2">
                   <div className="min-w-0 flex-1 pr-2">
@@ -449,9 +459,14 @@ export function DashboardTab() {
                       <span>{acctLabel}</span>
                       <span>·</span>
                       <span>{formatRelativeTime(f.createdAt)}</span>
-                      {f.errorMessage && <><span>·</span><span className="text-app-danger truncate max-w-[120px]">{f.errorMessage}</span></>}
+                      <span>·</span>
+                      <span className="text-app-danger truncate max-w-[160px]">{displayError}</span>
                     </p>
                   </div>
+                  <button onClick={() => setTab(recoveryTab)}
+                    className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors">
+                    {recoveryTab === "register" ? "계정 관리" : "로그 보기"} <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
               );
             })}

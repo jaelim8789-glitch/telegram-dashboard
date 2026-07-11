@@ -107,6 +107,8 @@ export interface Broadcast {
   nextScheduledAt: string | null;
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
+  /** Normalized failure metadata when available. */
+  failureInfo: Record<string, unknown> | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -144,6 +146,8 @@ export interface BroadcastChild {
   sentAt: string | null;
   createdAt: string;
   errorMessage: string | null;
+  /** Normalized failure metadata when available. */
+  failureInfo: Record<string, unknown> | null;
 }
 
 export const MAX_BROADCAST_RECIPIENTS = 10;
