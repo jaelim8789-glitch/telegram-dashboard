@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -250,7 +250,7 @@ export function LogTab() {
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
-  async function load(silent = false) {
+  const load = useCallback(async (silent = false) => {
     if (silent) {
       try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
       catch { /* silent */ }
@@ -261,21 +261,21 @@ export function LogTab() {
     try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
     catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
     finally { setLoading(false); }
-  }
+  }, [accountFilter]);
 
-  useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter]);
+  useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter, load]);
 
   useEffect(() => {
     if (!logs.some(isBroadcastInFlight)) return;
     const timer = setTimeout(() => load(true), POLL_INTERVAL_MS);
     return () => clearTimeout(timer);
-  }, [logs]);
+  }, [logs, load]);
 
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     bgPollTimer.current = setTimeout(() => { load(true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
     return () => { if (bgPollTimer.current) clearTimeout(bgPollTimer.current); };
-  }, [pollTick, accountFilter]);
+  }, [pollTick, accountFilter, load]);
 
   async function handleRetry(failed: Broadcast) {
     if (retrying) return;

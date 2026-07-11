@@ -10,7 +10,6 @@ import {
   ChevronDown,
   Clock,
   Copy,
-  Info,
   PauseCircle,
   PlayCircle,
   Plus,
