@@ -3,6 +3,29 @@ import type { Account, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
 import { MAX_BROADCAST_RECIPIENTS } from "@/types";
 
+function dedupeGroups(groups: Group[]): Group[] {
+  const seen = new Set<string>();
+  const next: Group[] = [];
+  for (const group of groups) {
+    if (seen.has(group.id)) continue;
+    seen.add(group.id);
+    next.push(group);
+  }
+  return next;
+}
+
+function dedupeRecipientIds(ids: string[], validIds?: Set<string>): string[] {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    if (validIds && !validIds.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next;
+}
+
 interface DashboardState {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
@@ -35,6 +58,7 @@ interface DashboardState {
 
   sendSelectedGroupIds: string[];
   toggleSendGroupId: (id: string) => void;
+  clearSendRecipients: () => void;
   clearSendDraft: () => void;
 }
 
@@ -84,7 +108,15 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   sendGroups: [],
   sendGroupsLoading: false,
-  setSendGroups: (groups) => set({ sendGroups: groups }),
+  setSendGroups: (groups) =>
+    set((state) => {
+      const nextGroups = dedupeGroups(groups);
+      const validIds = new Set(nextGroups.map((g) => g.id));
+      return {
+        sendGroups: nextGroups,
+        sendSelectedGroupIds: dedupeRecipientIds(state.sendSelectedGroupIds, validIds),
+      };
+    }),
   setSendGroupsLoading: (loading) => set({ sendGroupsLoading: loading }),
 
   sendMessage: "",
@@ -96,11 +128,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   sendSelectedGroupIds: [],
   toggleSendGroupId: (id) =>
     set((state) => {
+      if (state.sendGroups.length > 0 && !state.sendGroups.some((g) => g.id === id)) return state;
       if (state.sendSelectedGroupIds.includes(id)) {
         return { sendSelectedGroupIds: state.sendSelectedGroupIds.filter((x) => x !== id) };
       }
       if (state.sendSelectedGroupIds.length >= MAX_BROADCAST_RECIPIENTS) return state;
       return { sendSelectedGroupIds: [...state.sendSelectedGroupIds, id] };
     }),
+  clearSendRecipients: () => set({ sendSelectedGroupIds: [] }),
   clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [] }),
 }));

@@ -25,7 +25,7 @@ import { cn } from "@/lib/cn";
 import {
   MAX_BROADCAST_RECIPIENTS, RECURRING_INTERVALS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
-  type Broadcast, type BroadcastStatus,
+  type Broadcast, type BroadcastStatus, type Group,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
@@ -98,6 +98,74 @@ function parseFailureAction(errorMessage: string | null): { hint: string; sugges
     }
   }
   return { hint: "재발송", suggestion: "재시도 후에도 문제가 지속되면 관리자에게 문의하세요." };
+}
+
+
+function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
+  const groupById = new Map(groups.map((group) => [group.id, group]));
+  const seen = new Set<string>();
+  const next: Group[] = [];
+  for (const id of selectedIds) {
+    if (seen.has(id)) continue;
+    const group = groupById.get(id);
+    if (!group) continue;
+    seen.add(id);
+    next.push(group);
+  }
+  return next;
+}
+
+function RecipientReviewPanel({
+  recipients,
+  limit,
+  onRemove,
+  onClearAll,
+}: {
+  recipients: Group[];
+  limit: number;
+  onRemove: (id: string) => void;
+  onClearAll: () => void;
+}) {
+  if (recipients.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-app-border bg-app-card/70 p-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-app-text-muted">수신자 검토</div>
+          <div className="text-sm font-semibold text-app-text">
+            {recipients.length}명 선택됨
+            <span className="ml-1 text-xs font-normal text-app-text-muted">/ {limit}명</span>
+          </div>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onClearAll} className="shrink-0">
+          전체 해제
+        </Button>
+      </div>
+
+      <div className="mt-3 max-h-40 space-y-1 overflow-y-auto pr-1">
+        {recipients.map((recipient) => (
+          <div
+            key={recipient.id}
+            className="flex items-start gap-2 rounded-lg border border-app-border/70 bg-app-bg/40 px-3 py-2"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-app-text">{recipient.title}</div>
+              <div className="truncate font-mono text-[11px] text-app-text-subtle">{recipient.id}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onRemove(recipient.id)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-app-text-subtle transition-colors hover:bg-app-card-hover hover:text-app-text"
+              aria-label={`${recipient.title} 제거`}
+              title="제거"
+            >
+              <XCircle className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 
@@ -272,6 +340,7 @@ export function SendTab() {
 
   const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
   const toggleGroup = useDashboardStore((s) => s.toggleSendGroupId);
+  const clearSendRecipients = useDashboardStore((s) => s.clearSendRecipients);
   const message = useDashboardStore((s) => s.sendMessage);
   const setMessage = useDashboardStore((s) => s.setSendMessage);
   const imageFile = useDashboardStore((s) => s.sendImageFile);
@@ -303,6 +372,12 @@ export function SendTab() {
   const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [bgPollTick, setBgPollTick] = useState(0);
+
+  const selectedRecipients = useMemo(
+    () => normalizeSelectedRecipients(groups, selectedIds),
+    [groups, selectedIds],
+  );
+  const selectedRecipientIds = useMemo(() => selectedRecipients.map((g) => g.id), [selectedRecipients]);
 
   const { toast } = useToast();
   const draftRestoredRef = useRef(false);
@@ -502,7 +577,7 @@ export function SendTab() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!selectedAccountId || selectedIds.length === 0 || !message.trim() || submitting) return;
+    if (!selectedAccountId || selectedRecipientIds.length === 0 || !message.trim() || submitting) return;
     if (isScheduled && !scheduledAtLocal) return;
     if (isRecurring && !recurringInterval) return;
 
@@ -514,12 +589,12 @@ export function SendTab() {
       await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
-        recipients: selectedIds,
+        recipients: selectedRecipientIds,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
       });
-      markUsed(selectedIds);
+      markUsed(selectedRecipientIds);
       if (isRecurring) setSubmitNotice("반복 발송이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.");
       else if (scheduledAtIso) setSubmitNotice("발송이 예약되었습니다. 아래 발송 이력에서 확인하세요.");
       else setSubmitNotice("발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
@@ -592,7 +667,7 @@ export function SendTab() {
     );
   }
 
-  const canSubmit = !submitting && selectedIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -613,7 +688,7 @@ export function SendTab() {
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-app-text-muted">
                   <Users2 className="h-3.5 w-3.5" />
-                  발송 대상 ({selectedIds.length}/{MAX_BROADCAST_RECIPIENTS})
+                  발송 대상 ({selectedRecipientIds.length}/{MAX_BROADCAST_RECIPIENTS})
                 </span>
                 <Select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)} className="w-auto">
                   <option value="default">기본 정렬</option>
@@ -622,7 +697,7 @@ export function SendTab() {
                 </Select>
               </div>
               <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="그룹/채널 이름 검색" className="mb-2" />
-              {selectedIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
+              {selectedRecipientIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
                 <p className="mb-2 text-xs text-app-warning">최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다.</p>
               )}
 
@@ -638,8 +713,8 @@ export function SendTab() {
               {!groupsLoading && visibleGroups.length > 0 && (
                 <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1">
                   {visibleGroups.map((g) => {
-                    const selected = selectedIds.includes(g.id);
-                    const disabled = !selected && selectedIds.length >= MAX_BROADCAST_RECIPIENTS;
+                    const selected = selectedRecipientIds.includes(g.id);
+                    const disabled = !selected && selectedRecipientIds.length >= MAX_BROADCAST_RECIPIENTS;
                     return (
                       <GroupSelectCard
                         key={g.id}
@@ -661,6 +736,15 @@ export function SendTab() {
                 <p className="text-xs text-app-text-subtle">검색 결과가 없습니다.</p>
               )}
             </div>
+
+            {selectedRecipients.length > 0 && (
+              <RecipientReviewPanel
+                recipients={selectedRecipients}
+                limit={MAX_BROADCAST_RECIPIENTS}
+                onRemove={toggleGroup}
+                onClearAll={clearSendRecipients}
+              />
+            )}
 
             {/* Message */}
             <Field label="메시지 내용">
