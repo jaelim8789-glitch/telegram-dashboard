@@ -76,110 +76,101 @@ function LogRow({
 
   const hasFailureInfo = isFailed && log.failureInfo != null;
   const accountExists = accounts.some((a) => a.id === log.accountId);
+  const retryLocked = retrying === log.id;
 
   return (
     <>
+      {/* ── Collapsed row ── */}
       <div
         className={cn(
-          "flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all",
-          isFailed && "border-app-danger/20 bg-app-danger-muted/20",
+          "rounded-xl border transition-all",
+          isFailed && !expanded && "border-app-danger/20 bg-app-danger-muted/20",
+          isFailed && expanded && "border-app-danger/30 bg-app-danger-muted/10",
           recurringCancelled && "border-app-warning/20 bg-app-warning-muted/20",
           isSending && "border-app-info/20 bg-app-info-muted/10",
           !isFailed && !recurringCancelled && !isSending && "border-app-border bg-app-bg/60 hover:border-app-border-strong",
         )}
       >
-        {/* Status icon */}
-        <Icon className={cn(
-          "h-4 w-4 shrink-0",
-          isSending && "animate-spin text-app-info",
-          isFailed && "text-app-danger",
-          isSent && "text-app-success",
-          isCancelled && "text-app-warning",
-          !isFailed && !isSending && !isSent && !isCancelled && "text-app-text-subtle",
-        )} />
+        {/* ── Top info line ── */}
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <Icon className={cn(
+            "h-4 w-4 shrink-0",
+            isSending && "animate-spin text-app-info",
+            isFailed && "text-app-danger",
+            isSent && "text-app-success",
+            isCancelled && "text-app-warning",
+            !isFailed && !isSending && !isSent && !isCancelled && "text-app-text-subtle",
+          )} />
 
-        {/* Timestamp */}
-        <span className="shrink-0 font-mono text-[11px] text-app-text-subtle tabular-nums">
-          {formatTimestamp(log.createdAt)}
-        </span>
+          <Badge tone={recurring ? "info" : isFutureSchedule ? "info" : isFailed ? "danger" : isCancelled ? "warning" : meta.tone} className="shrink-0 gap-1">
+            {recurring ? "반복 중" : isFutureSchedule ? "예약됨" : (
+              <span className="flex items-center gap-1">
+                <Icon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
+                {meta.label}
+              </span>
+            )}
+          </Badge>
 
-        {/* Status badge */}
-        <Badge tone={recurring ? "info" : isFutureSchedule ? "info" : isFailed ? "danger" : isCancelled ? "warning" : meta.tone}>
-          {recurring ? "반복 중" : isFutureSchedule ? "예약됨" : (
-            <span className="flex items-center gap-1">
-              <Icon className={`h-3 w-3 ${log.status === "sending" ? "animate-spin" : ""}`} />
-              {meta.label}
+          <span className="min-w-0 flex-1 truncate text-sm text-app-text font-medium leading-snug">
+            {log.message}
+          </span>
+
+          {isFailed && (
+            <div className="flex shrink-0 items-center gap-0.5">
+              {(log.errorMessage || log.failureInfo) && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(!expanded)}
+                  aria-label={expanded ? "세부 정보 접기" : "세부 정보 보기"}
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                    expanded ? "text-app-text bg-app-card-hover" : "text-app-danger hover:bg-app-danger-muted/30",
+                  )}
+                >
+                  {expanded ? <ChevronUp className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
+                </button>
+              )}
+              {accountExists && (
+                <button
+                  type="button"
+                  onClick={() => setRetryConfirmOpen(true)}
+                  disabled={retryLocked}
+                  aria-label="재발송"
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-lg text-app-danger transition-colors active:scale-95",
+                    "hover:bg-app-danger-muted/30 disabled:opacity-40",
+                  )}
+                >
+                  <RotateCcw className={`h-4 w-4 ${retryLocked ? "animate-spin" : ""}`} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Meta line ── */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pb-2.5 text-[11px] text-app-text-subtle">
+          <span className="font-mono tabular-nums whitespace-nowrap">
+            {new Date(`${log.createdAt}Z`).toLocaleString("ko-KR", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+          </span>
+          <span className="text-app-text-muted truncate max-w-[120px] sm:max-w-none">
+            {accountLabel(log.accountId)}
+            {!accountExists && <span className="ml-1 text-app-danger">(삭제됨)</span>}
+          </span>
+          <span className="tabular-nums whitespace-nowrap">{log.recipients.length}명</span>
+          {hasTiming && (
+            <span className="rounded-md bg-app-card-hover px-1.5 py-0.5 font-mono whitespace-nowrap">{duration}</span>
+          )}
+          {isFutureSchedule && log.scheduledAt && (
+            <span className="text-app-primary-hover tabular-nums">{formatTimestamp(log.scheduledAt)}</span>
+          )}
+          {recurring && log.nextScheduledAt && (
+            <span className="text-app-info tabular-nums">
+              {countdown ? `다음: ${countdown}` : `다음: ${new Date(`${log.nextScheduledAt}Z`).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}`}
             </span>
           )}
-        </Badge>
-
-        {/* Account */}
-        <span className="hidden shrink-0 text-app-text-muted sm:inline">
-          {accountLabel(log.accountId)}
-          {!accountExists && <span className="ml-1 text-app-danger">(삭제됨)</span>}
-        </span>
-
-        {/* Message */}
-        <span className="min-w-0 flex-1 truncate text-app-text">{log.message}</span>
-
-        {/* Recipients */}
-        <span className="shrink-0 text-[11px] text-app-text-subtle tabular-nums">{log.recipients.length}명</span>
-
-        {/* Timing */}
-        {hasTiming && (
-          <span className="shrink-0 rounded-md bg-app-card-hover px-1.5 py-0.5 text-[10px] font-mono text-app-text-muted">
-            {duration}
-          </span>
-        )}
-
-        {/* Future schedule time */}
-        {isFutureSchedule && log.scheduledAt && (
-          <span className="shrink-0 text-xs text-app-primary-hover tabular-nums">
-            {formatTimestamp(log.scheduledAt)}
-          </span>
-        )}
-
-        {/* Recurring next countdown */}
-        {recurring && log.nextScheduledAt && (
-          <span className="shrink-0 text-xs text-app-info tabular-nums">
-            {countdown ? `다음: ${countdown}` : `다음: ${formatTimestamp(log.nextScheduledAt)}`}
-          </span>
-        )}
-
-        {/* Recurring interval */}
-        {recurring && (
-          <span className="hidden shrink-0 text-app-text-subtle lg:inline">
-            {intervalLabel(log.recurringIntervalMinutes)}
-          </span>
-        )}
-
-        {/* Error detail toggle */}
-        {(isFailed && (log.errorMessage || log.failureInfo)) && (
-          <button
-            type="button"
-            onClick={() => setExpanded(!expanded)}
-            title={log.errorMessage ?? ""}
-            className={cn(
-              "shrink-0 transition-colors",
-              expanded ? "text-app-text" : "text-app-danger hover:text-app-danger/80",
-            )}
-          >
-            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <FileWarning className="h-3.5 w-3.5" />}
-          </button>
-        )}
-
-        {/* Retry button (legacy/generic retry) */}
-        {isFailed && (
-          <button
-            type="button"
-            onClick={() => setRetryConfirmOpen(true)}
-            disabled={retrying === log.id || !accountExists}
-            title={accountExists ? "재발송" : "계정이 삭제되어 재발송할 수 없습니다"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
-          >
-            <RotateCcw className={`h-3.5 w-3.5 ${retrying === log.id ? "animate-spin" : ""}`} />
-          </button>
-        )}
+          {recurring && <span className="hidden lg:inline">{intervalLabel(log.recurringIntervalMinutes)}</span>}
+        </div>
       </div>
 
       {/* Expanded failure detail */}

@@ -43,7 +43,7 @@ function formatCompact(n: number): string {
 }
 
 /** Derive failure summary and recovery action from failure_info if available. */
-function failureInfoSummary(info: Record<string, unknown> | null | undefined): { summary: string; action: string | null } {
+function failureInfoSummary(info: { category?: string; retryable?: string; recovery_action?: string; summary?: string } | null | undefined): { summary: string; action: string | null } {
   if (!info || !info.category) return { summary: "", action: null };
   const cat = String(info.category);
   const summary = String(info.summary ?? info.category ?? "");
