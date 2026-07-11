@@ -143,9 +143,12 @@ export function FailureRecoveryPanel({
                 </span>
               )}
 
-              <Button variant="ghost" size="md" className="justify-center" onClick={onEditResend}>
-                <SendHorizonal className="h-4 w-4" /> 편집 후 재발송
-              </Button>
+              {/* Always-show fallback edit & resend (only when no specialized action applies) */}
+              {!["check_recipient", "check_media", "check_configuration", "account_is_banned", "contact_support"].includes(action) && (
+                <Button variant="ghost" size="md" className="justify-center" onClick={onEditResend}>
+                  <SendHorizonal className="h-4 w-4" /> 편집 후 재발송
+                </Button>
+              )}
             </div>
           )}
 

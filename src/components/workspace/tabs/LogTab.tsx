@@ -78,6 +78,16 @@ function LogRow({
   const accountExists = accounts.some((a) => a.id === log.accountId);
   const retryLocked = retrying === log.id;
 
+  /** Derive whether retry is valid from failure_info semantics.
+   *  Only show/allow retry for retryable/conditional categories that
+   *  the FailureRecoveryPanel would also offer a retry action for. */
+  const canRetryFromFailureInfo = !hasFailureInfo || (
+    (log.failureInfo!.retryable === "retryable" || log.failureInfo!.retryable === "conditional") &&
+    (log.failureInfo!.recovery_action === "wait_and_retry" || log.failureInfo!.recovery_action === "retry_broadcast" ||
+     log.failureInfo!.recovery_action === "reauthenticate_account")
+  );
+  const showRetryButton = accountExists && canRetryFromFailureInfo;
+
   return (
     <>
       {/* ── Collapsed row ── */}
@@ -122,6 +132,7 @@ function LogRow({
                   type="button"
                   onClick={() => setExpanded(!expanded)}
                   aria-label={expanded ? "세부 정보 접기" : "세부 정보 보기"}
+                  aria-expanded={expanded}
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
                     expanded ? "text-app-text bg-app-card-hover" : "text-app-danger hover:bg-app-danger-muted/30",
@@ -130,7 +141,7 @@ function LogRow({
                   {expanded ? <ChevronUp className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
                 </button>
               )}
-              {accountExists && (
+              {showRetryButton && (
                 <button
                   type="button"
                   onClick={() => setRetryConfirmOpen(true)}
@@ -218,7 +229,7 @@ function LogRow({
         cancelLabel="취소"
         onConfirm={async () => {
           setRetryConfirmOpen(false);
-          if (accountExists) onRetry(log);
+          if (canRetryFromFailureInfo) onRetry(log);
         }}
         onCancel={() => setRetryConfirmOpen(false)}
       />
