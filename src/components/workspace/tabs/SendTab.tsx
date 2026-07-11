@@ -28,6 +28,8 @@ import {
   type Broadcast, type BroadcastStatus,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
+import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -302,6 +304,78 @@ export function SendTab() {
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [bgPollTick, setBgPollTick] = useState(0);
 
+  const { toast } = useToast();
+  const draftRestoredRef = useRef(false);
+  const isInitialMount = useRef(true);
+
+  // ── Draft persistence: auto-save on every meaningful state change ──
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    const timer = setTimeout(() => {
+      saveSendDraft({
+        savedAt: new Date().toISOString(),
+        selectedAccountId: selectedAccountId ?? null,
+        selectedGroupIds: selectedIds,
+        message,
+        isScheduled,
+        scheduledAtLocal,
+        isRecurring,
+        recurringInterval,
+      });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [selectedAccountId, selectedIds, message, isScheduled, scheduledAtLocal, isRecurring, recurringInterval]);
+
+  // ── Draft restoration on mount (only once) ──
+  useEffect(() => {
+    if (draftRestoredRef.current) return;
+    if (!selectedAccountId || accounts.length === 0) return;
+
+    const storeHasIntentionalDraft = message.trim().length > 0 || selectedIds.length > 0;
+    if (storeHasIntentionalDraft) {
+      clearPersistedDraft();
+      draftRestoredRef.current = true;
+      return;
+    }
+
+    const draft = loadSendDraft();
+    if (!draft) {
+      draftRestoredRef.current = true;
+      return;
+    }
+
+    const validAccountId = draft.selectedAccountId && accounts.some((a) => a.id === draft.selectedAccountId)
+      ? draft.selectedAccountId
+      : null;
+
+    const validRecipients = draft.selectedGroupIds.slice(0, MAX_BROADCAST_RECIPIENTS);
+
+    const hasContent = validRecipients.length > 0 || draft.message.trim().length > 0;
+
+    if (hasContent) {
+      if (validAccountId && validAccountId !== selectedAccountId) {
+        useDashboardStore.getState().selectAccount(validAccountId);
+      }
+      if (draft.message) {
+        useDashboardStore.getState().setSendMessage(draft.message);
+      }
+      for (const gid of validRecipients) {
+        if (!useDashboardStore.getState().sendSelectedGroupIds.includes(gid)) {
+          useDashboardStore.getState().toggleSendGroupId(gid);
+        }
+      }
+      setIsScheduled(draft.isScheduled);
+      setScheduledAtLocal(draft.scheduledAtLocal);
+      setIsRecurring(draft.isRecurring);
+      setRecurringInterval(draft.recurringInterval);
+
+      toast("info", "이전 작성 내용을 복원했습니다.");
+    }
+
+    draftRestoredRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId, accounts.length]);
+
   async function loadGroups(accountId: string) {
     setGroupsLoading(true);
     setGroupsError(null);
@@ -356,6 +430,11 @@ export function SendTab() {
     await loadHistory(selectedAccountId);
     setHistoryRefreshing(false);
   }
+
+  // Mark initial mount complete after first render so persistence effect fires.
+  useEffect(() => {
+    isInitialMount.current = false;
+  }, []);
 
   useEffect(() => {
     clearSendDraft();
@@ -446,6 +525,7 @@ export function SendTab() {
       else setSubmitNotice("발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
 
       clearSendDraft();
+      clearPersistedDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       await loadHistory(selectedAccountId);

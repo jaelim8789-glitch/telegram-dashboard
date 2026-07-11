@@ -357,7 +357,7 @@ export async function fetchRecurringChildren(
     sentAt: api.sent_at,
     createdAt: api.created_at,
     errorMessage: api.error_message,
-    failureInfo: api.failure_info as import("@/types").BroadcastChild["failureInfo"] | null ?? null,
+    failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
   }));
 }
 
