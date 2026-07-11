@@ -9,9 +9,12 @@ import {
   EyeOff,
   Phone,
   RefreshCw,
+  Send,
   Shield,
   Smartphone,
+  Target,
   UserPlus,
+  Users,
   ArrowLeft,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
@@ -528,7 +531,7 @@ export function AccountRegisterTab() {
             <Panel
               title={<div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-app-success" /> 등록 완료</div>}
             >
-              <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="flex flex-col items-center justify-center pt-4 pb-2 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-success-muted">
                   <CheckCircle2 className="h-8 w-8 text-app-success" />
                 </div>
@@ -537,12 +540,58 @@ export function AccountRegisterTab() {
                   <span className="font-medium text-app-text">{formatPhone(phone)}</span>
                   {name ? ` (${name})` : ""}
                 </p>
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-app-text-muted">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-app-success" />
-                  이제 발송 및 자동 응답에 사용할 수 있습니다
+              </div>
+
+              {/* ── First-success roadmap ── */}
+              <div className="mx-auto max-w-md space-y-2 px-2 pb-4">
+                <p className="text-[11px] font-medium text-app-text-muted">첫 발송까지 3단계</p>
+
+                <div className="flex items-start gap-3 rounded-xl border border-app-border bg-app-card p-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-primary-muted">
+                    <CheckCircle2 className="h-4 w-4 text-app-success" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-app-text">계정 연결</p>
+                    <p className="mt-0.5 text-[11px] text-app-text-muted">Telegram 계정을 연결했습니다. 이제 그룹을 추가할 수 있습니다.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-xl border border-app-border bg-app-card p-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-card-hover">
+                    <Users className="h-4 w-4 text-app-text-muted" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-app-text">그룹 준비</p>
+                    <p className="mt-0.5 text-[11px] text-app-text-muted">계정이 참여 중인 그룹을 확인하거나 새 그룹을 검색하세요.</p>
+                    <div className="mt-1.5 flex gap-1.5">
+                      <button onClick={() => useDashboardStore.getState().setActiveTab("group")}
+                        className="rounded-lg bg-app-card-hover px-2 py-1 text-[10px] font-medium text-app-text-muted hover:text-app-text transition-colors">
+                        내 그룹 보기
+                      </button>
+                      <button onClick={() => useDashboardStore.getState().setActiveTab("groupsearch")}
+                        className="rounded-lg bg-app-card-hover px-2 py-1 text-[10px] font-medium text-app-text-muted hover:text-app-text transition-colors">
+                        그룹 검색
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-xl border border-app-border bg-app-card p-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-app-card-hover">
+                    <Send className="h-4 w-4 text-app-text-muted" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-app-text">첫 발송</p>
+                    <p className="mt-0.5 text-[11px] text-app-text-muted">대상을 선택하고 메시지를 입력한 후 발송하세요.</p>
+                    <button onClick={() => useDashboardStore.getState().setActiveTab("send")}
+                      className="mt-1.5 rounded-lg bg-app-primary/10 px-2 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/20 transition-colors">
+                      발송 탭으로 이동
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-center gap-3">
+
+              <div className="flex justify-center gap-3 pt-2">
                 <Button variant="primary" onClick={resetAll}>
                   <UserPlus className="mr-1.5 h-4 w-4" /> 새 계정 등록
                 </Button>
