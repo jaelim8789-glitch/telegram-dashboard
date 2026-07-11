@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
-import { SendHorizonal, Plus, X, Eye, EyeOff, Copy, Play, Clock } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
+import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   fetchReplyMacros,
@@ -16,11 +16,13 @@ import { getAccountDisplayName } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Panel } from "@/components/ui/Panel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
+import { useToast } from "@/components/ui/Toast";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "-";
@@ -62,10 +64,13 @@ export function ReplyMacroTab() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [executeConfirmId, setExecuteConfirmId] = useState<string | null>(null);
 
-  const [visibleContentId, setVisibleContentId] = useState<string | null>(null);
+  // ── New features ──
+  const [searchQuery, setSearchQuery] = useState("");
 
   const formRef = useRef<HTMLDivElement>(null);
   const submitLockRef = useRef(false);
+
+  const { toast } = useToast();
 
   const loadMacros = useCallback(async () => {
     if (!selectedAccountId) return;
@@ -82,9 +87,21 @@ export function ReplyMacroTab() {
   }, [selectedAccountId]);
 
   useEffect(() => {
+    setSearchQuery("");
     if (selectedAccountId) loadMacros();
     else setMacros([]);
   }, [selectedAccountId, loadMacros]);
+
+  // ── Filtered macros ──
+  const filteredMacros = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return macros;
+    return macros.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.messageContent.toLowerCase().includes(q)
+    );
+  }, [macros, searchQuery]);
 
   function resetForm() {
     setName("");
@@ -109,6 +126,19 @@ export function ReplyMacroTab() {
     resetForm();
     setEditingId(macro.id);
     setName(macro.name);
+    setTargetChats(macro.targetChats.join("\n"));
+    setMessageContent(macro.messageContent);
+    setScheduleType(macro.scheduleType);
+    setIntervalHours(macro.intervalHours);
+    setFixedTime(macro.fixedTime || "09:00");
+    setMaxSendsPerDay(macro.maxSendsPerDay);
+    setShowForm(true);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openDuplicateForm(macro: ReplyMacro) {
+    resetForm();
+    setName(macro.name + " (사본)");
     setTargetChats(macro.targetChats.join("\n"));
     setMessageContent(macro.messageContent);
     setScheduleType(macro.scheduleType);
@@ -149,13 +179,16 @@ export function ReplyMacroTab() {
     try {
       if (editingId) {
         await updateReplyMacro(selectedAccountId, editingId, input);
+        toast("success", "매크로가 수정되었습니다");
       } else {
         await createReplyMacro(selectedAccountId, input);
+        toast("success", "매크로가 추가되었습니다");
       }
       closeForm();
       await loadMacros();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "저장 실패");
+      toast("error", "매크로 저장에 실패했습니다");
     } finally {
       setSubmitting(false);
       submitLockRef.current = false;
@@ -167,8 +200,10 @@ export function ReplyMacroTab() {
     try {
       await deleteReplyMacro(selectedAccountId, confirmDeleteId);
       await loadMacros();
+      toast("success", "매크로가 삭제되었습니다");
     } catch (err) {
       setError(err instanceof Error ? err.message : "삭제 실패");
+      toast("error", "매크로 삭제에 실패했습니다");
     } finally {
       setConfirmDeleteId(null);
     }
@@ -178,15 +213,20 @@ export function ReplyMacroTab() {
     if (!selectedAccountId || !executeConfirmId) return;
     try {
       await executeReplyMacro(selectedAccountId, executeConfirmId);
+      toast("success", "매크로가 즉시 실행되었습니다");
     } catch (err) {
       setError(err instanceof Error ? err.message : "실행 실패");
+      toast("error", "매크로 실행에 실패했습니다");
     } finally {
       setExecuteConfirmId(null);
     }
   }
 
   function handleCopyContent(content: string) {
-    navigator.clipboard.writeText(content).catch(() => {});
+    navigator.clipboard.writeText(content).then(
+      () => toast("success", "메시지 내용이 복사되었습니다"),
+      () => toast("error", "클립보드 복사에 실패했습니다")
+    );
   }
 
   if (!account) {
@@ -198,14 +238,14 @@ export function ReplyMacroTab() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-2xl space-y-5 pb-8">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-app-text">답장매크로</h2>
           <p className="text-xs text-app-text-muted">{getAccountDisplayName(account)}</p>
         </div>
         {!showForm && (
-          <Button variant="primary" size="sm" onClick={openCreateForm}>
+          <Button variant="primary" size="sm" onClick={openCreateForm} className="shrink-0">
             <Plus className="h-3.5 w-3.5" /> 새 매크로
           </Button>
         )}
@@ -215,14 +255,36 @@ export function ReplyMacroTab() {
         <div className="rounded-lg bg-app-danger-muted px-4 py-3 text-xs text-app-danger">{error}</div>
       )}
 
-      {loading && macros.length === 0 && (
-        <div className="space-y-2">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+      {/* Search */}
+      {!loading && macros.length > 0 && (
+        <div className="relative">
+          <SearchInput
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="매크로 이름 / 내용 검색"
+            className="w-full"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-app-text-muted hover:text-app-text transition-colors"
+              aria-label="검색 초기화"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       )}
 
-      {!loading && !error && macros.length === 0 && !showForm && (
+      {loading && macros.length === 0 && (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      )}
+
+      {/* Empty: no macros */}
+      {!loading && !error && macros.length === 0 && !showForm && !searchQuery && (
         <EmptyState
           icon={SendHorizonal}
           title="등록된 매크로 없음"
@@ -230,6 +292,20 @@ export function ReplyMacroTab() {
           action={
             <Button variant="primary" size="sm" onClick={openCreateForm}>
               <Plus className="h-3.5 w-3.5" /> 첫 매크로 추가
+            </Button>
+          }
+        />
+      )}
+
+      {/* Empty: search no results */}
+      {!loading && !error && macros.length > 0 && filteredMacros.length === 0 && !showForm && (
+        <EmptyState
+          icon={Search}
+          title="검색 결과가 없습니다"
+          description={`"${searchQuery}"와 일치하는 매크로가 없습니다`}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
+              <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
             </Button>
           }
         />
@@ -244,7 +320,7 @@ export function ReplyMacroTab() {
             </span>
             <button
               onClick={closeForm}
-              className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+              className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
               aria-label="취소"
             >
               <X className="h-4 w-4" />
@@ -257,6 +333,7 @@ export function ReplyMacroTab() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="예: 아침 인사"
                 invalid={!!validationErrors.name}
+                autoComplete="off"
               />
             </Field>
 
@@ -302,6 +379,7 @@ export function ReplyMacroTab() {
                     value={intervalHours}
                     onChange={(e) => setIntervalHours(Number(e.target.value))}
                     min={1}
+                    inputMode="numeric"
                   />
                 </Field>
               ) : (
@@ -320,6 +398,7 @@ export function ReplyMacroTab() {
                   onChange={(e) => setMaxSendsPerDay(Number(e.target.value))}
                   min={1}
                   invalid={!!validationErrors.maxSendsPerDay}
+                  inputMode="numeric"
                 />
               </Field>
             </div>
@@ -328,7 +407,7 @@ export function ReplyMacroTab() {
               <div className="rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{submitError}</div>
             )}
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <Button variant="ghost" onClick={closeForm}>취소</Button>
               <Button type="submit" variant="primary" loading={submitting}>
                 {editingId ? "수정 완료" : "매크로 추가"}
@@ -338,123 +417,102 @@ export function ReplyMacroTab() {
         </div>
       )}
 
-      {/* Macro list */}
-      {macros.length > 0 && (
-        <div className="space-y-2">
-          {macros.map((macro) => (
+      {/* Macro list - compact operational rows */}
+      {filteredMacros.length > 0 && (
+        <div className="space-y-1.5">
+          {filteredMacros.map((macro) => (
             <div
               key={macro.id}
               className={cn(
-                "rounded-xl border p-4",
+                "flex flex-col gap-2 rounded-xl border px-3 py-2.5 text-sm transition-all sm:flex-row sm:items-center sm:gap-3",
                 macro.isActive
                   ? "border-app-border bg-app-card"
                   : "border-app-border/30 bg-app-card/50 opacity-60"
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-app-text">{macro.name}</span>
-                    <Badge tone={macro.isActive ? "success" : "neutral"}>
-                      {macro.isActive ? "활성" : "비활성"}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-app-text-muted">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {macro.scheduleType === "interval"
-                        ? `매 ${macro.intervalHours}시간마다`
-                        : `매일 ${macro.fixedTime}`}
-                    </span>
-                    <span>일 {macro.maxSendsPerDay}회</span>
-                    {macro.lastSentAt && <span>마지막: {formatDateTime(macro.lastSentAt)}</span>}
-                  </div>
-                  <div className="mt-1.5 flex items-start gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVisibleContentId(
-                          visibleContentId === macro.id ? null : macro.id
-                        )
-                      }
-                      className="flex-1 truncate text-left text-xs text-app-text-subtle hover:text-app-text transition-colors"
-                      title={macro.messageContent}
-                    >
-                      {visibleContentId === macro.id
-                        ? macro.messageContent
-                        : macro.messageContent.length > 100
-                          ? `${macro.messageContent.slice(0, 100)}...`
-                          : macro.messageContent}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVisibleContentId(
-                          visibleContentId === macro.id ? null : macro.id
-                        )
-                      }
-                      className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors"
-                      aria-label={visibleContentId === macro.id ? "내용 숨기기" : "전체 내용 보기"}
-                    >
-                      {visibleContentId === macro.id ? (
-                        <EyeOff className="h-3 w-3" />
-                      ) : (
-                        <Eye className="h-3 w-3" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyContent(macro.messageContent)}
-                      className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors"
-                      aria-label="내용 복사"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
-                  </div>
-                  {macro.targetChats.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {macro.targetChats.slice(0, 3).map((chat) => (
-                        <span
-                          key={chat}
-                          className="rounded bg-app-card-hover px-1.5 py-0.5 text-[11px] text-app-text-muted"
-                        >
-                          {chat}
-                        </span>
-                      ))}
-                      {macro.targetChats.length > 3 && (
-                        <span className="text-[11px] text-app-text-subtle">
-                          +{macro.targetChats.length - 3}개
-                        </span>
-                      )}
-                    </div>
-                  )}
+              {/* Left: info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-sm font-medium text-app-text truncate max-w-[160px]" title={macro.name}>{macro.name}</span>
+                  <Badge tone={macro.isActive ? "success" : "neutral"} className="shrink-0 text-[10px]">
+                    {macro.isActive ? "활성" : "비활성"}
+                  </Badge>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-0 sm:shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => startEdit(macro)}
-                    aria-label="매크로 수정"
-                  >
-                    수정
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setExecuteConfirmId(macro.id)}
-                    aria-label="지금 실행"
-                    className="text-app-success"
-                  >
-                    <Play className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setConfirmDeleteId(macro.id)}
-                  >
-                    삭제
-                  </Button>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-app-text-muted">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {macro.scheduleType === "interval"
+                      ? `매 ${macro.intervalHours}시간마다`
+                      : `매일 ${macro.fixedTime}`}
+                  </span>
+                  <span>일 {macro.maxSendsPerDay}회</span>
+                  {macro.lastSentAt && <span>마지막: {formatDateTime(macro.lastSentAt)}</span>}
                 </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span className="truncate text-[11px] text-app-text-muted flex-1 min-w-0" title={macro.messageContent}>
+                    {macro.messageContent.length > 80 ? macro.messageContent.slice(0, 80) + "..." : macro.messageContent}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyContent(macro.messageContent)}
+                    className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors min-h-[24px] min-w-[24px] flex items-center justify-center"
+                    aria-label="메시지 내용 복사"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+                {macro.targetChats.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {macro.targetChats.slice(0, 3).map((chat) => (
+                      <span
+                        key={chat}
+                        className="rounded bg-app-card-hover px-1.5 py-0.5 text-[10px] text-app-text-muted truncate max-w-[100px]"
+                        title={chat}
+                      >
+                        {chat}
+                      </span>
+                    ))}
+                    {macro.targetChats.length > 3 && (
+                      <span className="text-[10px] text-app-text-subtle">
+                        +{macro.targetChats.length - 3}개
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Right: actions */}
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => startEdit(macro)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px]"
+                  aria-label="매크로 수정"
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openDuplicateForm(macro)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[32px]"
+                  title="매크로 복제"
+                >
+                  복제
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExecuteConfirmId(macro.id)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-success hover:bg-app-success-muted transition-colors min-h-[32px]"
+                  aria-label="지금 실행"
+                >
+                  <Play className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(macro.id)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-danger hover:bg-app-danger-muted transition-colors min-h-[32px]"
+                >
+                  삭제
+                </button>
               </div>
             </div>
           ))}
