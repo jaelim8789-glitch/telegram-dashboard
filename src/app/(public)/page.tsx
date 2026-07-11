@@ -1,545 +1,522 @@
-"use client";
-
 import Link from "next/link";
 import {
-  Shield,
-  Send,
-  CalendarClock,
-  Users,
-  Search,
-  Bot,
-  Zap,
-  BarChart3,
   Activity,
   ArrowRight,
+  BarChart3,
+  Bot,
+  CalendarClock,
   CheckCircle2,
-  ChevronDown,
-  Eye,
+  MessageSquareReply,
+  RefreshCw,
+  Search,
+  Send,
+  Shield,
+  Sparkles,
+  Users,
+  Workflow,
 } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { Panel } from "@/components/ui/Panel";
 
-/* ─── Feature data (only real, implemented capabilities) ─── */
-
-const CAPABILITIES = [
-  {
-    icon: Users,
-    title: "멀티 계정 관리",
-    desc: "여러 Telegram 계정을 하나의 대시보드에서 안전하게 관리하세요. 세션은 암호화되어 저장됩니다.",
-    details: ["계정 등록 및 상태 관리", "암호화된 세션 보관", "활성/비활성 전환", "계정 건강 모니터링"],
-  },
-  {
-    icon: Send,
-    title: "메시지 발송",
-    desc: "등록된 계정으로 텍스트와 이미지를 즉시 발송합니다. 여러 수신자에게 한 번에 전송할 수 있습니다.",
-    details: ["텍스트 + 이미지 발송", "다중 수신자 동시 전송", "백그라운드 처리", "발송 내역 추적"],
-  },
-  {
-    icon: CalendarClock,
-    title: "예약 발송",
-    desc: "원하는 날짜와 시간에 메시지가 자동 발송되도록 예약하세요. 스케줄러가 정확히 디스패치합니다.",
-    details: ["ISO 8601 시간 형식", "예약 상태 실시간 추적", "스케줄러 기반 실행", "즉시 발송 자동 전환"],
-  },
-  {
-    icon: Bot,
-    title: "자동 응답 (FAQ 매크로)",
-    desc: "키워드 기반 자동 답변. 쿨다운/일일 제한을 설정하여 스팸 없이 고객 문의를 실시간 자동 응대하세요.",
-    details: ["키워드 매칭 (포함/정확히 일치)", "쿨다운 시간 설정", "일일 최대 응답 횟수 제한", "성공/실패 로깅"],
-  },
-  {
-    icon: Zap,
-    title: "답장 매크로",
-    desc: "일정 간격 또는 지정 시간에 특정 채팅방으로 메시지를 자동 발송합니다. 반복 업무를 완전 자동화하세요.",
-    details: ["인터벌/고정 시간 스케줄", "대상 채팅방 지정", "미디어 첨부 지원", "발송 이력 확인"],
-  },
-  {
-    icon: Search,
-    title: "그룹 검색",
-    desc: "연결된 계정이 속한 모든 그룹과 채널을 실시간으로 조회하고 검색할 수 있습니다.",
-    details: ["계정별 그룹/채널 목록", "실시간 Telethon 연동", "그룹명 검색", "참여자 수 표시"],
-  },
-  {
-    icon: Activity,
-    title: "계정 건강 모니터링",
-    desc: "각 계정의 인증 상태, 세션 유효성, 최근 활동, 오류 내역을 한눈에 확인하고 문제에 대응하세요.",
-    details: ["인증 상태 실시간 표시", "세션 만료 감지", "FloodWait/차단 알림", "최근 성공/실패율"],
-  },
-  {
-    icon: BarChart3,
-    title: "전달 분석 (Delivery Analytics)",
-    desc: "메시지 전달 성공률, 실패 원인, 계정별 성과, 전달 지연 시간까지 대시보드에서 상세하게 분석합니다.",
-    details: ["전달 성공/실패/성공률", "실패 원인 인텔리전스", "계정별 성과 랭킹", "전달 지연 측정"],
-  },
-  {
-    icon: Shield,
-    title: "2FA 인증 지원",
-    desc: "SMS 인증부터 2단계 비밀번호까지 완벽한 Telegram 인증 과정을 지원합니다. FloodWait 자동 처리.",
-    details: ["SMS 인증번호 요청/확인", "2단계 비밀번호 인증", "FloodWait 에러 처리", "세션 암호화 저장"],
-  },
+const MODULES = [
+  { label: "Account Operations", icon: Shield, tone: "success" as const },
+  { label: "Broadcast Send Operations", icon: Send, tone: "info" as const },
+  { label: "Group Discovery", icon: Search, tone: "neutral" as const },
+  { label: "Auto Reply", icon: Bot, tone: "warning" as const },
+  { label: "Reply Macro", icon: MessageSquareReply, tone: "neutral" as const },
+  { label: "Recurring Scheduler", icon: CalendarClock, tone: "info" as const },
+  { label: "Failure Recovery", icon: RefreshCw, tone: "danger" as const },
+  { label: "Delivery Analytics", icon: BarChart3, tone: "success" as const },
 ];
 
-const HOW_IT_WORKS = [
+const WORKFLOWS = [
   {
     step: "01",
-    title: "계정 연결",
-    desc: "대시보드에서 Telegram 계정의 전화번호를 입력하고 SMS로 인증합니다. 2FA도 지원됩니다.",
+    title: "Connect and manage Telegram accounts",
+    icon: Shield,
+    accent: "from-emerald-500/20 to-transparent",
+    points: ["Track account health states", "Keep operational attention visible", "Separate active, warning, and recovery states"],
   },
   {
     step: "02",
-    title: "작업 구성",
-    desc: "자동 응답 규칙, 발송 일정, 답장 매크로를 직관적인 UI로 설정하세요. 코딩이 전혀 필요 없습니다.",
+    title: "Discover and organize groups",
+    icon: Users,
+    accent: "from-cyan-500/20 to-transparent",
+    points: ["Search groups from the workspace", "Organize recipients before sending", "Keep discovery tied to operations"],
   },
   {
     step: "03",
-    title: "실행 및 모니터링",
-    desc: "모든 작업이 백그라운드에서 실행됩니다. 발송 로그, 전달 분석, 계정 건강을 실시간으로 모니터링하세요.",
+    title: "Send and schedule broadcasts",
+    icon: Send,
+    accent: "from-orange-500/20 to-transparent",
+    points: ["Draft once and send with control", "Use recurring schedule visibility", "Review send state without losing context"],
+  },
+  {
+    step: "04",
+    title: "Automate replies and macros",
+    icon: Bot,
+    accent: "from-violet-500/20 to-transparent",
+    points: ["Handle common replies consistently", "Reuse macros for repeat work", "Reduce manual operator effort"],
+  },
+  {
+    step: "05",
+    title: "Detect failures and recover operations",
+    icon: RefreshCw,
+    accent: "from-rose-500/20 to-transparent",
+    points: ["Spot blocked or failed sends quickly", "Route into the right recovery flow", "Keep the failure story attached to the action"],
+  },
+  {
+    step: "06",
+    title: "Understand delivery performance",
+    icon: Activity,
+    accent: "from-amber-500/20 to-transparent",
+    points: ["Read delivery trends at a glance", "Compare by account and source", "Make the next action easier to decide"],
   },
 ];
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "0",
-    period: "무료",
-    features: [
-      "1개 계정 연결",
-      "3개 자동응답 규칙",
-      "월 100회 응답",
-      "1시간 쿨다운",
-      "기본 발송 로그",
-    ],
-    href: "/signup",
-    cta: "무료 시작",
-    popular: false,
-  },
-  {
-    name: "Basic",
-    price: "15",
-    period: "USDT/월",
-    features: [
-      "2개 계정 연결",
-      "10개 자동응답 규칙",
-      "월 1,000회 응답",
-      "30분 쿨다운",
-      "메시지 발송",
-      "발송 로그 & 분석",
-    ],
-    href: "/get-api-key",
-    cta: "시작하기",
-    popular: true,
-  },
-  {
-    name: "Pro",
-    price: "38",
-    period: "USDT/월",
-    features: [
-      "5개 계정 연결",
-      "50개 자동응답 규칙",
-      "월 10,000회 응답",
-      "1분 쿨다운",
-      "예약 발송 & 이미지 첨부",
-      "전달 분석 & 계정 건강",
-      "우선 기술 지원",
-    ],
-    href: "/get-api-key",
-    cta: "Pro 시작",
-    popular: false,
-  },
+const DIFFERENTIATORS = [
+  "Multi-account operations with clear health states",
+  "Failure intelligence that points toward recovery workflows",
+  "Recurring execution visibility instead of opaque background jobs",
+  "Recipient control and group organization in the same workspace",
+  "Delivery analytics that keep performance grounded in the product",
 ];
 
 const FAQS = [
   {
-    q: "Telegram 계정이 차단될 위험이 있나요?",
-    a: "저희 시스템은 Telegram의 공식 API(MTProto)를 사용하며, 발송 속도를 의도적으로 제한하고 쿨다운을 적용하여 계정 차단 위험을 최소화합니다. 모든 세션 데이터는 암호화되어 안전하게 보관됩니다.",
+    q: "What does TeleMon actually do?",
+    a: "TeleMon is an operations workspace for Telegram accounts, broadcasts, group discovery, auto-replies, reply macros, scheduling, failure recovery, and delivery analytics.",
   },
   {
-    q: "여러 계정을 동시에 사용할 수 있나요?",
-    a: "네, 요금제에 따라 최대 5개 이상의 계정을 하나의 대시보드에서 관리할 수 있습니다. 각 계정의 상태를 별도로 모니터링하고 제어할 수 있습니다.",
+    q: "Is this just a basic sender?",
+    a: "No. The homepage emphasizes the operational layer around sending: account health, recovery states, recurring visibility, and analytics are part of the workflow.",
   },
   {
-    q: "자동 응답과 답장 매크로의 차이는 무엇인가요?",
-    a: "자동 응답은 들어오는 메시지에 키워드가 포함되면 자동으로 답변을 보내는 기능입니다. 답장 매크로는 설정한 시간/간격에 따라 지정된 채팅방으로 메시지를 발송합니다. 두 기능 모두 대시보드에서 설정 가능합니다.",
+    q: "Does the homepage use fabricated proof points?",
+    a: "No. The public UI avoids fake customer logos, fake testimonials, and unsupported performance claims.",
   },
   {
-    q: "전달 분석에서는 어떤 정보를 볼 수 있나요?",
-    a: "총 전달 시도, 성공/실패 수, 성공률, 실패 원인별 분석, 계정별 성과, 시간대별 전달 추이, 전달 지연 시간을 확인할 수 있습니다. 분석 기간(7/14/30/90일)을 선택하여 필터링할 수 있습니다.",
-  },
-  {
-    q: "USDT 결제는 어떻게 하나요?",
-    a: "원하는 요금제를 선택하면 USDT(TRC20) 지갑 주소와 송금 금액이 표시됩니다. 송금 시 메모에 고유 코드를 반드시 입력해야 하며, 입금 확인 후 API 키가 발급됩니다.",
-  },
-  {
-    q: "가입 후 바로 사용할 수 있나요?",
-    a: "네. 무료 플랜으로 가입하면 즉시 API 키가 발급되며, 대시보드에 로그인하여 Telegram 계정을 연결한 후 바로 자동 응답과 발송 기능을 사용할 수 있습니다.",
+    q: "Where should I go next?",
+    a: "Use Start free to begin onboarding or jump into the product sections below to see how the workspace is organized.",
   },
 ];
 
+function PreviewPill({
+  label,
+  active = false,
+}: {
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        active
+          ? "border-app-primary/30 bg-app-primary-muted text-app-primary"
+          : "border-app-border bg-app-card text-app-text-muted",
+      ].join(" ")}
+    >
+      {label}
+    </span>
+  );
+}
+
+function PreviewRow({
+  title,
+  status,
+  note,
+}: {
+  title: string;
+  status: string;
+  note: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-app-border bg-app-bg px-3 py-3 transition-colors hover:border-app-border-strong">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-app-text">{title}</p>
+        <p className="mt-0.5 text-xs text-app-text-muted">{note}</p>
+      </div>
+      <Badge tone={status === "Healthy" ? "success" : status === "Needs attention" ? "warning" : "neutral"}>
+        {status}
+      </Badge>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
-    <div className="bg-app-bg">
-      {/* ═══ Hero ═══ */}
-      <section className="relative overflow-hidden bg-grid" aria-label="소개">
+    <main className="bg-app-bg">
+      <section
+        className="relative overflow-hidden bg-grid"
+        aria-labelledby="public-hero-title"
+      >
         <div className="hero-orb hero-orb-1" aria-hidden="true" />
         <div className="hero-orb hero-orb-2" aria-hidden="true" />
-        <div className="hero-orb hero-orb-3" aria-hidden="true" />
 
-        <div className="relative mx-auto max-w-6xl px-4 pt-28 pb-20 sm:pt-32 sm:pb-24 sm:px-6 lg:px-8 text-center">
-          <div className="badge-premium mx-auto w-fit mb-6 animate-fade-in" role="status">
-            지금 가입하면 즉시 사용 가능
-          </div>
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-24">
+          <div className="max-w-2xl">
+            <Badge tone="info" className="mb-5">
+              Production homepage refresh
+            </Badge>
 
-          <h1 className="text-[clamp(1.75rem,4.5vw,3.5rem)] font-bold leading-[1.15] tracking-tight animate-slide-up">
-            텔레그램 자동화,
-            <br />
-            <span className="text-app-primary">코딩 없이</span>
-            <br />
-            하나의 대시보드에서
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-app-text-secondary animate-slide-up leading-relaxed">
-            여러 Telegram 계정을 연결하고, 자동 응답을 설정하고, 메시지를 예약 발송하며, 
-            <br className="hidden sm:inline" />
-            모든 전달 내역을 분석하세요. 복잡한 프로그래밍이 필요하지 않습니다.
-          </p>
-
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-slide-up">
-            <Link
-              href="/signup"
-              className="btn-primary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-semibold relative z-10"
+            <h1
+              id="public-hero-title"
+              className="max-w-xl text-[clamp(2.15rem,6vw,4.6rem)] font-bold leading-[1.05] tracking-tight text-app-text"
             >
-              무료로 시작하기
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-            <Link
-              href="/features"
-              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
-            >
-              기능 살펴보기
-            </Link>
-          </div>
+              Telegram operations,
+              <span className="block text-app-primary">built like a control room.</span>
+            </h1>
 
-          {/* Trust indicators — factual only */}
-          <div className="mx-auto mt-14 sm:mt-16 max-w-3xl glass-card rounded-2xl p-6 sm:p-8 animate-fade-in">
-            <div className="flex items-center justify-center gap-6 sm:gap-12 text-sm text-app-text-secondary">
+            <p className="mt-5 max-w-xl text-base leading-7 text-app-text-secondary sm:text-lg">
+              TeleMon brings account management, broadcasts, group discovery,
+              automation, scheduling, failure recovery, and delivery analytics into
+              one operational workspace.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/signup"
+                className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-app-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-app-primary-hover"
+              >
+                Start free
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href="#product"
+                className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-app-border bg-app-card px-5 py-3 text-sm font-medium text-app-text transition-all hover:border-app-border-strong hover:bg-app-card-hover"
+              >
+                See the product
+              </Link>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-2">
               {[
-                { value: "1분", label: "설치 시간" },
-                { value: "1개", label: "Free 플랜 계정" },
-                { value: "5개", label: "Pro 플랜 계정" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-app-primary">
-                    {stat.value}
-                  </div>
-                  <div className="mt-1 text-xs sm:text-sm whitespace-nowrap">{stat.label}</div>
+                "Multi-account operations",
+                "Broadcast scheduling",
+                "Auto replies and macros",
+                "Failure recovery",
+                "Delivery analytics",
+              ].map((item) => (
+                <Badge key={item}>{item}</Badge>
+              ))}
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {[
+                "Clear health states",
+                "Grounded recovery workflows",
+                "No fake testimonials or inflated claims",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-app-border bg-app-card/80 px-4 py-3 text-sm text-app-text-secondary shadow-sm"
+                >
+                  {item}
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ═══ Problems Solved ═══ */}
-      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30" aria-label="해결하는 문제">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-              이런 고민, 하고 계신가요?
-            </h2>
-          </div>
+          <div className="lg:pt-2">
+            <Panel
+              title={
+                <div className="flex items-center gap-2">
+                  <Workflow className="h-4 w-4 text-app-primary" />
+                  Control room preview
+                </div>
+              }
+              description="A representative workspace view using the real TeleMon product language."
+              accent="amber"
+              className="overflow-hidden"
+            >
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {["Dashboard", "Send", "Scheduler", "Group Search", "Auto Reply", "Reply Macro", "Log", "Delivery Analytics"].map(
+                    (label, index) => (
+                      <PreviewPill key={label} label={label} active={index === 0} />
+                    )
+                  )}
+                </div>
 
-          <div className="mt-10 sm:mt-12 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                title: "반복적인 메시지 발송",
-                desc: "매일 같은 시간에 같은 메시지를 수동으로 보내고 계신가요? 예약 발송과 답장 매크로가 대신해 드립니다.",
-              },
-              {
-                title: "고객 문의 실시간 응대",
-                desc: "FAQ 수준의 문의에 일일이 답변하느라 시간이 소모되나요? 키워드 기반 자동 응답이 즉시 답변합니다.",
-              },
-              {
-                title: "여러 계정 관리의 어려움",
-                desc: "여러 Telegram 계정을 오가며 관리하느라 비효율적이신가요? 하나의 대시보드에서 모두 제어하세요.",
-              },
-              {
-                title: "발송 상태 확인 어려움",
-                desc: "메시지가 실제로 전달되었는지, 실패했다면 이유가 무엇인지 알 수 없나요? 모든 전달 내역이 기록됩니다.",
-              },
-              {
-                title: "계정 차단 위험",
-                desc: "무분별한 발송으로 계정이 차단될까 걱정되시나요? 쿨다운과 속도 제한으로 안전하게 운영합니다.",
-              },
-              {
-                title: "데이터 기반 의사결정",
-                desc: "어떤 계정이 가장 효과적인지, 어떤 시간대에 발송이 잘 되는지 전달 분석 데이터로 확인하세요.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="glass-card rounded-2xl p-5 sm:p-6 hover:border-app-border-strong transition-all"
-              >
-                <h3 className="text-sm font-semibold text-app-text">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm text-app-text-secondary leading-relaxed">
-                  {item.desc}
-                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-app-text">Account Operations</p>
+                      <Badge tone="success">Healthy</Badge>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      <PreviewRow title="Primary account" status="Healthy" note="Connected and ready for operations." />
+                      <PreviewRow title="Backup account" status="Needs attention" note="Visible in the recovery path." />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-app-text">Broadcast Send Operations</p>
+                      <Badge tone="info">Queued</Badge>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      <PreviewRow title="Campaign draft" status="Healthy" note="Prepared for a controlled send." />
+                      <PreviewRow title="Recurring schedule" status="Queued" note="Execution visibility stays attached." />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+                  <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-app-text">Group Discovery and Automation</p>
+                      <Badge tone="neutral">Operational</Badge>
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {[
+                        "Group discovery",
+                        "Auto reply",
+                        "Reply macro",
+                        "Recipient control",
+                      ].map((label) => (
+                        <div
+                          key={label}
+                          className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-xs text-app-text-secondary"
+                        >
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-app-text">Delivery Analytics</p>
+                      <Badge tone="success">Readout</Badge>
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      {[
+                        { label: "Successful sends", width: "82%", tone: "bg-app-success" },
+                        { label: "Recovery events", width: "48%", tone: "bg-app-warning" },
+                        { label: "Blocked attempts", width: "28%", tone: "bg-app-danger" },
+                      ].map((item) => (
+                        <div key={item.label}>
+                          <div className="mb-1 flex items-center justify-between text-xs text-app-text-muted">
+                            <span>{item.label}</span>
+                            <span>Live view</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-app-border">
+                            <div className={`${item.tone} h-2 rounded-full`} style={{ width: item.width }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
+            </Panel>
           </div>
         </div>
       </section>
 
-      {/* ═══ Core Features ═══ */}
-      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" id="features" aria-label="핵심 기능">
+      <section
+        id="product"
+        className="scroll-mt-24 border-t border-app-border/60 bg-app-surface/30 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="product-title"
+      >
         <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-              실제 구현된{" "}
-              <span className="text-app-primary">모든 기능</span>
+          <div className="max-w-2xl">
+            <Badge tone="success" className="mb-4">
+              Product preview
+            </Badge>
+            <h2 id="product-title" className="text-3xl font-bold tracking-tight text-app-text sm:text-4xl">
+              An operational workspace, not a basic sender.
             </h2>
-            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary max-w-2xl mx-auto">
-              아래 기능은 모두 현재 대시보드에서 실제로 사용할 수 있습니다.
-              허위 광고 없이, 실제 구동되는 기능만을 소개합니다.
+            <p className="mt-4 text-base leading-7 text-app-text-secondary sm:text-lg">
+              The public preview mirrors the real product language: accounts,
+              broadcasts, groups, reply automation, recurring schedules, recovery,
+              and delivery analytics are all treated as part of the same system.
             </p>
           </div>
 
-          <div className="mt-14 sm:mt-16 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {CAPABILITIES.map((feat, i) => {
-              const Icon = feat.icon;
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            {MODULES.map((module) => {
+              const Icon = module.icon;
               return (
                 <div
-                  key={feat.title}
-                  className="glass-card rounded-2xl p-5 sm:p-6 animate-slide-up hover:border-app-border-strong transition-all"
+                  key={module.label}
+                  className="group rounded-2xl border border-app-border bg-app-card p-4 transition-all hover:border-app-border-strong hover:bg-app-card-hover"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-primary/10 text-app-primary">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-bg text-app-primary">
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <h3 className="text-base font-semibold text-app-text">
-                      {feat.title}
-                    </h3>
+                    <div>
+                      <p className="text-sm font-semibold text-app-text">{module.label}</p>
+                      <p className="text-xs text-app-text-muted">Real product capability</p>
+                    </div>
                   </div>
-                  <p className="mt-3 text-sm text-app-text-secondary leading-relaxed">
-                    {feat.desc}
-                  </p>
-                  <ul className="mt-4 space-y-1.5">
-                    {feat.details.map((d) => (
-                      <li
-                        key={d}
-                        className="flex items-center gap-2 text-xs text-app-text-muted"
-                      >
-                        <CheckCircle2 className="h-3 w-3 shrink-0 text-app-primary" aria-hidden="true" />
-                        {d}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-4">
+                    <Badge tone={module.tone}>Shown in workspace</Badge>
+                  </div>
                 </div>
               );
             })}
           </div>
-
-          <div className="mt-12 text-center">
-            <Link
-              href="/features"
-              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
-            >
-              모든 기능 상세 보기
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* ═══ Delivery Analytics Spotlight ═══ */}
-      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30" aria-label="전달 분석">
-        <div className="mx-auto max-w-5xl">
-          <div className="grid gap-10 lg:gap-12 lg:grid-cols-2 items-center">
-            <div>
-              <div className="badge-premium w-fit mb-4">대시보드 기능</div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-                메시지 전달{" "}
-                <span className="text-app-primary">분석</span>
-              </h2>
-              <p className="mt-4 text-base text-app-text-secondary leading-relaxed">
-                단순히 메시지를 발송하는 것에서 그치지 않습니다. 
-                모든 전달 결과를 수집하여 성공률, 실패 원인, 계정별 성과,
-                전달 지연 시간까지 대시보드에서 상세하게 확인할 수 있습니다.
-              </p>
-              <ul className="mt-6 space-y-3">
-                {[
-                  "총 전달 시도/성공/실패 현황",
-                  "실패 유형별 인텔리전스 분석",
-                  "계정별 전달 성과 랭킹",
-                  "시간대별 전달 타임라인",
-                  "전달 지연 시간 측정",
-                  "소스별(발송/자동응답/매크로) 분석",
-                ].map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-3 text-sm text-app-text-secondary"
-                  >
-                    <BarChart3 className="h-4 w-4 shrink-0 text-app-primary" aria-hidden="true" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {/* Visual representation — no fabricated numbers */}
-            <div className="glass-card rounded-2xl p-6 sm:p-8" aria-label="전달 분석 대시보드 미리보기">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
-                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-                    총 전달 시도
-                  </span>
-                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
-                </div>
-                <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-app-success" aria-hidden="true" />
-                    성공
-                  </span>
-                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
-                </div>
-                <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
-                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                    전달 지연
-                  </span>
-                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
-                </div>
-                <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg p-4">
-                  <span className="flex items-center gap-2 text-xs text-app-text-muted">
-                    <Activity className="h-3.5 w-3.5" aria-hidden="true" />
-                    계정별 성과
-                  </span>
-                  <div className="h-5 w-16 animate-pulse rounded bg-app-border" aria-hidden="true" />
-                </div>
-              </div>
-              <p className="mt-4 text-center text-xs text-app-text-muted">
-                실제 데이터는 대시보드에서 확인할 수 있습니다
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ How It Works ═══ */}
-      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" aria-label="사용 방법">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-              시작은 <span className="text-app-primary">3단계</span>면 충분합니다
-            </h2>
-          </div>
-
-          <div className="mt-14 sm:mt-16 grid gap-10 md:gap-8 md:grid-cols-3">
-            {HOW_IT_WORKS.map((item, i) => (
-              <div key={item.step} className="relative text-center">
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-[65%] h-px bg-gradient-to-r from-app-primary/40 to-transparent" aria-hidden="true" />
-                )}
-                <div className="mx-auto flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-app-primary/10 text-xl sm:text-2xl font-bold text-app-primary">
-                  {item.step}
-                </div>
-                <h3 className="mt-5 sm:mt-6 text-base sm:text-lg font-semibold text-app-text">
-                  {item.title}
-                </h3>
-                <p className="mt-2 sm:mt-3 text-sm text-app-text-secondary leading-relaxed max-w-xs mx-auto">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Pricing ═══ */}
       <section
-        id="pricing"
-        className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 bg-app-surface/30"
-        aria-label="요금제"
+        id="workflows"
+        className="scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="workflows-title"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-              투명한 <span className="text-app-primary">가격</span>
+          <div className="max-w-2xl">
+            <Badge tone="info" className="mb-4">
+              Capability story
+            </Badge>
+            <h2 id="workflows-title" className="text-3xl font-bold tracking-tight text-app-text sm:text-4xl">
+              A clearer story from connection to recovery.
             </h2>
-            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary">
-              필요한 만큼만 선택하세요.
+            <p className="mt-4 text-base leading-7 text-app-text-secondary sm:text-lg">
+              The homepage now explains the product as a sequence of operator
+              workflows instead of a repetitive list of marketing cards.
             </p>
           </div>
 
-          <div className="mt-14 sm:mt-16 grid gap-6 md:gap-8 md:grid-cols-3 max-w-5xl mx-auto">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl p-6 sm:p-8 transition-all duration-300 animate-scale-in ${
-                  plan.popular
-                    ? "card-premium border-app-primary/30 shadow-xl shadow-app-primary/10 md:scale-105"
-                    : "glass-card"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-app-primary px-4 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap">
-                    가장 인기
-                  </div>
-                )}
-                <h3 className="text-xl font-bold text-app-text">
-                  {plan.name}
-                </h3>
-                <div className="mt-5 sm:mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl sm:text-5xl font-bold text-app-text">
-                    ${plan.price}
-                  </span>
-                  <span className="text-sm text-app-text-secondary">
-                    /{plan.period}
-                  </span>
-                </div>
-                <ul className="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
-                  {plan.features.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-center gap-3 text-sm text-app-text-secondary"
-                    >
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-app-primary" aria-hidden="true" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={plan.href}
-                  className={`mt-6 sm:mt-8 flex h-12 min-h-[48px] items-center justify-center rounded-xl text-sm font-semibold transition-all ${
-                    plan.popular
-                      ? "btn-primary relative z-10"
-                      : "btn-secondary"
-                  }`}
+          <div className="mt-10 space-y-4">
+            {WORKFLOWS.map((item, index) => {
+              const Icon = item.icon;
+              const reversed = index % 2 === 1;
+              return (
+                <div
+                  key={item.step}
+                  className="grid gap-4 rounded-3xl border border-app-border bg-app-card p-5 sm:p-6 lg:grid-cols-[0.95fr_1.05fr]"
                 >
-                  {plan.cta}
-                </Link>
-              </div>
-            ))}
+                  <div className={reversed ? "lg:order-2" : ""}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-app-primary-muted text-app-primary">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-app-text-muted">
+                          {item.step}
+                        </p>
+                        <h3 className="text-xl font-semibold text-app-text">{item.title}</h3>
+                      </div>
+                    </div>
+                    <p className="mt-4 max-w-xl text-sm leading-7 text-app-text-secondary">
+                      TeleMon keeps this workflow visible in the same product
+                      language operators use during daily work.
+                    </p>
+                  </div>
+
+                  <div className={reversed ? "lg:order-1" : ""}>
+                    <div className={`rounded-2xl border border-app-border bg-gradient-to-br ${item.accent} p-4`}>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {item.points.map((point) => (
+                          <div
+                            key={point}
+                            className="rounded-xl border border-app-border bg-app-bg px-3 py-3 text-sm text-app-text-secondary"
+                          >
+                            {point}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ═══ FAQ ═══ */}
-      <section id="faq" className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8" aria-label="자주 묻는 질문">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-            자주 묻는 <span className="text-app-primary">질문</span>
+      <section
+        id="why"
+        className="scroll-mt-24 border-y border-app-border/60 bg-app-surface/30 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="why-title"
+      >
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <Badge tone="warning" className="mb-4">
+              Operational differentiation
+            </Badge>
+            <h2 id="why-title" className="text-3xl font-bold tracking-tight text-app-text sm:text-4xl">
+              More than a sender, because operations do not stop at sending.
+            </h2>
+            <p className="mt-4 text-base leading-7 text-app-text-secondary sm:text-lg">
+              TeleMon is presented as a serious Telegram operations platform with
+              the kinds of states teams actually need to watch.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {DIFFERENTIATORS.map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-3 rounded-2xl border border-app-border bg-app-card px-4 py-3"
+                >
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-app-success" aria-hidden="true" />
+                  <p className="text-sm text-app-text-secondary">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Panel
+            title={
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-app-primary" />
+                Why this positioning matters
+              </div>
+            }
+            description="A grounded comparison with the common baseline."
+            accent="violet"
+          >
+            <div className="space-y-3">
+              {[
+                ["Basic sender", "Single-purpose sends with little context."],
+                ["TeleMon", "Accounts, recovery states, schedules, and analytics live together."],
+                ["Basic sender", "Hard to see what failed and what to do next."],
+                ["TeleMon", "Failure intelligence points operators toward the recovery path."],
+                ["Basic sender", "Sending is visible, but recurring execution is opaque."],
+                ["TeleMon", "Recurring execution visibility stays in the workspace."],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="grid gap-2 rounded-xl border border-app-border bg-app-bg px-4 py-3 sm:grid-cols-[150px_1fr]"
+                >
+                  <div className="text-sm font-semibold text-app-text">{label}</div>
+                  <div className="text-sm text-app-text-secondary">{value}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="faq-title"
+      >
+        <div className="mx-auto max-w-4xl">
+          <Badge tone="neutral" className="mb-4">
+            FAQ
+          </Badge>
+          <h2 id="faq-title" className="text-3xl font-bold tracking-tight text-app-text sm:text-4xl">
+            A few things visitors should know quickly.
           </h2>
-          <div className="mt-10 sm:mt-12 space-y-3">
-            {FAQS.map((faq, i) => (
+
+          <div className="mt-8 space-y-3">
+            {FAQS.map((faq) => (
               <details
-                key={i}
-                className="group glass-card rounded-xl overflow-hidden"
+                key={faq.q}
+                className="group rounded-2xl border border-app-border bg-app-card"
               >
-                <summary className="flex cursor-pointer items-center justify-between px-4 py-4 sm:px-5 text-sm font-medium text-app-text hover:text-app-primary transition-colors min-h-[48px]">
-                  {faq.q}
-                  <ChevronDown className="h-4 w-4 shrink-0 ml-2 text-app-text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
+                <summary className="focus-ring flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-app-text marker:hidden">
+                  <span>{faq.q}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 rotate-90 text-app-text-muted transition-transform group-open:-rotate-90" aria-hidden="true" />
                 </summary>
-                <div className="divider-gradient" />
-                <div className="px-4 py-4 sm:px-5 text-sm text-app-text-secondary leading-relaxed">
+                <div className="border-t border-app-border px-4 py-4 text-sm leading-7 text-app-text-secondary">
                   {faq.a}
                 </div>
               </details>
@@ -548,34 +525,39 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ Final CTA ═══ */}
-      <section className="relative px-4 py-20 sm:py-24 sm:px-6 lg:px-8 text-center bg-app-surface/30" aria-label="시작하기">
+      <section
+        className="border-t border-app-border/60 bg-app-surface/30 px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="cta-title"
+      >
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-app-text">
-            지금 바로 <span className="text-app-primary">시작</span>하세요
+          <Badge tone="success" className="mb-4">
+            Ready to explore
+          </Badge>
+          <h2 id="cta-title" className="text-3xl font-bold tracking-tight text-app-text sm:text-4xl">
+            Start with the product, then decide if the workflow fits.
           </h2>
-          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-app-text-secondary max-w-xl mx-auto">
-            1분만에 계정을 연결하고 텔레그램 자동화를 경험해보세요.
-            <br />
-            신용카드 없이 무료로 시작할 수 있습니다.
+          <p className="mt-4 text-base leading-7 text-app-text-secondary sm:text-lg">
+            The homepage now gives visitors a clearer path: start onboarding,
+            or keep exploring the operational surface before committing.
           </p>
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/signup"
-              className="btn-primary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-10 text-base font-semibold relative z-10"
+              className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-app-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-app-primary-hover"
             >
-              무료로 시작하기
+              Start free
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              href="/get-api-key"
-              className="btn-secondary inline-flex h-12 min-h-[48px] items-center gap-2 rounded-xl px-8 text-base font-medium"
+              href="#product"
+              className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-app-border bg-app-card px-6 py-3 text-sm font-medium text-app-text transition-all hover:border-app-border-strong hover:bg-app-card-hover"
             >
-              API 키 발급받기
+              Review the workspace
             </Link>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

@@ -75,6 +75,22 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ─── Scrollbar ─────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -254,6 +270,10 @@ html, body {
   filter: brightness(0.95);
 }
 
+.btn-primary:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
 .btn-primary::before {
   content: '';
   position: absolute;
@@ -284,6 +304,10 @@ html, body {
 
 .btn-secondary:active {
   transform: translateY(0);
+}
+
+.btn-secondary:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 /* ─── Premium input (public pages) ───── */
@@ -341,6 +365,12 @@ html, body {
 .tab-premium.active {
   color: var(--accent);
   background: var(--primary-muted);
+}
+
+.tab-premium:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 /* ─── Hero decorations (public pages) ── */
