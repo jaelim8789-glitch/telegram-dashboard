@@ -22,7 +22,7 @@ import { getToken } from "@/lib/auth";
 // (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
 // frontend calls the API directly at that origin.
 // The fallback "http://localhost:8000" is for local dev without nginx.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 /** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
