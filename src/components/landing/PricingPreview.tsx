@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Star, Sparkles } from "lucide-react";
 
 const PLANS = [
   {
@@ -33,9 +33,7 @@ export function PricingPreview() {
     <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
-            요금제
-          </p>
+          <p className="section-heading-luxury mb-3">요금제</p>
           <h2 className="section-heading text-2xl sm:text-3xl">
             당신에게 맞는 <span style={{ color: "var(--accent)" }}>요금제</span>
           </h2>
@@ -50,35 +48,49 @@ export function PricingPreview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.1 }}
-              className={`group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col ${
-                plan.popular ? "" : ""
-              }`}
+              className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col card-3d card-3d-hover"
               style={{
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
                 borderTop: plan.popular ? "4px solid var(--color-accent)" : "4px solid var(--color-accent)",
               }}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                e.currentTarget.style.setProperty("--mouse-x", String(x));
+                e.currentTarget.style.setProperty("--mouse-y", String(y));
+              }}
             >
-              {/* 상단 우측 TM 배지 */}
-              <div className="absolute -top-2.5 right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
+              {/* TM 메달 (상단 우측) */}
+              <div className="absolute -top-3 right-4 h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-lg z-10">
                 TM
               </div>
 
-              {/* most popular 배지 */}
+              {/* 금속 리본 배지 (Most popular) */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-gold-deep)] px-4 py-0.5 text-[10px] font-semibold text-[var(--color-bg)] shadow-sm whitespace-nowrap z-10">
-                  가장 인기
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+                  <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[var(--color-accent)] via-[#d4b06a] to-[var(--color-gold-deep)] px-5 py-1 text-[10px] font-bold text-[var(--color-bg)] shadow-lg uppercase tracking-wider">
+                    <Star className="h-3 w-3 fill-current" />
+                    BEST VALUE
+                  </div>
                 </div>
               )}
+
+              {/* Em 보스 효과를 위한 사이드 장식선 */}
+              <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
+              <div className="absolute right-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
 
               <h3 className="font-serif font-semibold text-base" style={{ color: "var(--text)" }}>
                 {plan.name}
               </h3>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-2xl font-bold" style={{ color: plan.popular ? "var(--accent)" : "var(--text)" }}>
+                <span className="text-2xl font-bold gold-text">
                   {plan.price}
                 </span>
                 {plan.period && <span className="text-xs" style={{ color: "var(--text-muted)" }}>/{plan.period}</span>}
               </div>
-              {plan.tagline && <p className="mt-2 text-xs italic" style={{ color: "var(--text-muted)" }}>{plan.tagline}</p>}
+              {plan.tagline && <p className="mt-2 text-xs italic-script" style={{ color: "var(--text-muted)" }}>{plan.tagline}</p>}
+
               <ul className="mt-5 space-y-2 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -87,15 +99,16 @@ export function PricingPreview() {
                   </li>
                 ))}
               </ul>
+
               <Link
                 href={plan.href}
-                className="mt-6 flex h-10 items-center justify-center text-xs font-semibold btn-luxury btn-luxury-primary"
+                className="mt-6 flex h-10 items-center justify-center text-xs font-semibold btn-luxury btn-luxury-primary animate-gold-shimmer"
               >
                 {plan.cta}
                 <ArrowRight className="h-3 w-3 ml-1" />
               </Link>
 
-              {/* 하단 장식선 */}
+              {/* 하단 금속 장식선 */}
               <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
             </motion.div>
           ))}

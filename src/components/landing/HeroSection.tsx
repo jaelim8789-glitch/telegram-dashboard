@@ -9,7 +9,23 @@ export function HeroSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="tm-section-bg relative min-h-[80vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8">
+    <section className="tm-section-bg relative min-h-[80vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 satin-overlay">
+      {/* Metallic sheen overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          background: `linear-gradient(135deg, 
+            transparent 0%, 
+            var(--color-accent-glow) 30%, 
+            transparent 50%,
+            var(--color-accent-glow) 70%,
+            transparent 100%
+          )`,
+          backgroundSize: '400% 400%',
+          animation: 'gold-shimmer 6s ease-in-out infinite',
+        }}
+      />
+
       {/* Subtle background texture */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.02]"
@@ -24,8 +40,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-xs uppercase tracking-[0.2em] mb-6"
-          style={{ color: "var(--accent)", fontFamily: "var(--font-heading)" }}
+          className="gold-smallcaps mb-6"
         >
           TeleMon — {t("app.tagline")}
         </motion.p>
@@ -59,7 +74,7 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.65 }}
           className="mt-10 max-w-lg mx-auto"
         >
-          <p className="text-xs italic leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          <p className="italic-script text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
             {t("hero.quote")}
           </p>
         </motion.div>
@@ -71,17 +86,17 @@ export function HeroSection() {
           className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link
-            href="/signup"
-            className="btn-luxury btn-luxury-primary"
-          >
-            {t("app.start")}
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-          <Link
             href="/features"
             className="btn-luxury btn-luxury-secondary"
           >
             {t("app.features")}
+          </Link>
+          <Link
+            href="/signup"
+            className="btn-luxury btn-luxury-secondary"
+          >
+            {t("app.start")}
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </motion.div>
       </div>
