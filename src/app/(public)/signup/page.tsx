@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
@@ -27,6 +27,7 @@ export default function SignupPage() {
   const [alreadyIssued, setAlreadyIssued] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function handleStartVerification(e: FormEvent) {
     e.preventDefault();
@@ -69,6 +70,39 @@ export default function SignupPage() {
 
   const steps = ["plan", "phone", "channel", "done"];
   const currentIdx = steps.indexOf(step);
+
+  const statusItems: { key: string; label: string; done: boolean; active: boolean }[] = [
+    { key: "bot", label: "텔레그램 봇 연결 확인", done: token !== null, active: token !== null && verifyStatus === "idle" },
+    { key: "joined", label: "채널 가입 확인", done: verifyStatus === "verified", active: verifyStatus === "unverified" },
+    { key: "verified", label: "인증 완료", done: verifyStatus === "verified", active: false },
+    { key: "issuing", label: "API 키 발급 중", done: step === "done", active: issuing },
+  ];
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (step === "channel" && verifyStatus === "pending_bot_start" && !pollingRef.current) {
+      pollingRef.current = setInterval(async () => {
+        if (!token) return;
+        try {
+          const result = await freeApiKey.checkTelegramVerification(token);
+          setVerifyStatus(result.status);
+          setVerifyReason(result.reason);
+          if (result.status === "verified") {
+            if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+          }
+        } catch { /* poll will retry */ }
+      }, 3000);
+    }
+    if (verifyStatus !== "pending_bot_start" && pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, [step, verifyStatus, token]);
 
   const verifyHint =
     verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
@@ -153,37 +187,51 @@ export default function SignupPage() {
           {step === "channel" && (
             <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">텔레그램 채널 인증</h2>
-              <p className="text-sm text-app-text-secondary">아래 두 단계를 완료한 후 인증 확인을 눌러주세요.</p>
+
+              {/* Step-by-step progress */}
+              <div className="space-y-2">
+                {statusItems.map((item) => {
+                  let icon = <Clock className="h-4 w-4 text-app-text-muted" />;
+                  if (item.done) icon = <CheckCircle2 className="h-4 w-4 text-app-success" />;
+                  else if (item.active) icon = <Loader2 className="h-4 w-4 animate-spin text-app-primary" />;
+                  return (
+                    <div key={item.key} className="flex items-center gap-2 text-sm">
+                      {icon}
+                      <span className={item.done ? "text-app-text-secondary line-through" : item.active ? "text-app-text font-medium" : "text-app-text-secondary"}>{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
 
               <div className="space-y-3">
                 {botDeepLink && (
                   <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
                     className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
-                    1. 텔레그램 봇 열기
+                    <UserCheck className="mr-2 h-4 w-4" /> 텔레그램 봇 열기
                   </a>
                 )}
                 {channelUrl && (
                   <a href={channelUrl} target="_blank" rel="noopener noreferrer"
                     className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
-                    2. 공식 채널 가입하기
+                    <RefreshCw className="mr-2 h-4 w-4" /> 채널 가입하기
                   </a>
                 )}
               </div>
 
               {verifyStatus === "verified" ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-app-success">✓ 채널 가입이 확인되었습니다.</p>
+                  <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
                   <Button onClick={handleIssueApiKey} disabled={issuing} className="flex w-full h-12">
                     {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {issuing ? "발급 중..." : "무료 API 키 받기"}
+                    {issuing ? "발급 중..." : <><Key className="mr-2 h-4 w-4" /> 무료 API 키 받기</>}
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {verifyHint && <p className="text-xs text-app-warning">{verifyHint}</p>}
+                  {verifyHint && <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>}
                   <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
                     {checking && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {checking ? "확인 중..." : "인증 확인"}
+                    {checking ? "인증 확인 중..." : "인증 확인"}
                   </Button>
                 </div>
               )}
@@ -194,9 +242,7 @@ export default function SignupPage() {
           {step === "done" && (
             <div className="text-center space-y-6">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-app-success-muted">
-                <svg className="h-10 w-10 text-app-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <CheckCircle2 className="h-10 w-10 text-app-success" />
               </div>
               {alreadyIssued ? (
                 <>
