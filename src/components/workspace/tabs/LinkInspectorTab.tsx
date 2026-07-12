@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ScanSearch, Users, MessageCircle, UserPlus, CheckCircle, AlertCircle,
-  RefreshCw, ExternalLink, EyeOff, Ban, Clock,
+  RefreshCw, ExternalLink, EyeOff, Ban, Clock, AlertTriangle, XCircle,
+  Pause, Play, ListChecks, Trash2, ArrowRight, X, Settings2,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Field, Textarea } from "@/components/ui/Field";
+import { Field, Textarea, Input } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api_link_inspector";
 import type { LinkInspectionItem, LinkJoinResultItem, LinkStatus } from "@/lib/api_link_inspector";
+import * as queueApi from "@/lib/api_join_queue";
+import type { JoinQueueItem, JoinQueueItemStatus } from "@/lib/api_join_queue";
 
 const CHAT_TYPE_LABEL: Record<string, string> = {
   group: "그룹",
@@ -62,10 +65,41 @@ function countUnique(links: string[]): number {
   return new Set(links.map((l) => l.trim().toLowerCase())).size;
 }
 
+// ============================================================
+// Smart Join Queue
+//
+// Backed by the server-side /api/join-queue API: adding links persists a row
+// per item, and a backend scheduler processes them one at a time per account
+// (rate-limited, FloodWait-aware). The queue survives refresh/logout/login
+// because the server is the source of truth — this component only adds
+// items and polls list/stats while anything is still queued/processing.
+// ============================================================
+
+const QUEUE_POLL_MS = 4000;
+
+const QUEUE_STATUS_LABEL: Record<JoinQueueItemStatus, string> = {
+  queued: "대기 중",
+  processing: "진행 중",
+  success: "완료",
+  failed: "실패",
+  flood_wait: "속도 제한",
+};
+
+const QUEUE_STATUS_TONE: Record<JoinQueueItemStatus, "neutral" | "info" | "success" | "danger" | "warning"> = {
+  queued: "neutral",
+  processing: "info",
+  success: "success",
+  failed: "danger",
+  flood_wait: "warning",
+};
+
+const FINISHED_STATUSES: JoinQueueItemStatus[] = ["success", "failed", "flood_wait"];
+
 export function LinkInspectorTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
 
   const [linksText, setLinksText] = useState("");
   const [inspecting, setInspecting] = useState(false);
@@ -77,8 +111,206 @@ export function LinkInspectorTab() {
   const [joining, setJoining] = useState(false);
   const [joinResults, setJoinResults] = useState<LinkJoinResultItem[] | null>(null);
 
+  const [queueItems, setQueueItems] = useState<JoinQueueItem[]>([]);
+  const [queueStats, setQueueStats] = useState<queueApi.JoinQueueStats | null>(null);
+  const [queueConfig, setQueueConfig] = useState<queueApi.JoinQueueConfig | null>(null);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueAdding, setQueueAdding] = useState(false);
+  const [queueConfigSaving, setQueueConfigSaving] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
+  const [rateDraft, setRateDraft] = useState("");
+  const [dailyDraft, setDailyDraft] = useState("");
+
   const pastedLinks = parsePastedLinks(linksText);
   const uniquePastedCount = countUnique(pastedLinks);
+
+  async function loadQueue(accountId: string, opts?: { silent?: boolean }) {
+    if (!opts?.silent) setQueueLoading(true);
+    try {
+      const [list, stats, config] = await Promise.all([
+        queueApi.fetchJoinQueue(accountId),
+        queueApi.fetchJoinQueueStats(accountId),
+        queueApi.fetchJoinQueueConfig(accountId),
+      ]);
+      setQueueItems(list.items);
+      setQueueStats(stats);
+      setQueueConfig(config);
+      setQueueError(null);
+    } catch (err) {
+      if (!opts?.silent) setQueueError(err instanceof Error ? err.message : "대기열을 불러오지 못했습니다.");
+    } finally {
+      if (!opts?.silent) setQueueLoading(false);
+    }
+  }
+
+  // Persist across refresh/logout-login: reload the server-side queue whenever
+  // the selected account changes.
+  useEffect(() => {
+    setQueueItems([]);
+    setQueueStats(null);
+    setQueueConfig(null);
+    setSelectedQueueIds(new Set());
+    setQueueError(null);
+    if (!selectedAccountId) return;
+    void loadQueue(selectedAccountId);
+  }, [selectedAccountId]);
+
+  // Keep the config rate inputs in sync with the server value (unless the
+  // user is actively editing, in which case their in-progress edit wins).
+  useEffect(() => {
+    if (!queueConfig) return;
+    setRateDraft(String(queueConfig.joinsPerHour));
+    setDailyDraft(String(queueConfig.maxDailyJoins));
+  }, [queueConfig]);
+
+  // Poll while anything is still in flight server-side (the scheduler
+  // processes items in the background independent of this tab being open).
+  useEffect(() => {
+    if (!selectedAccountId) return;
+    const hasActive = queueItems.some(
+      (it) => it.status === "queued" || it.status === "processing" || it.status === "flood_wait"
+    );
+    if (!hasActive) return;
+    const interval = setInterval(() => {
+      void loadQueue(selectedAccountId, { silent: true });
+    }, QUEUE_POLL_MS);
+    return () => clearInterval(interval);
+  }, [selectedAccountId, queueItems]);
+
+  async function handleAddToQueue() {
+    if (!selectedAccountId || selected.size === 0 || queueAdding) return;
+    const accountId = selectedAccountId;
+    const existingLinks = new Set(queueItems.map((q) => q.rawLink));
+    const targets = items
+      .filter((i) => selected.has(i.rawLink) && !existingLinks.has(i.rawLink))
+      .map((i) => ({
+        rawLink: i.rawLink,
+        title: i.title || i.rawLink,
+        chatType: i.chatType,
+        username: i.username,
+        chatId: i.chatId,
+      }));
+
+    setSelected(new Set());
+    if (targets.length === 0) return;
+
+    setQueueAdding(true);
+    setQueueError(null);
+    try {
+      await queueApi.addToJoinQueue(accountId, targets);
+      await loadQueue(accountId);
+    } catch (err) {
+      setQueueError(err instanceof Error ? err.message : "대기열에 추가하지 못했습니다.");
+    } finally {
+      setQueueAdding(false);
+    }
+  }
+
+  async function handleUpdateQueueConfig(patch: queueApi.JoinQueueConfigInput) {
+    if (!selectedAccountId || queueConfigSaving) return;
+    const accountId = selectedAccountId;
+    setQueueConfigSaving(true);
+    setQueueError(null);
+    try {
+      const updated = await queueApi.updateJoinQueueConfig(accountId, patch);
+      setQueueConfig(updated);
+    } catch (err) {
+      setQueueError(err instanceof Error ? err.message : "설정을 변경하지 못했습니다.");
+    } finally {
+      setQueueConfigSaving(false);
+    }
+  }
+
+  function handleToggleQueuePause() {
+    if (!queueConfig) return;
+    void handleUpdateQueueConfig({ isPaused: !queueConfig.isPaused });
+  }
+
+  function commitRateDraft() {
+    const n = Math.trunc(Number(rateDraft));
+    if (!queueConfig || !Number.isFinite(n) || n < 1 || n > 60) {
+      if (queueConfig) setRateDraft(String(queueConfig.joinsPerHour));
+      return;
+    }
+    if (n !== queueConfig.joinsPerHour) void handleUpdateQueueConfig({ joinsPerHour: n });
+  }
+
+  function commitDailyDraft() {
+    const n = Math.trunc(Number(dailyDraft));
+    if (!queueConfig || !Number.isFinite(n) || n < 1 || n > 100) {
+      if (queueConfig) setDailyDraft(String(queueConfig.maxDailyJoins));
+      return;
+    }
+    if (n !== queueConfig.maxDailyJoins) void handleUpdateQueueConfig({ maxDailyJoins: n });
+  }
+
+  async function handleRemoveQueueItems(ids: string[]) {
+    if (!selectedAccountId || ids.length === 0) return;
+    const accountId = selectedAccountId;
+    setQueueError(null);
+    try {
+      await queueApi.removeJoinQueueItems(accountId, ids);
+      await loadQueue(accountId);
+      setSelectedQueueIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch (err) {
+      setQueueError(err instanceof Error ? err.message : "대기열 항목을 제거하지 못했습니다.");
+    }
+  }
+
+  function handleClearFinishedQueueItems() {
+    const ids = queueItems.filter((it) => FINISHED_STATUSES.includes(it.status)).map((it) => it.id);
+    void handleRemoveQueueItems(ids);
+  }
+
+  async function handleRetryQueueItem(item: JoinQueueItem) {
+    if (!selectedAccountId) return;
+    const accountId = selectedAccountId;
+    setQueueError(null);
+    try {
+      await queueApi.removeJoinQueueItems(accountId, [item.id]);
+      await queueApi.addToJoinQueue(accountId, [{
+        rawLink: item.rawLink,
+        title: item.title ?? item.rawLink,
+        chatType: item.chatType,
+        username: item.username,
+        chatId: item.chatId,
+      }]);
+      await loadQueue(accountId);
+    } catch (err) {
+      setQueueError(err instanceof Error ? err.message : "재시도에 실패했습니다.");
+    }
+  }
+
+  function toggleQueueSelect(id: string) {
+    setSelectedQueueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function handleGoToGroupManagement() {
+    setActiveTab("group");
+  }
+
+  const queueTotal = queueStats
+    ? queueStats.totalQueued + queueStats.totalProcessing + queueStats.totalSuccess + queueStats.totalFailed + queueStats.totalFloodWait
+    : queueItems.length;
+  const queueDoneCount = queueStats
+    ? queueStats.totalSuccess + queueStats.totalFailed + queueStats.totalFloodWait
+    : queueItems.filter((it) => FINISHED_STATUSES.includes(it.status)).length;
+  const queueSuccessCount = queueStats?.totalSuccess ?? queueItems.filter((it) => it.status === "success").length;
+  const queueFailedCount = queueStats
+    ? queueStats.totalFailed + queueStats.totalFloodWait
+    : queueItems.filter((it) => it.status === "failed" || it.status === "flood_wait").length;
+  const queueProgressPct = queueTotal > 0 ? Math.round((queueDoneCount / queueTotal) * 100) : 0;
+  const queueIsPaused = queueConfig?.isPaused ?? queueStats?.isPaused ?? false;
+  const queueHasActive = queueItems.some((it) => it.status === "queued" || it.status === "processing");
 
   async function handleInspect() {
     if (!selectedAccountId || pastedLinks.length === 0 || inspecting) return;
@@ -231,6 +463,180 @@ export function LinkInspectorTab() {
         )}
       </AnimatePresence>
 
+      {/* Smart Join Queue */}
+      <AnimatePresence>
+        {(queueItems.length > 0 || queueLoading) && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+            <Panel
+              title={<div className="flex items-center gap-2"><ListChecks className="h-4 w-4 text-app-primary" /> 가입 대기열</div>}
+              description={
+                queueLoading && queueItems.length === 0
+                  ? "대기열을 불러오는 중..."
+                  : `${queueDoneCount}/${queueTotal} 처리됨 · 서버가 순차적으로 가입해 속도 제한 위험을 줄입니다.`
+              }
+              action={
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleToggleQueuePause}
+                    disabled={!queueConfig || queueConfigSaving}
+                  >
+                    {queueIsPaused ? <><Play className="h-3.5 w-3.5" /> 재개</> : <><Pause className="h-3.5 w-3.5" /> 일시정지</>}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleClearFinishedQueueItems} disabled={queueDoneCount === 0}>
+                    <Trash2 className="h-3.5 w-3.5" /> 완료 항목 지우기
+                  </Button>
+                </div>
+              }
+            >
+              {/* Queue error */}
+              {queueError && (
+                <div className="mb-3 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2 text-xs text-app-danger flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{queueError}</span>
+                </div>
+              )}
+
+              {/* Rate config */}
+              {queueConfig && (
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-app-border bg-app-surface px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-app-text-muted">
+                    <Settings2 className="h-3.5 w-3.5" /> 가입 속도
+                  </span>
+                  <label className="flex items-center gap-1.5 text-xs text-app-text-muted">
+                    시간당
+                    <Input
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={rateDraft}
+                      onChange={(e) => setRateDraft(e.target.value)}
+                      onBlur={commitRateDraft}
+                      disabled={queueConfigSaving}
+                      className="w-16 !py-1 text-center"
+                    />
+                    회
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-app-text-muted">
+                    일일 최대
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={dailyDraft}
+                      onChange={(e) => setDailyDraft(e.target.value)}
+                      onBlur={commitDailyDraft}
+                      disabled={queueConfigSaving}
+                      className="w-16 !py-1 text-center"
+                    />
+                    회
+                  </label>
+                  {queueStats && (
+                    <span className="text-xs text-app-text-subtle">
+                      오늘 {queueStats.joinedToday}/{queueStats.maxDailyJoins}회 가입
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Progress bar */}
+              <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-app-card-hover">
+                <motion.div
+                  className="h-full rounded-full bg-app-primary"
+                  initial={false}
+                  animate={{ width: `${queueProgressPct}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-app-text-muted">
+                <span>
+                  {queueIsPaused ? "일시정지됨" : queueHasActive ? "진행 중..." : queueDoneCount === queueTotal && queueTotal > 0 ? "완료" : "대기 중"}
+                </span>
+                {queueSuccessCount > 0 && <span className="text-app-success">성공 {queueSuccessCount}개</span>}
+                {queueFailedCount > 0 && <span className="text-app-danger">실패/제한 {queueFailedCount}개</span>}
+                {selectedQueueIds.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleRemoveQueueItems(Array.from(selectedQueueIds))}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> 선택 항목 제거 ({selectedQueueIds.size}개)
+                  </Button>
+                )}
+              </div>
+
+              {/* Queue item rows */}
+              <div className="space-y-1.5">
+                {queueItems.map((qi) => (
+                  <div
+                    key={qi.id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2 text-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleQueueSelect(qi.id)}
+                      className={cn(
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-all duration-150",
+                        selectedQueueIds.has(qi.id) ? "border-app-primary bg-app-primary text-white" : "border-app-border bg-app-bg"
+                      )}
+                    >
+                      {selectedQueueIds.has(qi.id) && <CheckCircle className="h-3 w-3" />}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        {qi.status === "queued" && <Clock className="h-3.5 w-3.5 shrink-0 text-app-text-muted" />}
+                        {qi.status === "processing" && <RefreshCw className="h-3.5 w-3.5 shrink-0 animate-spin text-app-info" />}
+                        {qi.status === "success" && <CheckCircle className="h-3.5 w-3.5 shrink-0 text-app-success" />}
+                        {qi.status === "failed" && <XCircle className="h-3.5 w-3.5 shrink-0 text-app-danger" />}
+                        {qi.status === "flood_wait" && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-app-warning" />}
+                        <span className="truncate font-medium text-app-text">{qi.title || qi.rawLink}</span>
+                        {qi.username && (
+                          <a
+                            href={`https://t.me/${qi.username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex shrink-0 items-center gap-1 text-app-info hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      {qi.errorMessage && <p className="mt-0.5 truncate text-[11px] text-app-text-muted">{qi.errorMessage}</p>}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Badge tone={QUEUE_STATUS_TONE[qi.status]}>{QUEUE_STATUS_LABEL[qi.status]}</Badge>
+                      {(qi.status === "failed" || qi.status === "flood_wait") && (
+                        <Button variant="ghost" size="sm" onClick={() => void handleRetryQueueItem(qi)}>
+                          재시도
+                        </Button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleRemoveQueueItems([qi.id])}
+                        className="rounded-md p-1 text-app-text-subtle hover:bg-app-danger-muted hover:text-app-danger"
+                        aria-label="제거"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Jump to Group Management once at least one join succeeded */}
+              {queueSuccessCount > 0 && (
+                <div className="mt-3 border-t border-app-border pt-3">
+                  <Button variant="secondary" size="sm" onClick={handleGoToGroupManagement}>
+                    그룹 관리에서 확인 <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </Panel>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Results */}
       {items.length > 0 && (
         <Panel
@@ -336,28 +742,37 @@ export function LinkInspectorTab() {
             })}
           </div>
 
-          {/* Add to Group Management button */}
+          {/* Immediate join or add to Smart Join Queue */}
           <AnimatePresence>
             {selected.size > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 12 }}
-                className="mt-4 flex items-center justify-between border-t border-app-border pt-4"
+                className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-app-border pt-4"
               >
                 <span className="text-xs text-app-text-muted">{selected.size}개 링크 선택됨</span>
-                <Button
-                  variant="primary"
-                  onClick={handleAddToGroupManagement}
-                  disabled={joining}
-                  className="shadow-lg shadow-app-primary/20"
-                >
-                  {joining ? (
-                    <><RefreshCw className="mr-1.5 h-4 w-4 animate-spin" /> 추가 중...</>
-                  ) : (
-                    <><UserPlus className="mr-1.5 h-4 w-4" /> 선택한 링크를 그룹 관리에 추가 ({selected.size}개)</>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" onClick={handleAddToQueue} disabled={queueAdding}>
+                    {queueAdding ? (
+                      <><RefreshCw className="mr-1.5 h-4 w-4 animate-spin" /> 추가 중...</>
+                    ) : (
+                      <><ListChecks className="mr-1.5 h-4 w-4" /> 대기열에 추가 ({selected.size}개)</>
+                    )}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleAddToGroupManagement}
+                    disabled={joining}
+                    className="shadow-lg shadow-app-primary/20"
+                  >
+                    {joining ? (
+                      <><RefreshCw className="mr-1.5 h-4 w-4 animate-spin" /> 가입 중...</>
+                    ) : (
+                      <><UserPlus className="mr-1.5 h-4 w-4" /> 즉시 가입 ({selected.size}개)</>
+                    )}
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
