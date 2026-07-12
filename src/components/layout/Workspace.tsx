@@ -11,6 +11,7 @@ import { SendTab } from "@/components/workspace/tabs/SendTab";
 import { RecurringScheduleTab } from "@/components/workspace/tabs/RecurringScheduleTab";
 import { GroupTab } from "@/components/workspace/tabs/GroupTab";
 import { GroupSearchTab } from "@/components/workspace/tabs/GroupSearchTab";
+import { LinkInspectorTab } from "@/components/workspace/tabs/LinkInspectorTab";
 import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
 import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
 import { LogTab } from "@/components/workspace/tabs/LogTab";
@@ -24,6 +25,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   scheduler: RecurringScheduleTab,
   group: GroupTab,
   groupsearch: GroupSearchTab,
+  linkinspector: LinkInspectorTab,
   autoreply: AutoReplyTab,
   replymacro: ReplyMacroTab,
   deliveryanalytics: DeliveryAnalyticsTab,

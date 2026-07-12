@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
-  Bot, Zap, User, FileText, BarChart3,
+  Bot, Zap, User, FileText, BarChart3, ScanSearch,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS, type TabDef } from "@/types";
@@ -17,6 +17,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   scheduler: CalendarClock,
   group: Users,
   groupsearch: Search,
+  linkinspector: ScanSearch,
   autoreply: Bot,
   replymacro: Zap,
   deliveryanalytics: BarChart3,
