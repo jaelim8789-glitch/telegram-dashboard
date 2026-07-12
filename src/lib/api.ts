@@ -17,17 +17,14 @@
 } from "@/types";
 import { getToken } from "@/lib/auth";
 
+// NEXT_PUBLIC_API_BASE_URL is inlined at build time.  When empty (the Dockerfile
+// default), the frontend uses relative URLs through the nginx reverse proxy
+// (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
+// frontend calls the API directly at that origin.
+// The fallback "http://localhost:8000" is for local dev without nginx.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
-
-/** Every /api/* route requires either this (an admin session) or an X-API-Key — see
+/** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -99,8 +96,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
-  const data = await request<ApiAccount[] | PaginatedResponse<ApiAccount>>("/api/accounts");
-  return Array.isArray(data) ? data.map(toAccount) : data.items.map(toAccount);
+  const body = await request<{ items: ApiAccount[] }>("/api/accounts");
+  return (body.items ?? body).map(toAccount);
 }
 
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
@@ -203,8 +200,8 @@ function toGroup(api: ApiGroup): Group {
 }
 
 export async function fetchGroups(accountId: string): Promise<Group[]> {
-  const data = await request<ApiGroup[] | PaginatedResponse<ApiGroup>>(`/api/accounts/${accountId}/groups`);
-  return Array.isArray(data) ? data.map(toGroup) : data.items.map(toGroup);
+  const body = await request<{ items: ApiGroup[] }>(`/api/accounts/${accountId}/groups`);
+  return (body.items ?? body).map(toGroup);
 }
 
 interface ApiBroadcast {
@@ -731,7 +728,7 @@ export async function fetchAnalyticsAccounts(params?: {
 }
 
 export async function fetchAnalyticsTimeline(params?: {
-  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string; interval?: string
+  account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string; granularity?: string
 }): Promise<import("@/types").AnalyticsTimelinePoint[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
