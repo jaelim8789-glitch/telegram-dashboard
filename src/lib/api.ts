@@ -394,6 +394,7 @@ export interface ApiKey {
   maskedKey: string;
   name: string;
   isActive: boolean;
+  tenantId: string | null;
   createdAt: string;
   lastUsed: string | null;
 }
@@ -403,6 +404,7 @@ interface ApiApiKey {
   masked_key: string;
   name: string;
   is_active: boolean;
+  tenant_id: string | null;
   created_at: string;
   last_used: string | null;
 }
@@ -413,6 +415,7 @@ function toApiKey(api: ApiApiKey): ApiKey {
     maskedKey: api.masked_key,
     name: api.name,
     isActive: api.is_active,
+    tenantId: api.tenant_id,
     createdAt: api.created_at,
     lastUsed: api.last_used,
   };
@@ -423,10 +426,10 @@ export async function fetchApiKeys(): Promise<ApiKey[]> {
   return keys.map(toApiKey);
 }
 
-export async function createApiKey(name: string): Promise<ApiKeyCreated> {
+export async function createApiKey(name: string, tenantId?: string): Promise<ApiKeyCreated> {
   const result = await request<{ id: string; key: string; name: string; created_at: string }>(
     "/api/admin/api-keys",
-    { method: "POST", body: JSON.stringify({ name }) }
+    { method: "POST", body: JSON.stringify(tenantId ? { name, tenant_id: tenantId } : { name }) }
   );
   return { id: result.id, key: result.key, name: result.name, createdAt: result.created_at };
 }
