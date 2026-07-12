@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +10,7 @@ import { InlineError } from "@/components/ui/InlineError";
 import { SITE } from "@/lib/site";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [step, setStep] = useState<"plan" | "phone" | "code" | "done">("plan");
   const [selectedPlan, setSelectedPlan] = useState("free");
   const [phone, setPhone] = useState("");
@@ -97,7 +99,13 @@ export default function SignupPage() {
                   </button>
                 ))}
               </div>
-              <button onClick={() => setStep("phone")} className="btn-primary w-full h-12 rounded-xl text-sm font-semibold relative z-10">다음</button>
+              <button onClick={() => {
+                if (selectedPlan === "free") {
+                  setStep("phone");
+                } else {
+                  router.push("/get-api-key");
+                }
+              }} className="btn-primary w-full h-12 rounded-xl text-sm font-semibold relative z-10">다음</button>
             </div>
           )}
 
