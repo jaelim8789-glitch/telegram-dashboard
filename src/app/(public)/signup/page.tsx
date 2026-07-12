@@ -8,50 +8,74 @@ import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { SITE } from "@/lib/site";
+import * as freeApiKey from "@/lib/api_free_api_key";
+import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [step, setStep] = useState<"plan" | "phone" | "code" | "done">("plan");
+  const [step, setStep] = useState<"plan" | "phone" | "channel" | "done">("plan");
   const [selectedPlan, setSelectedPlan] = useState("free");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [botDeepLink, setBotDeepLink] = useState<string | null>(null);
+  const [channelUrl, setChannelUrl] = useState<string | null>(null);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyCheckStatus | "idle">("idle");
+  const [verifyReason, setVerifyReason] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [issuing, setIssuing] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [alreadyIssued, setAlreadyIssued] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSendCode(e: FormEvent) {
+  async function handleStartVerification(e: FormEvent) {
     e.preventDefault();
     if (!phone.trim() || loading) return;
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/api/auth/send-code`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim() }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "발송 실패"); }
-      setStep("code");
-    } catch (err) { setError(err instanceof Error ? err.message : "발송 실패"); }
+      const start = await freeApiKey.startFreeApiKeyVerification();
+      setToken(start.token);
+      setBotDeepLink(start.botDeepLink);
+      setChannelUrl(start.channelUrl);
+      setVerifyStatus("idle");
+      setVerifyReason(null);
+      setStep("channel");
+    } catch (err) { setError(err instanceof Error ? err.message : "인증 시작에 실패했습니다."); }
     finally { setLoading(false); }
   }
 
-  async function handleVerifyCode(e: FormEvent) {
-    e.preventDefault();
-    if (!code.trim() || loading) return;
-    setLoading(true); setError(null);
+  async function handleCheckVerification() {
+    if (!token || checking) return;
+    setChecking(true); setError(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/api/auth/verify-code`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), code: code.trim() }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "인증 실패"); }
-      const data = await res.json();
-      setApiKey(data.api_key); setStep("done");
-    } catch (err) { setError(err instanceof Error ? err.message : "인증 실패"); }
-    finally { setLoading(false); }
+      const result = await freeApiKey.checkTelegramVerification(token);
+      setVerifyStatus(result.status);
+      setVerifyReason(result.reason);
+    } catch (err) { setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다."); }
+    finally { setChecking(false); }
   }
 
-  const steps = ["plan", "phone", "code", "done"];
+  async function handleIssueApiKey() {
+    if (!token || !phone.trim() || issuing) return;
+    setIssuing(true); setError(null);
+    try {
+      const result = await freeApiKey.issueFreeApiKey(token, phone.trim());
+      setApiKey(result.apiKey);
+      setAlreadyIssued(result.alreadyIssued);
+      setStep("done");
+    } catch (err) { setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다."); }
+    finally { setIssuing(false); }
+  }
+
+  const steps = ["plan", "phone", "channel", "done"];
   const currentIdx = steps.indexOf(step);
+
+  const verifyHint =
+    verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
+    : verifyStatus === "unverified" ? (verifyReason === "membership_check_unavailable"
+        ? "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요."
+        : "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.")
+    : null;
 
   return (
     <div className="min-h-screen bg-app-bg bg-grid px-4 py-20 sm:px-6 lg:px-8">
@@ -111,36 +135,59 @@ export default function SignupPage() {
 
           {step === "phone" && (
             <div className="space-y-5">
-              <h2 className="text-lg font-semibold text-app-text">전화번호 인증</h2>
-              <form onSubmit={handleSendCode} className="space-y-4">
+              <h2 className="text-lg font-semibold text-app-text">전화번호 입력</h2>
+              <form onSubmit={handleStartVerification} className="space-y-4">
                 <Field label="전화번호">
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678" required />
                 </Field>
-                <p className="text-xs text-app-text-muted">국가코드 포함 (예: +82)</p>
+                <p className="text-xs text-app-text-muted">국가코드 포함 (예: +82). SMS 인증 없이 텔레그램 채널 가입으로 인증합니다.</p>
                 <Button type="submit" disabled={loading} className="flex w-full h-12">
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {loading ? "발송 중..." : "인증번호 요청"}
+                  {loading ? "시작하는 중..." : "다음"}
                 </Button>
                 <button type="button" onClick={() => setStep("plan")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
               </form>
             </div>
           )}
 
-          {step === "code" && (
+          {step === "channel" && (
             <div className="space-y-5">
-              <h2 className="text-lg font-semibold text-app-text">인증번호 입력</h2>
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-app-text mb-1.5">인증번호</label>
-                  <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000" maxLength={6} inputMode="numeric"
-                    className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm text-center text-2xl tracking-[0.5em] text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required />
+              <h2 className="text-lg font-semibold text-app-text">텔레그램 채널 인증</h2>
+              <p className="text-sm text-app-text-secondary">아래 두 단계를 완료한 후 인증 확인을 눌러주세요.</p>
+
+              <div className="space-y-3">
+                {botDeepLink && (
+                  <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
+                    className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
+                    1. 텔레그램 봇 열기
+                  </a>
+                )}
+                {channelUrl && (
+                  <a href={channelUrl} target="_blank" rel="noopener noreferrer"
+                    className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
+                    2. 공식 채널 가입하기
+                  </a>
+                )}
+              </div>
+
+              {verifyStatus === "verified" ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-app-success">✓ 채널 가입이 확인되었습니다.</p>
+                  <Button onClick={handleIssueApiKey} disabled={issuing} className="flex w-full h-12">
+                    {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {issuing ? "발급 중..." : "무료 API 키 받기"}
+                  </Button>
                 </div>
-                <Button type="submit" disabled={loading} className="flex w-full h-12">
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {loading ? "확인 중..." : "API 키 발급"}
-                </Button>
-                <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
-              </form>
+              ) : (
+                <div className="space-y-3">
+                  {verifyHint && <p className="text-xs text-app-warning">{verifyHint}</p>}
+                  <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
+                    {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {checking ? "확인 중..." : "인증 확인"}
+                  </Button>
+                </div>
+              )}
+              <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
             </div>
           )}
 
@@ -151,11 +198,20 @@ export default function SignupPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-app-text">가입 완료!</h2>
-              <p className="text-sm text-app-text-secondary">아래 API 키를 안전한 곳에 저장하세요. 지금만 확인 가능합니다.</p>
-              <div className="rounded-xl bg-app-surface border border-app-border p-4">
-                <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
-              </div>
+              {alreadyIssued ? (
+                <>
+                  <h2 className="text-xl font-bold text-app-text">이미 발급된 계정입니다</h2>
+                  <p className="text-sm text-app-text-secondary">이 전화번호로는 이미 무료 API 키가 발급되었습니다. 로그인 페이지에서 계속 진행해주세요.</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold text-app-text">가입 완료!</h2>
+                  <p className="text-sm text-app-text-secondary">아래 API 키를 안전한 곳에 저장하세요. 지금만 확인 가능합니다.</p>
+                  <div className="rounded-xl bg-app-surface border border-app-border p-4">
+                    <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
+                  </div>
+                </>
+              )}
               <div className="space-y-3 pt-2">
                 <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">대시보드로 이동</Link>
                 <Link href="/pricing" className="block text-sm text-app-text-muted hover:text-app-text transition-colors">요금제 업그레이드</Link>
