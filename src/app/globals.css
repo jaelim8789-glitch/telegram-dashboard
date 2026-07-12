@@ -12,8 +12,10 @@
   --bg-secondary: #12121e;
   --bg-card: #181828;
   --bg-hover: #1e1e32;
+  --bg-elevated: #20203a;
   --border: #23233a;
   --border-strong: #2e2e4a;
+  --border-accent: rgba(249, 115, 22, 0.25);
   --text-primary: #eeeef6;
   --text-secondary: #9898b0;
   --text-muted: #666680;
@@ -43,8 +45,10 @@
   --color-app-surface: var(--bg-secondary);
   --color-app-card: var(--bg-card);
   --color-app-card-hover: var(--bg-hover);
+  --color-app-elevated: var(--bg-elevated);
   --color-app-border: var(--border);
   --color-app-border-strong: var(--border-strong);
+  --color-app-border-accent: var(--border-accent);
   --color-app-text: var(--text-primary);
   --color-app-text-secondary: var(--text-secondary);
   --color-app-text-muted: var(--text-muted);

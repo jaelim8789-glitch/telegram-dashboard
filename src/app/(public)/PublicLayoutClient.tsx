@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 import { SITE } from "@/lib/site";
 
 const NAV_LINKS = [
-  { label: "Product", href: "#product" },
-  { label: "Workflows", href: "#workflows" },
-  { label: "Why TeleMon", href: "#why" },
+  { label: "제품", href: "#product" },
+  { label: "워크플로우", href: "#workflows" },
+  { label: "기능", href: "#features" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -48,13 +48,13 @@ export function PublicLayoutClient({
               href="/admin/login"
               className="focus-ring hidden min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-card px-4 py-2 text-sm font-medium text-app-text transition-all hover:border-app-border-strong hover:bg-app-card-hover sm:inline-flex"
             >
-              Log in
+              로그인
             </Link>
             <Link
               href="/signup"
               className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-app-primary-hover"
             >
-              Start free
+              무료 시작
             </Link>
             <button
               type="button"
@@ -87,15 +87,15 @@ export function PublicLayoutClient({
                   href="/admin/login"
                   className="focus-ring flex min-h-11 flex-1 items-center justify-center rounded-xl border border-app-border bg-app-bg px-4 py-2 text-sm font-medium text-app-text"
                   onClick={closeMobileNav}
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="focus-ring flex min-h-11 flex-1 items-center justify-center rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white"
-                  onClick={closeMobileNav}
-                >
-                  Start free
+                  >
+                    로그인
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="focus-ring flex min-h-11 flex-1 items-center justify-center rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white"
+                    onClick={closeMobileNav}
+                  >
+                    무료 시작
                 </Link>
               </div>
             </nav>
@@ -119,13 +119,13 @@ export function PublicLayoutClient({
                 </span>
               </div>
               <p className="max-w-sm text-sm leading-6 text-app-text-secondary">
-                Telegram operations for accounts, broadcasts, groups, automation,
-                scheduling, failure recovery, and delivery analytics.
+                Telegram 계정 관리, 자동 응답, 예약 발송, 그룹 검색, 계정 건강 모니터링, 전달 분석까지.
+                코딩 없이 하나의 대시보드에서 텔레그램을 완전 자동화하세요.
               </p>
             </div>
 
             <div>
-              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">Explore</h3>
+              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">둘러보기</h3>
               <ul className="space-y-3">
                 {NAV_LINKS.slice(0, 3).map((item) => (
                   <li key={item.label}>
@@ -138,7 +138,7 @@ export function PublicLayoutClient({
             </div>
 
             <div>
-              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">Support</h3>
+              <h3 className="mb-4 text-sm font-semibold tracking-wide text-app-text">지원</h3>
               <ul className="space-y-3">
                 <li>
                   <a
@@ -175,10 +175,10 @@ export function PublicLayoutClient({
             </p>
             <div className="flex flex-wrap items-center gap-4 text-sm text-app-text-muted">
               <Link href="/signup" className="focus-ring transition-colors hover:text-app-text">
-                Start free
+                무료 시작
               </Link>
               <a href="#product" className="focus-ring transition-colors hover:text-app-text">
-                Review product
+                제품 살펴보기
               </a>
             </div>
           </div>
