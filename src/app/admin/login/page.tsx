@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { KeyRound, Phone, ShieldCheck, Loader2 } from "lucide-react";
+import { KeyRound, ShieldCheck, Loader2, ExternalLink, CheckCircle2, Copy, UserCheck, AlertCircle } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
+import * as freeApiKey from "@/lib/api_free_api_key";
 import { setToken } from "@/lib/auth";
+import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
 
-type AuthMethod = "admin" | "phone" | "apikey";
+type AuthMethod = "admin" | "trial" | "apikey";
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -49,86 +51,157 @@ function AdminLoginForm() {
   );
 }
 
-function PhoneVerificationForm() {
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-  const [issuedKey, setIssuedKey] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [botDeepLink, setBotDeepLink] = useState<string | null>(null);
+  const [channelUrl, setChannelUrl] = useState<string | null>(null);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyCheckStatus | "idle">("idle");
+  const [verifyReason, setVerifyReason] = useState<string | null>(null);
+  const [issuing, setIssuing] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function handleSendCode(e: FormEvent) {
-    e.preventDefault();
-    if (!phone.trim() || sending) return;
-    setSending(true); setError(null);
-    try { await api.sendVerificationCode(phone.trim()); setCodeSent(true); }
-    catch (err) { setError(err instanceof Error ? err.message : "발송 실패"); }
-    finally { setSending(false); }
+  async function handleStart() {
+    if (starting) return;
+    setStarting(true); setError(null);
+    try {
+      const start = await freeApiKey.startFreeApiKeyVerification();
+      setToken(start.token);
+      setBotDeepLink(start.botDeepLink);
+      setChannelUrl(start.channelUrl);
+      setVerifyStatus("idle");
+      setVerifyReason(null);
+    } catch (err) { setError(err instanceof Error ? err.message : "인증 시작에 실패했습니다."); }
+    finally { setStarting(false); }
   }
 
-  async function handleVerifyCode(e: FormEvent) {
-    e.preventDefault();
-    if (!code.trim() || verifying) return;
-    setVerifying(true); setError(null);
-    try { const key = await api.verifyLoginCode(phone.trim(), code.trim()); setIssuedKey(key); }
-    catch (err) { setError(err instanceof Error ? err.message : "인증 실패"); }
-    finally { setVerifying(false); }
+  async function handleCopy() {
+    if (apiKey) {
+      try { await navigator.clipboard.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      catch { /* fallback: user can select manually */ }
+    }
   }
 
-  function reset() { setPhone(""); setCode(""); setCodeSent(false); setIssuedKey(null); setError(null); }
+  const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
+  const channelJoined = verifyStatus === "verified";
 
-  if (issuedKey) return (
+  useEffect(() => {
+    if (!token || verifyStatus === "verified") return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const result = await freeApiKey.checkTelegramVerification(token);
+        if (cancelled) return;
+        setVerifyStatus(result.status);
+        setVerifyReason(result.reason);
+        setError(null);
+        if (result.status === "verified" && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
+      }
+    };
+    pollingRef.current = setInterval(tick, 4000);
+    return () => { cancelled = true; if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+  }, [token, verifyStatus]);
+
+  useEffect(() => {
+    if (verifyStatus !== "verified" || !token || issuing || apiKey) return;
+    const doIssue = async () => {
+      setIssuing(true); setError(null);
+      try {
+        const result = await freeApiKey.issueFreeApiKey(token);
+        setApiKey(result.apiKey);
+      } catch (err) { setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다."); }
+      finally { setIssuing(false); }
+    };
+    doIssue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verifyStatus, token]);
+
+  if (apiKey) return (
     <div className="text-center space-y-4">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-app-success-muted">
-        <svg className="h-7 w-7 text-app-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
+        <CheckCircle2 className="h-7 w-7 text-app-success" />
       </div>
-      <p className="text-sm text-app-text-secondary">API 키가 발급되었습니다</p>
-      <div className="rounded-xl bg-app-surface border border-app-border p-3">
-        <code className="break-all text-xs text-app-text font-mono">{issuedKey}</code>
+      <p className="text-sm text-app-text-secondary">무료 API 키가 발급되었습니다</p>
+      <p className="text-xs text-app-text-muted">24시간 동안 유효합니다. 아래 키를 복사하여 로그인해주세요.</p>
+      <div className="rounded-xl bg-app-surface border border-app-border p-3 relative">
+        <code className="break-all text-xs text-app-text font-mono">{apiKey}</code>
       </div>
-      <div className="flex gap-2">
-        <button onClick={reset} className="btn-secondary flex-1 h-10 rounded-xl text-sm">처음으로</button>
-        <Link href="/admin/login" className="btn-primary flex-1 flex items-center justify-center h-10 rounded-xl text-sm">로그인</Link>
-      </div>
+      <button onClick={handleCopy}
+        className="btn-secondary w-full h-10 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <Copy className="h-4 w-4" />{copied ? "복사됨" : "API 키 복사"}
+      </button>
+      <button onClick={onGoToApiKey}
+        className="btn-primary w-full h-10 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <KeyRound className="h-4 w-4" /> API 키로 로그인
+      </button>
     </div>
   );
 
-  if (codeSent) return (
-    <form onSubmit={handleVerifyCode} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-app-text-muted">인증번호</label>
-        <input
-          value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000"
-          maxLength={6} inputMode="numeric"
-          className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-center text-xl tracking-[0.5em] font-mono text-app-text placeholder:text-app-text-subtle focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary/30 transition-colors" required autoFocus
-        />
-      </div>
+  if (!token) return (
+    <div className="space-y-4">
+      <p className="text-xs text-app-text-muted leading-relaxed">
+        텔레그램 채널 <strong className="text-app-text">@TeleMon_2</strong>에 가입하고
+        봇 인증을 완료하면 <strong className="text-app-text">24시간</strong> 동안 사용 가능한
+        무료 API 키가 발급됩니다.
+      </p>
       {error && <InlineError>{error}</InlineError>}
-      <div className="flex gap-2">
-        <Button type="button" variant="ghost" onClick={() => setCodeSent(false)} disabled={verifying} className="flex-1 h-11">
-          뒤로
-        </Button>
-        <Button type="submit" variant="primary" disabled={verifying} className="flex-1 h-11">
-          {verifying ? "확인 중..." : "API 키 발급"}
-        </Button>
-      </div>
-    </form>
+      <Button onClick={handleStart} disabled={starting} className="flex w-full h-11">
+        {starting && <Loader2 className="h-4 w-4 animate-spin" />}
+        {starting ? "시작하는 중..." : "무료체험 시작"}
+      </Button>
+    </div>
   );
 
   return (
-    <form onSubmit={handleSendCode} className="space-y-4">
-      <Field label="전화번호">
-        <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678" required autoFocus />
-      </Field>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          {botStarted ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={botStarted ? "text-app-text-secondary" : "text-app-text font-medium"}>텔레그램 봇 시작 확인</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          {channelJoined ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={channelJoined ? "text-app-text-secondary" : "text-app-text font-medium"}>채널 가입 확인</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          {apiKey ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={apiKey ? "text-app-text-secondary" : "text-app-text font-medium"}>API 키 발급</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {botDeepLink && (
+          <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
+            className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+            <UserCheck className="h-4 w-4" /> 텔레그램 봇 열기
+          </a>
+        )}
+        {channelUrl && (
+          <a href={channelUrl} target="_blank" rel="noopener noreferrer"
+            className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+            <ExternalLink className="h-4 w-4" /> 채널 가입하기
+          </a>
+        )}
+      </div>
+
+      {verifyStatus === "unverified" && verifyReason === "not_a_member" && (
+        <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.</InlineError>
+      )}
+      {verifyStatus === "unverified" && verifyReason === "membership_check_unavailable" && (
+        <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.</InlineError>
+      )}
       {error && <InlineError>{error}</InlineError>}
-      <Button type="submit" disabled={sending} className="flex w-full h-11">
-        {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-        {sending ? "발송 중..." : "인증번호 요청"}
-      </Button>
-    </form>
+    </div>
   );
 }
 
@@ -163,7 +236,7 @@ function ApiKeyLoginForm() {
 
 const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: string }[] = [
   { id: "admin", label: "관리자", icon: <ShieldCheck className="h-4 w-4" />, desc: "아이디와 비밀번호로 로그인" },
-  { id: "phone", label: "전화번호", icon: <Phone className="h-4 w-4" />, desc: "SMS 인증으로 API 키 발급" },
+  { id: "trial", label: "무료체험", icon: <CheckCircle2 className="h-4 w-4" />, desc: "채널 가입하고 무료 API 키 받기" },
   { id: "apikey", label: "API 키", icon: <KeyRound className="h-4 w-4" />, desc: "발급받은 키로 바로 로그인" },
 ];
 
@@ -205,14 +278,14 @@ export default function AdminLoginPage() {
         <div className="rounded-2xl border border-app-border bg-app-card p-6 animate-scale-in">
           <div className="mb-5">
             <h2 className="text-base font-semibold text-app-text">
-              {method === "admin" ? "관리자 로그인" : method === "phone" ? "전화번호 인증" : "API 키 로그인"}
+              {method === "admin" ? "관리자 로그인" : method === "trial" ? "무료체험" : "API 키 로그인"}
             </h2>
             <p className="text-xs text-app-text-muted mt-0.5">
               {METHODS.find((m) => m.id === method)?.desc}
             </p>
           </div>
           {method === "admin" && <AdminLoginForm />}
-          {method === "phone" && <PhoneVerificationForm />}
+          {method === "trial" && <FreeTrialForm onGoToApiKey={() => setMethod("apikey")} />}
           {method === "apikey" && <ApiKeyLoginForm />}
         </div>
 
