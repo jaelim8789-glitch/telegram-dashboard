@@ -14,13 +14,14 @@ import { useToast } from "@/components/ui/Toast";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const POLL_TIMEOUT_SECONDS = 180;
 
-// NOTE: displayed prices are the canonical Dyad marketing tiers. The backend's
-// USDT plan catalog (app/services/billing.py) has not been updated to match —
-// it still prices "pro" at $38 and has no "team" tier (nearest is "enterprise"
-// at $150). requestPlanId below maps the marketing tier to the closest existing
-// backend plan so checkout doesn't 400; the amount actually charged comes from
-// the backend and will disagree with the price shown here until that catalog
-// is updated to free/pro/team at $0/$100/$199.
+// requestPlanId values are canonical plan ids (free/pro/team) matching the
+// backend's PLAN_CATALOG (app/core/plans.py, branch fix/p0-2-pricing-contract-v2:
+// pro=$100/monthly, team=$199/quarterly — same prices shown below). That branch
+// is not yet merged to the backend's master; until it deploys, /api/payment/
+// request-key?plan=team will 400 against the current stale billing.py catalog
+// (which only knows free/basic/pro/enterprise). No id-mapping or stale pricing
+// is used here — this intentionally targets the canonical contract, not the
+// currently-deployed one.
 const PLANS = [
   {
     name: "Free Trial",
@@ -59,7 +60,7 @@ const PLANS = [
       "발송 로그 & 전달 분석",
       "계정 건강 모니터링",
     ],
-    requestPlanId: "enterprise",
+    requestPlanId: "team",
     cta: "Team 시작",
     popular: false,
   },
