@@ -20,6 +20,7 @@ interface AdminGuardProps {
 export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) {
   const router = useRouter();
   const setRole = useDashboardStore((s) => s.setRole);
+  const setSubscription = useDashboardStore((s) => s.setSubscription);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
         const me = await api.fetchAuthMe();
         if (cancelled) return;
         setRole(me.role);
+        setSubscription(me.subscription_status, me.plan, me.trial_expires_at);
         if (requireAdmin && me.role !== "admin") {
           router.replace("/app");
           return;
