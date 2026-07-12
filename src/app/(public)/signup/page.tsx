@@ -83,9 +83,9 @@ export default function SignupPage() {
               <h2 className="text-lg font-semibold text-app-text">요금제 선택</h2>
               <div className="space-y-3">
                 {[
-                  { id: "free", name: "Free", price: "무료", desc: "1개 계정, 3개 규칙, 월 100회" },
-                  { id: "basic", name: "Basic", price: "$15/월", desc: "2개 계정, 10개 규칙, 월 1,000회" },
-                  { id: "pro", name: "Pro", price: "$38/월", desc: "5개 계정, 50개 규칙, 월 10,000회" },
+                  { id: "free", name: "Free Trial", price: "무료", desc: "1개 계정 연결, 자동 응답 기능, 메시지 발송" },
+                  { id: "pro", name: "Pro", price: "$100/월", desc: "10개 계정, 예약 & 반복 발송, 발송 로그 & 전달 분석" },
+                  { id: "team", name: "Team", price: "$199/분기", desc: "20개 계정, 예약 & 반복 발송, 계정 건강 모니터링" },
                 ].map((p) => (
                   <button key={p.id} onClick={() => setSelectedPlan(p.id)}
                     className={`w-full rounded-xl border p-4 text-left transition-all ${
