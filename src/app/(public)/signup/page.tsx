@@ -71,41 +71,57 @@ export default function SignupPage() {
   const steps = ["plan", "phone", "channel", "done"];
   const currentIdx = steps.indexOf(step);
 
+  // "bot" is only done once the backend confirms the bot chat was started
+  // (verifyStatus leaves pending_bot_start) — having a token just means the
+  // verification session exists, not that the user opened the bot yet.
+  const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
+  const channelJoined = verifyStatus === "verified";
+
   const statusItems: { key: string; label: string; done: boolean; active: boolean }[] = [
-    { key: "bot", label: "텔레그램 봇 연결 확인", done: token !== null, active: token !== null && verifyStatus === "idle" },
-    { key: "joined", label: "채널 가입 확인", done: verifyStatus === "verified", active: verifyStatus === "unverified" },
-    { key: "verified", label: "인증 완료", done: verifyStatus === "verified", active: false },
+    { key: "bot", label: "텔레그램 봇 시작 확인", done: botStarted, active: verifyStatus === "idle" || verifyStatus === "pending_bot_start" },
+    { key: "joined", label: "채널 가입 확인", done: channelJoined, active: verifyStatus === "unverified" },
+    { key: "verified", label: "인증 완료", done: channelJoined, active: false },
     { key: "issuing", label: "API 키 발급 중", done: step === "done", active: issuing },
   ];
 
+  // Auto-polls verification status every 4s while the channel step is active.
+  // Stops on unmount, step change, verified, or a request error (surfaced via
+  // the shared `error` banner) so the user must manually retry with the
+  // existing "인증 확인" button rather than retrying forever silently.
   useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
+    if (step !== "channel" || !token || verifyStatus === "verified") return;
 
-  useEffect(() => {
-    if (step === "channel" && verifyStatus === "pending_bot_start" && !pollingRef.current) {
-      pollingRef.current = setInterval(async () => {
-        if (!token) return;
-        try {
-          const result = await freeApiKey.checkTelegramVerification(token);
-          setVerifyStatus(result.status);
-          setVerifyReason(result.reason);
-          if (result.status === "verified") {
-            if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-          }
-        } catch { /* poll will retry */ }
-      }, 3000);
-    }
-    if (verifyStatus !== "pending_bot_start" && pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, [step, verifyStatus, token]);
+    let cancelled = false;
+    const tick = async () => {
+      setChecking(true);
+      try {
+        const result = await freeApiKey.checkTelegramVerification(token);
+        if (cancelled) return;
+        setVerifyStatus(result.status);
+        setVerifyReason(result.reason);
+        setError(null);
+        if (result.status === "verified" && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    };
+
+    pollingRef.current = setInterval(tick, 4000);
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    };
+  }, [step, token, verifyStatus]);
 
   const verifyHint =
-    verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
+    verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
     : verifyStatus === "unverified" ? (verifyReason === "membership_check_unavailable"
         ? "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요."
         : "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.")
