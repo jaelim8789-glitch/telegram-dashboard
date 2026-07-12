@@ -597,6 +597,9 @@ export async function loginWithApiKey(apiKey: string): Promise<string> {
 export interface AuthMe {
   role: "admin" | "user" | "api_key";
   phone: string | null;
+  subscription_status: string | null;
+  plan: string | null;
+  trial_expires_at: string | null;
 }
 
 export async function fetchAuthMe(): Promise<AuthMe> {

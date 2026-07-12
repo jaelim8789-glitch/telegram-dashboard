@@ -33,6 +33,11 @@ interface DashboardState {
   role: "admin" | "user" | "api_key" | null;
   setRole: (role: "admin" | "user" | "api_key" | null) => void;
 
+  subscriptionStatus: string | null;
+  plan: string | null;
+  trialExpiresAt: string | null;
+  setSubscription: (status: string | null, plan: string | null, trialExpiresAt: string | null) => void;
+
   accounts: Account[];
   accountsLoading: boolean;
   accountsError: string | null;
@@ -100,6 +105,11 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   role: null,
   setRole: (role) => set({ role }),
+
+  subscriptionStatus: null,
+  plan: null,
+  trialExpiresAt: null,
+  setSubscription: (subscriptionStatus, plan, trialExpiresAt) => set({ subscriptionStatus, plan, trialExpiresAt }),
 
   accounts: [],
   accountsLoading: false,
