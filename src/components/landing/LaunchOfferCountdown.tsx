@@ -24,9 +24,10 @@ function formatCountdown(ms: number): string {
 }
 
 export function LaunchOfferCountdown() {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
+    setNow(Date.now());
     const tick = () => setNow(Date.now());
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);

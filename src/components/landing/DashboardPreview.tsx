@@ -19,7 +19,6 @@ const FLOATING_STATS = [
   { label: "가동률", value: "99.9%", color: "#bfa260", delay: "2s", x: -20, y: -50 },
 ];
 
-// Real-looking Telegram message screenshots
 const TELEGRAM_SCREENSHOTS = [
   {
     id: "sent",
@@ -57,7 +56,6 @@ export function DashboardPreview() {
   const currentTime = useCurrentTime();
   const screenshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-rotate screenshots
   useEffect(() => {
     const ids = Object.keys(TELEGRAM_SCREENSHOTS);
     screenshotIntervalRef.current = setInterval(() => {
@@ -82,6 +80,18 @@ export function DashboardPreview() {
   const rotateX = mousePos.y * -3;
   const rotateY = mousePos.x * 3;
 
+  const sidebarBg = "#1e1e2a";
+  const mainBg = "#16161f";
+  const cardBg = "#222233";
+  const cardHover = "#2a2a3e";
+  const borderColor = "#333355";
+  const textPrimary = "#e8e8f0";
+  const textSecondary = "#b0b0c8";
+  const textMuted = "#8888a8";
+  const accentGold = "#c8a86e";
+  const successGreen = "#2b8a3e";
+  const liveBg = "#0d2814";
+
   return (
     <div
       ref={containerRef}
@@ -90,7 +100,6 @@ export function DashboardPreview() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); setMousePos({ x: 0, y: 0 }); }}
     >
-      {/* Floating stat badges */}
       {FLOATING_STATS.map((stat) => (
         <div
           key={stat.label}
@@ -105,14 +114,14 @@ export function DashboardPreview() {
             transitionDelay: stat.delay,
           }}
         >
-          <div className="flex items-center gap-2.5 rounded-xl border border-app-border bg-app-card px-4 py-2.5 shadow-lg shadow-black/30 backdrop-blur-md">
+          <div className="flex items-center gap-2.5 rounded-xl border border-[#444466] bg-[#1a1a30] px-4 py-2.5 shadow-lg shadow-black/40 backdrop-blur-md">
             <div
               className="h-2 w-2 rounded-full animate-pulse"
               style={{ backgroundColor: stat.color }}
             />
             <div>
-              <div className="text-[10px] text-app-text-muted uppercase tracking-wider">{stat.label}</div>
-              <div className="text-sm font-bold font-mono text-app-text" style={{ color: stat.color }}>
+              <div className="text-[10px] text-[#9999bb] uppercase tracking-wider">{stat.label}</div>
+              <div className="text-sm font-bold font-mono" style={{ color: stat.color }}>
                 {stat.value}
               </div>
             </div>
@@ -120,7 +129,6 @@ export function DashboardPreview() {
         </div>
       ))}
 
-      {/* 3D Tilt container */}
       <div
         ref={browserRef}
         className="relative transition-transform duration-200 ease-out will-change-transform"
@@ -130,34 +138,34 @@ export function DashboardPreview() {
         }}
       >
         {/* Window chrome */}
-        <div className="rounded-t-xl bg-[#1a1a1a] border border-app-border border-b-0 px-4 py-3 flex items-center gap-2">
+        <div className="rounded-t-xl border border-[#444466] border-b-0 px-4 py-3 flex items-center gap-2" style={{ background: "#2a2a40" }}>
           <div className="flex items-center gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#5f5f5f]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#5f5f5f]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#5f5f5f]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#555577]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#555577]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#555577]" />
           </div>
           <div className="ml-3 flex-1 max-w-md mx-auto">
-            <div className="bg-[#262626] rounded-md px-3 py-1.5 text-[11px] text-app-text-muted text-center font-mono">
+            <div className="rounded-md px-3 py-1.5 text-[11px] text-center font-mono" style={{ background: "#1a1a2e", color: textMuted }}>
               app.telemon.online
             </div>
           </div>
         </div>
 
         {/* Dashboard content */}
-        <div className="rounded-b-xl border border-app-border bg-[#0d0d0d] overflow-hidden">
+        <div className="rounded-b-xl border border-[#444466] overflow-hidden" style={{ background: mainBg }}>
           <div className="grid grid-cols-[200px_1fr] min-h-[360px]">
             {/* Sidebar */}
-            <div className="border-r border-app-border bg-[#141414] p-4 space-y-1.5">
+            <div className="border-r border-[#444466] p-4 space-y-1.5" style={{ background: sidebarBg }}>
               {[["Dashboard", true], ["Send", false], ["Auto Reply", false], ["Groups", false], ["Logs", false], ["Schedule", false], ["Profile", false]].map(([item, active]) => (
                 <div
                   key={item as string}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all ${
-                    active
-                      ? "bg-app-primary-muted text-[#bfa260]"
-                      : "text-app-text-muted hover:text-app-text-secondary hover:bg-[#1a1a1a]"
-                  }`}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all"
+                  style={{
+                    background: active ? "rgba(200,168,110,0.12)" : "transparent",
+                    color: active ? accentGold : textMuted,
+                  }}
                 >
-                  <div className={`h-1.5 w-1.5 rounded-full ${active ? "bg-[#bfa260] animate-pulse" : "bg-[#333]"}`} />
+                  <div className="h-1.5 w-1.5 rounded-full" style={{ background: active ? accentGold : "#444466" }} />
                   {item as string}
                 </div>
               ))}
@@ -167,14 +175,14 @@ export function DashboardPreview() {
             <div className="p-5 space-y-4">
               {/* Animated live activity bar */}
               <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center gap-1.5 rounded-full bg-[#2b8a3e]/10 px-2.5 py-1">
+                <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: liveBg }}>
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2b8a3e] opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2b8a3e]" />
                   </span>
                   <span className="text-[10px] text-[#2b8a3e] font-medium">Live</span>
                 </div>
-                <span className="text-[10px] text-app-text-muted font-mono animate-pulse min-w-[4rem] text-right">
+                <span className="text-[10px] font-mono animate-pulse min-w-[4rem] text-right" style={{ color: textMuted }}>
                   {currentTime}
                 </span>
               </div>
@@ -186,11 +194,18 @@ export function DashboardPreview() {
                   { label: "Messages Sent", value: "1,284", change: "+12%", up: true },
                   { label: "Auto Replies", value: "347", change: "+8%", up: true },
                 ].map((stat) => (
-                  <div key={stat.label} className="rounded-lg border border-app-border bg-[#141414] p-3 transition-all hover:border-app-border-strong hover:bg-[#1a1a1a]">
-                    <div className="text-[10px] text-app-text-muted uppercase tracking-wider">{stat.label}</div>
+                  <div
+                    key={stat.label}
+                    className="rounded-lg border p-3 transition-all hover:shadow-md"
+                    style={{
+                      background: cardBg,
+                      borderColor: borderColor,
+                    }}
+                  >
+                    <div className="text-[10px] uppercase tracking-wider" style={{ color: textMuted }}>{stat.label}</div>
                     <div className="mt-1 flex items-baseline gap-2">
-                      <div className="text-lg font-bold font-mono text-app-text">{stat.value}</div>
-                      <span className={`text-[10px] font-medium ${stat.up ? "text-[#2b8a3e]" : "text-[#e04747]"}`}>
+                      <div className="text-lg font-bold font-mono" style={{ color: textPrimary }}>{stat.value}</div>
+                      <span className="text-[10px] font-medium" style={{ color: stat.up ? successGreen : "#e04747" }}>
                         {stat.change}
                       </span>
                     </div>
@@ -198,30 +213,35 @@ export function DashboardPreview() {
                 ))}
               </div>
 
-              {/* Screenshot carousel — 실제 Telegram 메시지 화면 */}
-              <div className="rounded-lg border border-app-border bg-[#141414] p-4">
+              {/* Screenshot carousel */}
+              <div className="rounded-lg border p-4" style={{ background: cardBg, borderColor: borderColor }}>
                 {/* Tab selector */}
                 <div className="flex items-center gap-2 mb-3">
                   {TELEGRAM_SCREENSHOTS.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => setActiveScreenshot(s.id)}
-                      className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-all ${
-                        activeScreenshot === s.id
-                          ? "bg-app-primary text-app-bg"
-                          : "text-app-text-muted hover:text-app-text hover:bg-[#1a1a1a]"
-                      }`}
+                      className="rounded-md px-2.5 py-1 text-[10px] font-medium transition-all"
+                      style={{
+                        background: activeScreenshot === s.id ? accentGold : "transparent",
+                        color: activeScreenshot === s.id ? "#0d0d14" : textMuted,
+                      }}
                     >
                       {s.label}
                     </button>
                   ))}
                   <div className="ml-auto flex items-center gap-1">
-                    <span className="text-[10px] text-app-text-muted">자동 전환 중</span>
+                    <span className="text-[10px]" style={{ color: textMuted }}>자동 전환 중</span>
                     <span className="flex gap-0.5">
                       {TELEGRAM_SCREENSHOTS.map((s) => (
-                        <span key={s.id} className={`h-1.5 w-1.5 rounded-full transition-all ${
-                          activeScreenshot === s.id ? "bg-app-primary w-3" : "bg-app-border"
-                        }`} />
+                        <span
+                          key={s.id}
+                          className="h-1.5 w-1.5 rounded-full transition-all"
+                          style={{
+                            background: activeScreenshot === s.id ? accentGold : borderColor,
+                            width: activeScreenshot === s.id ? "12px" : "6px",
+                          }}
+                        />
                       ))}
                     </span>
                   </div>
@@ -232,17 +252,22 @@ export function DashboardPreview() {
                   {currentScreenshot.lines.map((line, i) => (
                     <div key={i} className={`flex items-start gap-2 ${line.isUser ? "justify-end" : ""}`}>
                       {!line.isUser && (
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-app-primary text-[8px] font-bold text-app-bg">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-bold"
+                          style={{ background: accentGold, color: "#0d0d14" }}>
                           {line.avatar || "TM"}
                         </div>
                       )}
-                      <div className={`max-w-[75%] rounded-xl px-3 py-2 text-xs ${
-                        line.isUser
-                          ? "rounded-tr-md bg-[#2b5278] text-white"
-                          : "rounded-tl-md bg-[#1a1a2e] text-app-text-secondary"
-                      }`}>
+                      <div
+                        className={`max-w-[75%] rounded-xl px-3 py-2 text-xs ${
+                          line.isUser ? "rounded-tr-md" : "rounded-tl-md"
+                        }`}
+                        style={{
+                          background: line.isUser ? "#2a5580" : "#252540",
+                          color: line.isUser ? "#ffffff" : textSecondary,
+                        }}
+                      >
                         <p className="whitespace-pre-line leading-relaxed">{line.text}</p>
-                        <p className={`mt-1 text-[9px] ${line.isUser ? "text-white/50" : "text-app-text-muted"}`}>{line.time}</p>
+                        <p className="mt-1 text-[9px]" style={{ color: line.isUser ? "rgba(255,255,255,0.5)" : textMuted }}>{line.time}</p>
                       </div>
                     </div>
                   ))}
@@ -254,9 +279,10 @@ export function DashboardPreview() {
                 {[35, 55, 40, 70, 60, 85, 50].map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-t-sm bg-gradient-to-t from-app-primary/30 to-app-primary/10 transition-all duration-500 hover:from-app-primary/60 hover:to-app-primary/30 hover:scale-y-110"
+                    className="flex-1 rounded-t-sm transition-all duration-500 hover:scale-y-110"
                     style={{
                       height: `${h}%`,
+                      background: `linear-gradient(to top, ${accentGold}80, ${accentGold}30)`,
                       transitionDelay: `${i * 0.05}s`,
                     }}
                   />

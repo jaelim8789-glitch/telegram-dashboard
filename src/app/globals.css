@@ -451,3 +451,68 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 [data-theme="light"] .rounded-2xl {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
+
+/* ── Dyad design update (post-12711d6) — additive only, nothing above removed ── */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes cursor-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+.animate-page-enter {
+  animation: page-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.custom-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-accent);
+  background: radial-gradient(circle at center, var(--color-accent-glow) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: width 0.15s, height 0.15s, background 0.15s;
+  will-change: transform, left, top;
+  animation: cursor-pulse 3s ease-in-out infinite;
+  mix-blend-mode: difference;
+}
+
+.gold-smallcaps {
+  font-family: var(--font-heading);
+  font-feature-settings: "c2sc", "smcp";
+  letter-spacing: 0.1em;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.italic-script {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.section-heading-luxury {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
