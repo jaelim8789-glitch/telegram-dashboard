@@ -53,7 +53,7 @@ export async function checkTelegramVerification(token: string): Promise<VerifyCh
   return { status: body.status, reason: body.reason };
 }
 
-export async function issueFreeApiKey(token: string, phone: string): Promise<FreeApiKeyIssueResult> {
+export async function issueFreeApiKey(token: string, phone?: string): Promise<FreeApiKeyIssueResult> {
   const body = await request<ApiFreeApiKeyIssueResult>("/api/free-api-key/issue", {
     method: "POST",
     body: JSON.stringify({ token, phone }),
