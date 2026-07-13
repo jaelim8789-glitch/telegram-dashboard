@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,6 +24,7 @@ export function DashboardShell() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
+      <OnboardingTour />
       <Header />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden">

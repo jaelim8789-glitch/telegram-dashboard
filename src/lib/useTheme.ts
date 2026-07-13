@@ -21,11 +21,23 @@ function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
-function applyTheme(theme: Theme) {
+function applyTheme(theme: Theme, animate = false) {
   const resolved = theme === "system" ? getSystemTheme() : theme;
-  document.documentElement.setAttribute("data-theme", resolved);
-  document.documentElement.classList.remove("light", "dark");
-  document.documentElement.classList.add(resolved);
+  const el = document.documentElement;
+
+  if (animate && el.getAttribute("data-theme") !== resolved) {
+    el.classList.add("theme-transitioning");
+    // Remove the class after the transition completes to avoid
+    // interfering with non-theme animations or interactions.
+    clearTimeout((el as HTMLElement & { _themeTimer?: ReturnType<typeof setTimeout> })._themeTimer);
+    (el as HTMLElement & { _themeTimer?: ReturnType<typeof setTimeout> })._themeTimer = setTimeout(() => {
+      el.classList.remove("theme-transitioning");
+    }, 500);
+  }
+
+  el.setAttribute("data-theme", resolved);
+  el.classList.remove("light", "dark");
+  el.classList.add(resolved);
 }
 
 export function useTheme() {
@@ -37,7 +49,7 @@ export function useTheme() {
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     localStorage.setItem(STORAGE_KEY, t);
-    applyTheme(t);
+    applyTheme(t, true);
   }, []);
 
   const cycleTheme = useCallback(() => {
