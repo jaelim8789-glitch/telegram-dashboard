@@ -313,6 +313,14 @@ export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
 }
 
 /**
+ * Send a broadcast immediately as a one-time send without affecting
+ * the original broadcast's status. POST /api/broadcast/{broadcastId}/send-now
+ */
+export async function sendNowBroadcast(broadcastId: string): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/send-now`, { method: "POST" }));
+}
+
+/**
  * Cancel a recurring broadcast. POST /api/broadcast/{broadcast_id}/cancel
  * sets status to "cancelled" so the scheduler stops dispatching it.
  */

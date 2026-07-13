@@ -11,6 +11,7 @@ import {
   Clock,
   Copy,
   PauseCircle,
+  Play,
   PlayCircle,
   Plus,
   RefreshCw,
@@ -360,6 +361,7 @@ function ScheduleCard({
   onToggleHistory,
   historyOpen,
   onDuplicate,
+  onSendNow,
 }: {
   broadcast: Broadcast;
   state: RState;
@@ -372,6 +374,7 @@ function ScheduleCard({
   onToggleHistory: () => void;
   historyOpen: boolean;
   onDuplicate: () => void;
+  onSendNow: () => void;
 }) {
   const countdown = useCountdown(broadcast.nextScheduledAt);
   const lastChild = childInfo?.last ?? null;
@@ -497,6 +500,16 @@ function ScheduleCard({
           </Button>
 
           <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSendNow}
+            className="min-h-[44px] w-full justify-center sm:w-auto"
+          >
+            <Play className="h-3.5 w-3.5" />
+            즉시 발송
+          </Button>
+
+          <Button
             variant="ghost"
             size="sm"
             onClick={onToggleHistory}
@@ -534,6 +547,7 @@ export function RecurringScheduleTab() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ broadcast: Broadcast; action: "cancel" } | null>(null);
+  const [sendNowConfirmId, setSendNowConfirmId] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [childData, setChildData] = useState<Record<string, { last: BroadcastChild | null }>>({});
 
@@ -605,6 +619,22 @@ export function RecurringScheduleTab() {
       setConfirm(null);
     } catch (err) {
       toast("error", err instanceof Error ? err.message : "취소 실패");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSendNow = async () => {
+    if (!sendNowConfirmId) return;
+    const broadcast = recurring.find((b) => b.id === sendNowConfirmId);
+    if (!broadcast) return;
+    setActionLoading(sendNowConfirmId);
+    setSendNowConfirmId(null);
+    try {
+      await api.sendNowBroadcast(broadcast.id);
+      toast("success", "즉시 발송이 접수되었습니다.");
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "즉시 발송 요청에 실패했습니다.");
     } finally {
       setActionLoading(null);
     }
@@ -885,6 +915,7 @@ export function RecurringScheduleTab() {
                   onToggleHistory={() => setHistoryId((current) => (current === broadcast.id ? null : broadcast.id))}
                   historyOpen={historyId === broadcast.id}
                   onDuplicate={() => handleDuplicate(broadcast)}
+                  onSendNow={() => setSendNowConfirmId(broadcast.id)}
                 />
                 <AnimatePresence>
                   {historyId === broadcast.id && (
@@ -989,6 +1020,19 @@ export function RecurringScheduleTab() {
         variant="danger"
         onConfirm={handleCancel}
         onCancel={() => setConfirm(null)}
+      />
+
+      <ConfirmDialog
+        open={!!sendNowConfirmId}
+        title="즉시 발송"
+        description={
+          sendNowConfirmId
+            ? `"${recurring.find((b) => b.id === sendNowConfirmId)?.message?.slice(0, 50)}" — 이 반복 발송을 지금 즉시 1회 실행할까요? 원본 일정은 변경되지 않습니다.`
+            : ""
+        }
+        confirmLabel="즉시 발송"
+        onConfirm={handleSendNow}
+        onCancel={() => setSendNowConfirmId(null)}
       />
     </div>
   );
