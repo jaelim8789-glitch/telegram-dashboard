@@ -317,7 +317,7 @@ export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
  * POST /api/broadcast/{broadcastId}/send
  */
 export async function sendNowBroadcast(broadcastId: string): Promise<Broadcast> {
-  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/send`, { method: "POST" }));
+  return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/dispatch`, { method: "POST" }));
 }
 
 /**
