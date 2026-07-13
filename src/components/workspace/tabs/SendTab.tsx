@@ -1327,10 +1327,9 @@ export function SendTab() {
       {/* Floating submit button */}
       <motion.div
         initial={false}
-        animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
+        animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0.5, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="sticky bottom-4 ml-auto flex w-fit"
-        style={{ pointerEvents: canSubmit ? "auto" : "none" }}
       >
         <Button type="submit" form="send-form" variant="primary"
           className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30" disabled={!canSubmit}>
