@@ -200,7 +200,7 @@ function toGroup(api: ApiGroup): Group {
 }
 
 export async function fetchGroups(accountId: string): Promise<Group[]> {
-  const body = await request<{ items: ApiGroup[] }>(`/api/accounts/${accountId}/groups`);
+  const body = await request<{ items: ApiGroup[] }>(`/api/accounts/${accountId}/groups?page_size=200`);
   return (body.items ?? body).map(toGroup);
 }
 

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(curl -sk -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' https://api.telemon.online/health)",
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git push origin HEAD:integrate/pre-launch-stabilization-20260713 2>&1\")",
-      "Bash(GIT_SSH_COMMAND=\"ssh -i C:/Users/jaeli/.ssh/telemon_lightnode -o StrictHostKeyChecking=no\" git fetch ssh://root@130.94.32.152/opt/telemon/backend integrate/pre-launch-stabilization-20260713:refs/prod-sync/518e233)"
+      "Bash(GIT_SSH_COMMAND=\"ssh -i C:/Users/jaeli/.ssh/telemon_lightnode -o StrictHostKeyChecking=no\" git fetch ssh://root@130.94.32.152/opt/telemon/backend integrate/pre-launch-stabilization-20260713:refs/prod-sync/518e233)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/telegram-dashboard 2>/dev/null && git status --short && echo '--- current commit ---' && git log -1 --format='%h %s'\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/telegram-dashboard && ls -la --time-style=full-iso src/app/admin/users/page.tsx src/lib/api.ts src/types/index.ts && echo '--- current time on server ---' && date && echo '--- containers ---' && docker ps --format 'table {{.Names}}\\\\t{{.Status}}\\\\t{{.CreatedAt}}'\")",
+      "Bash(cd \"C:\\\\Users\\\\jaeli\\\\OneDrive\\\\Desktop\\\\telegram-dashboard-backend\" && echo \"=== auth-ratelimit vs p0-4-v2 ancestry ===\" && git merge-base --is-ancestor feat/auth-ratelimit fix/p0-4-auth-rate-limiting-v2 && echo \"auth-ratelimit IS ancestor of p0-4-v2 \\(v2가 상위호환\\)\" || echo \"독립적/별개 계열\" *)",
+      "Read(//tmp/**)"
     ]
   }
 }
