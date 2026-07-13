@@ -112,12 +112,14 @@ export default function SignupPage() {
     if (step !== "channel" || !tokenRef.current || verifyStatus === "verified") return;
 
     let cancelled = false;
+    let failCount = 0;
     const tick = async () => {
       const t = tokenRef.current;
       if (!t) return;
       try {
         const result = await freeApiKey.checkTelegramVerification(t);
         if (cancelled) return;
+        failCount = 0;
         setVerifyStatus(result.status);
         setVerifyReason(result.reason);
         setError(null);
@@ -127,11 +129,15 @@ export default function SignupPage() {
         }
       } catch (err) {
         if (cancelled) return;
-        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-        setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
+        failCount++;
+        if (failCount >= 3) {
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+          setError("서버와 연결할 수 없습니다. 봇을 열고 인증을 완료한 후 '인증 확인 다시하기' 버튼을 눌러주세요.");
+        }
       }
     };
 
+    tick();
     pollingRef.current = setInterval(tick, 4000);
     const onVisible = () => { if (document.visibilityState === "visible") tick(); };
     document.addEventListener("visibilitychange", onVisible);
