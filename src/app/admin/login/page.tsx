@@ -64,6 +64,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   const [copied, setCopied] = useState(false);
   const [alreadyIssued, setAlreadyIssued] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tokenRef = useRef<string | null>(null);
 
   async function handleStart() {
     if (starting) return;
@@ -71,6 +72,8 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     try {
       const start = await freeApiKey.startFreeApiKeyVerification();
       setToken(start.token);
+      tokenRef.current = start.token;
+      try { sessionStorage.setItem("ft_token", start.token); sessionStorage.setItem("ft_deeplink", start.botDeepLink); sessionStorage.setItem("ft_channel", start.channelUrl); } catch {}
       setBotDeepLink(start.botDeepLink);
       setChannelUrl(start.channelUrl);
       setVerifyStatus("idle");
@@ -93,6 +96,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
       const result = await freeApiKey.issueFreeApiKey(token);
       if (result.apiKey) {
         setApiKey(result.apiKey);
+        try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); } catch {}
       } else if (result.alreadyIssued) {
         setAlreadyIssued(true);
       } else {
@@ -104,15 +108,48 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     finally { setIssuing(false); }
   }
 
+  async function pollOnce() {
+    const t = tokenRef.current;
+    if (!t) return;
+    try {
+      const result = await freeApiKey.checkTelegramVerification(t);
+      setVerifyStatus(result.status);
+      setVerifyReason(result.reason);
+      setError(null);
+      if (result.status === "verified" && pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    } catch (err) {
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
+    }
+  }
+
   const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
   const channelJoined = verifyStatus === "verified";
 
   useEffect(() => {
-    if (!token || verifyStatus === "verified") return;
+    try {
+      const saved = sessionStorage.getItem("ft_token");
+      if (saved && !tokenRef.current) {
+        setToken(saved);
+        tokenRef.current = saved;
+        setBotDeepLink(sessionStorage.getItem("ft_deeplink"));
+        setChannelUrl(sessionStorage.getItem("ft_channel"));
+        setVerifyStatus("idle");
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!tokenRef.current || verifyStatus === "verified") return;
     let cancelled = false;
     const tick = async () => {
+      const t = tokenRef.current;
+      if (!t) return;
       try {
-        const result = await freeApiKey.checkTelegramVerification(token);
+        const result = await freeApiKey.checkTelegramVerification(t);
         if (cancelled) return;
         setVerifyStatus(result.status);
         setVerifyReason(result.reason);
@@ -128,8 +165,14 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
       }
     };
     pollingRef.current = setInterval(tick, 4000);
-    return () => { cancelled = true; if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
-  }, [token, verifyStatus]);
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [verifyStatus]);
 
   if (apiKey) return (
     <div className="text-center space-y-4">
