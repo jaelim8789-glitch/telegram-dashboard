@@ -28,6 +28,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tokenRef = useRef<string | null>(null);
 
   async function handleStartVerification(e: FormEvent) {
     e.preventDefault();
@@ -36,6 +37,8 @@ export default function SignupPage() {
     try {
       const start = await freeApiKey.startFreeApiKeyVerification();
       setToken(start.token);
+      tokenRef.current = start.token;
+      try { sessionStorage.setItem("ft_token", start.token); sessionStorage.setItem("ft_deeplink", start.botDeepLink); sessionStorage.setItem("ft_channel", start.channelUrl); } catch {}
       setBotDeepLink(start.botDeepLink);
       setChannelUrl(start.channelUrl);
       setVerifyStatus("idle");
@@ -46,10 +49,10 @@ export default function SignupPage() {
   }
 
   async function handleCheckVerification() {
-    if (!token || checking) return;
+    if (!tokenRef.current || checking) return;
     setChecking(true); setError(null);
     try {
-      const result = await freeApiKey.checkTelegramVerification(token);
+      const result = await freeApiKey.checkTelegramVerification(tokenRef.current);
       setVerifyStatus(result.status);
       setVerifyReason(result.reason);
     } catch (err) { setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다."); }
@@ -57,23 +60,29 @@ export default function SignupPage() {
   }
 
   async function handleIssueApiKey() {
-    if (!token || !phone.trim() || issuing) return;
+    if (!tokenRef.current || !phone.trim() || issuing) return;
     setIssuing(true); setError(null);
     try {
-      const result = await freeApiKey.issueFreeApiKey(token, phone.trim());
-      setApiKey(result.apiKey);
-      setAlreadyIssued(result.alreadyIssued);
-      setStep("done");
-    } catch (err) { setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다."); }
+      const result = await freeApiKey.issueFreeApiKey(tokenRef.current, phone.trim());
+      if (result.apiKey) {
+        setApiKey(result.apiKey);
+        try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); } catch {}
+        setStep("done");
+      } else if (result.alreadyIssued) {
+        setAlreadyIssued(true);
+        setStep("done");
+      } else {
+        setError(result.detail || "API 키 발급에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다. 다시 시도해주세요.");
+    }
     finally { setIssuing(false); }
   }
 
   const steps = ["plan", "phone", "channel", "done"];
   const currentIdx = steps.indexOf(step);
 
-  // "bot" is only done once the backend confirms the bot chat was started
-  // (verifyStatus leaves pending_bot_start) — having a token just means the
-  // verification session exists, not that the user opened the bot yet.
   const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
   const channelJoined = verifyStatus === "verified";
 
@@ -84,18 +93,30 @@ export default function SignupPage() {
     { key: "issuing", label: "API 키 발급 중", done: step === "done", active: issuing },
   ];
 
-  // Auto-polls verification status every 4s while the channel step is active.
-  // Stops on unmount, step change, verified, or a request error (surfaced via
-  // the shared `error` banner) so the user must manually retry with the
-  // existing "인증 확인" button rather than retrying forever silently.
   useEffect(() => {
-    if (step !== "channel" || !token || verifyStatus === "verified") return;
+    try {
+      const saved = sessionStorage.getItem("ft_token");
+      if (saved && !tokenRef.current) {
+        setToken(saved);
+        tokenRef.current = saved;
+        setBotDeepLink(sessionStorage.getItem("ft_deeplink"));
+        setChannelUrl(sessionStorage.getItem("ft_channel"));
+        setVerifyStatus("idle");
+        setVerifyReason(null);
+        setStep("channel");
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (step !== "channel" || !tokenRef.current || verifyStatus === "verified") return;
 
     let cancelled = false;
     const tick = async () => {
-      setChecking(true);
+      const t = tokenRef.current;
+      if (!t) return;
       try {
-        const result = await freeApiKey.checkTelegramVerification(token);
+        const result = await freeApiKey.checkTelegramVerification(t);
         if (cancelled) return;
         setVerifyStatus(result.status);
         setVerifyReason(result.reason);
@@ -108,17 +129,18 @@ export default function SignupPage() {
         if (cancelled) return;
         if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
         setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
-      } finally {
-        if (!cancelled) setChecking(false);
       }
     };
 
     pollingRef.current = setInterval(tick, 4000);
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [step, token, verifyStatus]);
+  }, [step, verifyStatus]);
 
   const verifyHint =
     verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
@@ -237,14 +259,26 @@ export default function SignupPage() {
               {verifyStatus === "verified" ? (
                 <div className="space-y-3">
                   <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
-                  <Button onClick={handleIssueApiKey} disabled={issuing} className="flex w-full h-12">
-                    {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {issuing ? "발급 중..." : <><Key className="mr-2 h-4 w-4" /> 무료 API 키 받기</>}
+                  <Button onClick={handleIssueApiKey} disabled={issuing} loading={issuing} className="flex w-full h-12">
+                    <Key className="mr-2 h-4 w-4" /> 무료 API 키 받기
                   </Button>
+                  {alreadyIssued && (
+                    <InlineError className="mb-0">
+                      <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+                      이미 발급된 계정입니다. 로그인 페이지에서 API 키로 로그인해주세요.
+                    </InlineError>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {verifyHint && <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>}
+                  {error && !verifyHint && (
+                    <div className="space-y-2">
+                      <Button onClick={handleIssueApiKey} disabled={issuing} loading={issuing} variant="primary" className="flex w-full h-12">
+                        <Key className="mr-2 h-4 w-4" /> 다시 시도
+                      </Button>
+                    </div>
+                  )}
                   <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
                     {checking && <Loader2 className="h-4 w-4 animate-spin" />}
                     {checking ? "인증 확인 중..." : "인증 확인"}
