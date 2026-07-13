@@ -5,19 +5,19 @@ import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = {
-  active: { dot: "bg-green-400", label: "활성" },
-  inactive: { dot: "bg-gray-500", label: "비활성" },
-  banned: { dot: "bg-red-400", label: "차단됨" },
+  active: { dot: "bg-app-success", label: "활성" },
+  inactive: { dot: "bg-app-text-subtle", label: "비활성" },
+  banned: { dot: "bg-app-danger", label: "차단됨" },
 };
 
 const HEALTH_ICON: Record<AccountHealthState, { icon: typeof AlertTriangle; color: string; title: string }> = {
-  healthy: { icon: CheckCircle2, color: "text-green-400", title: "정상" },
-  unauthorized: { icon: Plug, color: "text-yellow-400", title: "세션 만료 - 재인증 필요" },
-  banned: { icon: Ban, color: "text-red-400", title: "차단됨" },
-  rate_limited: { icon: Clock, color: "text-yellow-400", title: "제한 초과" },
-  error: { icon: ShieldAlert, color: "text-red-400", title: "발송 오류" },
-  unknown: { icon: AlertTriangle, color: "text-gray-400", title: "상태 미확인" },
-  not_configured: { icon: WifiOff, color: "text-gray-500", title: "세션 없음 - 등록 필요" },
+  healthy: { icon: CheckCircle2, color: "text-app-success", title: "정상" },
+  unauthorized: { icon: Plug, color: "text-app-warning", title: "세션 만료 - 재인증 필요" },
+  banned: { icon: Ban, color: "text-app-danger", title: "차단됨" },
+  rate_limited: { icon: Clock, color: "text-app-warning", title: "제한 초과" },
+  error: { icon: ShieldAlert, color: "text-app-danger", title: "발송 오류" },
+  unknown: { icon: AlertTriangle, color: "text-app-text-muted", title: "상태 미확인" },
+  not_configured: { icon: WifiOff, color: "text-app-text-subtle", title: "세션 없음 - 등록 필요" },
 };
 
 interface AccountCardProps {
@@ -53,12 +53,12 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
           "group flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
           selected
             ? "border-app-primary/30 bg-gradient-to-r from-app-primary/10 to-app-primary/5 shadow-sm shadow-app-primary/5"
-            : "border-transparent hover:border-white/5 hover:bg-white/[0.02]"
+            : "border-transparent hover:border-app-border hover:bg-app-card-hover"
         )}
       >
         <div className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-all",
-          selected ? "bg-gradient-to-br from-app-primary to-orange-600 text-white shadow-sm" : "bg-white/5 text-app-text-secondary"
+          selected ? "bg-gradient-to-br from-app-primary to-orange-600 text-white shadow-sm" : "bg-app-card-hover text-app-text-secondary"
         )}>
           {getAccountInitials(account)}
         </div>
@@ -78,7 +78,7 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
         <button
           type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} disabled={deleting}
           className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50",
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-app-danger-muted hover:text-app-danger disabled:opacity-50",
             selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           )}
         >

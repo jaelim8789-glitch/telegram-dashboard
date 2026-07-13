@@ -15,11 +15,11 @@ export function OperationalStatus() {
     <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-3xl">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             플랫폼 아키텍처
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            <span style={{ color: "var(--accent)" }}>검증된</span> 인프라
+            <span style={{ color: "var(--color-accent)" }}>검증된</span> 인프라
           </h2>
           <p className="mt-3 text-sm editorial-body max-w-lg mx-auto">
             TeleMon은 안정적인 오픈소스 기술 스택 위에 구축되었습니다.
@@ -50,8 +50,8 @@ export function OperationalStatus() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.desc}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{item.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />

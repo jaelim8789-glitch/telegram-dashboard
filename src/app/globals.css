@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Ties Tailwind's dark: variant to the app's own [data-theme] toggle instead
+ * of the OS-only prefers-color-scheme default — without this, a few admin
+ * pages using dark: utilities would show a theme independent of (and
+ * inconsistent with) whatever the user picked in the ThemeToggle. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* Playfair Display for headings */
 @import '@fontsource/playfair-display/400.css';
 @import '@fontsource/playfair-display/600.css';
@@ -26,12 +32,52 @@
   --color-warning: #d4a373;
   --color-danger: #b04a4a;
   --color-info: #5a8a9a;
+  --color-success-muted: rgba(90, 138, 74, 0.10);
+  --color-warning-muted: rgba(212, 163, 115, 0.14);
+  --color-danger-muted: rgba(176, 74, 74, 0.10);
+  --color-info-muted: rgba(90, 138, 154, 0.10);
   --color-glass-bg: rgba(245, 240, 232, 0.88);
   --color-gold-deep: #a08030;
+  /* Fixed near-black for text drawn on top of the gold accent (buttons,
+     filled badges). Gold is a light-ish mid-tone in both themes, so this
+     intentionally does NOT flip between light/dark — a light/off-white
+     label on gold reads at ~1.5:1 contrast and is effectively invisible. */
+  --color-accent-contrast: #1a1712;
 
   --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+
+  /* ────────────────────────────────────────────────────────────────
+   * Semantic "app-*" tokens — consumed via bg-app-*, text-app-*, border-app-*
+   * utilities across every dashboard, admin, and auth component (Button,
+   * Panel, Field, Badge, Modal, Table, Header, Sidebar, all workspace tabs).
+   * These are var()-aliases of the primitive tokens above, not a second
+   * palette: CSS custom properties resolve at used-value time, so once
+   * [data-theme="dark"]/[data-theme="light"] override the primitives below,
+   * every app-* consumer repaints correctly without its own overrides.
+   * ──────────────────────────────────────────────────────────────── */
+  --color-app-bg: var(--color-bg);
+  --color-app-surface: var(--color-bg-surface);
+  --color-app-card: var(--color-card);
+  --color-app-card-hover: var(--color-card-hover);
+  --color-app-border: var(--color-border);
+  --color-app-border-strong: var(--color-border-strong);
+  --color-app-text: var(--color-text);
+  --color-app-text-secondary: var(--color-text-secondary);
+  --color-app-text-muted: var(--color-text-muted);
+  --color-app-text-subtle: var(--color-text-subtle);
+  --color-app-primary: var(--color-accent);
+  --color-app-primary-hover: var(--color-accent-hover);
+  --color-app-primary-muted: var(--color-accent-light);
+  --color-app-success: var(--color-success);
+  --color-app-success-muted: var(--color-success-muted);
+  --color-app-warning: var(--color-warning);
+  --color-app-warning-muted: var(--color-warning-muted);
+  --color-app-danger: var(--color-danger);
+  --color-app-danger-muted: var(--color-danger-muted);
+  --color-app-info: var(--color-info);
+  --color-app-info-muted: var(--color-info-muted);
 }
 
 @layer base {
@@ -62,13 +108,46 @@
 
   ::selection {
     background-color: var(--color-accent);
-    color: var(--color-bg);
+    color: var(--color-accent-contrast);
   }
 
   /* Subtle shadow on all cards for depth */
   .rounded-xl, .rounded-2xl {
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
+}
+
+/* ── Light mode ──
+ * Explicit mirror of the @theme defaults above, rather than relying on the
+ * absence of [data-theme="dark"]. Keeps light/dark symmetric and makes the
+ * theme switch a real attribute-driven override in both directions instead
+ * of one side being "whatever's left when the other selector doesn't match". */
+[data-theme="light"] {
+  --color-accent: #b8a060;
+  --color-accent-hover: #c8b070;
+  --color-accent-light: rgba(184, 160, 96, 0.12);
+  --color-accent-border: rgba(184, 160, 96, 0.30);
+  --color-accent-glow: rgba(184, 160, 96, 0.20);
+  --color-bg: #f5f0e8;
+  --color-bg-surface: #ece6dc;
+  --color-card: #e0d8cc;
+  --color-card-hover: #d4ccc0;
+  --color-border: #c8c0b4;
+  --color-border-strong: #b0a898;
+  --color-text: #1c1a16;
+  --color-text-secondary: #4c4844;
+  --color-text-muted: #7c7872;
+  --color-text-subtle: #acaaa4;
+  --color-success: #5a8a4a;
+  --color-warning: #d4a373;
+  --color-danger: #b04a4a;
+  --color-info: #5a8a9a;
+  --color-success-muted: rgba(90, 138, 74, 0.10);
+  --color-warning-muted: rgba(212, 163, 115, 0.14);
+  --color-danger-muted: rgba(176, 74, 74, 0.10);
+  --color-info-muted: rgba(90, 138, 154, 0.10);
+  --color-glass-bg: rgba(245, 240, 232, 0.88);
+  --color-gold-deep: #a08030;
 }
 
 /* ── Dark mode ── */
@@ -90,6 +169,17 @@
   --color-accent-border: rgba(191, 162, 96, 0.30);
   --color-accent-glow: rgba(191, 162, 96, 0.20);
   --color-gold-deep: #a8843a;
+
+  /* Brighter/more saturated than the light-mode values — muted earthy tones
+     that read fine on warm off-white lose contrast against near-black. */
+  --color-success: #6fae5c;
+  --color-warning: #e0b483;
+  --color-danger: #d16565;
+  --color-info: #6ea3b3;
+  --color-success-muted: rgba(111, 174, 92, 0.14);
+  --color-warning-muted: rgba(224, 180, 131, 0.16);
+  --color-danger-muted: rgba(209, 101, 101, 0.14);
+  --color-info-muted: rgba(110, 163, 179, 0.14);
 
   /* Dark leather texture */
   body {
@@ -177,7 +267,7 @@
   border-radius: 0.5rem;
   padding: 0.5rem 1.25rem;
   background: linear-gradient(135deg, var(--color-accent), var(--color-gold-deep));
-  color: var(--color-bg);
+  color: var(--color-accent-contrast);
   transition: all 0.3s ease;
   border: none;
   cursor: pointer;
@@ -253,7 +343,7 @@
 }
 .btn-luxury-primary {
   background: linear-gradient(135deg, var(--color-accent), var(--color-gold-deep));
-  color: var(--color-bg);
+  color: var(--color-accent-contrast);
   border: none;
   box-shadow: 0 2px 12px rgba(184, 160, 96, 0.25);
 }
@@ -420,8 +510,13 @@
 .scroll-line { display: block; width: 1px; height: 1.5rem; background: linear-gradient(to bottom, var(--color-accent), transparent); animation: scroll-indicator-line 2s ease-in-out infinite; }
 .scroll-chevron { display: block; width: 0.75rem; height: 0.75rem; border-right: 2px solid var(--color-accent); border-bottom: 2px solid var(--color-accent); transform: rotate(45deg); margin-top: -0.125rem; animation: bounce-chevron 2s ease-in-out infinite; }
 
-/* ── Select ── */
+/* ── Select ──
+ * The chevron is a baked SVG data URI (can't reference a CSS var() from
+ * inside the encoded markup), so light/dark each get their own copy tinted
+ * to that theme's --color-text-muted — otherwise dark mode keeps the light
+ * (#7c7872) stroke, which reads low-contrast on a near-black field. */
 select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c7872' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; padding-right: 2rem; }
+[data-theme="dark"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
 
 /* ── Scroll progress ── */
 .scroll-progress {
@@ -515,4 +610,144 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   line-height: 1.2;
   text-transform: uppercase;
   font-size: 0.75rem;
+}
+
+/* ── Dashboard/admin/auth chrome — previously referenced by Header, Sidebar,
+   Modal, and the admin/login + signup + get-api-key + pricing + features
+   forms but never actually defined, so these elements rendered with no
+   background/border/text styling at all (transparent, browser-default black
+   text). Defined here against the app-* semantic tokens so they track theme
+   changes the same way every other dashboard component does. ── */
+
+.dashboard-header {
+  background: var(--color-app-card);
+  border-bottom: 1px solid var(--color-app-border);
+  backdrop-filter: blur(12px) saturate(1.1);
+}
+
+.dashboard-sidebar {
+  background: var(--color-app-surface);
+  border-right: 1px solid var(--color-app-border);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-app-text-subtle);
+}
+.status-dot.online {
+  background: var(--color-app-success);
+  box-shadow: 0 0 0 3px var(--color-app-success-muted);
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+.status-dot.offline {
+  background: var(--color-app-text-subtle);
+}
+
+/* Body scroll lock while a Modal/ConfirmDialog is open (see Modal.tsx). */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Buttons used across admin/login, signup, get-api-key, pricing, and
+   features — pair with layout utilities (h-*, px-*, rounded-*, text-*) at
+   each call site, so only color/border/interaction states live here. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-app-primary), var(--color-gold-deep));
+  color: var(--color-accent-contrast);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, transform 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 2px 12px rgba(184, 160, 96, 0.25);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 24px rgba(184, 160, 96, 0.4);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-app-text);
+  border: 1px solid var(--color-app-border);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.15s ease;
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-app-card-hover);
+  border-color: var(--color-app-border-strong);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Referenced by AccountRegisterTab's OTP field — the base Input component
+   already supplies theme-aware colors/border, this just adds the spaced,
+   centered "code entry" treatment on top. */
+.otp-input {
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Thin, theme-aware scrollbar for overflow-y-auto panels (Inspector, log
+   panels). Firefox + WebKit; falls back to the default scrollbar on
+   browsers supporting neither. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-app-border-strong) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-app-border-strong);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-app-text-subtle);
+}
+
+/* Subtle sheen used on the marketing header/hero — restrained, theme-aware
+   (the accent-glow token already differs slightly light vs. dark). Doesn't
+   set position itself: both current consumers (a `fixed` header, a
+   `relative` hero section) already establish a positioning context, and
+   forcing `relative` here would break the header's `fixed` placement. */
+.satin-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--color-accent-glow) 0%, transparent 40%);
+  opacity: 0.5;
+}
+
+/* Restrained hover tilt for pricing cards. */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-3d-hover:hover {
+  transform: perspective(800px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-4px);
 }

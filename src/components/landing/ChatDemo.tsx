@@ -62,7 +62,7 @@ export default function ChatDemo() {
       <div className="rounded-2xl border border-app-border bg-app-card overflow-hidden shadow-lg">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-app-border px-4 py-3 bg-gradient-to-r from-app-primary-muted to-accent-glow/30">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-hover text-[10px] font-bold text-[#0d0d0d] shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-hover text-[10px] font-bold text-[var(--color-accent-contrast)] shadow-sm">
             TM
           </div>
           <div>

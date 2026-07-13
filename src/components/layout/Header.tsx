@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
   if (!expiresAt) return null;
@@ -69,8 +70,10 @@ export function Header() {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-1.5">
           <span className="status-dot online" />
-          <span className="text-xs text-app-text-muted hide-mobile">Online</span>
+          <span className="text-xs text-app-text-muted hidden sm:inline">Online</span>
         </div>
+
+        <ThemeToggle />
 
         {role === "admin" && (
           <Link

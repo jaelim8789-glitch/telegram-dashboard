@@ -17,11 +17,11 @@ export function SecuritySection() {
     <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="text-center max-w-xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             <Shield className="h-3 w-3 inline mr-1" /> 보안
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            당신의 데이터는 <span style={{ color: "var(--accent)" }}>안전합니다</span>
+            당신의 데이터는 <span style={{ color: "var(--color-accent)" }}>안전합니다</span>
           </h2>
           <p className="mt-3 text-sm editorial-body">보안은 선택이 아닌 기본입니다. TeleMon은 안전하게 보호합니다.</p>
         </div>
@@ -50,8 +50,8 @@ export function SecuritySection() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.desc}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{item.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />

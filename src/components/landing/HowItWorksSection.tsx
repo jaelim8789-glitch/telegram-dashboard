@@ -16,11 +16,11 @@ export function HowItWorksSection() {
     <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-5xl">
         <div className="text-center max-w-lg mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             사용 방법
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            4단계로 <span style={{ color: "var(--accent)" }}>완벽 자동화</span>
+            4단계로 <span style={{ color: "var(--color-accent)" }}>완벽 자동화</span>
           </h2>
           <p className="mt-3 text-sm editorial-body">복잡한 설정 없이, 클릭 몇 번으로 끝납니다.</p>
         </div>
@@ -48,8 +48,8 @@ export function HowItWorksSection() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-lg mb-4 bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] shadow-md">
                   <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{step.desc}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{step.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
