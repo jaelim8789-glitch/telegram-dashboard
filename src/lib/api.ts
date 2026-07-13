@@ -220,6 +220,7 @@ interface ApiBroadcast {
   next_scheduled_at: string | null;
   is_recurring_paused: boolean;
   failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+  reply_to_message_id: number | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -239,6 +240,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     nextScheduledAt: api.next_scheduled_at ?? null,
     isRecurringPaused: api.is_recurring_paused,
     failureInfo: api.failure_info as Broadcast["failureInfo"] | null ?? null,
+    replyToMessageId: api.reply_to_message_id ?? null,
   };
 }
 
@@ -253,6 +255,8 @@ export interface CreateBroadcastInput {
   recurringIntervalMinutes?: number;
   /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
   deliveryMode?: "normal" | "cycle" | "bulk";
+  /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
+  replyToMessageId?: number;
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -264,6 +268,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
   if (input.deliveryMode) form.append("delivery_mode", input.deliveryMode);
+  if (input.replyToMessageId != null) form.append("reply_to_message_id", String(input.replyToMessageId));
 
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) {

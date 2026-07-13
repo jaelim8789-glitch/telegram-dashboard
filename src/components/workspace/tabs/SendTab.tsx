@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, AlertCircle,
+  Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
@@ -368,6 +368,8 @@ export function SendTab() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
   const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk">("normal");
+  const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
+  const [replyToMessageId, setReplyToMessageId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -418,10 +420,12 @@ export function SendTab() {
         isRecurring,
         recurringInterval,
         deliveryMode,
+        replyMacroEnabled,
+        replyToMessageId,
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [selectedAccountId, selectedIds, message, isScheduled, scheduledAtLocal, isRecurring, recurringInterval, deliveryMode]);
+  }, [selectedAccountId, selectedIds, message, isScheduled, scheduledAtLocal, isRecurring, recurringInterval, deliveryMode, replyMacroEnabled, replyToMessageId]);
 
   // ── Draft restoration on mount (only once) ──
   useEffect(() => {
@@ -466,6 +470,8 @@ export function SendTab() {
       setIsRecurring(draft.isRecurring);
       setRecurringInterval(draft.recurringInterval);
       if (draft.deliveryMode) setDeliveryMode(draft.deliveryMode);
+      if (draft.replyMacroEnabled !== undefined) setReplyMacroEnabled(draft.replyMacroEnabled);
+      if (draft.replyToMessageId !== undefined) setReplyToMessageId(draft.replyToMessageId);
 
       toast("info", "이전 작성 내용을 복원했습니다.");
     }
@@ -541,6 +547,8 @@ export function SendTab() {
     setHistoryFilter("all");
     setIsScheduled(false); setScheduledAtLocal("");
     setIsRecurring(false); setRecurringInterval(60);
+    setDeliveryMode("normal");
+    setReplyMacroEnabled(false); setReplyToMessageId("");
     setSearch("");
     if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
     else { setGroups([]); setHistory([]); }
@@ -662,6 +670,7 @@ export function SendTab() {
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
         deliveryMode: mode,
+        replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
       });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
@@ -676,6 +685,7 @@ export function SendTab() {
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal");
+      setReplyMacroEnabled(false); setReplyToMessageId("");
       setSearch("");
       await loadHistory(selectedAccountId);
     } catch (err) {
@@ -1012,6 +1022,30 @@ export function SendTab() {
                   </div>
                 </label>
               </div>
+            </div>
+
+            {/* Reply macro */}
+            <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
+              <label className="flex items-center gap-2 text-sm text-app-text">
+                <input type="checkbox" checked={replyMacroEnabled}
+                  onChange={(e) => setReplyMacroEnabled(e.target.checked)} />
+                <MessageCircle className="h-3.5 w-3.5 text-app-text-muted" />
+                답장 매크로 (Reply)
+              </label>
+              {replyMacroEnabled && (
+                <div className="mt-2">
+                  <Field label="답장할 메시지 ID">
+                    <input type="number" value={replyToMessageId}
+                      onChange={(e) => setReplyToMessageId(e.target.value)}
+                      placeholder="예: 12345"
+                      min="1"
+                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
+                  </Field>
+                  <p className="mt-1 text-[11px] text-app-text-muted">
+                    ON 상태에서는 입력한 메시지 ID에 답장 형태로 발송됩니다.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
