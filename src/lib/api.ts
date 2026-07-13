@@ -654,6 +654,82 @@ export async function reissueUserApiKey(id: string): Promise<string> {
   return result.api_key;
 }
 
+// === Admin user lookup + manual API key issuance ===
+
+export interface UserLookupResult {
+  userId: string | null;
+  phone: string | null;
+  isActive: boolean | null;
+  createdAt: string | null;
+  lastLogin: string | null;
+  hasApiKey: boolean;
+  tenantId: string | null;
+  tenantPlan: string | null;
+  trialExpiresAt: string | null;
+  subscriptionStatus: string | null;
+  telegramVerificationStatus: string | null;
+  telegramUserId: number | null;
+  telegramVerifiedAt: string | null;
+}
+
+interface ApiUserLookupResult {
+  user_id: string | null;
+  phone: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  last_login: string | null;
+  has_api_key: boolean;
+  tenant_id: string | null;
+  tenant_plan: string | null;
+  trial_expires_at: string | null;
+  subscription_status: string | null;
+  telegram_verification_status: string | null;
+  telegram_user_id: number | null;
+  telegram_verified_at: string | null;
+}
+
+export async function adminUserLookup(q: string): Promise<UserLookupResult | null> {
+  const result = await request<ApiUserLookupResult | null>(`/api/admin/user-lookup?q=${encodeURIComponent(q)}`);
+  if (!result) return null;
+  return {
+    userId: result.user_id,
+    phone: result.phone,
+    isActive: result.is_active,
+    createdAt: result.created_at,
+    lastLogin: result.last_login,
+    hasApiKey: result.has_api_key,
+    tenantId: result.tenant_id,
+    tenantPlan: result.tenant_plan,
+    trialExpiresAt: result.trial_expires_at,
+    subscriptionStatus: result.subscription_status,
+    telegramVerificationStatus: result.telegram_verification_status,
+    telegramUserId: result.telegram_user_id,
+    telegramVerifiedAt: result.telegram_verified_at,
+  };
+}
+
+export interface ManualIssueResult {
+  userId: string;
+  phone: string;
+  apiKey: string;
+  alreadyIssued: boolean;
+}
+
+interface ApiManualIssueResult {
+  user_id: string;
+  phone: string;
+  api_key: string;
+  already_issued: boolean;
+}
+
+export async function manualIssueApiKey(userIdentifier: string, memo?: string): Promise<ManualIssueResult> {
+  const result = await request<ApiManualIssueResult>("/api/admin/manual-issue-key", {
+    method: "POST",
+    body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null }),
+  });
+  return { userId: result.user_id, phone: result.phone, apiKey: result.api_key, alreadyIssued: result.already_issued };
+}
+
 // ─── Delivery Analytics ──────────────────────────────────────────────
 
 export async function fetchDeliveryOverview(

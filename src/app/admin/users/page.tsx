@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, UserX, Users, XCircle } from "lucide-react";
+import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, UserX, Users, XCircle, Search, ExternalLink, CheckCircle2, AlertCircle, Copy } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
+import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -12,10 +13,168 @@ import { InlineError } from "@/components/ui/InlineError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
-import type { DashboardUser } from "@/lib/api";
+import type { DashboardUser, UserLookupResult } from "@/lib/api";
 
 function formatDateTime(iso: string): string {
   return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
+}
+
+function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [memo, setMemo] = useState("");
+  const [lookupResult, setLookupResult] = useState<UserLookupResult | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [issuing, setIssuing] = useState(false);
+  const [issuedKey, setIssuedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSearch(e: FormEvent) {
+    e.preventDefault();
+    if (!searchQuery.trim() || searching) return;
+    setSearching(true); setError(null); setLookupResult(null); setIssuedKey(null);
+    try {
+      const result = await api.adminUserLookup(searchQuery.trim());
+      setLookupResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "사용자 조회에 실패했습니다.");
+    } finally { setSearching(false); }
+  }
+
+  async function handleIssue() {
+    if (!lookupResult?.phone || issuing) return;
+    setIssuing(true); setError(null); setIssuedKey(null);
+    try {
+      const result = await api.manualIssueApiKey(lookupResult.phone, memo.trim() || undefined);
+      if (result.alreadyIssued) {
+        setError("이미 API 키가 발급된 사용자입니다.");
+      } else {
+        setIssuedKey(result.apiKey);
+        onIssued();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다.");
+    } finally { setIssuing(false); }
+  }
+
+  async function handleCopy() {
+    if (issuedKey) {
+      try { await navigator.clipboard.writeText(issuedKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      catch { /* fallback */ }
+    }
+  }
+
+  return (
+    <Panel
+      title={
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-app-primary" />
+          API 키 수동 발급
+        </div>
+      }
+      description="자동 발급 실패 시 운영자가 사용자를 조회하여 직접 API 키를 발급합니다. (AdminAuditLog에 기록됨)"
+    >
+      <form onSubmit={handleSearch} className="flex gap-3 items-end">
+        <div className="flex-1">
+          <Field label="전화번호 또는 텔레그램 ID">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="+821012345678 또는 tg_8916075854"
+            />
+          </Field>
+        </div>
+        <Button type="submit" variant="primary" disabled={searching || !searchQuery.trim()}>
+          <Search className="h-3.5 w-3.5" /> 조회
+        </Button>
+      </form>
+
+      {error && <InlineError className="mt-3">{error}</InlineError>}
+
+      {searching && <p className="mt-3 text-xs text-app-text-muted">조회 중...</p>}
+
+      {lookupResult === null && !searching && (
+        <p className="mt-3 text-xs text-app-text-muted">조회된 사용자가 없습니다. 전화번호 또는 tg_{"<"}id{">"} 형식으로 입력하세요.</p>
+      )}
+
+      {lookupResult && (
+        <div className="mt-4 space-y-4">
+          {/* User state */}
+          <div className="rounded-xl border border-app-border bg-app-surface p-3 space-y-1.5 text-xs">
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-3.5 w-3.5 text-app-text-muted shrink-0" />
+              <span className="font-medium text-app-text">{lookupResult.phone ?? "—"}</span>
+              <Badge tone={lookupResult.isActive ? "success" : "neutral"}>
+                {lookupResult.isActive ? "활성" : "비활성"}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-app-text-subtle">
+              <span>가입 {lookupResult.createdAt ? formatDateTime(lookupResult.createdAt) : "—"}</span>
+              {lookupResult.lastLogin && <span>로그인 {formatDateTime(lookupResult.lastLogin)}</span>}
+              <Badge tone={lookupResult.hasApiKey ? "success" : "neutral"}>
+                {lookupResult.hasApiKey ? "API 키 있음" : "API 키 없음"}
+              </Badge>
+            </div>
+            {lookupResult.telegramVerificationStatus && (
+              <div className="flex items-center gap-2 text-app-text-subtle">
+                <CheckCircle2 className="h-3 w-3 text-app-success shrink-0" />
+                <span>텔레그램 인증: {lookupResult.telegramVerificationStatus}</span>
+              </div>
+            )}
+            {lookupResult.trialExpiresAt && (
+              <div className="flex items-center gap-2 text-app-text-subtle">
+                <span>체험 만료: {formatDateTime(lookupResult.trialExpiresAt)}</span>
+                <Badge tone={lookupResult.subscriptionStatus === "active" ? "success" : "neutral"}>
+                  {lookupResult.subscriptionStatus}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {/* Issue area */}
+          {!lookupResult.phone && (
+            <p className="text-xs text-app-text-muted">연결된 사용자 계정이 없습니다. 먼저 회원가입을 진행해주세요.</p>
+          )}
+
+          {lookupResult.hasApiKey && (
+            <p className="text-xs text-app-text-muted">이미 API 키가 발급된 사용자입니다. 재발급은 위 사용자 목록에서 가능합니다.</p>
+          )}
+
+          {!lookupResult.hasApiKey && lookupResult.phone && !issuedKey && (
+            <div className="space-y-3">
+              <Field label="발급 사유 (선택, AdminAuditLog에 기록)">
+                <Input
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  placeholder="예: 자동 발급 실패로 인한 운영자 수동 발급"
+                />
+              </Field>
+              <Button onClick={handleIssue} variant="primary" disabled={issuing}>
+                <KeyRound className="h-3.5 w-3.5" /> API 키 수동 발급
+              </Button>
+            </div>
+          )}
+
+          {issuedKey && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.</p>
+              <code className="block break-all rounded-lg border border-amber-500/10 bg-app-card px-3 py-2 text-sm text-app-text font-mono">
+                {issuedKey}
+              </code>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" onClick={handleCopy} className="flex-1">
+                  <Copy className="h-3.5 w-3.5" /> {copied ? "복사됨" : "복사"}
+                </Button>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setIssuedKey(null); setMemo(""); setSearchQuery(""); setLookupResult(null); }}>
+                  닫기
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Panel>
+  );
 }
 
 function UsersContent() {
@@ -102,6 +261,9 @@ function UsersContent() {
           <div className="text-xs text-app-text-muted mt-0.5">비활성</div>
         </div>
       </div>
+
+      {/* Manual API key issuance section */}
+      <ManualIssueSection onIssued={load} />
 
       {/* Reissued key dialog */}
       {reissuedKey && (
