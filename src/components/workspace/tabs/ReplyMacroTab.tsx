@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
-import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock } from "lucide-react";
+import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock, Image } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   fetchReplyMacros,
@@ -34,7 +34,6 @@ function getValidationErrors(name: string, targetChats: string, messageContent: 
   if (!name.trim()) errors.name = "매크로 이름을 입력하세요";
   if (!targetChats.trim()) errors.targetChats = "대상 채팅방을 입력하세요";
   if (!messageContent.trim()) errors.messageContent = "메시지 내용을 입력하세요";
-  if (messageContent.trim().length > 4096) errors.messageContent = "메시지가 너무 깁니다 (최대 4096자)";
   if (maxSendsPerDay < 1) errors.maxSendsPerDay = "1 이상 입력하세요";
   return errors;
 }
@@ -57,6 +56,7 @@ export function ReplyMacroTab() {
   const [intervalHours, setIntervalHours] = useState(24);
   const [fixedTime, setFixedTime] = useState("09:00");
   const [maxSendsPerDay, setMaxSendsPerDay] = useState(10);
+  const [macroFile, setMacroFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -111,6 +111,7 @@ export function ReplyMacroTab() {
     setIntervalHours(24);
     setFixedTime("09:00");
     setMaxSendsPerDay(10);
+    setMacroFile(null);
     setEditingId(null);
     setSubmitError(null);
     setValidationErrors({});
@@ -175,6 +176,7 @@ export function ReplyMacroTab() {
       intervalHours,
       fixedTime: scheduleType === "fixed" ? fixedTime : undefined,
       maxSendsPerDay,
+      file: macroFile ?? undefined,
     };
     try {
       if (editingId) {
@@ -339,14 +341,14 @@ export function ReplyMacroTab() {
 
             <Field
               label="대상 채팅방 ID"
-              hint="한 줄에 하나씩 입력"
+              hint="채팅방 ID (숫자) 또는 @username, 한 줄에 하나씩 또는 쉼표로 구분"
               error={validationErrors.targetChats}
             >
               <Textarea
                 value={targetChats}
                 onChange={(e) => setTargetChats(e.target.value)}
-                rows={2}
-                placeholder="chat_id_1"
+                rows={5}
+                placeholder="chat_id_1, chat_id_2&#10;또는 한 줄에 하나씩"
                 invalid={!!validationErrors.targetChats}
               />
             </Field>
@@ -355,11 +357,23 @@ export function ReplyMacroTab() {
               <Textarea
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
-                rows={2}
-                placeholder="보낼 메시지"
+                rows={6}
+                placeholder="보낼 메시지를 입력하세요"
                 invalid={!!validationErrors.messageContent}
               />
-              <span className="mt-1 block text-[11px] text-app-text-subtle">{messageContent.length}/4096</span>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-[11px] text-app-text-subtle">텔레그램 최대 4096자</span>
+                <span className="text-[11px] text-app-text-muted">{messageContent.length}/4096</span>
+              </div>
+            </Field>
+
+            <Field label="파일 첨부 (선택)">
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+                onChange={(e) => setMacroFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+              {macroFile && (
+                <span className="mt-1 block text-[11px] text-app-text-muted">{macroFile.name}</span>
+              )}
             </Field>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -435,7 +449,7 @@ export function ReplyMacroTab() {
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-sm font-medium text-app-text truncate max-w-[160px]" title={macro.name}>{macro.name}</span>
                   <Badge tone={macro.isActive ? "success" : "neutral"} className="shrink-0 text-[10px]">
-                    {macro.isActive ? "활성" : "비활성"}
+                    {macro.isActive ? "반복 중" : "비활성"}
                   </Badge>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-app-text-muted">

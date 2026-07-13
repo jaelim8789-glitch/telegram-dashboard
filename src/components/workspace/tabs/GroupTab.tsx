@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, RefreshCw, Star, Users, Users2, Filter, Hash, MessageCircle } from "lucide-react";
+import { Megaphone, RefreshCw, Send, Star, Users, Users2, Filter, Hash, MessageCircle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -59,6 +59,36 @@ export function GroupTab() {
   const [typeFilter, setTypeFilter] = useState<GroupType | "all">("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
+
+  const [savedSendGroupIds, setSavedSendGroupIds] = useState<string[]>([]);
+
+  const savedGroupStorageKey = useMemo(
+    () => selectedAccountId ? `saved-send-groups-${selectedAccountId}` : null,
+    [selectedAccountId]
+  );
+
+  useEffect(() => {
+    if (!savedGroupStorageKey) { setSavedSendGroupIds([]); return; }
+    try {
+      const stored = localStorage.getItem(savedGroupStorageKey);
+      if (stored) setSavedSendGroupIds(JSON.parse(stored));
+      else setSavedSendGroupIds([]);
+    } catch { setSavedSendGroupIds([]); }
+  }, [savedGroupStorageKey]);
+
+  function toggleSavedSendGroup(id: string) {
+    if (!savedGroupStorageKey) return;
+    setSavedSendGroupIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      localStorage.setItem(savedGroupStorageKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const savedSendGroups = useMemo(
+    () => groups.filter((g) => savedSendGroupIds.includes(g.id)),
+    [groups, savedSendGroupIds],
+  );
 
   async function load(accountId: string, silent = false) {
     if (silent) {
@@ -148,6 +178,50 @@ export function GroupTab() {
         </motion.div>
       )}
 
+      {/* 내 발송그룹 */}
+      {savedSendGroups.length > 0 && (
+        <Panel
+          title={<div className="flex items-center gap-2"><Send className="h-4 w-4 text-app-primary" /> 내 발송그룹</div>}
+          description={`저장된 ${savedSendGroups.length}개 그룹/채널`}
+        >
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {savedSendGroups.map((g, i) => {
+              const Icon = TYPE_ICON[g.type];
+              const saved = savedSendGroupIds.includes(g.id);
+              return (
+                <motion.div
+                  key={g.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="group relative flex flex-col gap-2 rounded-2xl border border-app-primary/30 bg-app-primary-muted/20 p-3 transition-all duration-200 hover:border-app-primary/60 hover:shadow-sm hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm", TYPE_COLOR[g.type])}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-app-text">{g.title}</div>
+                      <div className="flex items-center gap-1 text-[11px] text-app-text-subtle">
+                        <Users className="h-3 w-3" />
+                        <MemberCount count={g.participantsCount} />
+                      </div>
+                    </div>
+                    <button type="button" title={saved ? "발송그룹 제거" : "발송그룹 추가"}
+                      onClick={() => toggleSavedSendGroup(g.id)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 text-app-danger hover:bg-app-danger-muted/30"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <Badge tone="neutral" className={cn("self-start", TYPE_LABEL[g.type])}>{TYPE_LABEL[g.type]}</Badge>
+                </motion.div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
+
       <Panel
         title={<div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-app-primary" /> 그룹 목록</div>}
         description={`${account.name ?? account.phone} 계정이 참여 중인 그룹/채널입니다.`}
@@ -199,11 +273,12 @@ export function GroupTab() {
         {!loading && !error && groups.length > 0 && visibleGroups.length === 0 && (
           <p className="py-8 text-center text-xs text-app-text-subtle">조건에 맞는 그룹이 없습니다.</p>
         )}
-        {visibleGroups.length > 0 && (
+              {visibleGroups.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {visibleGroups.map((g, i) => {
               const Icon = TYPE_ICON[g.type];
               const favorite = isFavorite(g.id);
+              const saved = savedSendGroupIds.includes(g.id);
               return (
                 <motion.div
                   key={g.id}
@@ -223,6 +298,13 @@ export function GroupTab() {
                         <MemberCount count={g.participantsCount} />
                       </div>
                     </div>
+                    <button type="button" title={saved ? "발송그룹 제거" : "발송그룹 추가"}
+                      onClick={() => toggleSavedSendGroup(g.id)}
+                      className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150",
+                        saved ? "text-app-danger bg-app-danger-muted/30" : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger hover:bg-app-danger-muted/20"
+                      )}>
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
                     <button type="button" title={favorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                       onClick={() => toggleFavorite(g.id)}
                       className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150",

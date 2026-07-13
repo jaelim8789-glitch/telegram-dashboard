@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, useEffect, useRef } from "react";
+import { useState, useMemo, type FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle } from "lucide-react";
@@ -29,6 +29,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tokenRef = useRef<string | null>(null);
+
+  const tgDeepLink = useMemo(() => token ? `tg://resolve?domain=telemon_verify_bot&start=${token}` : null, [token]);
 
   async function handleStartVerification(e: FormEvent) {
     e.preventDefault();
@@ -249,10 +251,18 @@ export default function SignupPage() {
 
               <div className="space-y-3">
                 {botDeepLink && (
-                  <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
-                    className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
-                    <UserCheck className="mr-2 h-4 w-4" /> 텔레그램 봇 열기
-                  </a>
+                  <>
+                    <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
+                      className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
+                      <UserCheck className="mr-2 h-4 w-4" /> 텔레그램 봇 열기 (웹)
+                    </a>
+                    {tgDeepLink && (
+                      <a href={tgDeepLink} target="_blank" rel="noopener noreferrer"
+                        className="btn-secondary flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold">
+                        <UserCheck className="mr-2 h-4 w-4" /> 텔레그램 봇 열기 (앱)
+                      </a>
+                    )}
+                  </>
                 )}
                 {channelUrl && (
                   <a href={channelUrl} target="_blank" rel="noopener noreferrer"

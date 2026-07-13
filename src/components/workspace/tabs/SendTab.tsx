@@ -22,7 +22,7 @@ import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPre
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import {
-  RECURRING_INTERVALS,
+  RECURRING_INTERVALS, NORMAL_DELAY_OPTIONS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
   type Broadcast, type BroadcastStatus, type Group,
 } from "@/types";
@@ -360,6 +360,33 @@ export function SendTab() {
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
   const { recent, markUsed } = useRecentGroups();
   const { tagsByGroup, addTag } = useGroupTags();
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+
+  const [savedSendGroupIds, setSavedSendGroupIds] = useState<string[]>([]);
+
+  const savedGroupStorageKey = selectedAccountId ? `saved-send-groups-${selectedAccountId}` : null;
+
+  useEffect(() => {
+    if (!savedGroupStorageKey) { setSavedSendGroupIds([]); return; }
+    try {
+      const stored = localStorage.getItem(savedGroupStorageKey);
+      if (stored) setSavedSendGroupIds(JSON.parse(stored));
+      else setSavedSendGroupIds([]);
+    } catch { setSavedSendGroupIds([]); }
+  }, [savedGroupStorageKey]);
+
+  const savedSendGroups = useMemo(
+    () => groups.filter((g) => savedSendGroupIds.includes(g.id)),
+    [groups, savedSendGroupIds],
+  );
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const tags of Object.values(tagsByGroup)) {
+      for (const tag of tags) tagSet.add(tag);
+    }
+    return Array.from(tagSet).sort();
+  }, [tagsByGroup]);
 
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
@@ -368,6 +395,7 @@ export function SendTab() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
   const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk">("normal");
+  const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -571,6 +599,12 @@ export function SendTab() {
     return sorted;
   }, [groups, search, sortMode, isFavorite]);
 
+  // visibleGroups에 태그 필터 적용
+  const filteredByTag = useMemo(() => {
+    if (!tagFilter) return visibleGroups;
+    return visibleGroups.filter((g) => (tagsByGroup[g.id] ?? []).includes(tagFilter));
+  }, [visibleGroups, tagFilter, tagsByGroup]);
+
   /** History summary stats when not filtered by "all" */
   const filteredHistory = useMemo(() => {
     if (historyFilter === "all") return history;
@@ -650,9 +684,25 @@ export function SendTab() {
     }
   }
 
+  function handleSelectSavedSendGroup() {
+    const available = savedSendGroups.filter((g) => !selectedIds.includes(g.id));
+    if (available.length === 0) {
+      toast("info", "모든 발송그룹 대상이 이미 선택되어 있습니다.");
+      return;
+    }
+    const next = [...selectedIds, ...available.map((g) => g.id)];
+    setSendSelectedGroupIds(next);
+    toast("success", `발송그룹 ${available.length}개를 선택했습니다.`);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!selectedAccountId || selectedRecipientIds.length === 0 || !message.trim() || submitting) return;
+    if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
+    const hasMessage = replyMacroEnabled ? !!replyToMessageId.trim() : message.trim().length > 0;
+    if (!hasMessage) {
+      setSubmitError(replyMacroEnabled ? "답장할 메시지 ID를 입력하세요." : "메시지 내용을 입력하세요.");
+      return;
+    }
     if (isScheduled && !scheduledAtLocal) return;
     if (isRecurring && !recurringInterval) return;
 
@@ -664,19 +714,23 @@ export function SendTab() {
       const mode = deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
-        message: message.trim(),
+        message: replyMacroEnabled ? "" : message.trim(),
         recipients: selectedRecipientIds,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
         deliveryMode: mode,
+        delaySeconds: mode === "normal" ? normalDelaySeconds : undefined,
         replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
       });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
       const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : "발송";
-      if (isRecurring) setSubmitNotice(`${modeLabel}이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.`);
+      if (isRecurring) {
+        const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
+        setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
+      }
       else if (scheduledAtIso) setSubmitNotice(`${modeLabel}이 예약되었습니다. 아래 발송 이력에서 확인하세요.`);
       else setSubmitNotice(`${modeLabel} 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
 
@@ -684,7 +738,7 @@ export function SendTab() {
       clearPersistedDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
-      setDeliveryMode("normal");
+      setDeliveryMode("normal"); setNormalDelaySeconds(60);
       setReplyMacroEnabled(false); setReplyToMessageId("");
       setSearch("");
       await loadHistory(selectedAccountId);
@@ -760,7 +814,7 @@ export function SendTab() {
   }
 
   const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && (replyMacroEnabled ? replyToMessageId.trim().length > 0 : message.trim().length > 0) && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -774,6 +828,15 @@ export function SendTab() {
         }
         description={`${account.name ?? account.phone} · 계정당 1분 간격`}
       >
+        {/* ── Today Stats ── */}
+        {account && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-app-border bg-app-card/30 px-3 py-2 text-xs">
+            <span className="flex items-center gap-1 text-app-text-muted">
+              <SendIcon className="h-3 w-3" />
+              오늘 <span className="font-medium text-app-text">{account.todaySent}</span>
+            </span>
+          </div>
+        )}
         <form id="send-form" onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* ── Smart Selection Bar ── */}
@@ -877,8 +940,62 @@ export function SendTab() {
                 )}
               </div>
 
+              {/* Tag filter chips */}
+              {allTags.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  <button type="button" onClick={() => setTagFilter(null)}
+                    className={`rounded-full px-2 py-0.5 text-[11px] transition-colors ${!tagFilter ? 'bg-app-primary text-white' : 'bg-app-card-hover text-app-text-muted hover:text-app-text'}`}>
+                    전체
+                  </button>
+                  {allTags.map((tag) => (
+                    <button key={tag} type="button" onClick={() => setTagFilter(tag === tagFilter ? null : tag)}
+                      className={`rounded-full px-2 py-0.5 text-[11px] transition-colors ${tagFilter === tag ? 'bg-app-primary text-white' : 'bg-app-card-hover text-app-text-muted hover:text-app-text'}`}>
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {deliveryMode === "bulk" && (
-                <p className="mb-2 text-xs text-app-danger">⚠️ 전체 즉시 발송은 계정 정지 위험이 있습니다. 권장하지 않습니다.</p>
+                <p className="mb-2 text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</p>
+              )}
+
+              {!groupsLoading && savedSendGroups.length > 0 && (
+                <div className="mb-3">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className="text-xs font-medium text-app-text-muted">내 발송그룹</span>
+                    <span className="h-px flex-1 bg-app-border/50" />
+                    <button type="button" onClick={handleSelectSavedSendGroup}
+                      className="text-[10px] text-app-primary hover:underline">모두 선택</button>
+                    <span className="text-[10px] text-app-text-subtle">{savedSendGroups.length}개</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {savedSendGroups.map((g) => {
+                      const selected = selectedRecipientIds.includes(g.id);
+                      return (
+                        <GroupSelectCard
+                          key={g.id}
+                          group={g}
+                          selected={selected}
+                          isFavorite={isFavorite(g.id)}
+                          isRecent={recent.includes(g.id)}
+                          tags={tagsByGroup[g.id] ?? []}
+                          onToggleSelect={toggleGroup}
+                          onToggleFavorite={toggleFavorite}
+                          onAddTag={handleAddTag}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {!groupsLoading && groups.length > 0 && (
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="text-xs font-medium text-app-text-muted">전체 대화방</span>
+                  <span className="h-px flex-1 bg-app-border/50" />
+                  <span className="text-[10px] text-app-text-subtle">{visibleGroups.length}개</span>
+                </div>
               )}
 
               {groupsLoading && (
@@ -892,7 +1009,7 @@ export function SendTab() {
               )}
               {!groupsLoading && visibleGroups.length > 0 && (
                 <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1">
-                  {visibleGroups.map((g) => {
+                  {filteredByTag.map((g) => {
                     const selected = selectedRecipientIds.includes(g.id);
                     return (
                       <GroupSelectCard
@@ -934,17 +1051,38 @@ export function SendTab() {
             )}
 
             {/* Message */}
-            <Field label="메시지 내용">
-              <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
-                placeholder="발송할 메시지를 입력하세요." required />
-            </Field>
-
-            {/* Image */}
-            <Field label="이미지 (선택)">
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
-            </Field>
+            {replyMacroEnabled ? (
+              <>
+                <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+                  <Field label="답장할 메시지 ID">
+                    <input type="number" value={replyToMessageId}
+                      onChange={(e) => setReplyToMessageId(e.target.value)}
+                      placeholder="예: 12345"
+                      min="1"
+                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
+                  </Field>
+                  <div className="mt-2">
+                    <Field label="파일 첨부 (선택)">
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+                        onChange={(e) => { const f = e.target.files?.[0] ?? null; setImageFile(f); }}
+                        className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+                    </Field>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <Field label="메시지 내용">
+                  <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
+                    placeholder="발송할 메시지를 입력하세요." required />
+                </Field>
+                <Field label="이미지 (선택)">
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+                </Field>
+              </>
+            )}
 
             {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1000,9 +1138,24 @@ export function SendTab() {
                 <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
                   <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
                     onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <div className="text-sm font-medium text-app-text">일반 발송</div>
-                    <div className="text-xs text-app-text-muted">1분 간격으로 각 방에 순차 전송 (권장)</div>
+                    {deliveryMode === "normal" ? (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-xs text-app-text-muted">방마다</span>
+                        <select value={normalDelaySeconds}
+                          onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
+                          className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
+                          onClick={(e) => e.stopPropagation()}>
+                          {NORMAL_DELAY_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-app-text-muted mt-1.5">간격을 선택하세요</div>
+                    )}
                   </div>
                 </label>
                 <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
@@ -1017,43 +1170,21 @@ export function SendTab() {
                   <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
                     onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
                   <div>
-                    <div className="text-sm font-medium text-app-text">전체 즉시 발송 (위험)</div>
-                    <div className="text-xs text-app-danger">⚠️ 한 번에 모든 방에 전송합니다. 계정 정지 위험이 있으므로 권장하지 않습니다.</div>
+                    <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
+                    <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</div>
                   </div>
                 </label>
               </div>
             </div>
 
-            {/* Reply macro */}
-            <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
-              <label className="flex items-center gap-2 text-sm text-app-text">
+            {/* Reply macro toggle */}
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
                 <input type="checkbox" checked={replyMacroEnabled}
-                  onChange={(e) => setReplyMacroEnabled(e.target.checked)} />
+                  onChange={(e) => { setReplyMacroEnabled(e.target.checked); if (!e.target.checked) setReplyToMessageId(""); }} />
                 <MessageCircle className="h-3.5 w-3.5 text-app-text-muted" />
-                답장 매크로 (Reply)
+                답장 매크로
               </label>
-              {replyMacroEnabled && (
-                <div className="mt-2 space-y-3">
-                  <Field label="답장할 메시지 ID">
-                    <input type="number" value={replyToMessageId}
-                      onChange={(e) => setReplyToMessageId(e.target.value)}
-                      placeholder="예: 12345"
-                      min="1"
-                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
-                  </Field>
-                  <Field label="파일 첨부 (선택)">
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        setImageFile(file);
-                      }}
-                      className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
-                  </Field>
-                  <p className="text-[11px] text-app-text-muted">
-                    ON 상태에서는 입력한 메시지 ID에 답장 형태로 발송됩니다.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
