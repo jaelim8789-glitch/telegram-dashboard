@@ -62,12 +62,12 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [issueFailed, setIssueFailed] = useState(false);
+  const [alreadyIssued, setAlreadyIssued] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function handleStart() {
     if (starting) return;
-    setStarting(true); setError(null); setIssueFailed(false);
+    setStarting(true); setError(null); setAlreadyIssued(false);
     try {
       const start = await freeApiKey.startFreeApiKeyVerification();
       setToken(start.token);
@@ -84,6 +84,24 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
       try { await navigator.clipboard.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
       catch { /* fallback: user can select manually */ }
     }
+  }
+
+  async function handleClaimApiKey() {
+    if (!token || issuing || apiKey) return;
+    setIssuing(true); setError(null); setAlreadyIssued(false);
+    try {
+      const result = await freeApiKey.issueFreeApiKey(token);
+      if (result.apiKey) {
+        setApiKey(result.apiKey);
+      } else if (result.alreadyIssued) {
+        setAlreadyIssued(true);
+      } else {
+        setError(result.detail || "API 키 발급에 실패했습니다. 관리자에게 문의해주세요.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다. 관리자에게 문의해주세요.");
+    }
+    finally { setIssuing(false); }
   }
 
   const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
@@ -113,28 +131,6 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     return () => { cancelled = true; if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
   }, [token, verifyStatus]);
 
-  useEffect(() => {
-    if (verifyStatus !== "verified" || !token || issuing) return;
-    if (apiKey) return;
-    const doIssue = async () => {
-      setIssuing(true); setError(null);
-      try {
-        const result = await freeApiKey.issueFreeApiKey(token);
-        if (result.apiKey) {
-          setApiKey(result.apiKey);
-        } else {
-          setIssueFailed(true);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다.");
-        setIssueFailed(true);
-      }
-      finally { setIssuing(false); }
-    };
-    doIssue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verifyStatus, token]);
-
   if (apiKey) return (
     <div className="text-center space-y-4">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-app-success-muted">
@@ -153,35 +149,6 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         className="btn-primary w-full h-10 rounded-xl text-sm flex items-center justify-center gap-1.5">
         <KeyRound className="h-4 w-4" /> API 키로 로그인
       </button>
-    </div>
-  );
-
-  if (issueFailed) return (
-    <div className="text-center space-y-4">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-app-warning-muted">
-        <AlertCircle className="h-7 w-7 text-app-warning" />
-      </div>
-      <p className="text-sm text-app-text-secondary">자동 API 키 발급에 실패했습니다</p>
-      <p className="text-xs text-app-text-muted">아래 버튼을 눌러 텔레그램 봇에서 직접 API 키를 발급받을 수 있습니다.</p>
-      {botDeepLink && (
-        <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
-          className="btn-primary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
-          🔑 API 키 받기
-        </a>
-      )}
-      {channelUrl && (
-        <a href={channelUrl} target="_blank" rel="noopener noreferrer"
-          className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
-          <ExternalLink className="h-4 w-4" /> 채널 가입하기
-        </a>
-      )}
-      {error && <InlineError>{error}</InlineError>}
-      {!error && (
-        <InlineError className="mb-0">
-          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
-          자동 발급이 완료되지 않았습니다. 봇에서도 문제가 계속되면 관리자에게 문의해주세요.
-        </InlineError>
-      )}
     </div>
   );
 
@@ -211,20 +178,16 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
           {channelJoined ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
           <span className={channelJoined ? "text-app-text-secondary" : "text-app-text font-medium"}>채널 가입 확인</span>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />
-          <span className="text-app-text font-medium">API 키 발급</span>
-        </div>
       </div>
 
       <div className="space-y-2">
-        {botDeepLink && (
+        {botDeepLink && !channelJoined && (
           <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
             className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
             <UserCheck className="h-4 w-4" /> 텔레그램 봇 열기
           </a>
         )}
-        {channelUrl && (
+        {channelUrl && !channelJoined && (
           <a href={channelUrl} target="_blank" rel="noopener noreferrer"
             className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
             <ExternalLink className="h-4 w-4" /> 채널 가입하기
@@ -232,13 +195,30 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         )}
       </div>
 
-      {verifyStatus === "unverified" && verifyReason === "not_a_member" && (
+      {channelJoined && (
+        <div className="space-y-3 pt-1">
+          <p className="text-xs text-app-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> 채널 가입이 확인되었습니다.</p>
+          <Button onClick={handleClaimApiKey} disabled={issuing} loading={issuing} className="flex w-full h-11">
+            🔑 API 키 직접 받기
+          </Button>
+          {alreadyIssued && (
+            <InlineError className="mb-0">
+              <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+              이미 발급된 계정입니다. {" "}
+              <button type="button" onClick={onGoToApiKey} className="underline text-app-primary hover:text-app-primary-hover">API 키로 로그인</button>
+              하거나 관리자에게 문의해주세요.
+            </InlineError>
+          )}
+        </div>
+      )}
+
+      {!channelJoined && verifyStatus === "unverified" && verifyReason === "not_a_member" && (
         <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.</InlineError>
       )}
-      {verifyStatus === "unverified" && verifyReason === "membership_check_unavailable" && (
+      {!channelJoined && verifyStatus === "unverified" && verifyReason === "membership_check_unavailable" && (
         <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.</InlineError>
       )}
-      {error && <InlineError>{error}</InlineError>}
+      {error && !alreadyIssued && <InlineError>{error}</InlineError>}
     </div>
   );
 }
