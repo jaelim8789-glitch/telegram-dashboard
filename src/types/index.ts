@@ -126,6 +126,11 @@ export function isBroadcastInFlight(broadcast: Broadcast): boolean {
   return broadcast.status === "pending" || broadcast.status === "sending";
 }
 
+/** Broadcasts that have reached a terminal status (won't change further). */
+export function isBroadcastTerminal(broadcast: Broadcast): boolean {
+  return broadcast.status === "sent" || broadcast.status === "failed" || broadcast.status === "cancelled";
+}
+
 export function isRecurringBroadcast(broadcast: Broadcast): boolean {
   return broadcast.recurringIntervalMinutes != null && broadcast.recurringIntervalMinutes > 0;
 }

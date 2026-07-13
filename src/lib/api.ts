@@ -316,6 +316,12 @@ export async function cancelRecurringBroadcast(broadcastId: string): Promise<Bro
 }
 
 /**
+ * Stop a broadcast (alias for cancel). POST /api/broadcast/{broadcast_id}/cancel
+ * sets status to "cancelled" for both one-time and recurring broadcasts.
+ */
+export const stopBroadcast = cancelRecurringBroadcast;
+
+/**
  * Fetch active recurring broadcasts. GET /api/broadcast/recurring
  * Returns all broadcasts with non-null recurring_interval_minutes that
  * are still active (not cancelled/failed).
