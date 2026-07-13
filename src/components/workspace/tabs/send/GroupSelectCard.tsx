@@ -1,7 +1,7 @@
 import { Check, Megaphone, Plus, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
-import { MAX_BROADCAST_RECIPIENTS, type Group, type GroupType } from "@/types";
+import { type Group, type GroupType } from "@/types";
 
 const TYPE_LABEL: Record<GroupType, string> = {
   group: "그룹",
@@ -12,7 +12,6 @@ const TYPE_LABEL: Record<GroupType, string> = {
 interface GroupSelectCardProps {
   group: Group;
   selected: boolean;
-  disabled: boolean;
   isFavorite: boolean;
   isRecent: boolean;
   tags: string[];
@@ -24,7 +23,6 @@ interface GroupSelectCardProps {
 export function GroupSelectCard({
   group,
   selected,
-  disabled,
   isFavorite,
   isRecent,
   tags,
@@ -37,13 +35,12 @@ export function GroupSelectCard({
   return (
     <div
       role="button"
-      tabIndex={disabled ? -1 : 0}
-      title={disabled ? `최대 ${MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다.` : undefined}
-      onClick={() => !disabled && onToggleSelect(group.id)}
-      onKeyDown={(e) => e.key === "Enter" && !disabled && onToggleSelect(group.id)}
+      tabIndex={0}
+      title={undefined}
+      onClick={() => onToggleSelect(group.id)}
+      onKeyDown={(e) => e.key === "Enter" && onToggleSelect(group.id)}
       className={cn(
         "group flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-150",
-        disabled && "cursor-not-allowed opacity-40",
         selected
           ? "border-app-primary/50 bg-app-primary-muted"
           : "border-app-border bg-app-card hover:border-app-border-strong hover:bg-app-card-hover"

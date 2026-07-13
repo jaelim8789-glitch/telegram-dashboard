@@ -5,7 +5,7 @@ import { ImageIcon, ShieldCheck } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { MAX_BROADCAST_RECIPIENTS, getAccountDisplayName, getAccountInitials, type AccountStatus } from "@/types";
+import { getAccountDisplayName, getAccountInitials, type AccountStatus } from "@/types";
 
 const ACCOUNT_STATUS_LABEL: Record<AccountStatus, { label: string; tone: "success" | "warning" | "danger" }> = {
   active: { label: "활성", tone: "success" },
@@ -75,8 +75,7 @@ export function SendInspector() {
       <Panel title="발송 요약">
         <ul className="space-y-1.5 text-xs text-app-text-muted">
           <li>
-            선택된 대상: <span className="text-app-text">{selectedGroups.length}개</span> ({selectedIds.length}/
-            {MAX_BROADCAST_RECIPIENTS})
+            선택된 대상: <span className="text-app-text">{selectedGroups.length}개</span>
           </li>
           {imageFile && (
             <li className="flex items-center gap-1">
@@ -135,9 +134,8 @@ export function SendInspector() {
         <div className="flex items-start gap-2 text-xs text-app-text-muted">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-app-success" />
           <p>
-            Telegram 정책 준수를 위해 서버에서 항상 강제됩니다: 발송당 최대{" "}
-            <span className="text-app-text">{MAX_BROADCAST_RECIPIENTS}명</span>, 계정당{" "}
-            <span className="text-app-text">1분에 1회</span>.
+            Telegram 정책 준수를 위해 서버에서 항상 강제됩니다: 계정당{" "}
+            <span className="text-app-text">1분에 1회</span> 간격으로 전송됩니다.
           </p>
         </div>
       </Panel>

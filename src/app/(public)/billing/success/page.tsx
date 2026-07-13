@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/site";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
 type VerificationState = "verifying" | "verified" | "failed" | "pending";
 
 export default function BillingSuccessPage() {
@@ -34,7 +32,7 @@ export default function BillingSuccessPage() {
         // Use the public /api/payment/status/{payment_ref} endpoint —
         // it is intentionally public and is the trusted backend source of truth
         // for payment completion state (same endpoint used by get-api-key polling).
-        const statusRes = await fetch(`${API_BASE}/api/payment/status/${ref}`);
+        const statusRes = await fetch(`${SITE.api}/api/payment/status/${ref}`);
 
         if (!cancelled) {
           if (statusRes.ok) {

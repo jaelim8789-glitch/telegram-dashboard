@@ -20,6 +20,7 @@ export interface SendDraft {
   scheduledAtLocal: string;
   isRecurring: boolean;
   recurringInterval: number;
+  deliveryMode?: "normal" | "cycle" | "bulk";
 }
 
 const STORAGE_KEY = "telemon-send-draft-v1";

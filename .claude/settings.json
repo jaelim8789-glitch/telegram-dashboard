@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sk -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' https://api.telemon.online/health)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git push origin HEAD:integrate/pre-launch-stabilization-20260713 2>&1\")",
+      "Bash(GIT_SSH_COMMAND=\"ssh -i C:/Users/jaeli/.ssh/telemon_lightnode -o StrictHostKeyChecking=no\" git fetch ssh://root@130.94.32.152/opt/telemon/backend integrate/pre-launch-stabilization-20260713:refs/prod-sync/518e233)"
+    ]
+  }
+}

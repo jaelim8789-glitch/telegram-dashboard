@@ -317,13 +317,13 @@
     }
   },
   "hero": {
-    "title1": "Your Time",
-    "title2": "Leave It to TeleMon",
-    "subtitle": "Your time is limited. Let TeleMon handle the repetitive work while you make the important decisions.",
+    "title1": "TIME IS LIMITED.",
+    "title2": "POSSIBILITY IS NOT.",
+    "subtitle": "Time is limited, but possibility is not. Built for those who refuse to settle.",
     "reason1": "1-minute setup, lifetime automation",
     "reason2": "Account ban worries gone, AI protects you",
     "reason3": "Start today and become a lifetime companion",
-    "quote": "It's right to aim for the best and fail. We'll stand together on that path.",
+    "quote": "BUILT FOR THOSE WHO REFUSE TO SETTLE.",
     "lifetimeHint": "Starting now makes you a lifetime companion.",
     "lifetimeLink": "Learn about First Steps"
   },

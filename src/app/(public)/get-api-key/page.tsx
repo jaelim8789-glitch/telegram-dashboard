@@ -6,12 +6,12 @@ import {
   ArrowLeft, ArrowRight, KeyRound, Shield, Smartphone, CheckCircle2, Star, Sparkles, Heart,
   Loader2, Copy, Check, AlertTriangle, Clock, Eye, EyeOff,
 } from "lucide-react";
+import { SITE } from "@/lib/site";
 import { useFadeIn } from "@/lib/useFadeIn";
 import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 const POLL_TIMEOUT_SECONDS = 180;
 
 // requestPlanId values are canonical plan ids (free/pro/team) matching the
@@ -113,7 +113,7 @@ export default function GetApiKeyPage() {
     if (flowStep !== "waiting" || !paymentRef) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/payment/status/${paymentRef}`);
+        const res = await fetch(`${SITE.api}/api/payment/status/${paymentRef}`);
         if (!res.ok) { /* non-2xx — keep polling */ return; }
         const data = await res.json();
         if (data.status === "completed") {
@@ -152,7 +152,7 @@ export default function GetApiKeyPage() {
     setRequestingPlanId(requestPlanId);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/payment/request-key?plan=${requestPlanId}`, { method: "POST" });
+      const res = await fetch(`${SITE.api}/api/payment/request-key?plan=${requestPlanId}`, { method: "POST" });
       const data = await res.json();
       if (!data.success) throw new Error(data.detail || "요청 실패");
       setSelectedPlanName(planName);
