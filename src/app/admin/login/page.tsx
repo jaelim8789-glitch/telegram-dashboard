@@ -85,7 +85,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   async function handleCopy() {
     if (apiKey) {
       try { await navigator.clipboard.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-      catch { /* fallback: user can select manually */ }
+      catch {}
     }
   }
 
@@ -192,6 +192,8 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     </div>
   );
 
+  const canClaim = channelJoined;
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -221,20 +223,27 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
       </div>
 
       {channelJoined && (
-        <div className="space-y-3 pt-1">
-          <p className="text-xs text-app-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> 채널 가입이 확인되었습니다.</p>
-          <Button onClick={handleClaimApiKey} disabled={issuing} loading={issuing} className="flex w-full h-11">
-            🔑 API 키 직접 받기
-          </Button>
-          {alreadyIssued && (
-            <InlineError className="mb-0">
-              <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
-              이미 발급된 계정입니다. {" "}
-              <button type="button" onClick={onGoToApiKey} className="underline text-app-primary hover:text-app-primary-hover">API 키로 로그인</button>
-              하거나 관리자에게 문의해주세요.
-            </InlineError>
-          )}
-        </div>
+        <p className="text-xs text-app-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> 채널 가입이 확인되었습니다.</p>
+      )}
+
+      <div className="pt-1">
+        <Button onClick={handleClaimApiKey} disabled={!canClaim || issuing || !!apiKey} loading={issuing} className="flex w-full h-11">
+          🔑 API 키 수동 발급
+        </Button>
+        {!canClaim && (
+          <p className="text-xs text-app-text-muted mt-1.5 text-center">
+            위 단계를 완료하면 버튼이 활성화됩니다
+          </p>
+        )}
+      </div>
+
+      {alreadyIssued && (
+        <InlineError className="mb-0">
+          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+          이미 발급된 계정입니다. {" "}
+          <button type="button" onClick={onGoToApiKey} className="underline text-app-primary hover:text-app-primary-hover">API 키로 로그인</button>
+          하거나 관리자에게 문의해주세요.
+        </InlineError>
       )}
 
       {!channelJoined && verifyStatus === "unverified" && verifyReason === "not_a_member" && (
