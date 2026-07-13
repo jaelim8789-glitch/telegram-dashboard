@@ -317,13 +317,13 @@
     }
   },
   "hero": {
-    "title1": "あなたの時間は",
-    "title2": "テレモンにお任せください",
-    "subtitle": "あなたの時間は限られています。繰り返し作業はテレモンに任せ、重要な決断はあなたがしてください。",
+    "title1": "TIME IS LIMITED.",
+    "title2": "POSSIBILITY IS NOT.",
+    "subtitle": "時間は有限だが、可能性は無限だ。現状に甘んじない人のために。",
     "reason1": "設定1分、生涯自動化",
     "reason2": "アカウント停止の心配なし、AIが守ります",
     "reason3": "始めたあなたは永久のパートナー",
-    "quote": "最高を目指して失敗するのが正しい。私たちはその道に共に立つ。",
+    "quote": "BUILT FOR THOSE WHO REFUSE TO SETTLE.",
     "lifetimeHint": "今始めるあなたは永久のパートナーです。",
     "lifetimeLink": "最初の一歩を詳しく"
   },

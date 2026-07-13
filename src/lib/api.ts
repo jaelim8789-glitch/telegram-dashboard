@@ -22,7 +22,7 @@ import { getToken } from "@/lib/auth";
 // (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
 // frontend calls the API directly at that origin.
 // The fallback "http://localhost:8000" is for local dev without nginx.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 /** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
@@ -251,6 +251,8 @@ export interface CreateBroadcastInput {
   scheduledAt?: string;
   /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
+  /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
+  deliveryMode?: "normal" | "cycle" | "bulk";
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -261,6 +263,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.image) form.append("image", input.image);
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
+  if (input.deliveryMode) form.append("delivery_mode", input.deliveryMode);
 
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) {

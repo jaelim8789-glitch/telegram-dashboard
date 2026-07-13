@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import type { Account, Broadcast, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
-import { MAX_BROADCAST_RECIPIENTS } from "@/types";
 
 function dedupeGroups(groups: Group[]): Group[] {
   const seen = new Set<string>();
@@ -174,7 +173,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       if (state.sendSelectedGroupIds.includes(id)) {
         return { sendSelectedGroupIds: state.sendSelectedGroupIds.filter((x) => x !== id) };
       }
-      if (state.sendSelectedGroupIds.length >= MAX_BROADCAST_RECIPIENTS) return state;
       return { sendSelectedGroupIds: [...state.sendSelectedGroupIds, id] };
     }),
   setSendSelectedGroupIds: (ids) => set({ sendSelectedGroupIds: ids }),

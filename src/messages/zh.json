@@ -317,13 +317,13 @@
     }
   },
   "hero": {
-    "title1": "你的时间",
-    "title2": "交给 TeleMon 来处理",
-    "subtitle": "你的时间是有限的。重复的工作让 TeleMon 来做，重要的决定由你来做。",
+    "title1": "TIME IS LIMITED.",
+    "title2": "POSSIBILITY IS NOT.",
+    "subtitle": "时间有限，但可能性无限。为不愿安于现状的人而生。",
     "reason1": "1分钟设置，终身自动化",
     "reason2": "不再担心账号被封，AI 守护你",
     "reason3": "现在开始，你就是永久伙伴",
-    "quote": "追求卓越即使失败也是正确的。我们将在这条路上与你同行。",
+    "quote": "BUILT FOR THOSE WHO REFUSE TO SETTLE.",
     "lifetimeHint": "现在开始的你，就是我们的永久伙伴。",
     "lifetimeLink": "了解第一步"
   },

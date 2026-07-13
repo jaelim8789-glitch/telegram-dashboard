@@ -117,6 +117,8 @@ export interface Broadcast {
   isRecurringPaused: boolean;
   /** Normalized failure intelligence for failed broadcasts (null for non-failed or legacy records). */
   failureInfo: FailureInfo | null;
+  /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
+  deliveryMode?: "normal" | "cycle" | "bulk";
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -157,8 +159,6 @@ export interface BroadcastChild {
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
 }
-
-export const MAX_BROADCAST_RECIPIENTS = 10;
 
 export const RECURRING_INTERVALS = [
   { value: 30, label: "30분" },

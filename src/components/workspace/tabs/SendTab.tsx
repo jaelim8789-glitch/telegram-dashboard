@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle,
+  Send as SendIcon, Users2, XCircle, AlertCircle,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
@@ -22,7 +22,7 @@ import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPre
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import {
-  MAX_BROADCAST_RECIPIENTS, RECURRING_INTERVALS,
+  RECURRING_INTERVALS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
   type Broadcast, type BroadcastStatus, type Group,
 } from "@/types";
@@ -116,12 +116,10 @@ function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Gr
 
 function RecipientReviewPanel({
   recipients,
-  limit,
   onRemove,
   onClearAll,
 }: {
   recipients: Group[];
-  limit: number;
   onRemove: (id: string) => void;
   onClearAll: () => void;
 }) {
@@ -133,7 +131,6 @@ function RecipientReviewPanel({
           <div className="text-xs font-medium text-app-text-muted">수신자 검토</div>
           <div className="text-sm font-semibold text-app-text">
             {recipients.length}명 선택됨
-            <span className="ml-1 text-xs font-normal text-app-text-muted">/ {limit}명</span>
           </div>
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={onClearAll} className="shrink-0">
@@ -369,6 +366,7 @@ export function SendTab() {
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
+  const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk">("normal");
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -418,10 +416,11 @@ export function SendTab() {
         scheduledAtLocal,
         isRecurring,
         recurringInterval,
+        deliveryMode,
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [selectedAccountId, selectedIds, message, isScheduled, scheduledAtLocal, isRecurring, recurringInterval]);
+  }, [selectedAccountId, selectedIds, message, isScheduled, scheduledAtLocal, isRecurring, recurringInterval, deliveryMode]);
 
   // ── Draft restoration on mount (only once) ──
   useEffect(() => {
@@ -445,7 +444,7 @@ export function SendTab() {
       ? draft.selectedAccountId
       : null;
 
-    const validRecipients = draft.selectedGroupIds.slice(0, MAX_BROADCAST_RECIPIENTS);
+    const validRecipients = draft.selectedGroupIds;
 
     const hasContent = validRecipients.length > 0 || draft.message.trim().length > 0;
 
@@ -606,20 +605,11 @@ export function SendTab() {
     const available = visibleGroups.filter(
       (g) => !selectedIds.includes(g.id)
     );
-    const capacity = MAX_BROADCAST_RECIPIENTS - selectedIds.length;
-    if (capacity <= 0) {
-      toast("warning", `최대 ${MAX_BROADCAST_RECIPIENTS}개의 대상을 초과했습니다.`);
-      return;
-    }
-    const toSelect = available.slice(0, capacity);
+    const toSelect = available;
     if (toSelect.length === 0) return;
     const next = [...selectedIds, ...toSelect.map((g) => g.id)];
     setSendSelectedGroupIds(next);
-    if (available.length > capacity) {
-      toast("warning", `최대 ${MAX_BROADCAST_RECIPIENTS}개의 대상까지만 선택했습니다.`);
-    } else {
-      toast("success", `표시된 결과 ${toSelect.length}개를 선택했습니다.`);
-    }
+    toast("success", `표시된 결과 ${toSelect.length}개를 선택했습니다.`);
   }
 
   function handleDeselectAllVisible() {
@@ -634,7 +624,7 @@ export function SendTab() {
   // ── Recent recipient set restoration ──
   function handleRestoreRecentSet(recentIds: string[]) {
     const availableGroupIds = new Set(groups.map((g) => g.id));
-    const valid = recentIds.filter((id) => availableGroupIds.has(id)).slice(0, MAX_BROADCAST_RECIPIENTS);
+    const valid = recentIds.filter((id) => availableGroupIds.has(id));
     if (valid.length === 0) {
       toast("error", "복원 가능한 대상이 없습니다.");
       return;
@@ -661,6 +651,7 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
+      const mode = deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
@@ -668,18 +659,21 @@ export function SendTab() {
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
+        deliveryMode: mode,
       });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
-      if (isRecurring) setSubmitNotice("반복 발송이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.");
-      else if (scheduledAtIso) setSubmitNotice("발송이 예약되었습니다. 아래 발송 이력에서 확인하세요.");
-      else setSubmitNotice("발송 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.");
+      const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : "발송";
+      if (isRecurring) setSubmitNotice(`${modeLabel}이 설정되었습니다. 아래 발송 이력에서 상태를 확인하세요.`);
+      else if (scheduledAtIso) setSubmitNotice(`${modeLabel}이 예약되었습니다. 아래 발송 이력에서 확인하세요.`);
+      else setSubmitNotice(`${modeLabel} 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
 
       clearSendDraft();
       clearPersistedDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
+      setDeliveryMode("normal");
       setSearch("");
       await loadHistory(selectedAccountId);
     } catch (err) {
@@ -745,8 +739,7 @@ export function SendTab() {
     );
   }
 
-  const remaining = MAX_BROADCAST_RECIPIENTS - selectedIds.length;
-
+  const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
   const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
@@ -759,7 +752,7 @@ export function SendTab() {
             메시지 작성
           </div>
         }
-        description={`${account.name ?? account.phone} · 최대 ${MAX_BROADCAST_RECIPIENTS}개 그룹, 계정당 1분 간격`}
+        description={`${account.name ?? account.phone} · 계정당 1분 간격`}
       >
         <form id="send-form" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -775,18 +768,14 @@ export function SendTab() {
               </span>
               <span className="text-app-text-subtle">·</span>
               <span className="whitespace-nowrap text-app-text-muted">
-                선택 <span className={cn("font-medium", remaining === 0 ? "text-app-danger" : "text-app-text")}>
-                  {selectedRecipientIds.length}/{MAX_BROADCAST_RECIPIENTS}
+                선택 <span className="font-medium text-app-text">
+                  {selectedRecipientIds.length}
                 </span>
               </span>
-              {selectedRecipientIds.length > 0 && (
-                <>
-                  <span className="text-app-text-subtle">·</span>
-                  <span className="whitespace-nowrap text-app-text-muted">
-                    남음 <span className="font-medium text-app-text">{remaining}</span>
-                  </span>
-                </>
-              )}
+              <span className="text-app-text-subtle">·</span>
+              <span className="whitespace-nowrap text-app-text-muted">
+                무제한 선택 가능
+              </span>
             </div>
 
             {/* ── Recent Recipient Sets ── */}
@@ -820,8 +809,7 @@ export function SendTab() {
                       <button
                         type="button"
                         onClick={handleSelectAllVisible}
-                        disabled={remaining <= 0}
-                        className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
                       >
                         현재 결과 전체 선택
                       </button>
@@ -869,8 +857,8 @@ export function SendTab() {
                 )}
               </div>
 
-              {selectedRecipientIds.length >= Math.ceil(MAX_BROADCAST_RECIPIENTS * 0.8) && (
-                <p className="mb-2 text-xs text-app-warning">최대 {MAX_BROADCAST_RECIPIENTS}개까지 선택 가능합니다.</p>
+              {deliveryMode === "bulk" && (
+                <p className="mb-2 text-xs text-app-danger">⚠️ 전체 즉시 발송은 계정 정지 위험이 있습니다. 권장하지 않습니다.</p>
               )}
 
               {groupsLoading && (
@@ -886,13 +874,11 @@ export function SendTab() {
                 <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1">
                   {visibleGroups.map((g) => {
                     const selected = selectedRecipientIds.includes(g.id);
-                    const disabled = !selected && selectedRecipientIds.length >= MAX_BROADCAST_RECIPIENTS;
                     return (
                       <GroupSelectCard
                         key={g.id}
                         group={g}
                         selected={selected}
-                        disabled={disabled}
                         isFavorite={isFavorite(g.id)}
                         isRecent={recent.includes(g.id)}
                         tags={tagsByGroup[g.id] ?? []}
@@ -922,7 +908,6 @@ export function SendTab() {
             {selectedRecipients.length > 0 && (
               <RecipientReviewPanel
                 recipients={selectedRecipients}
-                limit={MAX_BROADCAST_RECIPIENTS}
                 onRemove={toggleGroup}
                 onClearAll={clearSendRecipients}
               />
@@ -941,7 +926,7 @@ export function SendTab() {
                 className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
             </Field>
 
-            {/* Timing options */}
+            {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
                 <label className="flex items-center gap-2 text-sm text-app-text">
@@ -982,6 +967,40 @@ export function SendTab() {
                     </Field>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Delivery Mode Selector */}
+            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
+                <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
+                발송 방식
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
+                  <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
+                    onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium text-app-text">일반 발송</div>
+                    <div className="text-xs text-app-text-muted">1분 간격으로 각 방에 순차 전송 (권장)</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
+                  <input type="radio" name="deliveryMode" value="cycle" checked={deliveryMode === "cycle"}
+                    onChange={() => setDeliveryMode("cycle")} className="mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium text-app-text">사이클 발송</div>
+                    <div className="text-xs text-app-text-muted">방마다 {cycleMinutes}분 주기로 순차 자동 전송 (총 {cycleMinutes}분 소요)</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
+                  <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
+                    onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium text-app-text">전체 즉시 발송 (위험)</div>
+                    <div className="text-xs text-app-danger">⚠️ 한 번에 모든 방에 전송합니다. 계정 정지 위험이 있으므로 권장하지 않습니다.</div>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
