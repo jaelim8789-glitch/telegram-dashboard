@@ -256,35 +256,29 @@ export default function SignupPage() {
                 )}
               </div>
 
-              {verifyStatus === "verified" ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
-                  <Button onClick={handleIssueApiKey} disabled={issuing} loading={issuing} className="flex w-full h-12">
-                    <Key className="mr-2 h-4 w-4" /> 무료 API 키 받기
-                  </Button>
-                  {alreadyIssued && (
-                    <InlineError className="mb-0">
-                      <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
-                      이미 발급된 계정입니다. 로그인 페이지에서 API 키로 로그인해주세요.
-                    </InlineError>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {verifyHint && <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>}
-                  {error && !verifyHint && (
-                    <div className="space-y-2">
-                      <Button onClick={handleIssueApiKey} disabled={issuing} loading={issuing} variant="primary" className="flex w-full h-12">
-                        <Key className="mr-2 h-4 w-4" /> 다시 시도
-                      </Button>
-                    </div>
-                  )}
-                  <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
-                    {checking && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {checking ? "인증 확인 중..." : "인증 확인"}
-                  </Button>
-                </div>
+              {verifyStatus === "verified" && (
+                <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
               )}
+
+              {verifyHint && verifyStatus !== "verified" && (
+                <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>
+              )}
+
+              <div className="space-y-3 pt-1">
+                <Button onClick={handleIssueApiKey} disabled={!channelJoined || issuing} loading={issuing} className="flex w-full h-12">
+                  <Key className="mr-2 h-4 w-4" /> 🔑 API 키 수동 발급
+                </Button>
+                <Button onClick={handleCheckVerification} disabled={checking || channelJoined} variant="secondary" className="flex w-full h-12">
+                  {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {checking ? "인증 확인 중..." : "인증 확인 다시하기"}
+                </Button>
+                {alreadyIssued && (
+                  <InlineError className="mb-0">
+                    <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+                    이미 발급된 계정입니다. 로그인 페이지에서 API 키로 로그인해주세요.
+                  </InlineError>
+                )}
+              </div>
               <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
             </div>
           )}
