@@ -29,7 +29,7 @@ export function MarqueeTrust() {
   return (
     <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-6xl">
-        <p className="text-center text-xs uppercase tracking-[0.15em] mb-8" style={{ color: "var(--text-muted)" }}>
+        <p className="text-center text-xs uppercase tracking-[0.15em] mb-8" style={{ color: "var(--color-text-muted)" }}>
           다양한 분야에서 신뢰하는 플랫폼
         </p>
 
@@ -52,7 +52,7 @@ export function MarqueeTrust() {
               const Icon = item.icon;
               return (
                 <span key={`a-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2" role="listitem">
-                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--accent)" }} />
+                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-accent)" }} />
                   {item.label}
                 </span>
               );
@@ -68,7 +68,7 @@ export function MarqueeTrust() {
               const Icon = item.icon;
               return (
                 <span key={`b-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2" role="presentation">
-                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--accent)" }} />
+                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-accent)" }} />
                   {item.label}
                 </span>
               );

@@ -36,7 +36,7 @@ export function ProblemsSection() {
     <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             <AlertTriangle className="h-3 w-3 inline mr-1" /> 현실을 직시하라
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
@@ -45,7 +45,7 @@ export function ProblemsSection() {
           <p className="mt-4 text-sm editorial-body max-w-lg mx-auto">
             솔직히 털어놓으십시오. 우리는 당신을 판단하지 않습니다.
             <br />
-            <span style={{ color: "var(--accent)" }}>함께 해결하러 온 동료입니다.</span>
+            <span style={{ color: "var(--color-accent)" }}>함께 해결하러 온 동료입니다.</span>
           </p>
         </div>
 
@@ -74,17 +74,17 @@ export function ProblemsSection() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                <h3 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
                   {p.title}
                 </h3>
 
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
                   {p.desc}
                 </p>
 
                 {/* 인용구 — 금색 왼쪽 바와 함께 */}
                 <div className="mt-5 pl-4 border-l-2 border-[var(--color-accent)]">
-                  <p className="text-xs italic leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-xs italic leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
                     {p.quote}
                   </p>
                 </div>
@@ -97,10 +97,10 @@ export function ProblemsSection() {
         </div>
 
         <div className="mt-14 text-center">
-          <p className="text-sm italic mb-6" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm italic mb-6" style={{ color: "var(--color-text-muted)" }}>
             &ldquo;변화를 원한다면, 지금 이 순간부터 다르게 행동하라.
             <br />
-            <span style={{ color: "var(--accent)", fontStyle: "normal" }}>내일은 없다. 오늘이 전부다.</span>&rdquo;
+            <span style={{ color: "var(--color-accent)", fontStyle: "normal" }}>내일은 없다. 오늘이 전부다.</span>&rdquo;
           </p>
           <Link
             href="/signup"

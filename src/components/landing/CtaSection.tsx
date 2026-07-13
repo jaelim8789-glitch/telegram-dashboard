@@ -15,7 +15,7 @@ export function CtaSection() {
           transition={{ duration: 0.6 }}
           className="space-y-6"
         >
-          <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--color-accent)" }}>
             지금 시작
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">

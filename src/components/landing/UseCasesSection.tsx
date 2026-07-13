@@ -32,11 +32,11 @@ export function UseCasesSection() {
     <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="text-center max-w-xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             활용 사례
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            이렇게 <span style={{ color: "var(--accent)" }}>활용</span>하십시오
+            이렇게 <span style={{ color: "var(--color-accent)" }}>활용</span>하십시오
           </h2>
           <p className="mt-3 text-sm editorial-body">TeleMon은 다양한 분야에서 사용됩니다.</p>
         </div>
@@ -65,13 +65,13 @@ export function UseCasesSection() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>{c.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{c.desc}</p>
+                <h3 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>{c.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{c.desc}</p>
 
                 <ul className="mt-4 space-y-1.5">
                   {c.benefits.map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                      <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--accent)" }} />
+                    <li key={b} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                      <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--color-accent)" }} />
                       {b}
                     </li>
                   ))}
@@ -80,7 +80,7 @@ export function UseCasesSection() {
                 <div className="mt-4 pt-3 border-t border-[var(--color-accent-border)]">
                   <Link
                     href="/features"
-                    className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--accent)" }}
+                    className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--color-accent)" }}
                   >
                     자세히 보기 <ArrowRight className="h-3 w-3" />
                   </Link>

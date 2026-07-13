@@ -28,17 +28,17 @@ export function FAQ() {
     <section id="faq" className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
       <div className="mx-auto max-w-3xl">
         <div className="text-center mb-12" data-fade>
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
             FAQ
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            자주 묻는 <span style={{ color: "var(--accent)" }}>질문</span>
+            자주 묻는 <span style={{ color: "var(--color-accent)" }}>질문</span>
           </h2>
           <p className="mt-3 text-sm editorial-body">TeleMon에 대해 궁금한 점을 확인하세요.</p>
         </div>
 
         <div className="relative mb-8">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--color-text-muted)" }} />
           <input
             type="text"
             value={filter}
@@ -46,10 +46,10 @@ export function FAQ() {
             placeholder="질문 검색..."
             className="w-full py-3 pl-11 pr-4 text-sm outline-none"
             style={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
+              background: "var(--color-card)",
+              border: "1px solid var(--color-border)",
               borderRadius: "0.75rem",
-              color: "var(--text)",
+              color: "var(--color-text)",
             }}
           />
         </div>
@@ -58,15 +58,15 @@ export function FAQ() {
           {filtered.map((item, i) => {
             const isOpen = openIdx === i;
             return (
-              <div key={i} style={{ border: "1px solid var(--border)", borderRadius: "0.75rem", overflow: "hidden" }}>
+              <div key={i} style={{ border: "1px solid var(--color-border)", borderRadius: "0.75rem", overflow: "hidden" }}>
                 <button
                   type="button"
                   onClick={() => setOpenIdx(isOpen ? null : i)}
                   className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium transition-all"
-                  style={{ color: "var(--text)" }}
+                  style={{ color: "var(--color-text)" }}
                 >
                   <span className="flex-1 pr-4">{item.q}</span>
-                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} style={{ color: "var(--color-text-muted)" }} />
                 </button>
                 <AnimatePresence>
                   {isOpen && (
@@ -77,7 +77,7 @@ export function FAQ() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
+                      <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)", borderTop: "1px solid var(--color-border)", paddingTop: "0.75rem" }}>
                         {item.a}
                       </div>
                     </motion.div>
@@ -89,9 +89,9 @@ export function FAQ() {
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
             더 궁금한 점이 있으면{' '}
-            <Link href="mailto:support@telemon.io" style={{ color: "var(--accent)" }}>support@telemon.io</Link>
+            <Link href="mailto:support@telemon.io" style={{ color: "var(--color-accent)" }}>support@telemon.io</Link>
             로 문의해주세요.
           </p>
         </div>

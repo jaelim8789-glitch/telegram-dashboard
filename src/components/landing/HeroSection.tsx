@@ -30,7 +30,7 @@ export function HeroSection() {
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.02]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, var(--text) 1px, transparent 0)`,
+          backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-text) 1px, transparent 0)`,
           backgroundSize: '24px 24px',
         }}
       />
@@ -54,7 +54,7 @@ export function HeroSection() {
         >
           {t("hero.title1")}
           <br />
-          <span style={{ color: "var(--accent)" }}>{t("hero.title2")}</span>
+          <span style={{ color: "var(--color-accent)" }}>{t("hero.title2")}</span>
         </motion.h1>
 
         <motion.p
@@ -62,7 +62,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4 }}
           className="mt-6 text-base sm:text-lg max-w-2xl mx-auto"
-          style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", lineHeight: 1.7 }}
+          style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-body)", lineHeight: 1.7 }}
         >
           {t("hero.subtitle")}
         </motion.p>
@@ -74,7 +74,7 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.65 }}
           className="mt-10 max-w-lg mx-auto"
         >
-          <p className="italic-script text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          <p className="italic-script text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             {t("hero.quote")}
           </p>
         </motion.div>

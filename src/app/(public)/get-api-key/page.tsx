@@ -330,7 +330,7 @@ export default function GetApiKeyPage() {
                           <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-accent-glow blur-[80px] opacity-20" />
                         </div>
                         <div className="absolute inset-0 rounded-xl pointer-events-none border border-accent-border/30" />
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-accent to-accent-hover px-4 py-1 text-[10px] font-bold text-[#0d0d0d] shadow-lg whitespace-nowrap uppercase tracking-wider">
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-accent to-accent-hover px-4 py-1 text-[10px] font-bold text-[var(--color-accent-contrast)] shadow-lg whitespace-nowrap uppercase tracking-wider">
                           <Star className="h-3 w-3 fill-current" />
                           첫 발자취+
                         </div>
@@ -395,7 +395,7 @@ export default function GetApiKeyPage() {
                           href={plan.href!}
                           className={`mt-6 flex h-11 items-center justify-center rounded-[10px] text-sm font-semibold transition-all ${
                             isLifetime
-                              ? "bg-gradient-to-r from-accent to-accent-hover text-[#0d0d0d] shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 hover:scale-[1.02] active:scale-[0.98]"
+                              ? "bg-gradient-to-r from-accent to-accent-hover text-[var(--color-accent-contrast)] shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 hover:scale-[1.02] active:scale-[0.98]"
                               : "btn-secondary"
                           }`}
                         >
@@ -661,7 +661,7 @@ export default function GetApiKeyPage() {
           </p>
           <Link
             href="/signup"
-            className="btn-primary mt-6 inline-flex h-11 items-center gap-2 rounded-[10px] px-8 text-sm font-semibold glow-pulse"
+            className="btn-primary mt-6 inline-flex h-11 items-center gap-2 rounded-[10px] px-8 text-sm font-semibold animate-glow-pulse"
           >
             무료로 첫발을 내딛다
             <ArrowRight className="h-4 w-4" />

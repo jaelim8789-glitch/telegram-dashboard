@@ -35,7 +35,7 @@ export function PricingPreview() {
         <div className="text-center max-w-2xl mx-auto mb-12">
           <p className="section-heading-luxury mb-3">요금제</p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            당신에게 맞는 <span style={{ color: "var(--accent)" }}>요금제</span>
+            당신에게 맞는 <span style={{ color: "var(--color-accent)" }}>요금제</span>
           </h2>
           <p className="mt-3 text-sm editorial-body">필요한 만큼만 선택하세요.</p>
         </div>
@@ -69,7 +69,7 @@ export function PricingPreview() {
               {/* 금속 리본 배지 (Most popular) */}
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
-                  <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[var(--color-accent)] via-[#d4b06a] to-[var(--color-gold-deep)] px-5 py-1 text-[10px] font-bold text-[var(--color-bg)] shadow-lg uppercase tracking-wider">
+                  <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-gold-deep)] px-5 py-1 text-[10px] font-bold text-[var(--color-accent-contrast)] shadow-lg uppercase tracking-wider">
                     <Star className="h-3 w-3 fill-current" />
                     BEST VALUE
                   </div>
@@ -80,21 +80,21 @@ export function PricingPreview() {
               <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
               <div className="absolute right-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
 
-              <h3 className="font-serif font-semibold text-base" style={{ color: "var(--text)" }}>
+              <h3 className="font-serif font-semibold text-base" style={{ color: "var(--color-text)" }}>
                 {plan.name}
               </h3>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-2xl font-bold gold-text">
                   {plan.price}
                 </span>
-                {plan.period && <span className="text-xs" style={{ color: "var(--text-muted)" }}>/{plan.period}</span>}
+                {plan.period && <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>/{plan.period}</span>}
               </div>
-              {plan.tagline && <p className="mt-2 text-xs italic-script" style={{ color: "var(--text-muted)" }}>{plan.tagline}</p>}
+              {plan.tagline && <p className="mt-2 text-xs italic-script" style={{ color: "var(--color-text-muted)" }}>{plan.tagline}</p>}
 
               <ul className="mt-5 space-y-2 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-                    <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: "var(--accent)" }} />
+                  <li key={f} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                    <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: "var(--color-accent)" }} />
                     {f}
                   </li>
                 ))}

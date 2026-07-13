@@ -13,7 +13,7 @@ export function LiveStatsBar() {
   return (
     <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="px-6 py-10 sm:py-12 border-t border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="px-6 py-10 sm:py-12 border-t border-b" style={{ borderColor: "var(--color-border)" }}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {STATS.map((stat, i) => (
               <motion.div
@@ -25,7 +25,7 @@ export function LiveStatsBar() {
                 className="text-center"
               >
                 <div className="stat-number">{stat.value}</div>
-                <div className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                <div className="mt-1.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
                   {stat.label}
                 </div>
               </motion.div>

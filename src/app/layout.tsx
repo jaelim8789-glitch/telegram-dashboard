@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import "./globals.css";
 
 const inter = Inter({
@@ -33,7 +34,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-app-bg font-sans">
+      <head>
+        {/* Sets data-theme on <html> synchronously before first paint, so the
+            correct light/dark palette is already applied by the time CSS
+            renders — no flash of the wrong theme while React hydrates. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
