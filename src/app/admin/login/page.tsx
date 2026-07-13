@@ -62,11 +62,12 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [issueFailed, setIssueFailed] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function handleStart() {
     if (starting) return;
-    setStarting(true); setError(null);
+    setStarting(true); setError(null); setIssueFailed(false);
     try {
       const start = await freeApiKey.startFreeApiKeyVerification();
       setToken(start.token);
@@ -113,13 +114,21 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   }, [token, verifyStatus]);
 
   useEffect(() => {
-    if (verifyStatus !== "verified" || !token || issuing || apiKey) return;
+    if (verifyStatus !== "verified" || !token || issuing) return;
+    if (apiKey) return;
     const doIssue = async () => {
       setIssuing(true); setError(null);
       try {
         const result = await freeApiKey.issueFreeApiKey(token);
-        setApiKey(result.apiKey);
-      } catch (err) { setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다."); }
+        if (result.apiKey) {
+          setApiKey(result.apiKey);
+        } else {
+          setIssueFailed(true);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다.");
+        setIssueFailed(true);
+      }
       finally { setIssuing(false); }
     };
     doIssue();
@@ -174,8 +183,8 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
           <span className={channelJoined ? "text-app-text-secondary" : "text-app-text font-medium"}>채널 가입 확인</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          {apiKey ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
-          <span className={apiKey ? "text-app-text-secondary" : "text-app-text font-medium"}>API 키 발급</span>
+          {apiKey ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : issueFailed ? <AlertCircle className="h-4 w-4 text-app-warning shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={apiKey ? "text-app-text-secondary" : issueFailed ? "text-app-warning font-medium" : "text-app-text font-medium"}>{apiKey ? "API 키 발급" : issueFailed ? "관리자 확인 중" : "API 키 발급"}</span>
         </div>
       </div>
 
@@ -201,6 +210,12 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.</InlineError>
       )}
       {error && <InlineError>{error}</InlineError>}
+      {issueFailed && !error && (
+        <InlineError className="mb-0">
+          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+          자동 발급이 완료되지 않았습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.
+        </InlineError>
+      )}
     </div>
   );
 }
