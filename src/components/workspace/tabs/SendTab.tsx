@@ -1033,7 +1033,7 @@ export function SendTab() {
                 답장 매크로 (Reply)
               </label>
               {replyMacroEnabled && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-3">
                   <Field label="답장할 메시지 ID">
                     <input type="number" value={replyToMessageId}
                       onChange={(e) => setReplyToMessageId(e.target.value)}
@@ -1041,7 +1041,15 @@ export function SendTab() {
                       min="1"
                       className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                   </Field>
-                  <p className="mt-1 text-[11px] text-app-text-muted">
+                  <Field label="파일 첨부 (선택)">
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setImageFile(file);
+                      }}
+                      className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+                  </Field>
+                  <p className="text-[11px] text-app-text-muted">
                     ON 상태에서는 입력한 메시지 ID에 답장 형태로 발송됩니다.
                   </p>
                 </div>
