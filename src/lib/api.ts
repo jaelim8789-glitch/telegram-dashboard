@@ -253,8 +253,10 @@ export interface CreateBroadcastInput {
   scheduledAt?: string;
   /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
-  /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
+  /** Delivery mode: normal (per-group delay), cycle (round-robin), bulk (instant all) */
   deliveryMode?: "normal" | "cycle" | "bulk";
+  /** Per-group delay in seconds for normal mode (default 60) */
+  delaySeconds?: number;
   /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
   replyToMessageId?: number;
 }
@@ -268,6 +270,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
   if (input.deliveryMode) form.append("delivery_mode", input.deliveryMode);
+  if (input.delaySeconds != null) form.append("delay_seconds", String(input.delaySeconds));
   if (input.replyToMessageId != null) form.append("reply_to_message_id", String(input.replyToMessageId));
 
   const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
@@ -929,6 +932,7 @@ export interface ReplyMacroInput {
   fixedTime?: string;
   maxSendsPerDay?: number;
   isActive?: boolean;
+  file?: File;
 }
 
 export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]> {
@@ -937,19 +941,36 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  const macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: input.name,
-      target_chats: input.targetChats,
-      message_content: input.messageContent,
-      schedule_type: input.scheduleType ?? "interval",
-      interval_hours: input.intervalHours ?? 24,
-      fixed_time: input.fixedTime ?? null,
-      max_sends_per_day: input.maxSendsPerDay ?? 10,
-      is_active: input.isActive ?? true,
-    }),
-  });
+  let macro: ApiReplyMacro;
+  if (input.file) {
+    const form = new FormData();
+    form.append("name", input.name);
+    form.append("target_chats", JSON.stringify(input.targetChats));
+    form.append("message_content", input.messageContent);
+    form.append("schedule_type", input.scheduleType ?? "interval");
+    form.append("interval_hours", String(input.intervalHours ?? 24));
+    form.append("fixed_time", input.fixedTime ?? "");
+    form.append("max_sends_per_day", String(input.maxSendsPerDay ?? 10));
+    form.append("is_active", String(input.isActive ?? true));
+    form.append("file", input.file);
+    const res = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/reply-macros`, { method: "POST", body: form, headers: authHeaders() });
+    if (!res.ok) throw new Error(extractDetailMessage(await res.json().catch(() => null)) ?? "매크로 생성 실패");
+    macro = await res.json();
+  } else {
+    macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: input.name,
+        target_chats: input.targetChats,
+        message_content: input.messageContent,
+        schedule_type: input.scheduleType ?? "interval",
+        interval_hours: input.intervalHours ?? 24,
+        fixed_time: input.fixedTime ?? null,
+        max_sends_per_day: input.maxSendsPerDay ?? 10,
+        is_active: input.isActive ?? true,
+      }),
+    });
+  }
   return toReplyMacro(macro);
 }
 

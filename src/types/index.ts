@@ -179,6 +179,13 @@ export const RECURRING_INTERVALS = [
   { value: 1440, label: "24시간" },
 ] as const;
 
+export const NORMAL_DELAY_OPTIONS = [
+  { value: 5, label: "5초" },
+  { value: 10, label: "10초" },
+  { value: 30, label: "30초" },
+  { value: 60, label: "1분" },
+] as const;
+
 export type AutoReplyMatchType = "keyword" | "exact";
 export type AutoReplyLogStatus = "success" | "failed" | "rate_limited";
 

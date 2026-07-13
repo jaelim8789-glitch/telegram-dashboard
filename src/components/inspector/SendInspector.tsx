@@ -54,7 +54,7 @@ export function SendInspector() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-app-card-hover text-xs font-semibold text-app-text">
                 {getAccountInitials(account)}
               </div>
-              <div className="max-w-[220px] rounded-2xl rounded-tl-sm bg-app-card px-3 py-2">
+              <div className="max-w-[280px] max-h-60 overflow-y-auto rounded-2xl rounded-tl-sm bg-app-card px-3 py-2">
                 {imagePreviewUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={imagePreviewUrl} alt="" className="mb-1.5 max-h-40 w-full rounded-lg object-cover" />
