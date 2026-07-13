@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -49,13 +49,15 @@ function formatDuration(start: string | null, end: string | null): string | null
 }
 
 function LogRow({
-  log, retrying, accountLabel, accounts, onRetry, onEditResend, onNavigate,
+  log, retrying, stopping, accountLabel, accounts, onRetry, onStop, onEditResend, onNavigate,
 }: {
   log: Broadcast;
   retrying: string | null;
+  stopping: string | null;
   accountLabel: (id: string) => string;
   accounts: { id: string; name: string | null; phone: string }[];
   onRetry: (b: Broadcast) => void;
+  onStop: (b: Broadcast) => void;
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
 }) {
@@ -157,6 +159,20 @@ function LogRow({
               )}
             </div>
           )}
+          {isBroadcastInFlight(log) && (
+            <button
+              type="button"
+              onClick={() => onStop(log)}
+              disabled={stopping === log.id}
+              aria-label="발송 중단"
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-lg text-app-warning transition-colors active:scale-95",
+                "hover:bg-app-warning-muted/30 disabled:opacity-40",
+              )}
+            >
+              <Ban className={`h-4 w-4 ${stopping === log.id ? "animate-spin" : ""}`} />
+            </button>
+          )}
         </div>
 
         {/* ── Meta line ── */}
@@ -245,6 +261,8 @@ export function LogTab() {
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const [stopping, setStopping] = useState<string | null>(null);
+  const [stopError, setStopError] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -291,6 +309,23 @@ export function LogTab() {
       toast("error", msg);
     } finally {
       setRetrying(null);
+    }
+  }
+
+  async function handleStop(broadcast: Broadcast) {
+    if (stopping) return;
+    setStopping(broadcast.id);
+    setStopError(null);
+    try {
+      await api.stopBroadcast(broadcast.id);
+      await load();
+      toast("success", "발송이 중단되었습니다.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "발송 중단 요청에 실패했습니다.";
+      setStopError(msg);
+      toast("error", msg);
+    } finally {
+      setStopping(null);
     }
   }
 
@@ -422,6 +457,7 @@ export function LogTab() {
       {/* Error */}
       {error && <InlineError className="mb-2">{error}</InlineError>}
       {retryError && <InlineError className="mb-2">{retryError}</InlineError>}
+      {stopError && <InlineError className="mb-2">{stopError}</InlineError>}
 
       {/* Empty */}
       {!loading && !error && logs.length === 0 && (
@@ -436,9 +472,11 @@ export function LogTab() {
               key={log.id}
               log={log}
               retrying={retrying}
+              stopping={stopping}
               accountLabel={accountLabel}
               accounts={accounts}
               onRetry={handleRetry}
+              onStop={handleStop}
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
             />

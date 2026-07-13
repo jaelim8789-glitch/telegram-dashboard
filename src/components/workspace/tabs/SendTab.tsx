@@ -189,6 +189,7 @@ function HistoryRow({
   const isFutureSchedule = h.status === "pending" && h.scheduledAt && new Date(`${h.scheduledAt}Z`) > new Date();
   const recurring = isRecurringActive(h);
   const recurringCancelled = isCancelled && isRecurringBroadcast(h);
+  const canStop = isBroadcastInFlight(h) || recurring;
   const countdown = useCountdown(recurring ? h.nextScheduledAt : null);
   const duration = formatDuration(h.scheduledAt || h.createdAt, h.sentAt);
   const failureInfo = parseFailureAction(h.errorMessage);
@@ -307,12 +308,12 @@ function HistoryRow({
           </button>
         )}
 
-        {recurring && (
+        {canStop && (
           <button
             type="button"
             onClick={() => onCancelClick(h)}
             disabled={cancelling === h.id}
-            title="반복 취소"
+            title={recurring ? "반복 취소" : "발송 중단"}
             className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
           >
             <XCircle className={`h-3.5 w-3.5 ${cancelling === h.id ? "animate-spin" : ""}`} />
@@ -695,17 +696,18 @@ export function SendTab() {
     } finally { setRetrying(null); }
   }
 
-  async function handleCancelRecurring(b: Broadcast) {
+  async function handleStop(broadcast: Broadcast) {
     if (cancelling || !selectedAccountId) return;
-    setCancelling(b.id);
+    setCancelling(broadcast.id);
     setSubmitError(null);
     setSubmitNotice(null);
+    const isRecurringBroadcastItem = isRecurringBroadcast(broadcast);
     try {
-      await api.cancelRecurringBroadcast(b.id);
-      setSubmitNotice("반복 발송이 취소되었습니다.");
+      await api.stopBroadcast(broadcast.id);
+      setSubmitNotice(isRecurringBroadcastItem ? "반복 발송이 취소되었습니다." : "발송이 중단되었습니다.");
       await loadHistory(selectedAccountId);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "반복 발송 취소에 실패했습니다.");
+      setSubmitError(err instanceof Error ? err.message : "발송 중단에 실패했습니다.");
     } finally { setCancelling(null); }
   }
 
@@ -713,6 +715,13 @@ export function SendTab() {
     setCancelTarget(b);
     setCancelConfirmOpen(true);
   }
+
+  const cancelDialogTitle = cancelTarget && isRecurringBroadcast(cancelTarget) ? "반복 발송 취소" : "발송 중단";
+  const cancelDialogDescription = cancelTarget
+    ? isRecurringBroadcast(cancelTarget)
+      ? `"${cancelTarget.message?.slice(0, 50)}"의 반복 발송을 취소할까요?`
+      : `"${cancelTarget.message?.slice(0, 50)}" 발송을 중단할까요?`
+    : "";
 
   /** Quick status summary for the history prefix */
   const statusSummary = useMemo(() => {
@@ -1126,15 +1135,15 @@ export function SendTab() {
         )}
       </Panel>
 
-      {/* Cancel recurring confirmation */}
+      {/* Stop / Cancel confirmation */}
       <ConfirmDialog
         open={cancelConfirmOpen}
-        title="반복 발송 취소"
-        description={`"${cancelTarget?.message?.slice(0, 50)}"의 반복 발송을 취소할까요?`}
-        confirmLabel="취소하기" cancelLabel="닫기" variant="danger"
+        title={cancelDialogTitle}
+        description={cancelDialogDescription}
+        confirmLabel={cancelTarget && isRecurringBroadcast(cancelTarget) ? "취소하기" : "중단하기"} cancelLabel="닫기" variant="danger"
         onConfirm={async () => {
           if (!cancelTarget) return;
-          await handleCancelRecurring(cancelTarget);
+          await handleStop(cancelTarget);
           setCancelConfirmOpen(false);
           setCancelTarget(null);
         }}
