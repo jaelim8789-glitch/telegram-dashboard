@@ -170,8 +170,11 @@ export interface BroadcastChild {
 }
 
 export const RECURRING_INTERVALS = [
-  { value: 30, label: "30분" },
-  { value: 60, label: "1시간" },
+  { value: 5, label: "5초" },
+  { value: 10, label: "10초" },
+  { value: 15, label: "15초" },
+  { value: 30, label: "30초" },
+  { value: 60, label: "1분" },
   { value: 120, label: "2시간" },
   { value: 180, label: "3시간" },
   { value: 360, label: "6시간" },

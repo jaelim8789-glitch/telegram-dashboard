@@ -7,7 +7,23 @@
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/telegram-dashboard 2>/dev/null && git status --short && echo '--- current commit ---' && git log -1 --format='%h %s'\")",
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/telegram-dashboard && ls -la --time-style=full-iso src/app/admin/users/page.tsx src/lib/api.ts src/types/index.ts && echo '--- current time on server ---' && date && echo '--- containers ---' && docker ps --format 'table {{.Names}}\\\\t{{.Status}}\\\\t{{.CreatedAt}}'\")",
       "Bash(cd \"C:\\\\Users\\\\jaeli\\\\OneDrive\\\\Desktop\\\\telegram-dashboard-backend\" && echo \"=== auth-ratelimit vs p0-4-v2 ancestry ===\" && git merge-base --is-ancestor feat/auth-ratelimit fix/p0-4-auth-rate-limiting-v2 && echo \"auth-ratelimit IS ancestor of p0-4-v2 \\(v2가 상위호환\\)\" || echo \"독립적/별개 계열\" *)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(grep \"\\\\.py$\")",
+      "Bash(git ls-tree *)",
+      "Bash(python -m pytest tests/test_guide_hub.py -v)",
+      "Bash(python -m pytest tests/test_guide_hub.py tests/test_bot_self_service_api_key.py tests/test_telegram_channel_verification.py tests/test_api_telegram_auth.py tests/test_admin_auth.py tests/test_admin_manual_issue.py tests/test_admin_users.py -v)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git log -1 --format='PROD backend now at: %h %s \\(%ci\\)' && git status --short | head -30\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git diff --stat && echo '---diff---' && git diff\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git fetch origin integrate/pre-launch-stabilization-20260713 2>&1 && git merge origin/integrate/pre-launch-stabilization-20260713 --no-edit 2>&1\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && git log -1 --format='HEAD now: %h %s' && cat docker-compose.override.yml 2>/dev/null | head -5\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && cat docker-compose.yml 2>/dev/null | grep -A 15 'backend:' | head -20 && echo '---Dockerfile CMD/entrypoint---' && grep -n 'CMD\\\\|ENTRYPOINT' Dockerfile 2>/dev/null\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"cd /opt/telemon/backend && docker compose up -d backend 2>&1 | tail -10 && sleep 6 && docker ps --format 'table {{.Names}}\\\\t{{.Status}}'\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"docker logs backend-backend-1 2>&1 | head -40\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"docker exec backend-nginx-1 curl -sk -H 'Host: api.telemon.online' -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' http://backend:8000/health && echo '--- guide hub links env ---' && grep -i 'GUIDE_HUB' /opt/telemon/backend/.env 2>&1 || echo '\\(설정 안됨, 기본값 사용 -> 버튼 URL 없음\\)'\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"grep -i 'ADMIN_USERNAME\\\\|ADMIN_PASSWORD' /opt/telemon/backend/.env 2>&1 | sed 's/=.*/=***/'\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i 'C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode' -p 22 root@130.94.32.152 ' *)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i \"C:\\\\Users\\\\jaeli\\\\.ssh\\\\telemon_lightnode\" -p 22 root@130.94.32.152 \"docker logs backend-backend-1 --since 3m 2>&1 | grep -i 'guide_hub\\\\|not modified\\\\|edit_message'\")",
+      "Bash(python -m pytest tests/test_guide_hub.py tests/test_bot_self_service_api_key.py tests/test_telegram_channel_verification.py tests/test_api_telegram_auth.py tests/test_admin_auth.py tests/test_admin_manual_issue.py tests/test_admin_users.py)"
     ]
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -49,17 +49,17 @@ function formatDuration(start: string | null, end: string | null): string | null
 }
 
 function LogRow({
-  log, retrying, stopping, accountLabel, accounts, onRetry, onStop, onEditResend, onNavigate,
+  log, retrying, sendingNow, accountLabel, accounts, onRetry, onEditResend, onNavigate, onSendNow,
 }: {
   log: Broadcast;
   retrying: string | null;
-  stopping: string | null;
+  sendingNow: string | null;
   accountLabel: (id: string) => string;
   accounts: { id: string; name: string | null; phone: string }[];
   onRetry: (b: Broadcast) => void;
-  onStop: (b: Broadcast) => void;
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
+  onSendNow: (b: Broadcast) => void;
 }) {
   const meta = STATUS_META[log.status];
   const Icon = meta.icon;
@@ -79,6 +79,7 @@ function LogRow({
   const hasFailureInfo = isFailed && log.failureInfo != null;
   const accountExists = accounts.some((a) => a.id === log.accountId);
   const retryLocked = retrying === log.id;
+  const sendNowLocked = sendingNow === log.id;
 
   /** Derive whether retry is valid from failure_info semantics.
    *  Only show/allow retry for retryable/conditional categories that
@@ -127,8 +128,21 @@ function LogRow({
             {log.message}
           </span>
 
-          {isFailed && (
-            <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => onSendNow(log)}
+              disabled={sendNowLocked}
+              aria-label="즉시 발송"
+              title="즉시 발송"
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                "text-app-text-muted hover:bg-app-card-hover hover:text-app-text disabled:opacity-40",
+              )}
+            >
+              <Play className={`h-4 w-4 ${sendNowLocked ? "animate-pulse" : ""}`} />
+            </button>
+            {isFailed && (<>
               {(log.errorMessage || log.failureInfo) && (
                 <button
                   type="button"
@@ -157,22 +171,8 @@ function LogRow({
                   <RotateCcw className={`h-4 w-4 ${retryLocked ? "animate-spin" : ""}`} />
                 </button>
               )}
+              </>)}
             </div>
-          )}
-          {isBroadcastInFlight(log) && (
-            <button
-              type="button"
-              onClick={() => onStop(log)}
-              disabled={stopping === log.id}
-              aria-label="발송 중단"
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-lg text-app-warning transition-colors active:scale-95",
-                "hover:bg-app-warning-muted/30 disabled:opacity-40",
-              )}
-            >
-              <Ban className={`h-4 w-4 ${stopping === log.id ? "animate-spin" : ""}`} />
-            </button>
-          )}
         </div>
 
         {/* ── Meta line ── */}
@@ -261,8 +261,8 @@ export function LogTab() {
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
-  const [stopping, setStopping] = useState<string | null>(null);
-  const [stopError, setStopError] = useState<string | null>(null);
+  const [sendNowId, setSendNowId] = useState<string | null>(null);
+  const [sendNowConfirmId, setSendNowConfirmId] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -312,20 +312,19 @@ export function LogTab() {
     }
   }
 
-  async function handleStop(broadcast: Broadcast) {
-    if (stopping) return;
-    setStopping(broadcast.id);
-    setStopError(null);
+  async function handleSendNow(broadcast: Broadcast) {
+    setSendNowConfirmId(null);
+    if (sendNowId) return;
+    setSendNowId(broadcast.id);
     try {
-      await api.stopBroadcast(broadcast.id);
+      await api.sendNowBroadcast(broadcast.id);
       await load();
-      toast("success", "발송이 중단되었습니다.");
+      toast("success", "즉시 발송이 접수되었습니다.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "발송 중단 요청에 실패했습니다.";
-      setStopError(msg);
+      const msg = err instanceof Error ? err.message : "즉시 발송 요청에 실패했습니다.";
       toast("error", msg);
     } finally {
-      setStopping(null);
+      setSendNowId(null);
     }
   }
 
@@ -457,7 +456,6 @@ export function LogTab() {
       {/* Error */}
       {error && <InlineError className="mb-2">{error}</InlineError>}
       {retryError && <InlineError className="mb-2">{retryError}</InlineError>}
-      {stopError && <InlineError className="mb-2">{stopError}</InlineError>}
 
       {/* Empty */}
       {!loading && !error && logs.length === 0 && (
@@ -472,13 +470,13 @@ export function LogTab() {
               key={log.id}
               log={log}
               retrying={retrying}
-              stopping={stopping}
+              sendingNow={sendNowId}
               accountLabel={accountLabel}
               accounts={accounts}
               onRetry={handleRetry}
-              onStop={handleStop}
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
+              onSendNow={(b) => setSendNowConfirmId(b.id)}
             />
           ))}
         </div>
@@ -487,6 +485,22 @@ export function LogTab() {
       {filteredLogs.length === 0 && logs.length > 0 && (
         <p className="py-4 text-center text-xs text-app-text-subtle">선택한 상태의 로그가 없습니다.</p>
       )}
+
+      <ConfirmDialog
+        open={!!sendNowConfirmId}
+        title="즉시 발송"
+        description={
+          sendNowConfirmId
+            ? `"${logs.find((b) => b.id === sendNowConfirmId)?.message?.slice(0, 50)}" — 이 발송을 지금 즉시 1회 실행할까요? 원본 발송 상태는 변경되지 않습니다.`
+            : ""
+        }
+        confirmLabel="즉시 발송"
+        onConfirm={() => {
+          const b = logs.find((l) => l.id === sendNowConfirmId);
+          if (b) handleSendNow(b);
+        }}
+        onCancel={() => setSendNowConfirmId(null)}
+      />
     </Panel>
   );
 }
