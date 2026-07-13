@@ -11,7 +11,7 @@ import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown"
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 const POLL_TIMEOUT_SECONDS = 180;
 
 // requestPlanId values are canonical plan ids (free/pro/team) matching the
