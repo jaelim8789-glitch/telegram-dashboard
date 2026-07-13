@@ -108,24 +108,6 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     finally { setIssuing(false); }
   }
 
-  async function pollOnce() {
-    const t = tokenRef.current;
-    if (!t) return;
-    try {
-      const result = await freeApiKey.checkTelegramVerification(t);
-      setVerifyStatus(result.status);
-      setVerifyReason(result.reason);
-      setError(null);
-      if (result.status === "verified" && pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    } catch (err) {
-      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-      setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
-    }
-  }
-
   const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
   const channelJoined = verifyStatus === "verified";
 
