@@ -465,6 +465,7 @@ export function SendTab() {
       setScheduledAtLocal(draft.scheduledAtLocal);
       setIsRecurring(draft.isRecurring);
       setRecurringInterval(draft.recurringInterval);
+      if (draft.deliveryMode) setDeliveryMode(draft.deliveryMode);
 
       toast("info", "이전 작성 내용을 복원했습니다.");
     }

@@ -11,7 +11,6 @@
  */
 
 export interface SendDraft {
-  /** ISO timestamp of when the draft was last saved, for staleness checks. */
   savedAt: string;
   selectedAccountId: string | null;
   selectedGroupIds: string[];

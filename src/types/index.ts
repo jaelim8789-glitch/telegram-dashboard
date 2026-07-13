@@ -163,6 +163,8 @@ export interface BroadcastChild {
   errorMessage: string | null;
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
+  /** Delivery mode inherited from parent. */
+  deliveryMode?: "normal" | "cycle" | "bulk";
 }
 
 export const RECURRING_INTERVALS = [
