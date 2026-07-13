@@ -156,6 +156,35 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
     </div>
   );
 
+  if (issueFailed) return (
+    <div className="text-center space-y-4">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-app-warning-muted">
+        <AlertCircle className="h-7 w-7 text-app-warning" />
+      </div>
+      <p className="text-sm text-app-text-secondary">자동 API 키 발급에 실패했습니다</p>
+      <p className="text-xs text-app-text-muted">아래 버튼을 눌러 텔레그램 봇에서 직접 API 키를 발급받을 수 있습니다.</p>
+      {botDeepLink && (
+        <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
+          className="btn-primary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+          🔑 API 키 받기
+        </a>
+      )}
+      {channelUrl && (
+        <a href={channelUrl} target="_blank" rel="noopener noreferrer"
+          className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+          <ExternalLink className="h-4 w-4" /> 채널 가입하기
+        </a>
+      )}
+      {error && <InlineError>{error}</InlineError>}
+      {!error && (
+        <InlineError className="mb-0">
+          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+          자동 발급이 완료되지 않았습니다. 봇에서도 문제가 계속되면 관리자에게 문의해주세요.
+        </InlineError>
+      )}
+    </div>
+  );
+
   if (!token) return (
     <div className="space-y-4">
       <p className="text-xs text-app-text-muted leading-relaxed">
@@ -183,8 +212,8 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
           <span className={channelJoined ? "text-app-text-secondary" : "text-app-text font-medium"}>채널 가입 확인</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          {apiKey ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : issueFailed ? <AlertCircle className="h-4 w-4 text-app-warning shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
-          <span className={apiKey ? "text-app-text-secondary" : issueFailed ? "text-app-warning font-medium" : "text-app-text font-medium"}>{apiKey ? "API 키 발급" : issueFailed ? "관리자 확인 중" : "API 키 발급"}</span>
+          <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />
+          <span className="text-app-text font-medium">API 키 발급</span>
         </div>
       </div>
 
@@ -210,12 +239,6 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.</InlineError>
       )}
       {error && <InlineError>{error}</InlineError>}
-      {issueFailed && !error && (
-        <InlineError className="mb-0">
-          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
-          자동 발급이 완료되지 않았습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.
-        </InlineError>
-      )}
     </div>
   );
 }
