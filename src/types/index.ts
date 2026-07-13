@@ -119,6 +119,8 @@ export interface Broadcast {
   failureInfo: FailureInfo | null;
   /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
   deliveryMode?: "normal" | "cycle" | "bulk";
+  /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
+  replyToMessageId: number | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
