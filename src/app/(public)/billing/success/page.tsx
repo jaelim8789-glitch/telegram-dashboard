@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/site";
+import { getApiBaseUrl } from "@/lib/api";
+
+const API_BASE = getApiBaseUrl();
 
 type VerificationState = "verifying" | "verified" | "failed" | "pending";
 

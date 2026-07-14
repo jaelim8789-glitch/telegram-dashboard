@@ -1,0 +1,1 @@
+INSERT INTO api_keys (id, key, name, is_active, created_at, tenant_id) VALUES ('7c88a149-80ad-4dd4-9ad3-67adaed45304', 'sk-test-57812875e17c44e38b15c65a90eb7f47', 'test-key', true, NOW(), 'ca4d6942-3965-4a54-8063-f840036bd9e3');

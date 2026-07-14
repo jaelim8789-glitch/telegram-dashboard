@@ -298,11 +298,10 @@ export default function SignupPage() {
                     {checking ? "인증 확인 중..." : "인증 확인"}
                   </Button>
                 </div>
->>>>>>> 880b68d (fix: distinguish procedural guidance from error messages in signup verification flow)
               )}
 
               {verifyHint && verifyStatus !== "verified" && (
-                <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>
+                <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint.text}</InlineError>
               )}
 
               <div className="space-y-3 pt-1">

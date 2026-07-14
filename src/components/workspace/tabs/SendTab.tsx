@@ -1287,7 +1287,6 @@ export function SendTab() {
                 답장으로 보내기
               </label>
             </div>
-          </div>
 
           {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
           {submitNotice && (
