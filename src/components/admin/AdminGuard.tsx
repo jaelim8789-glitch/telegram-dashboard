@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
-import { clearToken, getToken } from "@/lib/auth";
+import { clearToken, getToken, clearSessionToken } from "@/lib/auth";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 interface AdminGuardProps {
@@ -43,6 +43,7 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
         setChecked(true);
       } catch {
         clearToken();
+        clearSessionToken();
         router.replace("/admin/login");
       }
     }

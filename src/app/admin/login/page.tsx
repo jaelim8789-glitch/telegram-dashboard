@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import * as freeApiKey from "@/lib/api_free_api_key";
-import { setToken } from "@/lib/auth";
+import { setToken, getSessionToken, clearSessionToken } from "@/lib/auth";
 import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
 
 type AuthMethod = "admin" | "trial" | "apikey";
@@ -263,11 +263,29 @@ function ApiKeyLoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const saved = getSessionToken();
+    if (saved) {
+      setSubmitting(true);
+      api.fetchAuthMe().then((me) => {
+        if (me.role === "user" || me.role === "api_key") {
+          router.replace("/app");
+        } else {
+          clearSessionToken();
+          setSubmitting(false);
+        }
+      }).catch(() => {
+        clearSessionToken();
+        setSubmitting(false);
+      });
+    }
+  }, [router]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!apiKey.trim() || submitting) return;
     setSubmitting(true); setError(null);
-    try { const token = await api.loginWithApiKey(apiKey.trim()); setToken(token); router.replace("/app"); }
+    try { const token = await api.loginWithApiKey(apiKey.trim()); setToken(token); clearSessionToken(); router.replace("/app"); }
     catch (err) { setError(err instanceof Error ? err.message : "로그인 실패"); }
     finally { setSubmitting(false); }
   }
