@@ -92,23 +92,23 @@ function PhoneVerificationForm() {
       </div>
       <div className="flex gap-2">
         <button onClick={reset} className="btn-secondary flex-1 h-10 rounded-xl text-sm">처음으로</button>
-        <Button
-          onClick={async () => {
-            try {
-              const accessToken = await api.loginWithApiKey(issuedKey);
-              setToken(accessToken);
-              router.replace("/app");
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "자동 로그인 실패");
-            }
-          }}
-          variant="primary"
-          className="flex w-full h-12 items-center justify-center gap-1"
-        >
-          <Key className="h-4 w-4" /> 이 키로 바로 로그인
-        </Button>
         <Link href="/admin/login" className="btn-primary flex-1 flex items-center justify-center h-10 rounded-xl text-sm">로그인</Link>
       </div>
+      <Button
+        onClick={async () => {
+          try {
+            const accessToken = await api.loginWithApiKey(issuedKey);
+            setToken(accessToken);
+            router.replace("/app");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "자동 로그인 실패");
+          }
+        }}
+        variant="primary"
+        className="flex w-full h-12 items-center justify-center gap-1 mt-2"
+      >
+        <Key className="h-4 w-4" /> 이 키로 바로 로그인
+      </Button>
     </div>
   );
 
