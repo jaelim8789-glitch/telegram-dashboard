@@ -23,6 +23,9 @@ test.describe("계정 등록 → 인증 단계 진입 → 세션 영속성", () 
     const phone = uniquePhone();
 
     await page.goto("/app");
+    await page.getByPlaceholder("+82 10-0000-0000").fill(phone);
+    await page.getByRole("button", { name: "계정 등록 및 인증번호 요청" }).click();
+    await expect(page.getByText(/TELEGRAM_API_ID|my\.telegram\.org/)).toBeVisible({ timeout: 10000 });
 
     const match = await fetchAccountByPhone(request, phone);
     expect(match).toBeTruthy();

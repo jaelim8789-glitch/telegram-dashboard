@@ -49,6 +49,15 @@ export async function createAccount(
   return (await res.json()).id as string;
 }
 
+export async function cancelBroadcast(request: APIRequestContext, broadcastId: string): Promise<void> {
+  const res = await request.post(`/api/broadcast/${broadcastId}/cancel`, {
+    headers: await authHeaders(request),
+  });
+  if (!res.ok()) {
+    throw new Error(`반복 발송 취소 실패: ${res.status()} ${await res.text()}`);
+  }
+}
+
 export async function deleteAccount(request: APIRequestContext, accountId: string): Promise<void> {
   await request.delete(`/api/accounts/${accountId}`, { headers: await authHeaders(request) });
 }

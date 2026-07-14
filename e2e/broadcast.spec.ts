@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createAccount, createBroadcast, deleteAccount, uniquePhone } from "./helpers";
+import { cancelBroadcast, createAccount, createBroadcast, deleteAccount, uniquePhone } from "./helpers";
 
 /**
  * Covers the send flow end to end for what's true without a live Telegram session:
@@ -106,8 +106,11 @@ test.describe("발송 흐름 (예약 포함)", () => {
       recurringIntervalMinutes: 60,
     });
 
+    await cancelBroadcast(request, broadcastId);
+
     await page.goto("/");
     await page.getByRole("button", { name: "발송", exact: true }).click();
     await expect(page.getByText("E2E 취소 확인용 메시지")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("취소됨")).toBeVisible();
   });
 });

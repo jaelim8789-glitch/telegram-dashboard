@@ -89,9 +89,8 @@ test.describe("P0-5: Billing success verification", () => {
   test("billing success page verifies payment_ref server-side", async ({ page }) => {
     // The page fetches /api/payment/status/{payment_ref} and shows state based on response.
     // With a non-existent ref, backend returns { status: "pending" } → page shows "pending"
-    await page.goto("/billing/success?payment_ref=TM-BILLINGTEST");
 
-    // The page should make a network request to /api/payment/status/TM-BILLINGTEST
+    // Register listener BEFORE goto to avoid race
     const statusResponse = page.waitForResponse(
       (res) =>
         res.url().includes("/api/payment/status/TM-BILLINGTEST") &&
@@ -99,6 +98,7 @@ test.describe("P0-5: Billing success verification", () => {
       { timeout: 10000 },
     );
 
+    await page.goto("/billing/success?payment_ref=TM-BILLINGTEST");
     await statusResponse;
 
     // After verification, the page should NOT show success unconditionally
@@ -120,16 +120,20 @@ test.describe("P0-5: Billing success verification", () => {
 
   test("billing success shows verifying→result transition", async ({ page }) => {
     // With a known-invalid ref, the page should transition from "verifying" to "failed" or "pending"
+
+    // Register listener BEFORE goto to avoid race
+    const transitionResponse = page.waitForResponse(
+      (res) => res.url().includes("/api/payment/status/TM-TRANSITIONTEST"),
+      { timeout: 10000 },
+    );
+
     await page.goto("/billing/success?payment_ref=TM-TRANSITIONTEST");
 
     // Initially should show verifying state
     await expect(page.getByText("결제 확인 중...")).toBeVisible({ timeout: 5000 });
 
     // Wait for the API call to complete
-    await page.waitForResponse(
-      (res) => res.url().includes("/api/payment/status/TM-TRANSITIONTEST"),
-      { timeout: 10000 },
-    );
+    await transitionResponse;
 
     // After response, should transition away from verifying
     await page.waitForFunction(() => {
