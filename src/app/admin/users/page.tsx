@@ -15,9 +15,7 @@ import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { DashboardUser, UserLookupResult } from "@/lib/api";
 
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
+import { formatDateTime } from "@/lib/formatTime";
 
 function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
   const [searchQuery, setSearchQuery] = useState("");

@@ -21,9 +21,7 @@ import * as api from "@/lib/api";
 import type { Account, AccountHealthItem } from "@/types";
 import type { DashboardUser } from "@/lib/api";
 
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
+import { formatDateTime } from "@/lib/formatTime";
 
 function healthTone(status: string): "success" | "warning" | "danger" | "neutral" {
   switch (status) {
