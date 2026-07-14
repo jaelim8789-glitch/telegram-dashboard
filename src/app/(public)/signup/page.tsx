@@ -180,7 +180,7 @@ export default function SignupPage() {
                 if (selectedPlan === "free") {
                   setStep("phone");
                 } else {
-                  router.push("/get-api-key");
+                  router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
               }} className="btn-primary w-full h-12 rounded-xl text-sm font-semibold relative z-10">다음</button>
             </div>
