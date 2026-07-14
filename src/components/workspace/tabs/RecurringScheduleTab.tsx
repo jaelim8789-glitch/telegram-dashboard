@@ -11,8 +11,9 @@ import {
   Clock,
   Copy,
   PauseCircle,
-  Play,
+  Pause,
   PlayCircle,
+  Play,
   Plus,
   RefreshCw,
   SendHorizonal,
@@ -548,6 +549,7 @@ export function RecurringScheduleTab() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ broadcast: Broadcast; action: "cancel" } | null>(null);
   const [sendNowConfirmId, setSendNowConfirmId] = useState<string | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState<"pause" | "resume" | "cancel" | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [childData, setChildData] = useState<Record<string, { last: BroadcastChild | null }>>({});
 
@@ -665,6 +667,45 @@ export function RecurringScheduleTab() {
     }
   };
 
+  const handleBulkAction = async () => {
+    if (!confirmBulk) return;
+    const targets = recurring.filter((b) => {
+      const state = getRecurringState(b);
+      if (confirmBulk === "pause") return state === "active";
+      if (confirmBulk === "resume") return state === "paused";
+      return state !== "cancelled";
+    });
+    if (targets.length === 0) {
+      toast("info", "해당 상태의 반복 발송이 없습니다.");
+      setConfirmBulk(null);
+      return;
+    }
+    let successCount = 0;
+    let failCount = 0;
+    for (const broadcast of targets) {
+      try {
+        if (confirmBulk === "pause") {
+          await api.pauseRecurringBroadcast(broadcast.id);
+        } else if (confirmBulk === "resume") {
+          await api.unpauseRecurringBroadcast(broadcast.id);
+        } else {
+          await api.cancelRecurringBroadcast(broadcast.id);
+        }
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+    if (failCount === 0) {
+      const labels = { pause: "일시중지", resume: "재개", cancel: "취소" };
+      toast("success", `${targets.length}개 반복 발송 ${labels[confirmBulk]} 완료`);
+    } else {
+      toast("warning", `${successCount}개 성공, ${failCount}개 실패`);
+    }
+    setConfirmBulk(null);
+    await loadRecurring();
+  };
+
   const clearCreateForm = useCallback(() => {
     setShowCreate(false);
     setDuplicateSource(null);
@@ -771,6 +812,40 @@ export function RecurringScheduleTab() {
               <AlertTriangle className="h-3.5 w-3.5" />
               주의 필요 {errorCount}
             </Button>
+          )}
+          {recurring.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setConfirmBulk("pause")}
+                disabled={confirmBulk !== null}
+                title="활성 반복 발송 모두 일시중지"
+                className="flex items-center gap-1 rounded-xl border border-app-border px-2.5 py-1.5 text-xs text-app-text-muted hover:border-app-warning hover:text-app-warning transition-colors disabled:opacity-40"
+              >
+                <Pause className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">전체 중지</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmBulk("resume")}
+                disabled={confirmBulk !== null}
+                title="일시중지된 반복 발송 모두 재개"
+                className="flex items-center gap-1 rounded-xl border border-app-border px-2.5 py-1.5 text-xs text-app-text-muted hover:border-app-success hover:text-app-success transition-colors disabled:opacity-40"
+              >
+                <Play className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">전체 재개</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmBulk("cancel")}
+                disabled={confirmBulk !== null}
+                title="모든 반복 발송 취소"
+                className="flex items-center gap-1 rounded-xl border border-app-border px-2.5 py-1.5 text-xs text-app-text-muted hover:border-app-danger hover:text-app-danger transition-colors disabled:opacity-40"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">전체 취소</span>
+              </button>
+            </>
           )}
           <Button
             variant="primary"
@@ -1035,6 +1110,30 @@ export function RecurringScheduleTab() {
         confirmLabel="즉시 발송"
         onConfirm={handleSendNow}
         onCancel={() => setSendNowConfirmId(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmBulk !== null}
+        title={
+          confirmBulk === "pause" ? "전체 일시중지"
+          : confirmBulk === "resume" ? "전체 재개"
+          : "전체 취소"
+        }
+        description={
+          confirmBulk === "pause"
+            ? "현재 활성 상태인 반복 발송을 모두 일시중지합니다."
+            : confirmBulk === "resume"
+            ? "일시중지된 모든 반복 발송을 재개합니다."
+            : "모든 반복 발송을 영구 취소합니다. 이 작업은 되돌릴 수 없습니다."
+        }
+        confirmLabel={
+          confirmBulk === "pause" ? "전체 중지"
+          : confirmBulk === "resume" ? "전체 재개"
+          : "전체 취소"
+        }
+        variant={confirmBulk === "cancel" ? "danger" : "default"}
+        onConfirm={handleBulkAction}
+        onCancel={() => setConfirmBulk(null)}
       />
     </div>
   );
