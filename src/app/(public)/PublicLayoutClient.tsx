@@ -52,7 +52,7 @@ export function PublicLayoutClient({
             <Link href="/pricing" className="tab-heritage">{t("app.pricing")}</Link>
             <Link href="/get-api-key" className="tab-heritage">{t("app.apiKey")}</Link>
             <Link href="/changelog" className="tab-heritage">{t("app.updates")}</Link>
-            <a href="#faq" className="tab-heritage">{t("app.faq")}</a>
+            <Link href="/#faq" className="tab-heritage">{t("app.faq")}</Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -90,7 +90,7 @@ export function PublicLayoutClient({
               <Link href="/pricing" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.pricing")}</Link>
               <Link href="/get-api-key" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.apiKey")}</Link>
               <Link href="/changelog" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.updates")}</Link>
-              <a href="#faq" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.faq")}</a>
+              <Link href="/#faq" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.faq")}</Link>
               <div className="pt-4 mt-3 border-t border-[var(--color-accent-border)] flex items-center gap-3">
                 <Link href="/admin/login" className="btn-heritage-secondary w-full text-center py-1.5 text-xs">{t("app.login")}</Link>
                 <Link href="/signup" className="btn-heritage w-full text-center py-1.5 text-xs">{t("app.start")}</Link>
@@ -141,7 +141,7 @@ export function PublicLayoutClient({
             </div>
             {[
               { title: "Service", links: [[t("app.features"), "/features"],[t("app.pricing"), "/pricing"],[t("app.apiKey"), "/get-api-key"]] },
-              { title: "Resources", links: [[t("app.updates"), "/changelog"],[t("app.faq"), "#faq"]] },
+              { title: "Resources", links: [[t("app.updates"), "/changelog"],[t("app.faq"), "/#faq"]] },
               { title: "Contact", links: [[t("app.support"), `mailto:${SITE.support.email}`],["Telegram", `https://t.me/${SITE.support.telegram.replace("@", "")}`]] },
             ].map((section) => (
               <div key={section.title}>
