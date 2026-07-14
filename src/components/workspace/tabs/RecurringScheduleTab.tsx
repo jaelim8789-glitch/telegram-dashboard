@@ -609,8 +609,8 @@ export function RecurringScheduleTab() {
     if (!confirm) return;
     setActionLoading(confirm.broadcast.id);
     try {
-      await api.cancelRecurringBroadcast(confirm.broadcast.id);
-      setRecurring((previous) => previous.filter((broadcast) => broadcast.id !== confirm.broadcast.id));
+      const updated = await api.cancelRecurringBroadcast(confirm.broadcast.id);
+      setRecurring((previous) => previous.map((item) => (item.id === confirm.broadcast.id ? { ...item, ...updated } : item)));
       setChildData((previous) => {
         const next = { ...previous };
         delete next[confirm.broadcast.id];
@@ -631,7 +631,8 @@ export function RecurringScheduleTab() {
     setActionLoading(sendNowConfirmId);
     setSendNowConfirmId(null);
     try {
-      await api.sendNowBroadcast(broadcast.id);
+      const updated = await api.sendNowBroadcast(broadcast.id);
+      setRecurring((previous) => previous.map((item) => (item.id === broadcast.id ? { ...item, ...updated } : item)));
       toast("success", "즉시 발송이 접수되었습니다.");
     } catch (err) {
       toast("error", err instanceof Error ? err.message : "즉시 발송 요청에 실패했습니다.");
@@ -722,7 +723,8 @@ export function RecurringScheduleTab() {
     const active = recurring.filter((broadcast) => getRecurringState(broadcast) === "active").length;
     const paused = recurring.filter((broadcast) => getRecurringState(broadcast) === "paused").length;
     const errorCount = recurring.filter((broadcast) => getRecurringState(broadcast) === "error").length;
-    return { total: recurring.length, active, paused, error: errorCount };
+    const cancelled = recurring.filter((broadcast) => getRecurringState(broadcast) === "cancelled").length;
+    return { total: recurring.length, active, paused, error: errorCount, cancelled };
   }, [recurring]);
 
   const [filter, setFilter] = useState<RFilter>("all");
@@ -801,7 +803,7 @@ export function RecurringScheduleTab() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-1 rounded-xl border border-app-border bg-app-card p-0.5">
-          {(["all", "active", "paused", "error"] as const).map((value) => (
+          {(["all", "active", "paused", "cancelled", "error"] as const).map((value) => (
             <button
               key={value}
               type="button"
