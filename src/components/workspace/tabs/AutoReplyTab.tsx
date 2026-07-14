@@ -33,9 +33,7 @@ const LOG_STATUS_TONE: Record<AutoReplyLogStatus, { tone: "success" | "warning" 
   rate_limited: { tone: "warning", label: "제한됨" },
 };
 
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
+import { formatDateTime } from "@/lib/formatTime";
 
 function formatRuleDateTime(iso: string): string {
   const d = new Date(`${iso}Z`);

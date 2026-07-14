@@ -24,6 +24,10 @@ import { getToken } from "@/lib/auth";
 // The fallback "http://localhost:8000" is for local dev without nginx.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}
+
 /** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
@@ -80,15 +84,36 @@ function toAccount(api: ApiAccount): Account {
   };
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly isNetworkError?: boolean,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
+    });
+  } catch {
+    throw new ApiError(
+      "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
+      undefined,
+      true,
+    );
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+    throw new ApiError(detail, res.status, false);
   }
 
   if (res.status === 204) return undefined as T;
@@ -220,6 +245,7 @@ interface ApiBroadcast {
   next_scheduled_at: string | null;
   is_recurring_paused: boolean;
   failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+  inline_buttons: { label: string; url: string }[] | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -239,6 +265,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     nextScheduledAt: api.next_scheduled_at ?? null,
     isRecurringPaused: api.is_recurring_paused,
     failureInfo: api.failure_info as Broadcast["failureInfo"] | null ?? null,
+    inlineButtons: api.inline_buttons as Broadcast["inlineButtons"] | null ?? null,
   };
 }
 
@@ -251,6 +278,8 @@ export interface CreateBroadcastInput {
   scheduledAt?: string;
   /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
+  /** Inline keyboard buttons (label + URL pairs). */
+  inlineButtons?: { label: string; url: string }[];
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -261,11 +290,19 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.image) form.append("image", input.image);
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
+  if (input.inlineButtons && input.inlineButtons.length > 0) {
+    form.append("inline_buttons", JSON.stringify(input.inlineButtons));
+  }
 
-  const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
+  } catch {
+    throw new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
   }
   return toBroadcast(await res.json());
 }
@@ -352,6 +389,7 @@ export async function fetchRecurringChildren(
     id: string; account_id: string; message: string; status: BroadcastStatus;
     scheduled_at: string | null; sent_at: string | null; created_at: string; error_message: string | null;
     failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+    inline_buttons: { label: string; url: string }[] | null;
   }[]>(`/api/broadcast/${broadcastId}/children${qs ? `?${qs}` : ""}`);
   return items.map((api) => ({
     id: api.id,
@@ -363,6 +401,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
+    inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }
 

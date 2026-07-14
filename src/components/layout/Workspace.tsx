@@ -16,6 +16,7 @@ import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
 import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
 import { LogTab } from "@/components/workspace/tabs/LogTab";
 import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
+import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -29,6 +30,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   autoreply: AutoReplyTab,
   replymacro: ReplyMacroTab,
   deliveryanalytics: DeliveryAnalyticsTab,
+  channelhub: ChannelHubTab,
   profile: ProfileTab,
   log: LogTab,
 };

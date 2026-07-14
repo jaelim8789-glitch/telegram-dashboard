@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, KeyRound, Shield, Smartphone, CheckCircle2, Star, Sparkles, Heart,
@@ -10,8 +10,9 @@ import { useFadeIn } from "@/lib/useFadeIn";
 import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
+import { getApiBaseUrl } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE = getApiBaseUrl();
 const POLL_TIMEOUT_SECONDS = 180;
 
 // requestPlanId values are canonical plan ids (free/pro/team) matching the
@@ -107,6 +108,17 @@ export default function GetApiKeyPage() {
   const [copiedMemo, setCopiedMemo] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [waitingTime, setWaitingTime] = useState(0);
+
+  // Preselect plan from URL ?plan= parameter (e.g. from signup page)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const planParam = params.get("plan");
+    if (!planParam || requestingPlanId) return;
+    const target = PLANS.find((p) => p.requestPlanId === planParam);
+    if (target) {
+      handleRequestKey(target.name, planParam);
+    }
+  }, []);
 
   // Poll payment status
   useEffect(() => {
