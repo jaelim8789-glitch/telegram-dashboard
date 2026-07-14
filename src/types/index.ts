@@ -97,6 +97,11 @@ export interface FailureInfo {
   summary: string;
 }
 
+export interface InlineButton {
+  label: string;
+  url: string;
+}
+
 export interface Broadcast {
   id: string;
   accountId: string;
@@ -116,8 +121,9 @@ export interface Broadcast {
   nextScheduledAt: string | null;
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
-  /** Normalized failure intelligence for failed broadcasts (null for non-failed or legacy records). */
   failureInfo: FailureInfo | null;
+  /** Inline keyboard buttons attached to this broadcast message. */
+  inlineButtons: InlineButton[] | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -157,6 +163,8 @@ export interface BroadcastChild {
   errorMessage: string | null;
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
+  /** Inline keyboard buttons. */
+  inlineButtons: InlineButton[] | null;
 }
 
 export const MAX_BROADCAST_RECIPIENTS = 10;

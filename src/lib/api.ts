@@ -245,6 +245,7 @@ interface ApiBroadcast {
   next_scheduled_at: string | null;
   is_recurring_paused: boolean;
   failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+  inline_buttons: { label: string; url: string }[] | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -264,6 +265,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     nextScheduledAt: api.next_scheduled_at ?? null,
     isRecurringPaused: api.is_recurring_paused,
     failureInfo: api.failure_info as Broadcast["failureInfo"] | null ?? null,
+    inlineButtons: api.inline_buttons as Broadcast["inlineButtons"] | null ?? null,
   };
 }
 
@@ -276,6 +278,8 @@ export interface CreateBroadcastInput {
   scheduledAt?: string;
   /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
+  /** Inline keyboard buttons (label + URL pairs). */
+  inlineButtons?: { label: string; url: string }[];
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -286,6 +290,9 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.image) form.append("image", input.image);
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
+  if (input.inlineButtons && input.inlineButtons.length > 0) {
+    form.append("inline_buttons", JSON.stringify(input.inlineButtons));
+  }
 
   let res: Response;
   try {
@@ -382,6 +389,7 @@ export async function fetchRecurringChildren(
     id: string; account_id: string; message: string; status: BroadcastStatus;
     scheduled_at: string | null; sent_at: string | null; created_at: string; error_message: string | null;
     failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+    inline_buttons: { label: string; url: string }[] | null;
   }[]>(`/api/broadcast/${broadcastId}/children${qs ? `?${qs}` : ""}`);
   return items.map((api) => ({
     id: api.id,
@@ -393,6 +401,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
+    inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }
 
