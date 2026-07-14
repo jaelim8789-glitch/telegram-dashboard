@@ -29,9 +29,9 @@ const PLANS = [
     name: "Free Trial",
     price: "0",
     period: "무료",
-    features: ["1개 계정 연결", "자동 응답 기능", "메시지 발송", "기본 발송 로그"],
+    features: ["⏱ 약 1분이면 완료", "🔑 24시간 무료", "결제 정보 불필요", "모든 기능 제한 없음"],
     href: "/signup",
-    cta: "무료 시작",
+    cta: "1분 인증 시작 · 24시간 무료",
     popular: false,
   },
   {

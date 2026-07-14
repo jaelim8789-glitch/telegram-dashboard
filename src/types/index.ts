@@ -34,6 +34,8 @@ export const TABS: TabDef[] = [
 
 export type AccountStatus = "active" | "inactive" | "banned";
 
+export type AuthFlowMode = "register" | "re-auth";
+
 export type AccountHealthState =
   | "healthy"
   | "unauthorized"

@@ -357,10 +357,25 @@ export function SendTab() {
     if (!savedGroupStorageKey) { setSavedSendGroupIds([]); return; }
     try {
       const stored = localStorage.getItem(savedGroupStorageKey);
-      if (stored) setSavedSendGroupIds(JSON.parse(stored));
-      else setSavedSendGroupIds([]);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        setSavedSendGroupIds(parsed);
+      } else {
+        setSavedSendGroupIds([]);
+      }
     } catch { setSavedSendGroupIds([]); }
   }, [savedGroupStorageKey]);
+
+  useEffect(() => {
+    if (!savedGroupStorageKey || !groups.length) return;
+    setSavedSendGroupIds((prev) => {
+      const valid = prev.filter((id) => groups.some((g) => g.id === id));
+      if (valid.length !== prev.length) {
+        localStorage.setItem(savedGroupStorageKey, JSON.stringify(valid));
+      }
+      return valid;
+    });
+  }, [groups, savedGroupStorageKey]);
 
   const savedSendGroups = useMemo(
     () => groups.filter((g) => savedSendGroupIds.includes(g.id)),
@@ -704,10 +719,6 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
-      // "답장으로 보내기" is its own delivery mode on the backend (delivery_mode="reply")
-      // — distinct from the normal/cycle/bulk pacing modes below, which don't apply to
-      // a single reply send. Without this, reply_to_message_id is persisted but never
-      // actually used, and the message goes out as a new message instead of a reply.
       const mode = replyMacroEnabled ? "reply" : deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
@@ -723,6 +734,7 @@ export function SendTab() {
           ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
           : undefined,
       });
+      api.clearIdempotencyKey();
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
@@ -744,7 +756,12 @@ export function SendTab() {
       setSearch("");
       await loadHistory(selectedAccountId);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
+      if (err instanceof api.ApiError && err.isNetworkError) {
+        setSubmitError("발송 상태를 확인할 수 없습니다. 로그 탭에서 확인하거나 잠시 후 다시 시도하세요.");
+      } else {
+        api.clearIdempotencyKey();
+        setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
+      }
     } finally { setSubmitting(false); }
   }
 
