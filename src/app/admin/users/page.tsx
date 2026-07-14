@@ -10,13 +10,12 @@ import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { InlineError } from "@/components/ui/InlineError";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { DashboardUser } from "@/lib/api";
 
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
+import { formatDateTime } from "@/lib/formatTime";
 
 function UsersContent() {
   const [users, setUsers] = useState<DashboardUser[]>([]);
@@ -88,6 +87,11 @@ function UsersContent() {
       </div>
 
       {/* Stats bar */}
+      {loading ? (
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+        </div>
+      ) : (
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-app-border bg-app-card p-3 text-center transition-colors hover:border-app-border-strong">
           <div className="text-2xl font-bold text-app-text tabular-nums">{users.length}</div>
@@ -102,6 +106,7 @@ function UsersContent() {
           <div className="text-xs text-app-text-muted mt-0.5">비활성</div>
         </div>
       </div>
+      )}
 
       {/* Reissued key dialog */}
       {reissuedKey && (

@@ -28,6 +28,7 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
+import { fmt, formatRelativeTime } from "@/lib/formatTime";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type {
@@ -51,25 +52,10 @@ const DAY_OPTIONS = [
 type TimeRange = (typeof DAY_OPTIONS)[number]["value"];
 
 function pct(n: number): string { return `${Math.round(n)}%`; }
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString("ko-KR");
-}
 function successTone(rate: number): "success" | "warning" | "danger" {
   if (rate >= 90) return "success";
   if (rate >= 70) return "warning";
   return "danger";
-}
-function relativeTime(iso: string | null): string {
-  if (!iso) return "-";
-  const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
-  const m = Math.floor(diffMs / 60000);
-  if (m < 1) return "방금 전";
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  return `${Math.floor(h / 24)}일 전`;
 }
 
 function AccountLabel({ id }: { id: string }) {
@@ -245,7 +231,7 @@ function FailureBreakdown({ items }: { items: FailureIntelligenceItem[] }) {
             <span>{f.affected_accounts}개 계정</span>
           </div>
           <div className="mt-0.5 text-[10px] text-app-text-subtle">
-            {f.latest_occurrence ? `최근 ${relativeTime(f.latest_occurrence)}` : ""}
+            {f.latest_occurrence ? `최근 ${formatRelativeTime(f.latest_occurrence)}` : ""}
           </div>
         </div>
       ))}

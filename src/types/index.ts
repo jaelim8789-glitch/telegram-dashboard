@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -28,6 +28,7 @@ export const TABS: TabDef[] = [
   { id: "linkinspector", label: "링크 검사", group: "manage" },
   { id: "autoreply", label: "자동 응답", group: "manage" },
   { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "channelhub", label: "채널 허브", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
 
@@ -96,6 +97,11 @@ export interface FailureInfo {
   summary: string;
 }
 
+export interface InlineButton {
+  label: string;
+  url: string;
+}
+
 export interface Broadcast {
   id: string;
   accountId: string;
@@ -115,8 +121,9 @@ export interface Broadcast {
   nextScheduledAt: string | null;
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
-  /** Normalized failure intelligence for failed broadcasts (null for non-failed or legacy records). */
   failureInfo: FailureInfo | null;
+  /** Inline keyboard buttons attached to this broadcast message. */
+  inlineButtons: InlineButton[] | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -156,6 +163,8 @@ export interface BroadcastChild {
   errorMessage: string | null;
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
+  /** Inline keyboard buttons. */
+  inlineButtons: InlineButton[] | null;
 }
 
 export const MAX_BROADCAST_RECIPIENTS = 10;

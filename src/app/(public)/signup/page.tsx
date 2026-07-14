@@ -121,10 +121,10 @@ export default function SignupPage() {
   }, [step, token, verifyStatus]);
 
   const verifyHint =
-    verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
+    verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? { text: "먼저 텔레그램 봇을 열어 인증을 시작해주세요.", isError: false }
     : verifyStatus === "unverified" ? (verifyReason === "membership_check_unavailable"
-        ? "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요."
-        : "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.")
+        ? { text: "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.", isError: true }
+        : { text: "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.", isError: true })
     : null;
 
   return (
@@ -157,7 +157,7 @@ export default function SignupPage() {
               <h2 className="text-lg font-semibold text-app-text">요금제 선택</h2>
               <div className="space-y-3">
                 {[
-                  { id: "free", name: "Free Trial", price: "무료", desc: "1개 계정 연결, 자동 응답 기능, 메시지 발송" },
+                  { id: "free", name: "Free Trial", price: "무료 (24시간)", desc: "1개 계정 연결, 자동 응답 기능, 메시지 발송" },
                   { id: "pro", name: "Pro", price: "$100/월", desc: "10개 계정, 예약 & 반복 발송, 발송 로그 & 전달 분석" },
                   { id: "team", name: "Team", price: "$199/분기", desc: "20개 계정, 예약 & 반복 발송, 계정 건강 모니터링" },
                 ].map((p) => (
@@ -170,6 +170,9 @@ export default function SignupPage() {
                       {selectedPlan === p.id && <svg className="h-5 w-5 text-app-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
                     </div>
                     <p className="mt-1 text-xs text-app-text-secondary">{p.desc}</p>
+                    {p.id === "free" && selectedPlan === p.id && (
+                        <p className="mt-2 text-xs text-app-text-subtle">24시간 후 자동 만료됩니다. 부담 없이 시작하세요.</p>
+                    )}
                   </button>
                 ))}
               </div>
@@ -177,7 +180,7 @@ export default function SignupPage() {
                 if (selectedPlan === "free") {
                   setStep("phone");
                 } else {
-                  router.push("/get-api-key");
+                  router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
               }} className="btn-primary w-full h-12 rounded-xl text-sm font-semibold relative z-10">다음</button>
             </div>
@@ -244,7 +247,14 @@ export default function SignupPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {verifyHint && <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint}</InlineError>}
+                  {verifyHint && verifyHint.isError ? (
+                    <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint.text}</InlineError>
+                  ) : verifyHint ? (
+                    <div className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card-hover/50 px-3 py-2.5 text-xs text-app-text-muted">
+                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-app-text-muted" />
+                      <span>{verifyHint.text}</span>
+                    </div>
+                  ) : null}
                   <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
                     {checking && <Loader2 className="h-4 w-4 animate-spin" />}
                     {checking ? "인증 확인 중..." : "인증 확인"}

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle,
+  Send as SendIcon, Users2, XCircle, ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
@@ -65,29 +65,7 @@ const FAILURE_ACTION_MAP: Record<string, { actions: string[]; suggestion: string
   "시간이 초과": { actions: ["재발송"], suggestion: "발송 시간이 초과되었습니다. 다시 시도해주세요." },
 };
 
-function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
-
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
-
-function formatDuration(isoStart: string | null, isoEnd: string | null): string | null {
-  if (!isoStart) return null;
-  const start = new Date(`${isoStart}Z`).getTime();
-  const end = isoEnd ? new Date(`${isoEnd}Z`).getTime() : Date.now();
-  const sec = Math.round((end - start) / 1000);
-  if (sec < 5) return null;
-  if (sec < 60) return `${sec}초`;
-  return `${Math.floor(sec / 60)}분 ${sec % 60}초`;
-}
+import { formatRelativeTime, formatDateTime, formatDuration } from "@/lib/formatTime";
 
 function parseFailureAction(errorMessage: string | null): { hint: string; suggestion: string } | null {
   if (!errorMessage) return null;
@@ -275,6 +253,14 @@ function HistoryRow({
               <span className="truncate max-w-[160px]">{h.errorMessage}</span>
             </span>
           )}
+
+          {/* Inline buttons indicator */}
+          {h.inlineButtons && h.inlineButtons.length > 0 && (
+            <span className="inline-flex items-center gap-1 text-app-info">
+              <ExternalLink className="h-3 w-3" />
+              <span className="text-[10px]">{h.inlineButtons.length}개 버튼</span>
+            </span>
+          )}
         </div>
 
         {/* Failure action hint */}
@@ -369,6 +355,7 @@ export function SendTab() {
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
+  const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -380,6 +367,11 @@ export function SendTab() {
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
   const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
+
+  const handleReuse = useCallback((b: Broadcast) => {
+    reuseBroadcast(b);
+    setInlineButtons(b.inlineButtons?.filter((btn) => btn.label && btn.url) ?? []);
+  }, [reuseBroadcast]);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -668,6 +660,9 @@ export function SendTab() {
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
+        inlineButtons: inlineButtons.filter((b) => b.label.trim() && b.url.trim()).length > 0
+          ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
+          : undefined,
       });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
@@ -680,6 +675,7 @@ export function SendTab() {
       clearPersistedDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
+      setInlineButtons([]);
       setSearch("");
       await loadHistory(selectedAccountId);
     } catch (err) {
@@ -934,6 +930,89 @@ export function SendTab() {
                 placeholder="발송할 메시지를 입력하세요." required />
             </Field>
 
+            {/* Inline buttons */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-app-text-muted">인라인 버튼 (선택)</span>
+                <button
+                  type="button"
+                  onClick={() => setInlineButtons((prev) => [...prev, { label: "", url: "" }])}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-primary hover:bg-app-primary-muted/20 transition-colors"
+                >
+                  <Plus className="h-3 w-3" /> 버튼 추가
+                </button>
+              </div>
+              {inlineButtons.length === 0 && (
+                <p className="text-[11px] text-app-text-subtle italic">
+                  버튼을 추가하면 Telegram 메시지 하단에 클릭 가능한 링크가 표시됩니다.
+                </p>
+              )}
+              {inlineButtons.map((btn, idx) => (
+                <div key={idx} className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card/50 p-2.5">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      value={btn.label}
+                      onChange={(e) => {
+                        const next = [...inlineButtons];
+                        next[idx] = { ...next[idx], label: e.target.value };
+                        setInlineButtons(next);
+                      }}
+                      placeholder="버튼 이름"
+                      className="rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-xs text-app-text outline-none focus:border-app-primary/60"
+                    />
+                    <input
+                      value={btn.url}
+                      onChange={(e) => {
+                        const next = [...inlineButtons];
+                        next[idx] = { ...next[idx], url: e.target.value };
+                        setInlineButtons(next);
+                      }}
+                      placeholder="https://..."
+                      className="rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-xs text-app-text outline-none focus:border-app-primary/60"
+                    />
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (idx === 0) return;
+                        const next = [...inlineButtons];
+                        [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                        setInlineButtons(next);
+                      }}
+                      disabled={idx === 0}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-text hover:bg-app-card-hover disabled:opacity-30 transition-colors"
+                      aria-label="위로"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (idx === inlineButtons.length - 1) return;
+                        const next = [...inlineButtons];
+                        [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                        setInlineButtons(next);
+                      }}
+                      disabled={idx === inlineButtons.length - 1}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-text hover:bg-app-card-hover disabled:opacity-30 transition-colors"
+                      aria-label="아래로"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInlineButtons((prev) => prev.filter((_, i) => i !== idx))}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-danger hover:bg-app-danger-muted/20 transition-colors"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Image */}
             <Field label="이미지 (선택)">
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
@@ -984,6 +1063,12 @@ export function SendTab() {
                 )}
               </div>
             </div>
+
+            {(isScheduled || isRecurring) && (
+              <p className="text-[11px] text-app-text-subtle italic -mt-1">
+                예약 발송과 반복 발송은 동시에 선택할 수 없습니다.
+              </p>
+            )}
           </div>
 
           {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
@@ -1079,7 +1164,7 @@ export function SendTab() {
                       key={h.id} h={h}
                       cancelling={cancelling} retrying={retrying}
                       onCancelClick={handleCancelClick} onRetry={handleRetry}
-                      onReuse={reuseBroadcast}
+                      onReuse={handleReuse}
                     />
                   ))}
                 </div>
@@ -1096,7 +1181,7 @@ export function SendTab() {
                 key={h.id} h={h}
                 cancelling={cancelling} retrying={retrying}
                 onCancelClick={handleCancelClick} onRetry={handleRetry}
-                onReuse={reuseBroadcast}
+                onReuse={handleReuse}
               />
             ))}
           </div>
