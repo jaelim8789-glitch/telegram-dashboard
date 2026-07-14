@@ -15,7 +15,7 @@
   ReplyMacro,
   ReplyMacroLog,
 } from "@/types";
-import { getToken } from "@/lib/auth";
+import { getToken, getSessionToken, setSessionToken } from "@/lib/auth";
 
 // NEXT_PUBLIC_API_BASE_URL is inlined at build time.  When empty (the Dockerfile
 // default), the frontend uses relative URLs through the nginx reverse proxy
@@ -28,11 +28,15 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-/** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
+/** Every /api/* route requires either this (an admin session) or an X-API-Key see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const sessionToken = getSessionToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (sessionToken) headers["X-Session-Token"] = sessionToken;
+  return headers;
 }
 
 function extractDetailMessage(body: unknown): string | null {
@@ -651,10 +655,13 @@ export async function verifyLoginCode(phone: string, code: string): Promise<stri
 }
 
 export async function loginWithApiKey(apiKey: string): Promise<string> {
-  const result = await request<{ access_token: string; token_type: string }>("/api/auth/login-with-api-key", {
+  const result = await request<{ access_token: string; session_token: string | null; token_type: string }>("/api/auth/login-with-api-key", {
     method: "POST",
     body: JSON.stringify({ api_key: apiKey }),
   });
+  if (result.session_token) {
+    setSessionToken(result.session_token);
+  }
   return result.access_token;
 }
 
