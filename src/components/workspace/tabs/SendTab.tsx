@@ -962,6 +962,12 @@ export function SendTab() {
                 )}
               </div>
             </div>
+
+            {(isScheduled || isRecurring) && (
+              <p className="text-[11px] text-app-text-subtle italic -mt-1">
+                예약 발송과 반복 발송은 동시에 선택할 수 없습니다.
+              </p>
+            )}
           </div>
 
           {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
