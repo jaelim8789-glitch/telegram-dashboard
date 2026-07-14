@@ -36,17 +36,7 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
   all: "전체", pending: "대기", sending: "발송 중", sent: "완료", failed: "실패", cancelled: "취소",
 };
 
-function formatTimestamp(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
-
-function formatDuration(start: string | null, end: string | null): string | null {
-  if (!start) return null;
-  const diffMs = (end ? new Date(`${end}Z`).getTime() : Date.now()) - new Date(`${start}Z`).getTime();
-  const sec = Math.round(diffMs / 1000);
-  if (sec < 5) return null;
-  return sec < 60 ? `${sec}초` : `${Math.floor(sec / 60)}분 ${sec % 60}초`;
-}
+import { formatTimestamp, formatDuration } from "@/lib/formatTime";
 
 function LogRow({
   log, retrying, sendingNow, accountLabel, accounts, onRetry, onEditResend, onNavigate, onSendNow,
