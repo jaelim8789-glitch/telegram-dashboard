@@ -93,11 +93,6 @@ export default function BillingSuccessPage() {
               요금제가 성공적으로 활성화되었습니다. 이제 모든 프리미엄 기능을 이용하실 수 있습니다.
             </p>
 
-            {sessionId && (
-              <p className="mt-4 text-xs text-app-text-secondary">
-                세션 ID: {sessionId}
-              </p>
-            )}
 
             <div className="mt-8 space-y-4">
               <Link href={`${SITE.app}/app`}>

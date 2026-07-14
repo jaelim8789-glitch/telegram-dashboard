@@ -254,7 +254,7 @@
       "title": "전달 분석",
       "description": "메시지 도달률, 성공률, 장애 분석을 확인하세요.",
       "noAccount": "계정을 선택해주세요.",
-      "implementing": "데이터가 없습니다. 발송 내역이 쌓이면 분석이 표시됩니다."
+      "implementing": "준비 중입니다"
     },
     "autoreply": {
       "title": "자동 응답",
