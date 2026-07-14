@@ -1241,6 +1241,14 @@ export function SendTab() {
               </div>
             </div>
 
+            </div>
+
+            {(isScheduled || isRecurring) && (
+              <p className="text-[11px] text-app-text-subtle italic -mt-1">
+                예약 발송과 반복 발송은 동시에 선택할 수 없습니다.
+              </p>
+            )}
+
             {/* Delivery Mode Selector — pacing modes don't apply to a single reply send */}
             {!replyMacroEnabled && (
               <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
@@ -1292,11 +1300,7 @@ export function SendTab() {
               </div>
             )}
 
-            {/* "답장으로 보내기" toggle — sends this broadcast as a reply to a specific
-                Telegram message (delivery_mode="reply"). This is unrelated to the
-                "답장매크로" (Reply Macro) feature in the 답장 매크로 tab, which is a
-                separate, scheduled auto-reply automation with its own target chats and
-                message content — enabling this toggle does not create or trigger one. */}
+            {/* "답장으로 보내기" toggle */}
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
                 <input type="checkbox" checked={replyMacroEnabled}
