@@ -102,7 +102,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
     });
-  } catch (err) {
+  } catch {
     throw new ApiError(
       "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
       undefined,
