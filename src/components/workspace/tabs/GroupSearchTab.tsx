@@ -78,6 +78,7 @@ export function GroupSearchTab() {
   const [joinResults, setJoinResults] = useState<JoinResultItem[] | null>(null);
   const [joinLogs, setJoinLogs] = useState<GroupJoinLog[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [searchResultMeta, setSearchResultMeta] = useState<"loading" | "empty" | "results" | "error" | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showJoined, setShowJoined] = useState(false);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,13 +144,24 @@ export function GroupSearchTab() {
     setError(null);
     setJoinResults(null);
     setSelectedIds(new Set());
+    setSearchResultMeta(null);
     try {
       const found = await api.searchGroups(selectedAccountId, keyword.trim());
       setResults(found);
       await loadJoinInfo();
-      if (found.length === 0) setError(`"${keyword}" 검색 결과가 없습니다.`);
+      if (found.length === 0) {
+        setSearchResultMeta("empty");
+        setError(`"${keyword}" 키워드로 검색된 그룹이 없습니다. 다른 키워드로 다시 시도해보세요.`);
+      } else {
+        setSearchResultMeta("results");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "검색에 실패했습니다.");
+      setSearchResultMeta("error");
+      if (err instanceof Error && (err as { isNetworkError?: boolean }).isNetworkError) {
+        setError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.");
+      } else {
+        setError(err instanceof Error ? err.message : "검색에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      }
     } finally { setSearching(false); }
   }
 
@@ -226,10 +238,7 @@ export function GroupSearchTab() {
   if (!selectedAccountId) {
     return (
       <Panel title="그룹 검색" description="키워드로 Telegram 공개 그룹을 검색하고 가입합니다.">
-        <div className="flex flex-col items-center justify-center py-12 text-app-text-muted">
-          <Search className="mb-3 h-10 w-10" />
-          <p className="text-sm">사이드바에서 계정을 먼저 선택해주세요.</p>
-        </div>
+        <EmptyState icon={Search} title="계정을 먼저 선택해주세요" description="왼쪽 사이드바에서 Telegram 계정을 선택하면 검색을 시작할 수 있습니다." />
       </Panel>
     );
   }
@@ -300,17 +309,32 @@ export function GroupSearchTab() {
         </motion.div>
       )}
 
-      {/* Error */}
+      {/* Error / Empty state */}
       <AnimatePresence>
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-4 py-2.5 text-xs text-app-danger flex items-start gap-2"
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
+            {searchResultMeta === "error" ? (
+              <InlineError action={
+                <button onClick={handleSearch} className="text-xs underline hover:no-underline">다시 시도</button>
+              }>{error}</InlineError>
+            ) : searchResultMeta === "empty" ? (
+              <div className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card-hover/50 px-3 py-2.5 text-xs text-app-text-muted">
+                <Search className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-app-text">검색 결과 없음</p>
+                  <p className="mt-0.5">{error}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-app-danger/20 bg-app-danger-muted px-4 py-2.5 text-xs text-app-danger flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -535,7 +559,7 @@ export function GroupSearchTab() {
             )}
           </AnimatePresence>
 
-          {results.length === 0 && !searching && (
+          {results.length === 0 && !searching && searchResultMeta === null && (
             <div className="flex flex-col items-center justify-center py-8 text-app-text-muted">
               <Search className="mb-2 h-8 w-8" />
               <p className="text-xs">키워드를 입력하고 검색을 시작하세요.</p>
