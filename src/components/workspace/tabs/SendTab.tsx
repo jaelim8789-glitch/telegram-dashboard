@@ -65,29 +65,7 @@ const FAILURE_ACTION_MAP: Record<string, { actions: string[]; suggestion: string
   "시간이 초과": { actions: ["재발송"], suggestion: "발송 시간이 초과되었습니다. 다시 시도해주세요." },
 };
 
-function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
-
-function formatDateTime(iso: string): string {
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
-
-function formatDuration(isoStart: string | null, isoEnd: string | null): string | null {
-  if (!isoStart) return null;
-  const start = new Date(`${isoStart}Z`).getTime();
-  const end = isoEnd ? new Date(`${isoEnd}Z`).getTime() : Date.now();
-  const sec = Math.round((end - start) / 1000);
-  if (sec < 5) return null;
-  if (sec < 60) return `${sec}초`;
-  return `${Math.floor(sec / 60)}분 ${sec % 60}초`;
-}
+import { formatRelativeTime, formatDateTime, formatDuration } from "@/lib/formatTime";
 
 function parseFailureAction(errorMessage: string | null): { hint: string; suggestion: string } | null {
   if (!errorMessage) return null;

@@ -23,15 +23,7 @@ type JoinResultItem = { chat_id: string; title: string; success: boolean; error:
 
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
-function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
+import { formatRelativeTime } from "@/lib/formatTime";
 
 function MemberCount({ count }: { count: number | null }) {
   if (count == null) return <span className="text-app-text-subtle">-</span>;
