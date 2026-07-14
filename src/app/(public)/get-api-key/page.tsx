@@ -11,7 +11,9 @@ import { useFadeIn } from "@/lib/useFadeIn";
 import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
+import { getApiBaseUrl } from "@/lib/api";
 
+const API_BASE = getApiBaseUrl();
 const POLL_TIMEOUT_SECONDS = 180;
 
 // requestPlanId values are canonical plan ids (free/pro/team) matching the

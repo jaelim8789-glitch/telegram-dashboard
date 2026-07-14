@@ -24,6 +24,10 @@ import { getToken } from "@/lib/auth";
 // The fallback "http://localhost:8000" is for local dev without nginx.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}
+
 /** Every /api/* route requires either this (an admin session) or an X-API-Key ??see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
