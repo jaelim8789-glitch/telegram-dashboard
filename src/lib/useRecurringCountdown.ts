@@ -16,9 +16,11 @@ export function useCountdown(iso: string | null): string | null {
       return;
     }
 
+    const safeIso = iso;
     function tick() {
       const now = Date.now();
-      const target = new Date(iso.endsWith("Z") ? iso : `${iso}Z`).getTime();
+      const ts = safeIso.endsWith("Z") ? safeIso : `${safeIso}Z`;
+      const target = new Date(ts).getTime();
       const diffMs = target - now;
 
       if (diffMs <= 0) {
