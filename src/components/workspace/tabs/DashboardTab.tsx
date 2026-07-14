@@ -91,8 +91,8 @@ function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; 
           )}
         </p>
       </div>
-      <Badge tone={state === "error" ? "danger" : state === "paused" ? "warning" : "info"} className="shrink-0">
-        {state === "active" ? "반복 중" : state === "paused" ? "일시 정지" : "오류"}
+      <Badge tone={state === "error" ? "danger" : state === "paused" ? "warning" : state === "cancelled" ? "neutral" : "info"} className="shrink-0">
+        {state === "active" ? "반복 중" : state === "paused" ? "일시 정지" : state === "cancelled" ? "취소됨" : "오류"}
       </Badge>
     </div>
   );
