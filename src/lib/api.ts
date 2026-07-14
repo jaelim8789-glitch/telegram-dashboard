@@ -217,6 +217,12 @@ export async function getAuthStatus(accountId: string): Promise<AuthStepResult> 
   return toAuthStepResult(result);
 }
 
+export async function reAuthAccount(accountId: string): Promise<AuthStepResult> {
+  return toAuthStepResult(await request<ApiAuthStepResult>(
+    `/api/accounts/${accountId}/re-auth`, { method: "POST" }
+  ));
+}
+
 interface ApiGroup {
   id: string;
   title: string;
@@ -311,14 +317,23 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
+    res = await fetch(`${API_BASE_URL}/api/broadcast`, {
+      method: "POST",
+      body: form,
+      headers: { ...authHeaders(), "Idempotency-Key": createIdempotencyKey() },
+    });
   } catch {
-    throw new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+    throw new ApiError(
+      "서버 응답을 확인할 수 없습니다. 중복 발송 방지를 위해 확인 후 다시 시도해주세요.",
+      undefined,
+      true,
+    );
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
   }
+  clearIdempotencyKey();
   return toBroadcast(await res.json());
 }
 
@@ -345,6 +360,17 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
 export async function fetchUpcomingBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/scheduler/upcoming");
   return logs.map(toBroadcast);
+}
+
+let _idempotencyKey: string | null = null;
+
+export function createIdempotencyKey(): string {
+  if (!_idempotencyKey) _idempotencyKey = crypto.randomUUID();
+  return _idempotencyKey;
+}
+
+export function clearIdempotencyKey(): void {
+  _idempotencyKey = null;
 }
 
 /**

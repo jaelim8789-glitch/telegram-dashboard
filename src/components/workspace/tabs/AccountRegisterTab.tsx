@@ -3,6 +3,7 @@
 import { useState, type FormEvent, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertTriangle,
   CheckCircle2,
   ChevronRight,
   Eye,
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import type { AuthFlowMode, AccountHealthItem } from "@/types";
 import * as api from "@/lib/api";
 
 type Step = "form" | "code" | "2fa" | "done";
@@ -65,10 +67,12 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-export function AccountRegisterTab() {
+export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealthItem[] }) {
   const registerAccount = useDashboardStore((s) => s.registerAccount);
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
+  const [flowMode, setFlowMode] = useState<AuthFlowMode>("register");
+  const [reAuthAccountId, setReAuthAccountId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("form");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
@@ -120,6 +124,8 @@ export function AccountRegisterTab() {
   }, [step]);
 
   const resetAll = useCallback(() => {
+    setFlowMode("register");
+    setReAuthAccountId(null);
     setStep("form");
     setAccountId(null);
     setPhone("");
@@ -148,6 +154,32 @@ export function AccountRegisterTab() {
       startResendCooldown();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "인증번호 요청에 실패했습니다.";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleStartReAuth(selectedAccountId: string) {
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    setSuccessMessage(null);
+    setInfoMessage(null);
+    try {
+      const result = await api.reAuthAccount(selectedAccountId);
+      setFlowMode("re-auth");
+      setReAuthAccountId(selectedAccountId);
+      setAccountId(selectedAccountId);
+      const acc = healthItems?.find((h) => h.accountId === selectedAccountId);
+      if (acc) {
+        setPhone(acc.phone);
+      }
+      setStep("code");
+      startResendCooldown();
+      setSuccessMessage("인증번호가 전송되었습니다. Telegram 앱을 확인하세요.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "재인증 요청에 실패했습니다.";
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -207,7 +239,7 @@ export function AccountRegisterTab() {
       } else {
         await fetchAccounts();
         setStep("done");
-        setSuccessMessage("계정 인증이 완료되었습니다.");
+        setSuccessMessage(flowMode === "re-auth" ? "계정 재인증이 완료되었습니다." : "계정 인증이 완료되었습니다.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "인증번호 확인에 실패했습니다.";
@@ -235,7 +267,7 @@ export function AccountRegisterTab() {
       await api.verifyTwoFactor(accountId, password.trim());
       await fetchAccounts();
       setStep("done");
-      setSuccessMessage("2단계 인증이 완료되었습니다.");
+      setSuccessMessage(flowMode === "re-auth" ? "2단계 인증이 완료되었습니다. 계정이 재인증되었습니다." : "2단계 인증이 완료되었습니다.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "2단계 인증에 실패했습니다.";
       setError(msg);
@@ -259,9 +291,37 @@ export function AccountRegisterTab() {
 
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
 
+  if (step === "form" && flowMode === "register") {
+    // Show both new registration and re-auth panels side by side
+    return (
+      <div className="space-y-5 pb-8">
+        <ReAuthPanel
+          healthItems={healthItems ?? []}
+          onStartReAuth={handleStartReAuth}
+          submitting={submitting}
+        />
+        <div className="border-t border-app-border pt-5">
+          <NewRegistrationForm
+            phone={phone}
+            name={name}
+            submitting={submitting}
+            error={error}
+            successMessage={successMessage}
+            fieldErrors={fieldErrors}
+            onPhoneChange={(v) => { setPhone(v); setFieldErrors((p) => ({ ...p, phone: undefined })); }}
+            onNameChange={(v) => setName(v)}
+            onSubmit={handleSubmitForm}
+            onReset={resetAll}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 pb-8">
-      {/* Step Progress Indicator */}
+      {/* Step Progress — only visible during ongoing auth flow (code/2fa/done) */}
+      {step !== "form" && (
       <div className="flex items-center justify-center gap-0">
         {STEPS.map((s, i) => {
           const Icon = s.icon;
@@ -293,71 +353,45 @@ export function AccountRegisterTab() {
           );
         })}
       </div>
+      )}
 
       <AnimatePresence mode="wait">
-        {step === "form" && (
+        {step === "form" && flowMode === "re-auth" && reAuthAccountId && (
           <motion.div
-            key="form"
+            key="re-auth-summary"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
           >
             <Panel
-              title={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4 text-app-primary" /> 새 계정 등록</div>}
-              description="전화번호로 실제 Telegram 인증을 진행합니다. API ID/Hash는 서버(.env)에 앱 단위로 한 번만 설정하면 됩니다."
+              title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-warning" /> 계정 재인증</div>}
+              description="세션이 만료된 계정을 다시 인증합니다."
             >
-              <form onSubmit={handleSubmitForm}>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field
-                    label="전화번호"
-                    hint="국가 코드를 포함해 입력 (예: +821012345678)"
-                    error={fieldErrors.phone}
-                  >
-                    <Input
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        setFieldErrors((prev) => ({ ...prev, phone: undefined }));
-                      }}
-                      placeholder="+821012345678"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      required
-                      invalid={!!fieldErrors.phone}
-                      className="font-mono"
-                    />
-                  </Field>
-                  <Field label="이름 (선택)" hint="계정 식별용 표시 이름">
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="예: 연구용 계정 A"
-                    />
-                  </Field>
+              <div className="rounded-xl border border-app-warning/20 bg-app-warning-muted px-4 py-3 mb-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <AlertTriangle className="h-4 w-4 text-app-warning" />
+                  <span className="text-app-warning font-medium">재인증 필요</span>
                 </div>
+                <p className="mt-1 text-xs text-app-text-muted">
+                  {formatPhone(phone)} 계정의 Telegram 세션이 만료되었습니다.
+                  아래 버튼을 눌러 재인증을 시작하세요.
+                </p>
+              </div>
 
-                {error && <InlineError className="mt-3">{error}</InlineError>}
-                {successMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5"
-                  >
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-app-success" />
-                    <p className="text-xs text-app-success">{successMessage}</p>
-                  </motion.div>
-                )}
-
-                <div className="mt-4 flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
-                    초기화
-                  </Button>
-                  <Button type="submit" variant="primary" loading={submitting}>
-                    {submitting ? "계정 등록 중..." : "계정 등록 및 인증번호 요청"}
-                  </Button>
-                </div>
-              </form>
+              <div className="flex justify-between gap-2">
+                <Button type="button" variant="ghost" onClick={resetAll} disabled={submitting}>
+                  <ArrowLeft className="mr-1 h-4 w-4" /> 취소
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  loading={submitting}
+                  onClick={() => handleStartReAuth(reAuthAccountId)}
+                >
+                  {submitting ? "재인증 요청 중..." : "재인증 시작"}
+                </Button>
+              </div>
             </Panel>
           </motion.div>
         )}
@@ -528,20 +562,33 @@ export function AccountRegisterTab() {
             transition={{ duration: 0.3 }}
           >
             <Panel
-              title={<div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-app-success" /> 등록 완료</div>}
+              title={<div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-app-success" /> {flowMode === "re-auth" ? "재인증 완료" : "등록 완료"}</div>}
             >
               <div className="flex flex-col items-center justify-center pt-4 pb-2 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-success-muted">
                   <CheckCircle2 className="h-8 w-8 text-app-success" />
                 </div>
-                <p className="text-sm font-medium text-app-text">계정 인증이 완료되었습니다</p>
+                <p className="text-sm font-medium text-app-text">{flowMode === "re-auth" ? "계정 재인증이 완료되었습니다" : "계정 인증이 완료되었습니다"}</p>
                 <p className="mt-1 text-xs text-app-text-muted max-w-sm">
                   <span className="font-medium text-app-text">{formatPhone(phone)}</span>
                   {name ? ` (${name})` : ""}
                 </p>
               </div>
 
-              {/* ── First-success roadmap ── */}
+              {flowMode === "re-auth" ? (
+                <div className="flex justify-center gap-3 pt-2 pb-4">
+                  <Button variant="primary" onClick={resetAll}>
+                    <UserPlus className="mr-1.5 h-4 w-4" /> 새 계정 등록
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => useDashboardStore.getState().setActiveTab("dashboard")}
+                  >
+                    <ChevronRight className="mr-1 h-4 w-4" /> 대시보드로 이동
+                  </Button>
+                </div>
+              ) : (
+              <>
               <div className="mx-auto max-w-md space-y-2 px-2 pb-4">
                 <p className="text-[11px] font-medium text-app-text-muted">첫 발송까지 3단계</p>
 
@@ -601,10 +648,168 @@ export function AccountRegisterTab() {
                   <ChevronRight className="mr-1 h-4 w-4" /> 대시보드로 이동
                 </Button>
               </div>
+              </>)}
             </Panel>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ─── ReAuthPanel (계정 선택 → 재인증) ─────────────────────────────
+
+interface ReAuthPanelProps {
+  healthItems: AccountHealthItem[];
+  onStartReAuth: (accountId: string) => void;
+  submitting: boolean;
+}
+
+const UNAUTHORIZED_STATUSES: AccountHealthItem["status"][] = ["unauthorized", "error", "unknown", "not_configured"];
+
+export function ReAuthPanel({ healthItems, onStartReAuth, submitting }: ReAuthPanelProps) {
+  const [selectedId, setSelectedId] = useState<string>("");
+
+  const expiredAccounts = healthItems.filter(
+    (h) => UNAUTHORIZED_STATUSES.includes(h.status) || !h.hasSession
+  );
+
+  const selectedAccount = expiredAccounts.find((a) => a.accountId === selectedId);
+
+  return (
+    <Panel
+      title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-warning" /> 세션 재인증</div>}
+      description="세션이 만료된 계정을 선택하고 재인증을 진행하세요."
+    >
+      {expiredAccounts.length === 0 ? (
+        <div className="flex items-center gap-3 rounded-xl border border-app-border bg-app-card px-4 py-3">
+          <CheckCircle2 className="h-5 w-5 text-app-success shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-app-text">모든 계정이 정상입니다</p>
+            <p className="text-xs text-app-text-muted">재인증이 필요한 계정이 없습니다.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="relative">
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-sm text-app-text outline-none focus:border-app-primary transition-colors appearance-none"
+            >
+              <option value="">계정을 선택하세요</option>
+              {expiredAccounts.map((a) => (
+                <option key={a.accountId} value={a.accountId}>
+                  {a.name ?? a.phone} ({a.phone})
+                </option>
+              ))}
+            </select>
+            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-app-text-muted rotate-90 pointer-events-none" />
+          </div>
+
+          {selectedAccount && (
+            <div className="rounded-xl border border-app-warning/20 bg-app-warning-muted px-4 py-3">
+              <div className="flex items-center gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-app-warning shrink-0" />
+                <span className="font-medium text-app-text">
+                  {selectedAccount.name ?? selectedAccount.phone}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-app-text-muted">
+                상태: {selectedAccount.status}
+                {selectedAccount.lastError && ` · ${selectedAccount.lastError}`}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              disabled={!selectedId || submitting}
+              loading={submitting}
+              onClick={() => { if (selectedId) onStartReAuth(selectedId); }}
+            >
+              {submitting ? "재인증 요청 중..." : "재인증 시작"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+// ─── NewRegistrationForm (신규 계정 등록) ──────────────────────────
+
+interface NewRegistrationFormProps {
+  phone: string;
+  name: string;
+  submitting: boolean;
+  error: string | null;
+  successMessage: string | null;
+  fieldErrors: { phone?: string; code?: string; password?: string };
+  onPhoneChange: (value: string) => void;
+  onNameChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => Promise<void>;
+  onReset: () => void;
+}
+
+export function NewRegistrationForm({
+  phone, name, submitting, error, successMessage, fieldErrors,
+  onPhoneChange, onNameChange, onSubmit, onReset,
+}: NewRegistrationFormProps) {
+  return (
+    <Panel
+      title={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4 text-app-primary" /> 새 계정 등록</div>}
+      description="전화번호로 실제 Telegram 인증을 진행합니다. API ID/Hash는 서버(.env)에 앱 단위로 한 번만 설정하면 됩니다."
+    >
+      <form onSubmit={onSubmit}>
+        <div className="grid grid-cols-2 gap-4">
+          <Field
+            label="전화번호"
+            hint="국가 코드를 포함해 입력 (예: +821012345678)"
+            error={fieldErrors.phone}
+          >
+            <Input
+              value={phone}
+              onChange={(e) => onPhoneChange(e.target.value)}
+              placeholder="+821012345678"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              invalid={!!fieldErrors.phone}
+              className="font-mono"
+            />
+          </Field>
+          <Field label="이름 (선택)" hint="계정 식별용 표시 이름">
+            <Input
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder="예: 연구용 계정 A"
+            />
+          </Field>
+        </div>
+
+        {error && <InlineError className="mt-3">{error}</InlineError>}
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-app-success" />
+            <p className="text-xs text-app-success">{successMessage}</p>
+          </motion.div>
+        )}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onReset} disabled={submitting}>
+            초기화
+          </Button>
+          <Button type="submit" variant="primary" loading={submitting}>
+            {submitting ? "계정 등록 중..." : "계정 등록 및 인증번호 요청"}
+          </Button>
+        </div>
+      </form>
+    </Panel>
   );
 }

@@ -180,14 +180,21 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   if (!token) return (
     <div className="space-y-4">
       <p className="text-xs text-app-text-muted leading-relaxed">
-        텔레그램 채널 <strong className="text-app-text">@TeleMon_2</strong>에 가입하고
-        봇 인증을 완료하면 <strong className="text-app-text">24시간</strong> 동안 사용 가능한
-        무료 API 키가 발급됩니다.
+        ⏱ 약 1분이면 완료됩니다
+      </p>
+      <ol className="text-xs text-app-text-muted list-decimal list-inside space-y-1">
+        <li>텔레그램 채널 <strong className="text-app-text">@TeleMon_2</strong> 가입</li>
+        <li>봇 인증 완료</li>
+        <li>무료 API 키 즉시 발급</li>
+      </ol>
+      <p className="text-xs text-app-text-muted leading-relaxed">
+        🔑 24시간 동안 모든 기능을 제한 없이 사용할 수 있습니다.<br />
+        결제 정보가 필요하지 않습니다.
       </p>
       {error && <InlineError>{error}</InlineError>}
       <Button onClick={handleStart} disabled={starting} className="flex w-full h-11">
         {starting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {starting ? "시작하는 중..." : "무료체험 시작"}
+        {starting ? "시작하는 중..." : "1분 인증 시작 · 24시간 무료"}
       </Button>
     </div>
   );
@@ -257,7 +264,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   );
 }
 
-function ApiKeyLoginForm() {
+function ApiKeyLoginForm({ onSwitchToTrial }: { onSwitchToTrial: () => void }) {
   const router = useRouter();
   const [apiKey, setApiKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -280,6 +287,13 @@ function ApiKeyLoginForm() {
       });
     }
   }, [router]);
+
+  useEffect(() => {
+    const saved = getSessionToken();
+    if (!saved) {
+      onSwitchToTrial();
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -305,13 +319,13 @@ function ApiKeyLoginForm() {
 }
 
 const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: "admin", label: "관리자", icon: <ShieldCheck className="h-4 w-4" />, desc: "아이디와 비밀번호로 로그인" },
   { id: "trial", label: "무료체험", icon: <CheckCircle2 className="h-4 w-4" />, desc: "채널 가입하고 무료 API 키 받기" },
   { id: "apikey", label: "API 키", icon: <KeyRound className="h-4 w-4" />, desc: "발급받은 키로 바로 로그인" },
+  { id: "admin", label: "관리자", icon: <ShieldCheck className="h-4 w-4" />, desc: "아이디와 비밀번호로 로그인" },
 ];
 
 export default function AdminLoginPage() {
-  const [method, setMethod] = useState<AuthMethod>("admin");
+  const [method, setMethod] = useState<AuthMethod>("apikey");
 
   return (
     <div className="relative min-h-screen bg-app-bg flex items-center justify-center px-4 py-10">
@@ -356,7 +370,7 @@ export default function AdminLoginPage() {
           </div>
           {method === "admin" && <AdminLoginForm />}
           {method === "trial" && <FreeTrialForm onGoToApiKey={() => setMethod("apikey")} />}
-          {method === "apikey" && <ApiKeyLoginForm />}
+          {method === "apikey" && <ApiKeyLoginForm onSwitchToTrial={() => setMethod("trial")} />}
         </div>
 
         <p className="mt-5 text-center text-xs text-app-text-muted">
