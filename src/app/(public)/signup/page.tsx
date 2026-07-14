@@ -151,10 +151,10 @@ export default function SignupPage() {
   }, [step, verifyStatus]);
 
   const verifyHint =
-    verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? "먼저 텔레그램 봇을 열어 인증을 시작해주세요."
+    verifyStatus === "idle" || verifyStatus === "pending_bot_start" ? { text: "먼저 텔레그램 봇을 열어 인증을 시작해주세요.", isError: false }
     : verifyStatus === "unverified" ? (verifyReason === "membership_check_unavailable"
-        ? "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요."
-        : "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.")
+        ? { text: "지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.", isError: true }
+        : { text: "채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.", isError: true })
     : null;
 
   return (
@@ -272,8 +272,30 @@ export default function SignupPage() {
                 )}
               </div>
 
-              {verifyStatus === "verified" && (
-                <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
+              {verifyStatus === "verified" ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-app-success flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> 채널 가입이 확인되었습니다.</p>
+                  <Button onClick={handleIssueApiKey} disabled={issuing} className="flex w-full h-12">
+                    {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {issuing ? "발급 중..." : <><Key className="mr-2 h-4 w-4" /> 무료 API 키 받기</>}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {verifyHint && verifyHint.isError ? (
+                    <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint.text}</InlineError>
+                  ) : verifyHint ? (
+                    <div className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card-hover/50 px-3 py-2.5 text-xs text-app-text-muted">
+                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-app-text-muted" />
+                      <span>{verifyHint.text}</span>
+                    </div>
+                  ) : null}
+                  <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
+                    {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {checking ? "인증 확인 중..." : "인증 확인"}
+                  </Button>
+                </div>
+>>>>>>> 880b68d (fix: distinguish procedural guidance from error messages in signup verification flow)
               )}
 
               {verifyHint && verifyStatus !== "verified" && (
