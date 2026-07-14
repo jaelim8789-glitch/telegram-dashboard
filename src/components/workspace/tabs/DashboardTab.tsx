@@ -27,20 +27,7 @@ const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warn
   cancelled: { tone: "warning", label: "취소됨" },
 };
 
-function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(`${iso}Z`).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
-
-function formatCompact(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return n.toLocaleString();
-}
+import { formatRelativeTime, formatCompact } from "@/lib/formatTime";
 
 function failureInfoSummary(info: Broadcast["failureInfo"] | null | undefined): { summary: string; action: string | null; retryable: string | null } {
   if (!info || !info.category) return { summary: "", action: null, retryable: null };

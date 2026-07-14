@@ -24,10 +24,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "-";
-  return new Date(`${iso}Z`).toLocaleString("ko-KR", { hour12: false });
-}
+import { formatDateTime } from "@/lib/formatTime";
 
 function getValidationErrors(name: string, targetChats: string, messageContent: string, maxSendsPerDay: number) {
   const errors: Record<string, string> = {};
