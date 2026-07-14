@@ -81,10 +81,10 @@ function toAccount(api: ApiAccount): Account {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
-  });
+  listBroadcasts,
+  listRecurringBroadcasts,
+  pauseRecurringBroadcast,
+  unpauseRecurringBroadcast,
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
