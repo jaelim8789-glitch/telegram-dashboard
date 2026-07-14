@@ -96,6 +96,11 @@ export interface FailureInfo {
   summary: string;
 }
 
+export interface InlineButton {
+  label: string;
+  url: string;
+}
+
 export interface Broadcast {
   id: string;
   accountId: string;
@@ -115,12 +120,12 @@ export interface Broadcast {
   nextScheduledAt: string | null;
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
-  /** Normalized failure intelligence for failed broadcasts (null for non-failed or legacy records). */
   failureInfo: FailureInfo | null;
-  /** Delivery mode: normal (1min/group), cycle (round-robin), bulk (instant all) */
   deliveryMode?: "normal" | "cycle" | "bulk";
   /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
   replyToMessageId: number | null;
+  /** Inline keyboard buttons attached to this broadcast message. */
+  inlineButtons: InlineButton[] | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
@@ -167,6 +172,8 @@ export interface BroadcastChild {
   failureInfo: FailureInfo | null;
   /** Delivery mode inherited from parent. */
   deliveryMode?: "normal" | "cycle" | "bulk";
+  /** Inline keyboard buttons. */
+  inlineButtons: InlineButton[] | null;
 }
 
 export const RECURRING_INTERVALS = [
