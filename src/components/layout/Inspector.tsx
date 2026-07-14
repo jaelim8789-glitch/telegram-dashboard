@@ -8,6 +8,7 @@ import { SendInspector } from "@/components/inspector/SendInspector";
 import { GroupInspector } from "@/components/inspector/GroupInspector";
 import { GroupSearchInspector } from "@/components/inspector/GroupSearchInspector";
 import { AutoReplyInspector } from "@/components/inspector/AutoReplyInspector";
+import { ChannelHubInspector } from "@/components/inspector/ChannelHubInspector";
 import { ReplyMacroInspector } from "@/components/inspector/ReplyMacroInspector";
 import { ProfileInspector } from "@/components/inspector/ProfileInspector";
 import { LogInspector } from "@/components/inspector/LogInspector";
@@ -22,6 +23,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   linkinspector: DashboardInspector,
   autoreply: AutoReplyInspector,
   replymacro: ReplyMacroInspector,
+  channelhub: ChannelHubInspector,
   deliveryanalytics: DashboardInspector,
   profile: ProfileInspector,
   log: LogInspector,
