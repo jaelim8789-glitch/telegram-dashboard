@@ -26,9 +26,9 @@ export function GroupSearchInspector() {
       setRecentLogs([]);
       return;
     }
-    api.getJoinInfo(selectedAccountId).then(setJoinInfo).catch(() => {});
-    api.fetchSearchResults(selectedAccountId).then((r) => setRecentResults(r.slice(0, 10))).catch(() => {});
-    api.fetchJoinLogs(selectedAccountId).then((l) => setRecentLogs(l.slice(0, 20))).catch(() => {});
+    api.getJoinInfo(selectedAccountId).then(setJoinInfo).catch(() => setJoinInfo(null));
+    api.fetchSearchResults(selectedAccountId).then((r) => setRecentResults(r.slice(0, 10))).catch(() => setRecentResults([]));
+    api.fetchJoinLogs(selectedAccountId).then((l) => setRecentLogs(l.slice(0, 20))).catch(() => setRecentLogs([]));
   }, [selectedAccountId]);
 
   useEffect(() => {
