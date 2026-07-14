@@ -711,7 +711,11 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
-      const mode = deliveryMode;
+      // "답장으로 보내기" is its own delivery mode on the backend (delivery_mode="reply")
+      // — distinct from the normal/cycle/bulk pacing modes below, which don't apply to
+      // a single reply send. Without this, reply_to_message_id is persisted but never
+      // actually used, and the message goes out as a new message instead of a reply.
+      const mode = replyMacroEnabled ? "reply" : deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
         message: replyMacroEnabled ? "" : message.trim(),
@@ -726,7 +730,7 @@ export function SendTab() {
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
-      const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : "발송";
+      const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : mode === "reply" ? "답장" : "발송";
       if (isRecurring) {
         const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
         setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
@@ -1128,62 +1132,68 @@ export function SendTab() {
               </div>
             </div>
 
-            {/* Delivery Mode Selector */}
-            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
-                <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
-                발송 방식
-              </label>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
-                  <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
-                    onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-app-text">일반 발송</div>
-                    {deliveryMode === "normal" ? (
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-xs text-app-text-muted">방마다</span>
-                        <select value={normalDelaySeconds}
-                          onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
-                          className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
-                          onClick={(e) => e.stopPropagation()}>
-                          {NORMAL_DELAY_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                        <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-app-text-muted mt-1.5">간격을 선택하세요</div>
-                    )}
-                  </div>
+            {/* Delivery Mode Selector — pacing modes don't apply to a single reply send */}
+            {!replyMacroEnabled && (
+              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
+                  <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
+                  발송 방식
                 </label>
-                <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
-                  <input type="radio" name="deliveryMode" value="cycle" checked={deliveryMode === "cycle"}
-                    onChange={() => setDeliveryMode("cycle")} className="mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium text-app-text">사이클 발송</div>
-                    <div className="text-xs text-app-text-muted">방마다 {cycleMinutes}분 주기로 순차 자동 전송 (총 {cycleMinutes}분 소요)</div>
-                  </div>
-                </label>
-                <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
-                  <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
-                    onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
-                    <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</div>
-                  </div>
-                </label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
+                    <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
+                      onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-app-text">일반 발송</div>
+                      {deliveryMode === "normal" ? (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <span className="text-xs text-app-text-muted">방마다</span>
+                          <select value={normalDelaySeconds}
+                            onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
+                            className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
+                            onClick={(e) => e.stopPropagation()}>
+                            {NORMAL_DELAY_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-app-text-muted mt-1.5">간격을 선택하세요</div>
+                      )}
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
+                    <input type="radio" name="deliveryMode" value="cycle" checked={deliveryMode === "cycle"}
+                      onChange={() => setDeliveryMode("cycle")} className="mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium text-app-text">사이클 발송</div>
+                      <div className="text-xs text-app-text-muted">방마다 {cycleMinutes}분 주기로 순차 자동 전송 (총 {cycleMinutes}분 소요)</div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
+                    <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
+                      onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
+                      <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</div>
+                    </div>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Reply macro toggle */}
+            {/* "답장으로 보내기" toggle — sends this broadcast as a reply to a specific
+                Telegram message (delivery_mode="reply"). This is unrelated to the
+                "답장매크로" (Reply Macro) feature in the 답장 매크로 tab, which is a
+                separate, scheduled auto-reply automation with its own target chats and
+                message content — enabling this toggle does not create or trigger one. */}
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
                 <input type="checkbox" checked={replyMacroEnabled}
                   onChange={(e) => { setReplyMacroEnabled(e.target.checked); if (!e.target.checked) setReplyToMessageId(""); }} />
                 <MessageCircle className="h-3.5 w-3.5 text-app-text-muted" />
-                답장 매크로
+                답장으로 보내기
               </label>
             </div>
           </div>

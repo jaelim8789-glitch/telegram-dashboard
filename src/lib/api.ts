@@ -253,11 +253,13 @@ export interface CreateBroadcastInput {
   scheduledAt?: string;
   /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
-  /** Delivery mode: normal (per-group delay), cycle (round-robin), bulk (instant all) */
-  deliveryMode?: "normal" | "cycle" | "bulk";
+  /** Delivery mode: normal (per-group delay), cycle (round-robin), bulk (instant all),
+   * reply (reply to a specific Telegram message — see replyToMessageId) */
+  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
   /** Per-group delay in seconds for normal mode (default 60) */
   delaySeconds?: number;
-  /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
+  /** Reply to a specific Telegram message ID. Only honored by the backend when
+   * deliveryMode is "reply" — otherwise the message sends as a new message. */
   replyToMessageId?: number;
 }
 

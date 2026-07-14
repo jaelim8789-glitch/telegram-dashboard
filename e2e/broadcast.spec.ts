@@ -72,6 +72,37 @@ test.describe("발송 흐름 (예약 포함)", () => {
     await expect(page.getByText("실패")).toBeVisible({ timeout: 15000 });
   });
 
+  test("답장으로 보내기 체크박스를 켜면 메시지 ID 입력이 나타나고 발송 방식 선택자는 사라지며, 끄면 되돌아온다", async ({ page }) => {
+    await page.goto("/app");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    await expect(page.getByText("발송 방식")).toBeVisible();
+    await expect(page.getByLabel("답장할 메시지 ID")).toHaveCount(0);
+
+    await page.getByText("답장으로 보내기").click();
+    await expect(page.getByLabel("답장할 메시지 ID")).toBeVisible();
+    await expect(page.getByText("발송 방식")).toHaveCount(0);
+
+    await page.getByText("답장으로 보내기").click();
+    await expect(page.getByText("발송 방식")).toBeVisible();
+    await expect(page.getByLabel("답장할 메시지 ID")).toHaveCount(0);
+  });
+
+  test("답장으로 보내기 활성화 시 발송 버튼은 메시지 ID 입력 여부만으로 좌우되고, 수신자 선택 요건은 그대로 유지된다", async ({ page }) => {
+    await page.goto("/app");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    // This account has no groups (no real Telegram session), so a recipient can
+    // never be selected — the button must stay disabled regardless of the
+    // message-ID input, confirming reply mode didn't drop the recipient check.
+    await page.getByText("답장으로 보내기").click();
+    const sendButton = page.getByRole("button", { name: "발송", exact: true }).last();
+    await expect(sendButton).toBeDisabled();
+
+    await page.getByLabel("답장할 메시지 ID").fill("12345");
+    await expect(sendButton).toBeDisabled();
+  });
+
   test("반복 발송 체크박스를 켜면 간격 선택 드롭다운이 나타나고, 끄면 사라진다", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "발송", exact: true }).click();
