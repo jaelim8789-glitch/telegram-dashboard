@@ -84,15 +84,36 @@ function toAccount(api: ApiAccount): Account {
   };
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly isNetworkError?: boolean,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
+    });
+  } catch (err) {
+    throw new ApiError(
+      "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
+      undefined,
+      true,
+    );
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+    throw new ApiError(detail, res.status, false);
   }
 
   if (res.status === 204) return undefined as T;
@@ -266,10 +287,15 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
   if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
 
-  const res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/broadcast`, { method: "POST", body: form, headers: authHeaders() });
+  } catch {
+    throw new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`);
+    throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
   }
   return toBroadcast(await res.json());
 }
