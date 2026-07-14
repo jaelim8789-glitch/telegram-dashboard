@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -28,6 +28,7 @@ export const TABS: TabDef[] = [
   { id: "linkinspector", label: "링크 검사", group: "manage" },
   { id: "autoreply", label: "자동 응답", group: "manage" },
   { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "channelhub", label: "채널 허브", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
 

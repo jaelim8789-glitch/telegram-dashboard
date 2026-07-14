@@ -15,6 +15,7 @@ import {
   User,
   FileText,
   BarChart3,
+  Globe,
   Command,
   Plus,
   ArrowRight,
@@ -43,6 +44,7 @@ const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   autoreply: Bot,
   replymacro: Zap,
   deliveryanalytics: BarChart3,
+  channelhub: Globe,
   profile: User,
   log: FileText,
 };
