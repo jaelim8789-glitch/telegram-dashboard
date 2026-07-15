@@ -364,8 +364,8 @@ export function SendTab() {
     try {
       const stored = localStorage.getItem(savedGroupStorageKey);
       if (stored) {
-        const parsed: string[] = JSON.parse(stored);
-        setSavedSendGroupIds(parsed);
+        const parsed = JSON.parse(stored);
+        setSavedSendGroupIds(Array.isArray(parsed) ? parsed : []);
       } else {
         setSavedSendGroupIds([]);
       }
@@ -445,6 +445,7 @@ export function SendTab() {
   const { toast } = useToast();
   const draftRestoredRef = useRef(false);
   const isInitialMount = useRef(true);
+  const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // ── Recent recipient sets ──
@@ -623,19 +624,30 @@ export function SendTab() {
   }, []);
 
   useEffect(() => {
-    clearSendDraft();
+    if (!mountGuardRef.current) {
+      clearSendDraft();
+      setIsScheduled(false); setScheduledAtLocal("");
+      setIsRecurring(false); setRecurringInterval(60);
+      setDeliveryMode("normal");
+      setReplyMacroEnabled(false); setReplyToMessageId("");
+      setSearch("");
+    }
     setSubmitError(null);
     setSubmitNotice(null);
     setHistoryFilter("all");
-    setIsScheduled(false); setScheduledAtLocal("");
-    setIsRecurring(false); setRecurringInterval(60);
-    setDeliveryMode("normal");
-    setReplyMacroEnabled(false); setReplyToMessageId("");
-    setSearch("");
     if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
     else { setGroups([]); setHistory([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId]);
+
+  // Clear the mount guard after all mount effects have settled.
+  // Using setTimeout(0) ensures this runs after ALL synchronous re-renders
+  // triggered by programmatic account switches in the draft restoration effect,
+  // so that the guard protects all Effect 7 fires during the mount cycle.
+  useEffect(() => {
+    const timer = setTimeout(() => { mountGuardRef.current = false; }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   function handleAddTag(groupId: string) {
     const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");
