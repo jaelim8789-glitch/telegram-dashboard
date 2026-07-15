@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Plug, ShieldAlert, Star, Trash2, WifiOff } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { getAccountLabel, setAccountLabel } from "@/lib/accountLabels";
 
 const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = {
   active: { dot: "bg-app-success", label: "활성" },
@@ -36,6 +37,18 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // ── Account label ──
+  const [label, setLabel] = useState<string>(() => getAccountLabel(account.id) ?? "");
+
+  function handleEditLabel(e: React.MouseEvent) {
+    e.stopPropagation();
+    const current = getAccountLabel(account.id) ?? "";
+    const newLabel = window.prompt("계정 별칭을 입력하세요 (비우면 삭제)", current);
+    if (newLabel === null) return; // cancelled
+    setAccountLabel(account.id, newLabel.trim());
+    setLabel(newLabel.trim());
+  }
+
   async function handleConfirmDelete() {
     setDeleting(true);
     setConfirmOpen(false);
@@ -52,7 +65,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
         onClick={() => onSelect(account.id)}
         onKeyDown={(e) => e.key === "Enter" && onSelect(account.id)}
         className={cn(
-          "group flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
+          "group relative flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
           selected
             ? "border-app-primary/30 bg-gradient-to-r from-app-primary/10 to-app-primary/5 shadow-sm shadow-app-primary/5"
             : "border-transparent hover:border-app-border hover:bg-app-card-hover"
@@ -65,8 +78,22 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           {getAccountInitials(account)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-app-text">{getAccountDisplayName(account)}</div>
-          <div className="truncate text-xs text-app-text-muted">{account.phone}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-app-text">
+              {label || getAccountDisplayName(account)}
+            </span>
+            <button
+              type="button"
+              onClick={handleEditLabel}
+              className="shrink-0 flex h-5 w-5 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-primary hover:bg-app-card-hover transition-all"
+              title="별칭 편집"
+            >
+              <Edit3 className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="truncate text-xs text-app-text-muted">
+            {label ? `${getAccountDisplayName(account)} · ${account.phone}` : account.phone}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {healthMeta && HealthIcon && (
