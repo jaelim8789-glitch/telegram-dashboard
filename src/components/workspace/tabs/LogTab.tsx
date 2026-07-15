@@ -246,6 +246,7 @@ function LogRow({
 
 export function LogTab() {
   const accounts = useDashboardStore((s) => s.accounts);
+  const setTabBadge = useDashboardStore((s) => s.setTabBadge);
   const { toast } = useToast();
   const [logs, setLogs] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(false);
@@ -273,6 +274,12 @@ export function LogTab() {
   }, [accountFilter]);
 
   useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter, load]);
+
+  // Update tab badge with failed log count
+  useEffect(() => {
+    const failedCount = logs.filter((l) => l.status === "failed").length;
+    setTabBadge("log", failedCount);
+  }, [logs, setTabBadge]);
 
   useEffect(() => {
     if (!logs.some(isBroadcastInFlight)) return;
