@@ -35,9 +35,9 @@ export function Sidebar() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const { isFavorite, toggleFavorite } = useAccountFavorites();
 
   async function loadHealth() {
@@ -74,11 +74,12 @@ export function Sidebar() {
 
   const filteredAccounts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    // Apply health filter
     let filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
-    // Apply search filter
+    // Apply search filter (by name or phone)
     if (query) {
       filtered = filtered.filter((a) => {
         const name = (a.name ?? "").toLowerCase();
