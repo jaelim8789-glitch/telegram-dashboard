@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Plug, ShieldAlert, Trash2, WifiOff } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Plug, ShieldAlert, Star, Trash2, WifiOff } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -25,11 +25,13 @@ interface AccountCardProps {
   selected: boolean;
   health?: AccountHealthState;
   lastError?: string | null;
+  isFavorite?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => Promise<void>;
+  onToggleFavorite?: (id: string) => void;
 }
 
-export function AccountCard({ account, selected, health, lastError, onSelect, onDelete }: AccountCardProps) {
+export function AccountCard({ account, selected, health, lastError, isFavorite, onSelect, onDelete, onToggleFavorite }: AccountCardProps) {
   const status = STATUS_STYLE[account.status];
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -75,6 +77,16 @@ export function AccountCard({ account, selected, health, lastError, onSelect, on
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot, selected && "animate-pulse")} />
           <span className="text-[11px] text-app-text-muted">{status.label}</span>
         </div>
+        {onToggleFavorite && (
+          <button
+            type="button"
+            title={isFavorite ? "즐겨찾기 제거" : "즐겨찾기 추가"}
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(account.id); }}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all hover:bg-app-card-hover"
+          >
+            <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-400 text-yellow-400" : "text-app-text-subtle")} />
+          </button>
+        )}
         <button
           type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} disabled={deleting}
           className={cn(
