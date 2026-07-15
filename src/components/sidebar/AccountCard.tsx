@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff, Layers } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getAccountLabel, setAccountLabel } from "@/lib/accountLabels";
+import { useAccountBelongingGroups, useToggleAccountInGroup, useAccountGroups } from "@/lib/accountGroups";
 
 const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = {
   active: { dot: "bg-app-success", label: "활성" },
@@ -27,18 +28,25 @@ interface AccountCardProps {
   health?: AccountHealthState;
   lastError?: string | null;
   isFavorite?: boolean;
+  groupFilter?: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => Promise<void>;
   onToggleFavorite?: (id: string) => void;
 }
 
-export function AccountCard({ account, selected, health, lastError, isFavorite, onSelect, onDelete, onToggleFavorite }: AccountCardProps) {
+export function AccountCard({ account, selected, health, lastError, isFavorite, groupFilter, onSelect, onDelete, onToggleFavorite }: AccountCardProps) {
   const status = STATUS_STYLE[account.status];
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
 
   // ── Account label ──
   const [label, setLabel] = useState<string>(() => getAccountLabel(account.id) ?? "");
+
+  // ── Account groups ──
+  const belongingGroups = useAccountBelongingGroups(account.id);
+  const allGroups = useAccountGroups();
+  const toggleGroup = useToggleAccountInGroup();
 
   function handleEditLabel(e: React.MouseEvent) {
     e.stopPropagation();
@@ -96,6 +104,13 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {/* Group indicator dot */}
+          {groupFilter && (
+            <span className={cn(
+              "h-2 w-2 rounded-full shrink-0",
+              belongingGroups.some((g) => g.id === groupFilter) ? "bg-app-primary" : "bg-app-text-subtle"
+            )} />
+          )}
           {healthMeta && HealthIcon && (
             <span title={lastError ? `${healthMeta.title}: ${lastError}` : healthMeta.title}>
               <HealthIcon className={cn("h-3.5 w-3.5", healthMeta.color)} />
@@ -104,6 +119,53 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot, selected && "animate-pulse")} />
           <span className="text-[11px] text-app-text-muted">{status.label}</span>
         </div>
+        {/* Group assignment — visible on hover */}
+        <div className="relative">
+          <button
+            type="button"
+            title="그룹 관리"
+            onClick={(e) => { e.stopPropagation(); setGroupPickerOpen(!groupPickerOpen); }}
+            className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all hover:bg-app-card-hover",
+              belongingGroups.length > 0 ? "text-app-primary" : "text-app-text-subtle",
+              selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+          >
+            <Layers className="h-3.5 w-3.5" />
+          </button>
+          {groupPickerOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setGroupPickerOpen(false)} />
+              <div className="absolute right-0 top-full z-40 mt-1 w-48 rounded-xl border border-app-border bg-app-surface p-1.5 shadow-xl">
+                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">그룹 지정</p>
+                {allGroups.length === 0 && (
+                  <p className="px-2 py-2 text-[11px] text-app-text-muted italic">그룹이 없습니다</p>
+                )}
+                {allGroups.map((g) => {
+                  const isInGroup = belongingGroups.some((bg) => bg.id === g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleGroup(account.id, g.id); }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
+                    >
+                      <span
+                        className="h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: g.color }}
+                      />
+                      <span className="flex-1 text-left truncate">{g.name}</span>
+                      {isInGroup && (
+                        <span className="text-app-primary text-[10px] font-medium">✓</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
         {onToggleFavorite && (
           <button
             type="button"
