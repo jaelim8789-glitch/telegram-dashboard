@@ -5,7 +5,7 @@ Each AccountRuntime owns one EventBus instance. Internal components (AutoReply,
 ReplyMacro, Scheduler, HealthMonitor, etc.) subscribe to events and react
 without direct coupling.
 
-Events are plain dataclass instances identified by their type name.
+v2 — Added cross-account events for RuntimeManager-level coordination.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -32,51 +32,51 @@ class Event:
 @dataclass
 class MessageReceivedEvent(Event):
     """A new message was received from Telegram (user → account)."""
-    chat_id: int
-    user_id: int
-    user_name: str | None
-    message: str
-    message_id: int
+    chat_id: int = 0
+    user_id: int = 0
+    user_name: str | None = None
+    message: str = ""
+    message_id: int = 0
 
 
 @dataclass
 class AutoReplyTriggeredEvent(Event):
     """An auto-reply rule matched and a response was sent."""
-    rule_id: str
-    rule_name: str
-    target_chat_id: int
-    target_user_id: int
-    reply_sent: str
-    status: str  # "success" | "failed" | "rate_limited"
+    rule_id: str = ""
+    rule_name: str = ""
+    target_chat_id: int = 0
+    target_user_id: int = 0
+    reply_sent: str = ""
+    status: str = ""  # "success" | "failed" | "rate_limited"
 
 
 @dataclass
 class BroadcastQueuedEvent(Event):
     """A new broadcast was queued for delivery."""
-    broadcast_id: str
-    recipient_count: int
+    broadcast_id: str = ""
+    recipient_count: int = 0
 
 
 @dataclass
 class BroadcastCompletedEvent(Event):
     """A broadcast (or one child execution) finished."""
-    broadcast_id: str
-    status: str  # "sent" | "failed" | "cancelled"
+    broadcast_id: str = ""
+    status: str = ""  # "sent" | "failed" | "cancelled"
     error_message: str | None = None
 
 
 @dataclass
 class RateLimitHitEvent(Event):
     """A rate limit was encountered for this account."""
-    action: str  # "send_message", "join_group", etc.
-    retry_after_seconds: float
+    action: str = ""  # "send_message", "join_group", etc.
+    retry_after_seconds: float = 0.0
 
 
 @dataclass
 class HealthStatusChangedEvent(Event):
     """Account health status changed."""
-    previous_status: str
-    new_status: str
+    previous_status: str = ""
+    new_status: str = ""
     reason: str | None = None
 
 
@@ -95,17 +95,42 @@ class AccountBannedEvent(Event):
 @dataclass
 class GroupCacheUpdatedEvent(Event):
     """The group/dialog cache was refreshed."""
-    group_count: int
+    group_count: int = 0
 
 
 @dataclass
 class RecoveryTriggeredEvent(Event):
     """Auto-recovery routine was triggered."""
-    recovery_action: str
-    result: str  # "success" | "failed" | "skipped"
+    recovery_action: str = ""
+    result: str = ""  # "success" | "failed" | "skipped"
 
 
-# ── Callback types ───────────────────────────────────────────────────
+@dataclass
+class SessionAutoRecoveredEvent(Event):
+    """Session auto-recovery completed successfully."""
+    method: str = ""  # "reconnect" | "recreate" | "ping"
+    detail: str | None = None
+
+
+# ── Cross-account Events (emitted from RuntimeManager) ────────────────
+
+@dataclass
+class CrossAccountBroadcastRequestedEvent(Event):
+    """A broadcast needs to be sent from a specific account."""
+    broadcast_id: str = ""
+    target_account_id: str = ""
+    message: str = ""
+    recipients: list[str] = field(default_factory=list)
+    reply_to_message_id: int | None = None
+
+
+@dataclass
+class AccountRuntimeInspectorEvent(Event):
+    """Snapshot of a runtime's internal state for inspection."""
+    runtime_state: dict = field(default_factory=dict)
+
+
+# ── Callback type ───────────────────────────────────────────────────
 
 EventHandler = Callable[[Event], Awaitable[None]]
 """Signature for async event handlers."""
@@ -165,11 +190,8 @@ class EventBus:
                     continue
                 handlers = list(self._subscribers.get(event_type, []))
                 for handler in handlers:
-                    # Fire-and-forget via task so one slow handler doesn't
-                    # block others.
                     tasks.append(asyncio.create_task(self._safe_call(handler, event)))
 
-        # Wait for all handlers to complete (with a safety timeout).
         if tasks:
             done, pending = await asyncio.wait(tasks, timeout=30)
             for t in pending:

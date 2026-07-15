@@ -220,6 +220,71 @@ export async function fetchAccountHealth(): Promise<AccountHealthItem[]> {
   return items.map(toAccountHealthItem);
 }
 
+// ── Runtime Inspector API ─────────────────────────────────────────────
+
+export interface RuntimeInspectorSummary {
+  total: number;
+  active: number;
+  healthy: number;
+  unauthorized: number;
+  rate_limited: number;
+  banned: number;
+  error: number;
+  runtimes: RuntimeSummaryItem[];
+}
+
+export interface RuntimeSummaryItem {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  status: string;
+  running: boolean;
+  health_status: string;
+  has_session: boolean;
+  uptime_seconds: number;
+  today_sent: number;
+  group_count: number;
+  active_broadcasts: number;
+  queue_size: number;
+  consecutive_failures: number;
+  recovery_attempts: number;
+  last_recovery_result: string;
+}
+
+export interface RuntimeInspectorDetail {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  status: string;
+  running: boolean;
+  started_at: string | null;
+  uptime_seconds: number;
+  health: Record<string, unknown>;
+  rate_limiter: Record<string, unknown>;
+  group_cache: Record<string, unknown>;
+  broadcast_queue: Record<string, unknown>;
+  auto_reply: Record<string, unknown>;
+  reply_macros: Record<string, unknown>;
+  session: Record<string, unknown>;
+  today_sent: number;
+}
+
+export async function fetchRuntimeInspectorSummary(): Promise<RuntimeInspectorSummary> {
+  return request<RuntimeInspectorSummary>("/api/runtime/inspector");
+}
+
+export async function fetchRuntimeInspectorDetail(accountId: string): Promise<RuntimeInspectorDetail> {
+  return request<RuntimeInspectorDetail>(`/api/runtime/inspector/${accountId}`);
+}
+
+export async function triggerSessionRecovery(accountId: string): Promise<{ account_id: string; recovered: boolean; health_status: string }> {
+  return request(`/api/runtime/inspector/${accountId}/recover`, { method: "POST" });
+}
+
+export async function restartRuntime(accountId: string): Promise<{ account_id: string; restarted: boolean; authenticated: boolean }> {
+  return request(`/api/runtime/inspector/${accountId}/restart`, { method: "POST" });
+}
+
 interface ApiAuthStepResult {
   status: AccountStatus;
   requires_2fa: boolean;

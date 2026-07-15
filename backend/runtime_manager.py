@@ -30,8 +30,14 @@ from .account_runtime import AccountRuntime
 from .models import (
     Account,
     AccountHealthItem,
+    AutoReplyLog,
+    AutoReplyRule,
+    AutoReplySettings,
     Broadcast,
     CreateBroadcastInput,
+    Group,
+    ReplyMacro,
+    ReplyMacroLog,
 )
 
 logger = logging.getLogger(__name__)
@@ -81,8 +87,8 @@ class RuntimeManager:
                 runtime = AccountRuntime(
                     account_id=acct["id"],
                     phone=acct["phone"],
-                    api_id=acct.get("api_id", TELEGRAM_API_ID) or TELEGRAM_API_ID,
-                    api_hash=acct.get("api_hash", TELEGRAM_API_HASH) or TELEGRAM_API_HASH,
+                    api_id=acct.get("api_id", 0) or 0,
+                    api_hash=acct.get("api_hash", "") or "",
                     session_path=f"{SESSIONS_DIR}/{acct['id']}.session",
                 )
                 async with self._lock:
@@ -133,7 +139,7 @@ class RuntimeManager:
         return runtime.get_account()
 
     async def add_account_legacy(self, phone: str, name: str | None = None) -> Account:
-        """For environments where TELEGRAM_API_ID/HASH are preconfigured at module level."""
+        """계정 추가하면서 인증 없이 바로 Runtime 시작 (api_id=0, api_hash="")."""
         return await self.add_account(phone, 0, "", name)
 
     async def remove_account(self, account_id: str) -> None:
@@ -161,9 +167,245 @@ class RuntimeManager:
     def get_runtime(self, account_id: str) -> AccountRuntime | None:
         return self._runtimes.get(account_id)
 
+    def get_all_runtimes(self) -> list[AccountRuntime]:
+        """Returns a list of all active runtime instances."""
+        return list(self._runtimes.values())
+
     @property
     def runtime_count(self) -> int:
         return len(self._runtimes)
+
+    # ── Runtime access helpers ────────────────────────────────────
+
+    def _get_runtime_or_raise(self, account_id: str) -> AccountRuntime:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            raise LookupError(f"Account {account_id} not found")
+        return runtime
+
+    # ── Auth operations (delegated to AccountRuntime) ──────────────
+
+    async def send_code(self, account_id: str) -> dict:
+        runtime = self._get_runtime_or_raise(account_id)
+        return await runtime.send_code()
+
+    async def verify_code(self, account_id: str, code: str) -> dict:
+        runtime = self._get_runtime_or_raise(account_id)
+        return await runtime.verify_code(code)
+
+    async def verify_2fa(self, account_id: str, password: str) -> dict:
+        runtime = self._get_runtime_or_raise(account_id)
+        return await runtime.verify_2fa(password)
+
+    async def get_auth_status(self, account_id: str) -> dict:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return {"status": "inactive", "requires_2fa": False, "detail": "Account not found"}
+        return await runtime.get_auth_status()
+
+    async def re_auth(self, account_id: str) -> dict:
+        runtime = self._get_runtime_or_raise(account_id)
+        return await runtime.re_auth()
+
+    # ── Group operations ───────────────────────────────────────────
+
+    async def get_groups(self, account_id: str) -> list[Group]:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return []
+        return runtime.group_cache.get_all()
+
+    async def get_group_folders(self, account_id: str) -> list[dict]:
+        """Return Telegram chat folders for the given account."""
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return []
+        try:
+            from telethon.tl.functions.messages import GetDialogFiltersRequest
+            from telethon.tl.types import DialogFilter
+            result = await runtime.client(GetDialogFiltersRequest())
+            folders = []
+            for f in result:
+                if isinstance(f, DialogFilter):
+                    folder = {
+                        "id": str(f.id),
+                        "title": f.title or "",
+                        "group_ids": [str(p.id) for p in (f.include_peers or [])],
+                    }
+                    folders.append(folder)
+            return folders
+        except Exception:
+            return []
+
+    # ── Account health ─────────────────────────────────────────────
+
+    async def get_account_health(self, account_id: str) -> AccountHealthItem | None:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return None
+        return runtime.get_health()
+
+    # ── Broadcast operations ───────────────────────────────────────
+
+    async def create_broadcast(self, input_data: CreateBroadcastInput) -> Broadcast:
+        runtime = self._get_runtime_or_raise(input_data.account_id)
+        return await runtime.create_broadcast(input_data)
+
+    async def get_broadcasts(self, account_id: str | None = None, limit: int = 50) -> list[Broadcast]:
+        """Get broadcasts, optionally filtered by account_id."""
+        async with self._lock:
+            result = []
+            for runtime in self._runtimes.values():
+                if account_id and runtime.account_id != account_id:
+                    continue
+                result.extend(runtime.get_broadcasts(limit))
+            result.sort(key=lambda b: b.created_at, reverse=True)
+            return result[:limit]
+
+    # ── Auto-reply operations ──────────────────────────────────────
+
+    async def get_auto_reply_settings(self, account_id: str) -> AutoReplySettings:
+        runtime = self._get_runtime_or_raise(account_id)
+        return AutoReplySettings(
+            account_id=account_id,
+            auto_reply_enabled=runtime.auto_reply.is_enabled(),
+            rules=runtime.auto_reply._rules,
+        )
+
+    async def create_auto_reply_rule(self, account_id: str, body: dict) -> AutoReplyRule:
+        runtime = self._get_runtime_or_raise(account_id)
+        import uuid
+        now = datetime.now(timezone.utc).isoformat()
+        rule = AutoReplyRule(
+            id=str(uuid.uuid4()),
+            account_id=account_id,
+            name=body.get("name", ""),
+            is_active=body.get("is_active", True),
+            match_type=body.get("match_type", "keyword"),
+            match_value=body.get("match_value", ""),
+            reply_content=body.get("reply_content", ""),
+            cooldown_hours=body.get("cooldown_hours", 0),
+            max_replies_per_day=body.get("max_replies_per_day", 100),
+            created_at=now,
+            updated_at=now,
+        )
+        runtime.auto_reply._rules.append(rule)
+        return rule
+
+    async def update_auto_reply_rule(self, account_id: str, rule_id: str, body: dict) -> AutoReplyRule:
+        runtime = self._get_runtime_or_raise(account_id)
+        now = datetime.now(timezone.utc).isoformat()
+        for rule in runtime.auto_reply._rules:
+            if rule.id == rule_id:
+                if "name" in body:
+                    rule.name = body["name"]
+                if "is_active" in body:
+                    rule.is_active = body["is_active"]
+                if "match_type" in body:
+                    rule.match_type = body["match_type"]
+                if "match_value" in body:
+                    rule.match_value = body["match_value"]
+                if "reply_content" in body:
+                    rule.reply_content = body["reply_content"]
+                if "cooldown_hours" in body:
+                    rule.cooldown_hours = body["cooldown_hours"]
+                if "max_replies_per_day" in body:
+                    rule.max_replies_per_day = body["max_replies_per_day"]
+                rule.updated_at = now
+                return rule
+        raise LookupError(f"Auto-reply rule {rule_id} not found")
+
+    async def delete_auto_reply_rule(self, account_id: str, rule_id: str) -> None:
+        runtime = self._get_runtime_or_raise(account_id)
+        runtime.auto_reply._rules = [r for r in runtime.auto_reply._rules if r.id != rule_id]
+
+    async def toggle_auto_reply(self, account_id: str, enabled: bool) -> bool:
+        runtime = self._get_runtime_or_raise(account_id)
+        runtime.auto_reply.set_enabled(enabled)
+        return enabled
+
+    async def get_auto_reply_logs(self, account_id: str) -> list[AutoReplyLog]:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return []
+        return runtime.auto_reply.get_logs()
+
+    # ── Reply Macro operations ─────────────────────────────────────
+
+    async def get_reply_macros(self, account_id: str) -> list[ReplyMacro]:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return []
+        return runtime.reply_macro.get_macros()
+
+    async def create_reply_macro(self, account_id: str, body: dict) -> ReplyMacro:
+        runtime = self._get_runtime_or_raise(account_id)
+        import uuid
+        now = datetime.now(timezone.utc).isoformat()
+        macro = ReplyMacro(
+            id=str(uuid.uuid4()),
+            account_id=account_id,
+            name=body.get("name", ""),
+            is_active=body.get("is_active", True),
+            target_chats=body.get("target_chats", []),
+            message_content=body.get("message_content", ""),
+            media_path=body.get("media_path"),
+            schedule_type=body.get("schedule_type", "interval"),
+            interval_hours=body.get("interval_hours", 24),
+            fixed_time=body.get("fixed_time"),
+            max_sends_per_day=body.get("max_sends_per_day", 10),
+            created_at=now,
+            updated_at=now,
+        )
+        runtime.reply_macro.set_macros(runtime.reply_macro.get_macros() + [macro])
+        return macro
+
+    async def update_reply_macro(self, account_id: str, macro_id: str, body: dict) -> ReplyMacro:
+        runtime = self._get_runtime_or_raise(account_id)
+        now = datetime.now(timezone.utc).isoformat()
+        macros = runtime.reply_macro.get_macros()
+        for macro in macros:
+            if macro.id == macro_id:
+                if "name" in body:
+                    macro.name = body["name"]
+                if "is_active" in body:
+                    macro.is_active = body["is_active"]
+                if "target_chats" in body:
+                    macro.target_chats = body["target_chats"]
+                if "message_content" in body:
+                    macro.message_content = body["message_content"]
+                if "schedule_type" in body:
+                    macro.schedule_type = body["schedule_type"]
+                if "interval_hours" in body:
+                    macro.interval_hours = body["interval_hours"]
+                if "fixed_time" in body:
+                    macro.fixed_time = body["fixed_time"]
+                if "max_sends_per_day" in body:
+                    macro.max_sends_per_day = body["max_sends_per_day"]
+                macro.updated_at = now
+                runtime.reply_macro.set_macros(macros)
+                return macro
+        raise LookupError(f"Reply macro {macro_id} not found")
+
+    async def delete_reply_macro(self, account_id: str, macro_id: str) -> None:
+        runtime = self._get_runtime_or_raise(account_id)
+        macros = runtime.reply_macro.get_macros()
+        runtime.reply_macro.set_macros([m for m in macros if m.id != macro_id])
+
+    async def execute_reply_macro(self, account_id: str, macro_id: str) -> None:
+        runtime = self._get_runtime_or_raise(account_id)
+        macros = runtime.reply_macro.get_macros()
+        for macro in macros:
+            if macro.id == macro_id:
+                await runtime.reply_macro._execute_macro(macro)
+                return
+        raise LookupError(f"Reply macro {macro_id} not found")
+
+    async def get_reply_macro_logs(self, account_id: str, macro_id: str) -> list[ReplyMacroLog]:
+        runtime = self._runtimes.get(account_id)
+        if not runtime:
+            return []
+        return runtime.reply_macro.get_logs(macro_id)
 
     # ── DB helpers ───────────────────────────────────────────────
 

@@ -87,7 +87,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # ── Import and register routers ──────────────────────────────────────
 
-from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups
+from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups, runtime_inspector
 
 app.include_router(accounts.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
@@ -96,6 +96,7 @@ app.include_router(auto_reply.router, prefix="/api")
 app.include_router(reply_macro.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(groups.router, prefix="/api")
+app.include_router(runtime_inspector.router, prefix="/api")
 
 
 # ── Root health-check ────────────────────────────────────────────────
@@ -124,6 +125,8 @@ async def _init_db() -> None:
                 id TEXT PRIMARY KEY,
                 phone TEXT NOT NULL,
                 name TEXT DEFAULT '',
+                api_id INTEGER DEFAULT 0,
+                api_hash TEXT DEFAULT '',
                 status TEXT DEFAULT 'inactive',
                 created_at TEXT DEFAULT ''
             )
