@@ -40,7 +40,12 @@ export default function SignupPage() {
       const start = await freeApiKey.startFreeApiKeyVerification();
       setToken(start.token);
       tokenRef.current = start.token;
-      try { sessionStorage.setItem("ft_token", start.token); sessionStorage.setItem("ft_deeplink", start.botDeepLink); sessionStorage.setItem("ft_channel", start.channelUrl); } catch {}
+      try {
+        sessionStorage.setItem("ft_token", start.token);
+        sessionStorage.setItem("ft_deeplink", start.botDeepLink);
+        sessionStorage.setItem("ft_channel", start.channelUrl);
+        sessionStorage.setItem("ft_phone", phone.trim());
+      } catch {}
       setBotDeepLink(start.botDeepLink);
       setChannelUrl(start.channelUrl);
       setVerifyStatus("idle");
@@ -68,7 +73,7 @@ export default function SignupPage() {
       const result = await freeApiKey.issueFreeApiKey(tokenRef.current, phone.trim());
       if (result.apiKey) {
         setApiKey(result.apiKey);
-        try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); } catch {}
+        try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); sessionStorage.removeItem("ft_phone"); } catch {}
         setStep("done");
       } else if (result.alreadyIssued) {
         setAlreadyIssued(true);
@@ -103,6 +108,8 @@ export default function SignupPage() {
         tokenRef.current = saved;
         setBotDeepLink(sessionStorage.getItem("ft_deeplink"));
         setChannelUrl(sessionStorage.getItem("ft_channel"));
+        const savedPhone = sessionStorage.getItem("ft_phone");
+        if (savedPhone) setPhone(savedPhone);
         setVerifyStatus("idle");
         setVerifyReason(null);
         setStep("channel");
