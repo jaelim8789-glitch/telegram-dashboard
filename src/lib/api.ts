@@ -28,6 +28,10 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
+/** Default timeout for API requests (milliseconds).  File uploads (createBroadcast,
+ *  createReplyMacro) call fetch() directly and are not affected by this timeout. */
+const REQUEST_TIMEOUT_MS = 30_000;
+
 /** Every /api/* route requires either this (an admin session) or an X-API-Key see
  * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
@@ -100,19 +104,31 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
+      signal: controller.signal,
       headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
     });
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(
+        "서버 응답이 30초 이상 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
+        undefined,
+        true,
+      );
+    }
     throw new ApiError(
       "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
       undefined,
       true,
     );
   }
+  clearTimeout(timeoutId);
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -323,6 +339,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
       headers: { ...authHeaders(), "Idempotency-Key": createIdempotencyKey() },
     });
   } catch {
+    clearIdempotencyKey();
     throw new ApiError(
       "서버 응답을 확인할 수 없습니다. 중복 발송 방지를 위해 확인 후 다시 시도해주세요.",
       undefined,
@@ -330,6 +347,7 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
     );
   }
   if (!res.ok) {
+    clearIdempotencyKey();
     const body = await res.json().catch(() => null);
     throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
   }
@@ -744,9 +762,12 @@ export async function toggleUser(id: string, isActive: boolean): Promise<Dashboa
   return toDashboardUser(user);
 }
 
-export async function reissueUserApiKey(id: string): Promise<string> {
+export async function reissueUserApiKey(id: string, memo?: string): Promise<string> {
+  const body: Record<string, unknown> = {};
+  if (memo) body.memo = memo;
   const result = await request<{ id: string; api_key: string }>(`/api/admin/users/${id}/reissue-key`, {
     method: "POST",
+    body: JSON.stringify(body),
   });
   return result.api_key;
 }
