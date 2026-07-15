@@ -33,11 +33,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}>
+    <html lang="ko" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Sets data-theme on <html> synchronously before first paint, so the
             correct light/dark palette is already applied by the time CSS
-            renders — no flash of the wrong theme while React hydrates. */}
+            renders — no flash of the wrong theme while React hydrates.
+            suppressHydrationWarning above is required because this script
+            adds a data-theme attribute and a light/dark class to <html>
+            before React hydrates; without it React treats every page as a
+            root-level hydration mismatch (console error #418) and falls
+            back to a client-side re-render of the whole tree, which is what
+            was causing tab/button clicks to silently misfire right after
+            first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
