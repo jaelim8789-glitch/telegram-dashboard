@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -10,6 +10,7 @@ import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
+import { useNotification } from "@/lib/useNotification";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function DashboardShell() {
@@ -42,6 +43,28 @@ export function DashboardShell() {
     onNavigate: (tabId: import("@/types").TabId) => setActiveTab(tabId),
   }), [setActiveTab]);
   useKeyboardShortcuts(shortcutHandlers);
+
+  // ── Browser notifications ──
+  const { notify, isSupported } = useNotification();
+
+  // Notify when broadcasts complete
+  const accounts = useDashboardStore((s) => s.accounts);
+  const prevRef = useRef({ sent: accounts.reduce((s, a) => s + a.todaySent, 0) });
+  useEffect(() => {
+    if (!isSupported) return;
+    const totalNow = accounts.reduce((s, a) => s + a.todaySent, 0);
+    const prev = prevRef.current.sent;
+    if (totalNow > prev && prev > 0) {
+      notify({
+        title: "✅ 발송 완료",
+        body: `새로운 발송이 완료되었습니다 (${totalNow - prev}건)`,
+        tag: "broadcast-sent",
+      });
+    }
+    if (totalNow !== prev) {
+      prevRef.current = { sent: totalNow };
+    }
+  }, [accounts, notify, isSupported]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
