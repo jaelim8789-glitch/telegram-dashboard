@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle,
+  Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -27,7 +27,7 @@ import { cn } from "@/lib/cn";
 import {
   RECURRING_INTERVALS, NORMAL_DELAY_OPTIONS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
-  type Broadcast, type BroadcastStatus, type Group,
+  type Broadcast, type BroadcastStatus, type Group, type GroupType,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
@@ -54,6 +54,18 @@ const POLL_INTERVAL_MS = 3000;
 const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
 type HistoryFilter = BroadcastStatus | "all" | "recurring";
+
+// Mirrors GroupTab's type taxonomy so a group/channel filters identically in both places.
+const TYPE_LABEL: Record<GroupType, string> = {
+  group: "그룹",
+  megagroup: "슈퍼그룹",
+  channel: "채널",
+};
+const TYPE_ICON: Record<GroupType, typeof Users> = {
+  group: Users,
+  megagroup: Users2,
+  channel: Megaphone,
+};
 
 const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed", "cancelled"];
 
@@ -425,6 +437,7 @@ export function SendTab() {
 
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const [typeFilter, setTypeFilter] = useState<GroupType | "all" | "saved">("all");
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
@@ -759,16 +772,27 @@ export function SendTab() {
     if (tag) addTag(groupId, tag);
   }
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: groups.length, saved: savedSendGroupIds.length };
+    for (const g of groups) counts[g.type] = (counts[g.type] ?? 0) + 1;
+    return counts;
+  }, [groups, savedSendGroupIds]);
+
   const visibleGroups = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const filtered = query
+    let filtered = query
       ? groups.filter((g) => g.title.toLowerCase().includes(query) || g.id.toLowerCase().includes(query))
       : groups;
+    if (typeFilter === "saved") {
+      filtered = filtered.filter((g) => savedSendGroupIds.includes(g.id));
+    } else if (typeFilter !== "all") {
+      filtered = filtered.filter((g) => g.type === typeFilter);
+    }
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     else if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
     return sorted;
-  }, [groups, search, sortMode, isFavorite]);
+  }, [groups, search, sortMode, isFavorite, typeFilter, savedSendGroupIds]);
 
   // visibleGroups에 태그 필터 적용
   const filteredByTag = useMemo(() => {
@@ -1120,6 +1144,33 @@ export function SendTab() {
                   </button>
                 )}
               </div>
+
+              {/* Type filter chips — same taxonomy (그룹/슈퍼그룹/채널) and 발송그룹 as the 그룹 tab */}
+              {!groupsLoading && groups.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  <button type="button" onClick={() => setTypeFilter("all")}
+                    className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === "all" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                    <Filter className="h-3 w-3" /> 전체 <span className="ml-0.5 opacity-70">{typeCounts.all ?? 0}</span>
+                  </button>
+                  {(["group", "megagroup", "channel"] as GroupType[]).map((t) => {
+                    const count = typeCounts[t] ?? 0;
+                    if (count === 0) return null;
+                    const Icon = TYPE_ICON[t];
+                    return (
+                      <button key={t} type="button" onClick={() => setTypeFilter(t)}
+                        className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === t ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                        <Icon className="h-3 w-3" /> {TYPE_LABEL[t]} <span className="ml-0.5 opacity-70">{count}</span>
+                      </button>
+                    );
+                  })}
+                  {typeCounts.saved > 0 && (
+                    <button type="button" onClick={() => setTypeFilter("saved")}
+                      className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === "saved" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                      <SendIcon className="h-3 w-3" /> 발송그룹 <span className="ml-0.5 opacity-70">{typeCounts.saved}</span>
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Tag filter chips */}
               {allTags.length > 0 && (
