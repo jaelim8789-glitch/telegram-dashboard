@@ -1,4 +1,4 @@
-﻿"use client";
+﻿1use client";
 
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TABS, type TabId } from "@/types";

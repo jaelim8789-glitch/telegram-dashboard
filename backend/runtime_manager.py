@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .account_runtime import AccountRuntime
+from .healing_engine import HealingEngine
 from .models import (
     Account,
     AccountHealthItem,
@@ -65,6 +66,7 @@ class RuntimeManager:
         self._runtimes: dict[str, AccountRuntime] = {}
         self._lock = asyncio.Lock()
         self._initialized = False
+        self.healing_engine = HealingEngine(self)
 
     async def initialize(self) -> None:
         """DB에서 계정 목록을 불러와 모든 Runtime을 시작합니다."""
@@ -75,14 +77,18 @@ class RuntimeManager:
         # DB 초기화
         self._init_db()
 
+        # Healing Engine 시작
+        await self.healing_engine.start()
+
         # 저장된 계정 목록 로드
         accounts = await asyncio.to_thread(self._load_accounts)
         if not accounts:
             logger.info("저장된 계정이 없습니다. API를 통해 계정을 추가하세요.")
             return
 
-        # 각 계정의 Runtime 생성 및 시작
-        for acct in accounts:
+        # 각 계정의 Runtime 생성 및 시작 (Staggered Startup — 500ms 간격)
+        delay = self.healing_engine.startup_delay
+        for idx, acct in enumerate(accounts):
             try:
                 runtime = AccountRuntime(
                     account_id=acct["id"],
@@ -93,8 +99,16 @@ class RuntimeManager:
                 )
                 async with self._lock:
                     self._runtimes[acct["id"]] = runtime
+
+                # Healing Engine에 등록
+                self.healing_engine.register_account(acct["id"])
+
                 await runtime.start()
-                logger.info("[%s] Runtime 시작됨", acct["id"])
+                logger.info("[%s] Runtime 시작됨 (%d/%d)", acct["id"], idx + 1, len(accounts))
+
+                # Staggered delay between account starts
+                if delay > 0 and idx < len(accounts) - 1:
+                    await asyncio.sleep(delay)
             except Exception as e:
                 logger.error("[%s] Runtime 시작 실패: %s", acct["id"], e)
 
@@ -102,6 +116,9 @@ class RuntimeManager:
 
     async def shutdown(self) -> None:
         """모든 Runtime을 안전하게 종료합니다."""
+        # Healing Engine 먼저 중지
+        await self.healing_engine.stop()
+
         async with self._lock:
             for runtime in self._runtimes.values():
                 await runtime.stop()
@@ -135,6 +152,9 @@ class RuntimeManager:
         async with self._lock:
             self._runtimes[account_id] = runtime
 
+        # Healing Engine에 등록
+        self.healing_engine.register_account(account_id)
+
         try:
             await runtime.start()
         except Exception as e:
@@ -149,6 +169,9 @@ class RuntimeManager:
 
     async def remove_account(self, account_id: str) -> None:
         """계정을 제거하고 Runtime을 종료합니다."""
+        # Healing Engine에서 제거
+        self.healing_engine.unregister_account(account_id)
+
         async with self._lock:
             runtime = self._runtimes.pop(account_id, None)
             if runtime:

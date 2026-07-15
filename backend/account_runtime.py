@@ -1058,11 +1058,24 @@ class AccountRuntime:
             logger.exception("[%s] group refresh failed", self.account_id)
 
     async def _check_health(self) -> None:
+        """Periodic health check with Heartbeat for HealingEngine."""
         try:
             me = await self.client.get_me()
             self.health_monitor.set_session_status(bool(me))
+            # Report heartbeat to HealingEngine via RuntimeManager
+            from .runtime_manager import RuntimeManager
+            manager = RuntimeManager.get_instance()
+            await manager.healing_engine.mark_heartbeat(self.account_id)
+            if me:
+                manager.healing_engine.record_success(self.account_id)
         except Exception:
             self.health_monitor.set_session_status(False)
+            try:
+                from .runtime_manager import RuntimeManager
+                manager = RuntimeManager.get_instance()
+                manager.healing_engine.record_failure(self.account_id)
+            except Exception:
+                pass
 
     async def _verify_session(self) -> None:
         """Periodic session verification with auto-recovery."""
@@ -1070,6 +1083,8 @@ class AccountRuntime:
             me = await self.client.get_me()
             if me:
                 self.health_monitor.set_session_status(True)
+                from .runtime_manager import RuntimeManager
+                RuntimeManager.get_instance().healing_engine.mark_heartbeat(self.account_id)
                 return
         except Exception:
             pass
@@ -1079,8 +1094,19 @@ class AccountRuntime:
         recovered = await self.session_auto_recovery.attempt_recovery()
         if recovered:
             logger.info("[%s] session auto-recovered successfully", self.account_id)
+            try:
+                from .runtime_manager import RuntimeManager
+                RuntimeManager.get_instance().healing_engine.mark_heartbeat(self.account_id)
+                RuntimeManager.get_instance().healing_engine.record_success(self.account_id)
+            except Exception:
+                pass
         else:
             logger.error("[%s] session auto-recovery failed", self.account_id)
+            try:
+                from .runtime_manager import RuntimeManager
+                RuntimeManager.get_instance().healing_engine.record_failure(self.account_id)
+            except Exception:
+                pass
 
     async def _on_broadcast_completed(self, event: BroadcastCompletedEvent) -> None:
         if event.status == "sent":

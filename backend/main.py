@@ -87,7 +87,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # ── Import and register routers ──────────────────────────────────────
 
-from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups, runtime_inspector, folders
+from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups, runtime_inspector, folders, healing, admin
 
 app.include_router(accounts.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
@@ -98,6 +98,8 @@ app.include_router(health.router, prefix="/api")
 app.include_router(groups.router, prefix="/api")
 app.include_router(runtime_inspector.router, prefix="/api")
 app.include_router(folders.router)
+app.include_router(healing.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 # ── Root health-check ────────────────────────────────────────────────
