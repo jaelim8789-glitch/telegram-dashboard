@@ -12,7 +12,8 @@ import { Panel } from "@/components/ui/Panel";
 import { StatCard } from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { clearToken } from "@/lib/auth";
+import { clearToken, clearSessionToken } from "@/lib/auth";
+import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 
 function AdminDashboardContent() {
@@ -41,6 +42,8 @@ function AdminDashboardContent() {
 
   function handleLogout() {
     clearToken();
+    clearSessionToken();
+    useDashboardStore.getState().resetStore();
     router.replace("/admin/login");
   }
 

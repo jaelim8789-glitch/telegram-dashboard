@@ -3,9 +3,9 @@
 import { LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { clearToken } from "@/lib/auth";
-import { useDashboardStore } from "@/store/useDashboardStore";
+import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
   if (!expiresAt) return null;
@@ -33,6 +33,8 @@ export function Header() {
 
   function handleLogout() {
     clearToken();
+    clearSessionToken();
+    useDashboardStore.getState().resetStore();
     router.replace("/admin/login");
   }
 

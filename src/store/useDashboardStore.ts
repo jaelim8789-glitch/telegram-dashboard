@@ -25,47 +25,61 @@ function dedupeRecipientIds(ids: string[], validIds?: Set<string>): string[] {
   return next;
 }
 
-interface DashboardState {
+type DashboardStateValue = {
   activeTab: TabId;
-  setActiveTab: (tab: TabId) => void;
-
   role: "admin" | "user" | "api_key" | null;
-  setRole: (role: "admin" | "user" | "api_key" | null) => void;
-
   subscriptionStatus: string | null;
   plan: string | null;
   trialExpiresAt: string | null;
-  setSubscription: (status: string | null, plan: string | null, trialExpiresAt: string | null) => void;
-
   accounts: Account[];
   accountsLoading: boolean;
   accountsError: string | null;
   selectedAccountId: string | null;
-  selectAccount: (id: string) => void;
+  sendGroups: Group[];
+  sendGroupsLoading: boolean;
+  sendMessage: string;
+  sendImageFile: File | null;
+  sendSelectedGroupIds: string[];
+  reuseNotice: string | null;
+};
 
+export const INITIAL_STATE: DashboardStateValue = {
+  activeTab: "dashboard" as TabId,
+  role: null,
+  subscriptionStatus: null,
+  plan: null,
+  trialExpiresAt: null,
+  accounts: [],
+  accountsLoading: false,
+  accountsError: null,
+  selectedAccountId: null,
+  sendGroups: [],
+  sendGroupsLoading: false,
+  sendMessage: "",
+  sendImageFile: null,
+  sendSelectedGroupIds: [],
+  reuseNotice: null,
+};
+
+interface DashboardState extends DashboardStateValue {
+  setActiveTab: (tab: TabId) => void;
+  setRole: (role: "admin" | "user" | "api_key" | null) => void;
+  setSubscription: (status: string | null, plan: string | null, trialExpiresAt: string | null) => void;
+  selectAccount: (id: string) => void;
   fetchAccounts: () => Promise<void>;
   registerAccount: (input: api.CreateAccountInput) => Promise<Account>;
   removeAccount: (id: string) => Promise<void>;
-
-  sendGroups: Group[];
-  sendGroupsLoading: boolean;
   setSendGroups: (groups: Group[]) => void;
   setSendGroupsLoading: (loading: boolean) => void;
-
-  sendMessage: string;
   setSendMessage: (message: string) => void;
-
-  sendImageFile: File | null;
   setSendImageFile: (file: File | null) => void;
-
-  sendSelectedGroupIds: string[];
   toggleSendGroupId: (id: string) => void;
   setSendSelectedGroupIds: (ids: string[]) => void;
   clearSendRecipients: () => void;
   clearSendDraft: () => void;
   reuseBroadcast: (broadcast: Broadcast) => void;
-  reuseNotice: string | null;
   setReuseNotice: (notice: string | null) => void;
+  resetStore: () => void;
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
@@ -99,7 +113,10 @@ export function getRecentRecipientSets(): string[][] {
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
-  activeTab: "dashboard",
+  ...INITIAL_STATE,
+
+  resetStore: () => set({ ...INITIAL_STATE }),
+
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   role: null,
