@@ -952,10 +952,14 @@ interface ApiManualIssueResult {
   already_issued: boolean;
 }
 
-export async function manualIssueApiKey(userIdentifier: string, memo?: string): Promise<ManualIssueResult> {
+export async function manualIssueApiKey(
+  userIdentifier: string,
+  memo?: string,
+  plan?: "free" | "pro" | "team",
+): Promise<ManualIssueResult> {
   const result = await request<ApiManualIssueResult>("/api/admin/manual-issue-key", {
     method: "POST",
-    body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null }),
+    body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null, plan: plan ?? null }),
   });
   return { userId: result.user_id, phone: result.phone, apiKey: result.api_key, alreadyIssued: result.already_issued };
 }
