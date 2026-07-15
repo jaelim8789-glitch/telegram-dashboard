@@ -27,6 +27,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   deliveryanalytics: DashboardInspector,
   profile: ProfileInspector,
   log: LogInspector,
+  folders: DashboardInspector,
 };
 
 export function Inspector() {

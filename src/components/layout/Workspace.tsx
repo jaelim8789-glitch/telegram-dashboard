@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import React, { Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
@@ -33,6 +34,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   channelhub: ChannelHubTab,
   profile: ProfileTab,
   log: LogTab,
+  folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
 };
 
 export function Workspace() {
