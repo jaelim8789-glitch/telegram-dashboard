@@ -438,3 +438,15 @@ export interface AnalyticsLatency {
   by_account: Record<string, { avg_ms: number; count: number }>;
   period_days: number;
 }
+
+// ─── Account Groups (localStorage only) ──────────────────────────────
+
+export interface AccountGroup {
+  id: string;
+  name: string;
+  description: string;
+  accountIds: string[];
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}

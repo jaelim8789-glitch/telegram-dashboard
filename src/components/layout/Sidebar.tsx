@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Ban, Clock, Plug, RefreshCw, Search, ShieldAlert, Users, WifiOff, X } from "lucide-react";
+import { Ban, Clock, Layers, Plug, RefreshCw, Search, Settings, ShieldAlert, Users, WifiOff, X } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -9,6 +9,8 @@ import { InlineError } from "@/components/ui/InlineError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import { useAccountFavorites } from "@/lib/accountLabels";
+import { useAccountGroups } from "@/lib/accountGroups";
+import { GroupManagementModal } from "@/components/sidebar/GroupManagementModal";
 import * as api from "@/lib/api";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
 
@@ -35,10 +37,13 @@ export function Sidebar() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
+  const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [groupMgmtOpen, setGroupMgmtOpen] = useState(false);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
   const { isFavorite, toggleFavorite } = useAccountFavorites();
+  const groups = useAccountGroups();
 
   async function loadHealth() {
     try {
@@ -79,6 +84,11 @@ export function Sidebar() {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
+    // Apply group filter
+    if (groupFilter) {
+      const groupAccountIds = new Set(groups.find((g) => g.id === groupFilter)?.accountIds ?? []);
+      filtered = filtered.filter((a) => groupAccountIds.has(a.id));
+    }
     // Apply search filter (by name or phone)
     if (query) {
       filtered = filtered.filter((a) => {
@@ -94,7 +104,7 @@ export function Sidebar() {
       return bFav - aFav;
     });
     return filtered;
-  }, [accounts, healthByAccountId, healthFilter, searchQuery, isFavorite]);
+  }, [accounts, healthByAccountId, healthFilter, groupFilter, groups, searchQuery, isFavorite]);
 
   const healthCounts = useMemo(() => {
     const counts: Record<string, number> = { all: accounts.length };
@@ -118,12 +128,24 @@ export function Sidebar() {
         <span className="text-xs font-semibold uppercase tracking-wider text-app-text-muted">
           계정 <span className="text-app-primary">{accounts.length}</span>
         </span>
-        <button
-          onClick={() => { fetchAccounts(); loadHealth(); }}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          {groups.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setGroupMgmtOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+              title="그룹 관리"
+            >
+              <Layers className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => { fetchAccounts(); loadHealth(); }}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -147,6 +169,7 @@ export function Sidebar() {
         </div>
       )}
 
+      {/* Health filter pills */}
       {accounts.length > 0 && (
         <div className="flex flex-wrap gap-1 border-b border-app-border px-3 py-2">
           {HEALTH_FILTERS.map((f) => {
@@ -157,10 +180,10 @@ export function Sidebar() {
               <button
                 key={f.key}
                 type="button"
-                onClick={() => setHealthFilter(f.key)}
+                onClick={() => { setHealthFilter(f.key); setGroupFilter(null); }}
                 className={cn(
                   "focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
-                  healthFilter === f.key
+                  healthFilter === f.key && !groupFilter
                     ? "bg-app-primary text-white"
                     : "bg-app-card-hover text-app-text-muted hover:text-app-text"
                 )}
@@ -171,6 +194,53 @@ export function Sidebar() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Group filter pills */}
+      {groups.length > 0 && (
+        <div className="flex flex-wrap gap-1 border-b border-app-border px-3 py-2">
+          {groupFilter && (
+            <button
+              type="button"
+              onClick={() => setGroupFilter(null)}
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
+            >
+              <X className="h-3 w-3" />
+              전체 그룹
+            </button>
+          )}
+          {groups.map((g) => {
+            const count = g.accountIds.length;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => { setGroupFilter(g.id); setHealthFilter("all"); }}
+                className={cn(
+                  "focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  groupFilter === g.id
+                    ? "text-white"
+                    : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+                )}
+                style={groupFilter === g.id ? { backgroundColor: g.color } : undefined}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: g.color }} />
+                {g.name}
+                <span className="opacity-70">{count}</span>
+              </button>
+            );
+          })}
+          {!groupFilter && (
+            <button
+              type="button"
+              onClick={() => setGroupMgmtOpen(true)}
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
+            >
+              <Settings className="h-3 w-3" />
+              관리
+            </button>
+          )}
         </div>
       )}
 
@@ -196,6 +266,7 @@ export function Sidebar() {
               health={health?.status}
               lastError={health?.lastError}
               isFavorite={isFavorite(account.id)}
+              groupFilter={groupFilter}
               onSelect={selectAccount}
               onDelete={handleDelete}
               onToggleFavorite={toggleFavorite}
@@ -204,9 +275,24 @@ export function Sidebar() {
         })}
       </div>
 
+      {groups.length === 0 && (
+        <div className="border-t border-app-border px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setGroupMgmtOpen(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            계정 그룹 만들기
+          </button>
+        </div>
+      )}
+
       <div className="border-t border-app-border px-4 py-3">
         <p className="text-[11px] text-app-text-muted">계정에 마우스를 올리면 삭제 가능</p>
       </div>
+
+      <GroupManagementModal open={groupMgmtOpen} onClose={() => setGroupMgmtOpen(false)} />
     </aside>
   );
 }
