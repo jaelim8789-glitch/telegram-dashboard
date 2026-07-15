@@ -6,7 +6,7 @@ import {
   Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, MessageSquare,
   RefreshCw, SendHorizonal, Users, XCircle, Zap,
   ArrowRight, Ban, Copy, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
-  Bug,
+  Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -152,6 +152,39 @@ export function DashboardTab() {
   const [healthError, setHealthError] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // ── Widget visibility ──
+  const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("telemon-dashboard-widgets");
+      return saved ? JSON.parse(saved) : {
+        attention: true, recentFailures: true, middlePanels: true,
+        recentActivity: true, accountOverview: true, failureIntelligence: true,
+        healthTrend: true,
+      };
+    } catch {
+      return { attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true };
+    }
+  });
+  const [showWidgetSettings, setShowWidgetSettings] = useState(false);
+
+  const toggleWidget = (key: string) => {
+    setWidgetVisibility((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const widgetKeys = [
+    { key: "attention", label: "운영 주의 사항" },
+    { key: "recentFailures", label: "최근 발송 실패" },
+    { key: "middlePanels", label: "예약/반복/건강 패널" },
+    { key: "recentActivity", label: "최근 활동" },
+    { key: "accountOverview", label: "계정 현황" },
+    { key: "failureIntelligence", label: "실패 분석" },
+    { key: "healthTrend", label: "계정 건강 트렌드" },
+  ];
 
   const loadLogs = async () => {
     setLogsLoading(true); setLogsError(false);
@@ -376,7 +409,7 @@ export function DashboardTab() {
       </div>
 
       {/* ── Operational Attention Queue ─────────── */}
-      {hasAnyAttention && (
+      {widgetVisibility.attention && hasAnyAttention && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
           <div className="flex items-center gap-2 border-b border-app-border bg-app-card px-4 py-2">
             <AlertTriangle className="h-3.5 w-3.5 text-app-danger" aria-hidden="true" />
@@ -505,7 +538,7 @@ export function DashboardTab() {
       )}
 
       {/* ── Recent Failures with retryable classification ── */}
-      {recentFailures.length > 0 && (
+      {widgetVisibility.recentFailures && recentFailures.length > 0 && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
           <div className="flex items-center gap-2 border-b border-app-border bg-app-card px-4 py-2">
             <AlertTriangle className="h-3.5 w-3.5 text-app-danger" aria-hidden="true" />
@@ -552,6 +585,36 @@ export function DashboardTab() {
         </div>
       )}
 
+      {/* ── Widget Customization ────────────────────────────── */}
+      <div className="relative">
+        <button
+          onClick={() => setShowWidgetSettings(!showWidgetSettings)}
+          className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
+        >
+          <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+          위젯 설정
+        </button>
+        {showWidgetSettings && (
+          <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
+            <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">표시할 위젯</p>
+            {widgetKeys.map((w) => (
+              <button
+                key={w.key}
+                onClick={() => toggleWidget(w.key)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
+              >
+                {widgetVisibility[w.key] ? (
+                  <Eye className="h-3.5 w-3.5 text-app-primary shrink-0" />
+                ) : (
+                  <EyeOff className="h-3.5 w-3.5 text-app-text-subtle shrink-0" />
+                )}
+                <span className={widgetVisibility[w.key] ? "text-app-text" : "text-app-text-muted"}>{w.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ── Quick Actions ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setTab("send")}
@@ -581,275 +644,346 @@ export function DashboardTab() {
       </div>
 
       {/* ── Middle Section: 3 columns ────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Panel
-          title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" aria-hidden="true" /> 예약된 발송</div>}
-          className="lg:col-span-1"
-        >
-          {upcomingLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
-            </div>
-          ) : upcoming.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Clock className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-xs text-app-text-muted">예약된 발송이 없습니다</p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {upcoming.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2 transition-colors hover:border-app-border-strong">
-                  <div className="min-w-0 flex-1 pr-2">
-                    <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
-                    <p className="text-[11px] text-app-text-subtle">
-                      {new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })}
-                      {" · "}{b.recipients.length}개 대상
-                    </p>
-                  </div>
-                  <Badge tone="info">예약</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </Panel>
-
-        <Panel
-          title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-primary" aria-hidden="true" /> 반복 발송</div>}
-          className="lg:col-span-1"
-        >
-          {recurringLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-14 w-full rounded-xl" />
-              <Skeleton className="h-14 w-full rounded-xl" />
-            </div>
-          ) : recurring.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-xs text-app-text-muted">반복 발송 일정이 없습니다</p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {recurring.slice(0, 5).map((b) => (
-                <RecurringCard key={b.id} b={b} accounts={accounts} />
-              ))}
-              {recurring.length > 5 && (
-                <button onClick={() => setTab("scheduler")}
-                  className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-                  전체 {recurring.length}개 보기
-                </button>
-              )}
-            </div>
-          )}
-        </Panel>
-
-        <Panel
-          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-success" aria-hidden="true" /> 전달 건강</div>}
-          className="lg:col-span-1"
-        >
-          {overviewLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-full rounded-xl" />
-              <Skeleton className="h-8 w-full rounded-xl" />
-              <Skeleton className="h-8 w-full rounded-xl" />
-            </div>
-          ) : !summary ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Activity className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-xs text-app-text-muted">전달 데이터가 아직 없습니다</p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-3">
-                <div className="relative h-16 w-16 shrink-0">
-                  <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90" role="img" aria-label={`성공률 ${summary.success_rate.toFixed(0)}%`}>
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" className="text-app-border" />
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3"
-                      strokeDasharray={`${summary.success_rate * 0.97} 100`}
-                      className={cn("transition-all duration-1000",
-                        summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}
-                      strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={cn("text-sm font-bold",
-                      summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>
-                      {summary.success_rate.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-app-text-muted">총 시도</span>
-                    <span className="font-medium tabular-nums text-app-text">{summary.total_attempted}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs">
-                    <span className="text-app-success">성공</span>
-                    <span className="font-medium tabular-nums text-app-success">{summary.successful}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs">
-                    <span className="text-app-danger">실패</span>
-                    <span className="font-medium tabular-nums text-app-danger">{summary.failed}</span>
-                  </div>
-                </div>
+      {widgetVisibility.middlePanels && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Panel
+            title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" aria-hidden="true" /> 예약된 발송</div>}
+            className="lg:col-span-1"
+          >
+            {upcomingLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
               </div>
+            ) : upcoming.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Clock className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+                <p className="text-xs text-app-text-muted">예약된 발송이 없습니다</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {upcoming.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between rounded-xl border border-app-border bg-app-bg px-3 py-2 transition-colors hover:border-app-border-strong">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
+                      <p className="text-[11px] text-app-text-subtle">
+                        {new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })}
+                        {" · "}{b.recipients.length}개 대상
+                      </p>
+                    </div>
+                    <Badge tone="info">예약</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
 
-              {(overview?.by_source?.length ?? 0) > 0 && (
-                <div className="border-t border-app-border pt-2.5">
-                  <p className="mb-1.5 text-[11px] font-medium text-app-text-muted">소스별</p>
-                  <div className="space-y-1">
-                    {(overview?.by_source ?? []).map((s) => (
-                      <div key={s.source} className="flex items-center justify-between text-xs">
-                        <span className="text-app-text capitalize">{s.source === "broadcast" ? "발송" : s.source}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="tabular-nums text-app-text-muted">{s.total}건</span>
-                          <span className={cn("tabular-nums font-medium",
-                            s.success_rate >= 90 ? "text-app-success" : s.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>{s.success_rate.toFixed(0)}%</span>
-                        </div>
-                      </div>
-                    ))}
+          <Panel
+            title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-primary" aria-hidden="true" /> 반복 발송</div>}
+            className="lg:col-span-1"
+          >
+            {recurringLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+              </div>
+            ) : recurring.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+                <p className="text-xs text-app-text-muted">반복 발송 일정이 없습니다</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {recurring.slice(0, 5).map((b) => (
+                  <RecurringCard key={b.id} b={b} accounts={accounts} />
+                ))}
+                {recurring.length > 5 && (
+                  <button onClick={() => setTab("scheduler")}
+                    className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
+                    전체 {recurring.length}개 보기
+                  </button>
+                )}
+              </div>
+            )}
+          </Panel>
+
+          <Panel
+            title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-success" aria-hidden="true" /> 전달 건강</div>}
+            className="lg:col-span-1"
+          >
+            {overviewLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+              </div>
+            ) : !summary ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Activity className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+                <p className="text-xs text-app-text-muted">전달 데이터가 아직 없습니다</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-16 w-16 shrink-0">
+                    <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90" role="img" aria-label={`성공률 ${summary.success_rate.toFixed(0)}%`}>
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" className="text-app-border" />
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3"
+                        strokeDasharray={`${summary.success_rate * 0.97} 100`}
+                        className={cn("transition-all duration-1000",
+                          summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}
+                        strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className={cn("text-sm font-bold",
+                        summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>
+                        {summary.success_rate.toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-app-text-muted">총 시도</span>
+                      <span className="font-medium tabular-nums text-app-text">{summary.total_attempted}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <span className="text-app-success">성공</span>
+                      <span className="font-medium tabular-nums text-app-success">{summary.successful}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <span className="text-app-danger">실패</span>
+                      <span className="font-medium tabular-nums text-app-danger">{summary.failed}</span>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              <button onClick={() => setTab("deliveryanalytics")}
-                className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-                전체 분석 보기 <ArrowRight className="inline h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </Panel>
-      </div>
+                {(overview?.by_source?.length ?? 0) > 0 && (
+                  <div className="border-t border-app-border pt-2.5">
+                    <p className="mb-1.5 text-[11px] font-medium text-app-text-muted">소스별</p>
+                    <div className="space-y-1">
+                      {(overview?.by_source ?? []).map((s) => (
+                        <div key={s.source} className="flex items-center justify-between text-xs">
+                          <span className="text-app-text capitalize">{s.source === "broadcast" ? "발송" : s.source}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="tabular-nums text-app-text-muted">{s.total}건</span>
+                            <span className={cn("tabular-nums font-medium",
+                              s.success_rate >= 90 ? "text-app-success" : s.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>{s.success_rate.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={() => setTab("deliveryanalytics")}
+                  className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
+                  전체 분석 보기 <ArrowRight className="inline h-3 w-3" />
+                </button>
+              </div>
+            )}
+          </Panel>
+        </div>
+      )}
 
       {/* ── Recent Activity ──────────────────── */}
-      <Panel
-        title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 활동</div>}
-        className="w-full"
-      >
-        {logsLoading && recentLogs.length === 0 ? (
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
-          </div>
-        ) : accounts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Users className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-            <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
-            <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
-          </div>
-        ) : recentLogs.length === 0 && !logsLoading ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <MessageSquare className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-            <p className="text-sm font-medium text-app-text">아직 활동 기록이 없습니다</p>
-            <p className="mt-1 text-xs text-app-text-muted">계정을 연결하고 메시지를 발송하면 여기에 표시됩니다</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-app-border">
-            {recentLogs.map((b) => {
-              const meta = STATUS_TONE[b.status];
-              const fi = b.failureInfo;
-              const { retryable } = failureInfoSummary(fi);
-              const isRecur = isRecurringActive(b);
-              const isFailed = b.status === "failed";
-              return (
-                <div key={b.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <div className="min-w-0 flex-1 pr-3">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate text-app-text">{b.message}</p>
-                      {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">재시도 가능</Badge>}
-                      {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">재시도 불가</Badge>}
-                      {isRecur && <Badge tone="info" className="shrink-0 text-[9px] px-1 py-0">반복</Badge>}
+      {widgetVisibility.recentActivity && (
+        <Panel
+          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 활동</div>}
+          className="w-full"
+        >
+          {logsLoading && recentLogs.length === 0 ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+            </div>
+          ) : accounts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Users className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+              <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
+            </div>
+          ) : recentLogs.length === 0 && !logsLoading ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <MessageSquare className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+              <p className="text-sm font-medium text-app-text">아직 활동 기록이 없습니다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정을 연결하고 메시지를 발송하면 여기에 표시됩니다</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-app-border">
+              {recentLogs.map((b) => {
+                const meta = STATUS_TONE[b.status];
+                const fi = b.failureInfo;
+                const { retryable } = failureInfoSummary(fi);
+                const isRecur = isRecurringActive(b);
+                const isFailed = b.status === "failed";
+                return (
+                  <div key={b.id} className="flex items-center justify-between py-2.5 text-sm">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-app-text">{b.message}</p>
+                        {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">재시도 가능</Badge>}
+                        {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">재시도 불가</Badge>}
+                        {isRecur && <Badge tone="info" className="shrink-0 text-[9px] px-1 py-0">반복</Badge>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-1 text-xs text-app-text-muted">
+                        <span>{formatRelativeTime(b.createdAt)}</span>
+                        {b.errorMessage && <><span>·</span><span className="text-app-danger truncate max-w-[120px]">{b.errorMessage}</span></>}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-1 text-xs text-app-text-muted">
-                      <span>{formatRelativeTime(b.createdAt)}</span>
-                      {b.errorMessage && <><span>·</span><span className="text-app-danger truncate max-w-[120px]">{b.errorMessage}</span></>}
-                    </div>
+                    <button onClick={() => setTab(isFailed ? "log" : isRecur ? "scheduler" : "send")}
+                      className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring"
+                      aria-label={isFailed ? "로그 보기" : isRecur ? "스케줄러 보기" : "발송 보기"}>
+                      {isFailed ? "로그 보기" : isRecur ? "스케줄러" : "발송 보기"}
+                    </button>
                   </div>
-                  <button onClick={() => setTab(isFailed ? "log" : isRecur ? "scheduler" : "send")}
-                    className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring"
-                    aria-label={isFailed ? "로그 보기" : isRecur ? "스케줄러 보기" : "발송 보기"}>
-                    {isFailed ? "로그 보기" : isRecur ? "스케줄러" : "발송 보기"}
-                  </button>
+                );
+              })}
+            </div>
+          )}
+          {logsError && logs.length > 0 && (
+            <p className="mt-2 text-[11px] text-app-warning">로그 데이터를 불러오는 중 일부 오류가 발생했습니다</p>
+          )}
+        </Panel>
+      )}
+
+      {/* ── Account Overview Table ──────────────────────────── */}
+      {widgetVisibility.accountOverview && (
+        <Panel
+          title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 현황</div>}
+          description="연결된 모든 Telegram 계정의 상태와 주요 지표"
+        >
+          {accounts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Users className="mb-2 h-8 w-8 text-app-text-subtle" aria-hidden="true" />
+              <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-1">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>계정</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="hidden sm:table-cell">자동 응답</TableHead>
+                    <TableHead className="text-right">오늘</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">그룹</TableHead>
+                    <TableHead className="hidden md:table-cell">최근 활동</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accounts.map((a) => {
+                    const healthItem = healthItems.find(h => h.accountId === a.id);
+                    const healthStatus = healthItem?.status;
+                    const hasHealthIssue = healthStatus && healthStatus !== "healthy";
+                    return (
+                      <TableRow key={a.id} className={hasHealthIssue ? "bg-app-danger-muted/5" : undefined}>
+                        <TableCell className="max-w-[120px] sm:max-w-[180px]">
+                          <div className="truncate text-sm font-medium text-app-text" title={a.name || a.phone}>{a.name || a.phone}</div>
+                          {a.name && <div className="truncate text-xs text-app-text-muted">{a.phone}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            a.status === "active" && !hasHealthIssue && "bg-app-success-muted text-app-success",
+                            a.status === "active" && hasHealthIssue && "bg-app-warning-muted text-app-warning",
+                            a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
+                            a.status === "banned" && "bg-app-danger-muted text-app-danger",
+                          )}>
+                            <span className={cn("h-1.5 w-1.5 rounded-full",
+                              a.status === "active" && !hasHealthIssue && "bg-app-success",
+                              a.status === "active" && hasHealthIssue && "bg-app-warning",
+                              a.status === "inactive" && "bg-app-text-subtle",
+                              a.status === "banned" && "bg-app-danger")} />
+                            {a.status === "active" ? (hasHealthIssue ? "주의" : "활성") : a.status === "inactive" ? "비활성" : "차단"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {a.autoReplyEnabled
+                            ? <span className="text-app-success text-xs font-medium">켜짐</span>
+                            : <span className="text-app-text-subtle text-xs">꺼짐</span>}
+                        </TableCell>
+                        <TableCell className="font-medium tabular-nums text-right">{a.todaySent}</TableCell>
+                        <TableCell className="tabular-nums text-app-text-muted text-right hidden sm:table-cell">{a.groupCount}</TableCell>
+                        <TableCell className="text-xs text-app-text-muted hidden md:table-cell">
+                          {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Panel>
+      )}
+
+      {/* ── Health Trend ──────────────────────────────────────── */}
+      {widgetVisibility.healthTrend && healthItems.length > 0 && (
+        <Panel
+          title={<div className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 건강 트렌드</div>}
+          description="각 계정의 최근 발송 성공률 및 건강 상태"
+        >
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {healthItems.map((h) => {
+              const acct = accounts.find((a) => a.id === h.accountId);
+              const totalAttempts = h.recentSuccessCount + h.recentFailureCount;
+              const successRate = totalAttempts > 0 ? (h.recentSuccessCount / totalAttempts) * 100 : 0;
+              const statusLabel: Record<string, { label: string; tone: string }> = {
+                healthy: { label: "정상", tone: "text-app-success" },
+                unauthorized: { label: "인증 필요", tone: "text-app-warning" },
+                banned: { label: "차단", tone: "text-app-danger" },
+                rate_limited: { label: "제한", tone: "text-app-warning" },
+                error: { label: "오류", tone: "text-app-danger" },
+                not_configured: { label: "미설정", tone: "text-app-text-muted" },
+                unknown: { label: "알 수 없음", tone: "text-app-text-muted" },
+              };
+              const statusInfo = statusLabel[h.status] ?? { label: h.status, tone: "text-app-text-muted" };
+              const barColor = successRate >= 90 ? "bg-app-success" : successRate >= 70 ? "bg-app-warning" : "bg-app-danger";
+              return (
+                <div key={h.accountId} className="rounded-xl border border-app-border bg-app-card p-3 transition-colors hover:border-app-border-strong">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="truncate text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone}</p>
+                    </div>
+                    <span className={`shrink-0 text-[10px] font-medium ${statusInfo.tone}`}>{statusInfo.label}</span>
+                  </div>
+                  {totalAttempts > 0 ? (
+                    <>
+                      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-app-border">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                          style={{ width: `${Math.max(successRate, 4)}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-app-text-muted">
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-app-success" />
+                          {h.recentSuccessCount}건
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <TrendingDown className="h-3 w-3 text-app-danger" />
+                          {h.recentFailureCount}건
+                        </span>
+                        <span className="font-medium">{successRate.toFixed(0)}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-app-border">
+                      <div className="h-full w-1/3 rounded-full bg-app-text-subtle/30" />
+                    </div>
+                  )}
+                  {h.lastActivity && (
+                    <p className="mt-1 text-[9px] text-app-text-subtle">마지막 활동: {formatRelativeTime(h.lastActivity)}</p>
+                  )}
                 </div>
               );
             })}
           </div>
-        )}
-        {logsError && logs.length > 0 && (
-          <p className="mt-2 text-[11px] text-app-warning">로그 데이터를 불러오는 중 일부 오류가 발생했습니다</p>
-        )}
-      </Panel>
-
-      {/* ── Account Overview Table ──────────────────────────── */}
-      <Panel
-        title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 현황</div>}
-        description="연결된 모든 Telegram 계정의 상태와 주요 지표"
-      >
-        {accounts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Users className="mb-2 h-8 w-8 text-app-text-subtle" aria-hidden="true" />
-            <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
-            <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-1">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>계정</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead className="hidden sm:table-cell">자동 응답</TableHead>
-                  <TableHead className="text-right">오늘</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">그룹</TableHead>
-                  <TableHead className="hidden md:table-cell">최근 활동</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((a) => {
-                  const healthItem = healthItems.find(h => h.accountId === a.id);
-                  const healthStatus = healthItem?.status;
-                  const hasHealthIssue = healthStatus && healthStatus !== "healthy";
-                  return (
-                    <TableRow key={a.id} className={hasHealthIssue ? "bg-app-danger-muted/5" : undefined}>
-                      <TableCell className="max-w-[120px] sm:max-w-[180px]">
-                        <div className="truncate text-sm font-medium text-app-text" title={a.name || a.phone}>{a.name || a.phone}</div>
-                        {a.name && <div className="truncate text-xs text-app-text-muted">{a.phone}</div>}
-                      </TableCell>
-                      <TableCell>
-                        <span className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                          a.status === "active" && !hasHealthIssue && "bg-app-success-muted text-app-success",
-                          a.status === "active" && hasHealthIssue && "bg-app-warning-muted text-app-warning",
-                          a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
-                          a.status === "banned" && "bg-app-danger-muted text-app-danger",
-                        )}>
-                          <span className={cn("h-1.5 w-1.5 rounded-full",
-                            a.status === "active" && !hasHealthIssue && "bg-app-success",
-                            a.status === "active" && hasHealthIssue && "bg-app-warning",
-                            a.status === "inactive" && "bg-app-text-subtle",
-                            a.status === "banned" && "bg-app-danger")} />
-                          {a.status === "active" ? (hasHealthIssue ? "주의" : "활성") : a.status === "inactive" ? "비활성" : "차단"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {a.autoReplyEnabled
-                          ? <span className="text-app-success text-xs font-medium">켜짐</span>
-                          : <span className="text-app-text-subtle text-xs">꺼짐</span>}
-                      </TableCell>
-                      <TableCell className="font-medium tabular-nums text-right">{a.todaySent}</TableCell>
-                      <TableCell className="tabular-nums text-app-text-muted text-right hidden sm:table-cell">{a.groupCount}</TableCell>
-                      <TableCell className="text-xs text-app-text-muted hidden md:table-cell">
-                        {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </Panel>
+        </Panel>
+      )}
 
       {/* ── Failure Intelligence ─────────────────────────────── */}
-      {failureTypes.length > 0 && (
+      {widgetVisibility.failureIntelligence && failureTypes.length > 0 && (
         <Panel
           title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-danger" aria-hidden="true" /> 실패 분석</div>}
           description="주요 실패 유형 및 영향"

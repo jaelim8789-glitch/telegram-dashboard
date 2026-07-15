@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
+  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
@@ -36,6 +36,8 @@ import {
   TEMPLATE_VARIABLES,
   type MessageTemplate,
 } from "@/lib/messageTemplates";
+import { MessagePreviewModal } from "@/components/workspace/MessagePreviewModal";
+import { Modal } from "@/components/ui/Modal";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -268,6 +270,24 @@ function HistoryRow({
           )}
         </div>
 
+        {/* Progress bar */}
+        <div className="mt-2 w-full">
+          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-app-border/50" role="progressbar"
+            aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={isSending ? undefined : isSent ? 100 : isFailed ? 0 : 0}
+            aria-label={isSending ? "발송 진행 중" : isSent ? "발송 완료" : isFailed ? "발송 실패" : "대기 중"}>
+            {isSending ? (
+              <div className="h-full w-full animate-pulse rounded-full bg-app-info" style={{ animationDuration: '1.5s' }} />
+            ) : isSent ? (
+              <div className="h-full w-full rounded-full bg-app-success" />
+            ) : isFailed ? (
+              <div className="h-full w-3/4 rounded-full bg-app-danger" />
+            ) : (
+              <div className="h-full w-1/3 rounded-full bg-app-text-subtle/30" />
+            )}
+          </div>
+        </div>
+
         {/* Failure action hint */}
         {isFailed && failureInfo && (
           <div className="mt-1.5 flex items-center gap-2 text-[11px]">
@@ -409,6 +429,7 @@ export function SendTab() {
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1137,6 +1158,11 @@ export function SendTab() {
                       min="1"
                       className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                   </Field>
+                  {!replyToMessageId.trim() && (
+                    <p className="mt-1.5 text-xs text-app-text-muted">
+                      메시지 ID를 입력하면 발송 버튼이 활성화됩니다.
+                    </p>
+                  )}
                   <div className="mt-2">
                     <Field label="파일 첨부 (선택)">
                       <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
@@ -1167,6 +1193,14 @@ export function SendTab() {
                     className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
                   >
                     <Plus className="h-3 w-3" /> 현재 메시지 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOpen(true)}
+                    disabled={!message.trim()}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Eye className="h-3 w-3" /> 미리보기
                   </button>
                   <span className="mx-1 h-3 w-px bg-app-border" />
                   {TEMPLATE_VARIABLES.map((v) => (
@@ -1556,6 +1590,67 @@ export function SendTab() {
         }}
         onCancel={() => { setCancelConfirmOpen(false); setCancelTarget(null); }}
       />
+
+      {/* Message preview modal */}
+      <MessagePreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        message={message}
+        recipientCount={selectedRecipientIds.length}
+        accountPhone={account?.phone}
+        groupName={selectedRecipients.length > 0 ? selectedRecipients[0].title : undefined}
+      />
+
+      {/* Save template dialog */}
+      <Modal
+        open={saveTemplateDialogOpen}
+        onClose={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}
+        title="메시지 템플릿 저장"
+        description="현재 메시지를 템플릿으로 저장합니다. 저장한 템플릿은 나중에 불러와 사용할 수 있습니다."
+        size="sm"
+        footer={
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}>
+              취소
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!saveTemplateName.trim()}
+              onClick={handleSaveTemplate}
+            >
+              저장
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-app-text-muted">템플릿 이름</label>
+            <input
+              type="text"
+              value={saveTemplateName}
+              onChange={(e) => setSaveTemplateName(e.target.value)}
+              placeholder="예: 공지사항 템플릿"
+              className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && saveTemplateName.trim()) {
+                  handleSaveTemplate();
+                }
+              }}
+            />
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-bg/50 p-3">
+            <p className="mb-1 text-[11px] font-medium text-app-text-muted">미리보기</p>
+            <p className="whitespace-pre-wrap break-words text-sm text-app-text leading-relaxed max-h-28 overflow-y-auto">
+              {message.trim() || (
+                <span className="text-app-text-subtle italic">메시지 내용이 비어 있습니다.</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {/* Floating submit button */}
       <motion.div
