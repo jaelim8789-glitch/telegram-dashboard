@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Account, Broadcast, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
+import { RuntimeManager } from "@/lib/runtimeManager";
 
 function dedupeGroups(groups: Group[]): Group[] {
   const seen = new Set<string>();
@@ -136,17 +137,47 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   accountsLoading: false,
   accountsError: null,
   selectedAccountId: null,
-  selectAccount: (id) => set({ selectedAccountId: id }),
 
+  /** RuntimeManager를 통해 즉시 계정 전환 — API 재호출 없음 */
+  selectAccount: (id) => {
+    set({ selectedAccountId: id });
+    // RuntimeManager에도 동기화하여 캐시된 데이터가 준비되도록 함
+    RuntimeManager.getInstance().selectAccount(id);
+  },
+
+  /** RuntimeManager를 통해 계정 목록 로드 (캐시 우선) */
   fetchAccounts: async () => {
     set({ accountsLoading: true, accountsError: null });
     try {
-      const accounts = await api.fetchAccounts();
+      const manager = RuntimeManager.getInstance();
+      // RuntimeManager가 초기화되어 있지 않으면 초기화
+      if (!manager.accounts.length) {
+        await manager.initialize();
+      } else {
+        // 이미 초기화됨 — 백그라운드 refresh만 트리거
+        manager.refreshAll().catch(() => {});
+      }
+
+      const accounts = manager.accounts;
       set((state) => ({
         accounts,
         accountsLoading: false,
         selectedAccountId: state.selectedAccountId ?? accounts[0]?.id ?? null,
       }));
+
+      // RuntimeManager 구독 — 최초 한 번만 등록 (중복 구독 방지)
+      (window as unknown as Record<string, unknown>)["__RM_SUBSCRIBED__"] =
+        (window as unknown as Record<string, unknown>)["__RM_SUBSCRIBED__"] ??
+        (() => {
+          const unsub = manager.subscribe(() => {
+            const currentAccounts = manager.accounts;
+            set({
+              accounts: currentAccounts,
+              selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
+            });
+          });
+          return unsub;
+        })();
     } catch (err) {
       set({
         accountsLoading: false,
@@ -157,14 +188,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   registerAccount: async (input) => {
     const account = await api.createAccount(input);
-    await get().fetchAccounts();
+    // RuntimeManager에 새 계정 반영
+    const manager = RuntimeManager.getInstance();
+    await manager.refreshAll();
+    set((state) => ({
+      accounts: manager.accounts,
+      selectedAccountId: state.selectedAccountId ?? account.id,
+    }));
     return account;
   },
 
   removeAccount: async (id) => {
     await api.deleteAccount(id);
+    // RuntimeManager에서도 제거
+    const manager = RuntimeManager.getInstance();
+    await manager.refreshAll();
     set((state) => ({
-      accounts: state.accounts.filter((a) => a.id !== id),
+      accounts: manager.accounts,
       selectedAccountId: state.selectedAccountId === id ? null : state.selectedAccountId,
     }));
   },

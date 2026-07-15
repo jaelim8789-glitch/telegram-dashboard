@@ -157,6 +157,34 @@ export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
 
+/**
+ * Update an account's status (active/inactive/banned).
+ * PATCH /api/accounts/{accountId}/status
+ */
+export async function updateAccountStatus(
+  accountId: string,
+  status: Account["status"]
+): Promise<void> {
+  await request<void>(`/api/accounts/${accountId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+/**
+ * Batch enable or disable multiple accounts.
+ * PATCH /api/accounts/batch/status
+ */
+export async function batchUpdateAccountStatus(
+  accountIds: string[],
+  status: Account["status"]
+): Promise<void> {
+  await request<void>("/api/accounts/batch/status", {
+    method: "PATCH",
+    body: JSON.stringify({ account_ids: accountIds, status }),
+  });
+}
+
 interface ApiAccountHealthItem {
   account_id: string;
   phone: string;
@@ -865,6 +893,52 @@ export async function manualIssueApiKey(userIdentifier: string, memo?: string): 
     body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null }),
   });
   return { userId: result.user_id, phone: result.phone, apiKey: result.api_key, alreadyIssued: result.already_issued };
+}
+
+// ─── Channel Hub ────────────────────────────────────────────────────
+
+export interface ChannelHubPublishInput {
+  accountId: string;
+  channelId: string;
+  title: string;
+  body?: string;
+  buttons?: { label: string; url: string }[];
+  pinMessage?: boolean;
+}
+
+export interface ChannelHubPublishResult {
+  id: string;
+  messageId: number;
+  publishedAt: string;
+}
+
+interface ApiChannelHubPublishResult {
+  id: string;
+  message_id: number;
+  published_at: string;
+}
+
+/**
+ * Publish a message to a Telegram channel via the Channel Hub.
+ * POST /api/channel-hub/publish
+ */
+export async function publishChannelPost(input: ChannelHubPublishInput): Promise<ChannelHubPublishResult> {
+  const result = await request<ApiChannelHubPublishResult>("/api/channel-hub/publish", {
+    method: "POST",
+    body: JSON.stringify({
+      account_id: input.accountId,
+      channel_id: input.channelId,
+      title: input.title,
+      body: input.body ?? "",
+      buttons: input.buttons ?? [],
+      pin_message: input.pinMessage ?? false,
+    }),
+  });
+  return {
+    id: result.id,
+    messageId: result.message_id,
+    publishedAt: result.published_at,
+  };
 }
 
 // ─── Delivery Analytics ──────────────────────────────────────────────

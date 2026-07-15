@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, type FormEvent } from "react";
-import { MessageSquareOff, Plus, X, Search, RotateCcw, Copy } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageSquareOff, Plus, X, Search, RotateCcw, Copy, ChevronDown, Hash, User, MessageSquare, AtSign } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +12,9 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { RuntimeManager } from "@/lib/runtimeManager";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache } from "@/lib/useAccountCache";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
@@ -89,52 +92,61 @@ export function AutoReplyTab() {
   // ── New features ──
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   const formRef = useRef<HTMLDivElement>(null);
   const submitLockRef = useRef(false);
 
   const { toast } = useToast();
 
-  async function loadSettings(accountId: string) {
-    setRulesLoading(true);
-    setRulesError(null);
-    try {
-      const settings = await api.fetchAutoReplySettings(accountId);
-      setEnabled(settings.autoReplyEnabled);
-      setRules(settings.rules);
-    } catch (err) {
-      setRules([]);
-      setRulesError(err instanceof Error ? err.message : "자동 응답 설정을 불러오지 못했습니다.");
-    } finally {
-      setRulesLoading(false);
-    }
-  }
+  // ── RuntimeManager 캐시에서 AutoReply 데이터 즉시 로드 ──
+  const { autoReply, autoReplyLogs } = useAccountCache(selectedAccountId);
 
-  async function loadLogs(accountId: string) {
-    setLogsLoading(true);
-    try {
-      setLogs(await api.fetchAutoReplyLogs(accountId));
-    } catch {
-      setLogs([]);
-    } finally {
-      setLogsLoading(false);
-    }
-  }
-
+  // 캐시에서 데이터 동기화 (계정 전환 시 즉시 표시)
   useEffect(() => {
+    if (selectedAccountId) {
+      const cache = autoReply;
+      if (cache) {
+        setEnabled(cache.autoReplyEnabled);
+        setRules(cache.rules);
+        setRulesLoading(false);
+        setRulesError(null);
+      } else {
+        // 캐시 미스 — RuntimeManager를 통해 cache 갱신 + notify
+        setRulesLoading(true);
+        RuntimeManager.getInstance().refreshAutoReply(selectedAccountId);
+      }
+      setLogs(autoReplyLogs);
+      setLogsLoading(false);
+    } else {
+      setRules([]);
+      setLogs([]);
+      setEnabled(false);
+    }
     setToggleError(null);
     setSubmitError(null);
     setActionError(null);
     setSearchQuery("");
     setFilterMode("all");
-    if (selectedAccountId) {
-      loadSettings(selectedAccountId);
-      loadLogs(selectedAccountId);
-    } else {
-      setRules([]);
-      setLogs([]);
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId]);
+
+  // 백그라운드 캐시 업데이트 시 로컬 상태 동기화
+  useEffect(() => {
+    if (autoReply) {
+      setEnabled(autoReply.autoReplyEnabled);
+      setRules(autoReply.rules);
+      setRulesLoading(false);
+      setRulesError(null);
+    }
+  }, [autoReply]);
+
+  useEffect(() => {
+    if (autoReplyLogs.length > 0) {
+      setLogs(autoReplyLogs);
+      setLogsLoading(false);
+    }
+  }, [autoReplyLogs]);
 
   // ── Filtered & searched rules ──
   const filteredRules = useMemo(() => {
@@ -613,8 +625,8 @@ export function AutoReplyTab() {
         )}
       </div>
 
-      {/* Logs */}
-      <Panel title="응답 로그" description="최근 자동 응답 시도 기록">
+      {/* Logs — expandable detail view */}
+      <Panel title="응답 로그" description="최근 자동 응답 시도 기록 — 로그를 클릭하면 상세 정보를 볼 수 있습니다">
         {logsLoading && (
           <div className="space-y-2">
             <Skeleton className="h-8 w-full" />
@@ -626,24 +638,155 @@ export function AutoReplyTab() {
         )}
         {logs.length > 0 && (
           <div className="-mx-4">
-            <div className="divide-y divide-app-border">
-              {logs.map((log) => {
-                const meta = LOG_STATUS_TONE[log.status];
-                return (
-                  <div key={log.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+            {logs.map((log) => {
+              const meta = LOG_STATUS_TONE[log.status];
+              const isExpanded = expandedLogId === log.id;
+              const matchedRule = rules.find((r) => r.id === log.ruleId);
+              return (
+                <div key={log.id} className="border-b border-app-border last:border-b-0">
+                  {/* Collapsed row — clickable */}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                    className="flex w-full items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-app-card-hover/50 text-left"
+                  >
                     <div className="min-w-0 flex-1 pr-3">
-                      <div className="truncate text-app-text">
-                        {log.userName ?? log.userId}: {log.triggerMessage}
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate font-medium text-app-text">
+                          {log.userName ?? log.userId}
+                        </span>
+                        <span className="text-app-text-subtle">:</span>
+                        <span className="truncate text-app-text-muted">
+                          {log.triggerMessage.length > 50
+                            ? log.triggerMessage.slice(0, 50) + "..."
+                            : log.triggerMessage}
+                        </span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-2 text-xs text-app-text-subtle">
                         <span>{formatDateTime(log.createdAt)}</span>
+                        {matchedRule && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-app-card-hover px-1.5 py-0.5 text-[10px]">
+                            <Hash className="h-2.5 w-2.5" />
+                            {matchedRule.name}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <Badge tone={meta.tone}>{meta.label}</Badge>
-                  </div>
-                );
-              })}
-            </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge tone={meta.tone}>{meta.label}</Badge>
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-app-text-subtle transition-transform duration-200",
+                          isExpanded && "rotate-180",
+                        )}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Expanded detail panel */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-app-border/50 bg-app-card/30 px-4 py-3">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {/* Trigger message */}
+                            <div className="rounded-lg border border-app-border bg-app-bg/50 p-2.5 sm:col-span-2">
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-app-text-muted">
+                                <MessageSquare className="h-3 w-3" />
+                                트리거 메시지
+                              </div>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-xs text-app-text">
+                                {log.triggerMessage}
+                              </p>
+                            </div>
+
+                            {/* Sent reply */}
+                            <div className="rounded-lg border border-app-border bg-app-bg/50 p-2.5 sm:col-span-2">
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-app-text-muted">
+                                <MessageSquareOff className="h-3 w-3" />
+                                전송된 응답
+                              </div>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-xs text-app-text">
+                                {log.replySent}
+                              </p>
+                            </div>
+
+                            {/* User info */}
+                            <div className="rounded-lg border border-app-border bg-app-bg/50 p-2.5">
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-app-text-muted">
+                                <User className="h-3 w-3" />
+                                사용자 정보
+                              </div>
+                              <div className="mt-1 space-y-1 text-[11px]">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-app-text-muted">이름:</span>
+                                  <span className="font-medium text-app-text">{log.userName ?? '(없음)'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <AtSign className="h-3 w-3 text-app-text-subtle" />
+                                  <span className="text-app-text-muted">ID:</span>
+                                  <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-app-text">
+                                    {log.userId}
+                                  </code>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Chat info */}
+                            <div className="rounded-lg border border-app-border bg-app-bg/50 p-2.5">
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-app-text-muted">
+                                <Hash className="h-3 w-3" />
+                                채팅 정보
+                              </div>
+                              <div className="mt-1 space-y-1 text-[11px]">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-app-text-muted">채팅 ID:</span>
+                                  <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-app-text">
+                                    {log.chatId}
+                                  </code>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-app-text-muted">규칙:</span>
+                                  <span className="font-medium text-app-text">
+                                    {matchedRule ? matchedRule.name : log.ruleId.slice(0, 8) + '...'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-app-text-muted">시간:</span>
+                                  <span className="font-mono text-app-text">{formatDateTime(log.createdAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status detail */}
+                            <div className="rounded-lg border border-app-border bg-app-bg/50 p-2.5 sm:col-span-2">
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-app-text-muted">
+                                결과
+                              </div>
+                              <div className="mt-1 flex items-center gap-2">
+                                <Badge tone={meta.tone}>{meta.label}</Badge>
+                                <span className="text-xs text-app-text-muted">
+                                  {log.status === 'success'
+                                    ? '응답이 성공적으로 전송되었습니다.'
+                                    : log.status === 'failed'
+                                      ? '응답 전송 중 오류가 발생했습니다.'
+                                      : '텔레그램 rate limit 제한으로 응답이 지연되었습니다.'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </div>
         )}
       </Panel>

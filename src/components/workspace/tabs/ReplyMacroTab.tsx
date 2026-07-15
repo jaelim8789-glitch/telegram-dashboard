@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
 import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock, Image } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import {
-  fetchReplyMacros,
   createReplyMacro,
   updateReplyMacro,
   deleteReplyMacro,
@@ -69,25 +69,34 @@ export function ReplyMacroTab() {
 
   const { toast } = useToast();
 
-  const loadMacros = useCallback(async () => {
-    if (!selectedAccountId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchReplyMacros(selectedAccountId);
-      setMacros(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "로딩 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAccountId]);
+  // ── RuntimeManager 캐시에서 ReplyMacro 데이터 즉시 로드 ──
+  const { replyMacros } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
 
   useEffect(() => {
     setSearchQuery("");
-    if (selectedAccountId) loadMacros();
-    else setMacros([]);
-  }, [selectedAccountId, loadMacros]);
+    if (selectedAccountId) {
+      const cachedMacros = replyMacros;
+      if (cachedMacros.length > 0) {
+        setMacros(cachedMacros);
+        setLoading(false);
+      } else {
+        setLoading(true);
+        runtimeActions.refreshReplyMacros(selectedAccountId);
+      }
+    } else {
+      setMacros([]);
+    }
+    setError(null);
+  }, [selectedAccountId]);
+
+  // 캐시가 업데이트되면 macros 동기화
+  useEffect(() => {
+    if (replyMacros.length > 0) {
+      setMacros(replyMacros);
+      setLoading(false);
+    }
+  }, [replyMacros]);
 
   // ── Filtered macros ──
   const filteredMacros = useMemo(() => {
@@ -184,7 +193,7 @@ export function ReplyMacroTab() {
         toast("success", "매크로가 추가되었습니다");
       }
       closeForm();
-      await loadMacros();
+      await runtimeActions.refreshReplyMacros(selectedAccountId);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "저장 실패");
       toast("error", "매크로 저장에 실패했습니다");
@@ -198,7 +207,7 @@ export function ReplyMacroTab() {
     if (!selectedAccountId || !confirmDeleteId) return;
     try {
       await deleteReplyMacro(selectedAccountId, confirmDeleteId);
-      await loadMacros();
+      await runtimeActions.refreshReplyMacros(selectedAccountId);
       toast("success", "매크로가 삭제되었습니다");
     } catch (err) {
       setError(err instanceof Error ? err.message : "삭제 실패");

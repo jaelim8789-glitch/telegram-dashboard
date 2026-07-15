@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { useFavoriteGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -49,6 +50,10 @@ export function GroupTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
+
+  // ── RuntimeManager 캐시에서 그룹 데이터 즉시 로드 ──
+  const { groups: cachedGroups } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,29 +101,36 @@ export function GroupTab() {
     [groups, savedSendGroupIds],
   );
 
-  async function load(accountId: string, silent = false) {
-    if (silent) {
-      try { setGroups(await api.fetchGroups(accountId)); } catch { /* ignore */ }
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try { setGroups(await api.fetchGroups(accountId)); }
-    catch (err) { setGroups([]); setError(err instanceof Error ? err.message : "그룹 목록을 불러오지 못했습니다."); }
-    finally { setLoading(false); }
-  }
-
   async function handleRefresh() {
     if (!selectedAccountId || refreshing) return;
     setRefreshing(true);
-    await load(selectedAccountId);
+    await runtimeActions.refreshGroups(selectedAccountId);
     setRefreshing(false);
   }
 
+  // 캐시에서 즉시 데이터 로드 (계정 전환 시 API 호출 없음)
   useEffect(() => {
-    if (selectedAccountId) { load(selectedAccountId); }
-    else { setGroups([]); }
+    if (selectedAccountId) {
+      if (cachedGroups.length > 0) {
+        setGroups(cachedGroups);
+        setLoading(false);
+      } else {
+        setLoading(true);
+        runtimeActions.refreshGroups(selectedAccountId);
+      }
+    } else {
+      setGroups([]);
+    }
+    setError(null);
   }, [selectedAccountId]);
+
+  // 캐시 업데이트 시 동기화
+  useEffect(() => {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
+      setLoading(false);
+    }
+  }, [cachedGroups]);
 
   useEffect(() => {
     setFolderFilter("all");
@@ -131,7 +143,10 @@ export function GroupTab() {
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (!selectedAccountId) return;
-    bgPollTimer.current = setTimeout(() => { load(selectedAccountId, true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
+    bgPollTimer.current = setTimeout(() => {
+      runtimeActions.refreshGroups(selectedAccountId);
+      setPollTick((t) => t + 1);
+    }, BACKGROUND_POLL_INTERVAL_MS);
     return () => { if (bgPollTimer.current) clearTimeout(bgPollTimer.current); };
   }, [pollTick, selectedAccountId]);
 
