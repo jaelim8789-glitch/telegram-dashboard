@@ -30,7 +30,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 // marketing nav) so this refinement can't affect that unrelated page —
 // fully local, restrained styling instead: no filled active pill, just a
 // text/icon color shift plus a thin underline.
-function TabButton({ tab, active, onSelect }: { tab: TabDef; active: boolean; onSelect: () => void }) {
+function TabButton({ tab, active, onSelect, badge }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number }) {
   const Icon = TAB_ICONS[tab.id];
   return (
     <button
@@ -44,6 +44,11 @@ function TabButton({ tab, active, onSelect }: { tab: TabDef; active: boolean; on
     >
       {Icon && <Icon className={cn("h-3.5 w-3.5 transition-colors", active ? "text-app-primary" : "text-app-text-subtle")} />}
       {tab.label}
+      {badge != null && badge > 0 && (
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
       {active && (
         <motion.span
           layoutId="tab-underline"
@@ -58,6 +63,7 @@ function TabButton({ tab, active, onSelect }: { tab: TabDef; active: boolean; on
 export function TabBar() {
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const tabBadges = useDashboardStore((s) => s.tabBadges);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -112,13 +118,13 @@ export function TabBar() {
       >
         <div role="group" aria-label="일상 운영" className="flex items-center gap-0.5">
           {operateTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} />
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
           ))}
         </div>
         <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
         <div role="group" aria-label="계정 및 자동화 관리" className="flex items-center gap-0.5">
           {manageTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} />
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
           ))}
         </div>
       </div>
