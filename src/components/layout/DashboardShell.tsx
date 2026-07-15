@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -8,10 +8,13 @@ import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((v) => !v);
@@ -21,6 +24,11 @@ export function DashboardShell() {
     setInspectorOpen((v) => !v);
     setSidebarOpen(false);
   }, []);
+
+  const shortcutHandlers = useMemo(() => ({
+    onNavigate: (tabId: import("@/types").TabId) => setActiveTab(tabId),
+  }), [setActiveTab]);
+  useKeyboardShortcuts(shortcutHandlers);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
