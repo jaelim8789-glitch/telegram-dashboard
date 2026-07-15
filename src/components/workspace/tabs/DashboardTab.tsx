@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, MessageSquare,
-  RefreshCw, SendHorizonal, Users, XCircle, Zap,
+  RefreshCw, SendHorizonal, Users, XCircle,
   ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
 } from "lucide-react";
@@ -36,12 +36,6 @@ function failureInfoSummary(info: Broadcast["failureInfo"] | null | undefined): 
   if (recovery === "reauthenticate_account" || recovery === "account_is_banned" || recovery === "check_configuration") action = "register";
   if (recovery === "wait_and_retry" || recovery === "check_recipient" || recovery === "check_media" || recovery === "retry_broadcast" || recovery === "contact_support") action = "log";
   return { summary, action, retryable: info.retryable ?? null };
-}
-
-function successTone(rate: number): "success" | "warning" | "danger" {
-  if (rate >= 90) return "success";
-  if (rate >= 70) return "warning";
-  return "danger";
 }
 
 function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; name: string | null; phone: string }[] }) {
@@ -147,7 +141,6 @@ export function DashboardTab() {
   const [overviewError, setOverviewError] = useState(false);
 
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
-  const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -210,10 +203,9 @@ export function DashboardTab() {
   };
 
   const loadHealth = async () => {
-    setHealthLoading(true); setHealthError(false);
+    setHealthError(false);
     try { setHealthItems(await api.fetchAccountHealth()); }
     catch { setHealthItems([]); setHealthError(true); }
-    finally { setHealthLoading(false); }
   };
 
   const loadAll = async () => {
@@ -802,7 +794,6 @@ export function DashboardTab() {
           ) : (
             <div className="divide-y divide-app-border">
               {recentLogs.map((b) => {
-                const meta = STATUS_TONE[b.status];
                 const fi = b.failureInfo;
                 const { retryable } = failureInfoSummary(fi);
                 const isRecur = isRecurringActive(b);
