@@ -83,7 +83,6 @@ export function DashboardPreview() {
   const sidebarBg = "#1e1e2a";
   const mainBg = "#16161f";
   const cardBg = "#222233";
-  const cardHover = "#2a2a3e";
   const borderColor = "#333355";
   const textPrimary = "#e8e8f0";
   const textSecondary = "#b0b0c8";

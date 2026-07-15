@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Command, Keyboard } from "lucide-react";
 import { cn } from "@/lib/cn";
 

@@ -210,8 +210,11 @@ export function DashboardTab() {
 
   const loadAll = async () => {
     setRefreshing(true);
-    await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {

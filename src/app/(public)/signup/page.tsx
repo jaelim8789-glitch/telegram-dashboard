@@ -51,7 +51,7 @@ export default function SignupPage() {
       setVerifyStatus("idle");
       setVerifyReason(null);
       setStep("channel");
-    } catch (err) { setError(err instanceof Error ? err.message : "인증 시작에 실패했습니다."); }
+    } catch { setError("인증 시작에 실패했습니다."); }
     finally { setLoading(false); }
   }
 

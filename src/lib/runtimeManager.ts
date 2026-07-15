@@ -67,6 +67,7 @@ export class RuntimeManager {
   private _initPromise: Promise<void> | null = null;
   private _pollTimer: ReturnType<typeof setTimeout> | null = null;
   private _subscribers: Set<() => void> = new Set();
+  private _revision = 0;
 
   static getInstance(): RuntimeManager {
     if (!RuntimeManager._instance) {
@@ -205,7 +206,18 @@ export class RuntimeManager {
   getSnapshotKey(accountId?: string | null): string {
     const targetId = accountId ?? this._selectedAccountId;
     const cache = targetId ? this._caches.get(targetId) : null;
-    return `${targetId ?? ""}|${cache?.lastRefreshAt ?? 0}|${this._accounts.length}`;
+    const cacheVersion = cache
+      ? [
+          cache.loading ? 1 : 0,
+          cache.groupsUpdatedAt,
+          cache.autoReplyUpdatedAt,
+          cache.replyMacrosUpdatedAt,
+          cache.broadcastsUpdatedAt,
+          cache.healthUpdatedAt,
+          cache.lastRefreshAt,
+        ].join(":")
+      : "0";
+    return `${targetId ?? ""}|${this._revision}|${cacheVersion}|${this._accounts.length}|${this._healthItems.length}`;
   }
 
   // ── 구독 (React 동기화) ───────────────────────────────────────
@@ -463,6 +475,7 @@ export class RuntimeManager {
   }
 
   private _notifySubscribers(): void {
+    this._revision += 1;
     for (const callback of this._subscribers) {
       try {
         callback();

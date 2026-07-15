@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { Suspense } from "react";
+import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";

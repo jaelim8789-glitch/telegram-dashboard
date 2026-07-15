@@ -89,6 +89,7 @@ interface DashboardState extends DashboardStateValue {
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
+let runtimeManagerSubscription: (() => void) | null = null;
 
 function saveRecentRecipientSets(sets: string[][]): void {
   try {
@@ -121,7 +122,12 @@ export function getRecentRecipientSets(): string[][] {
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   ...INITIAL_STATE,
 
-  resetStore: () => set({ ...INITIAL_STATE }),
+  resetStore: () => {
+    runtimeManagerSubscription?.();
+    runtimeManagerSubscription = null;
+    RuntimeManager.getInstance().destroy();
+    set({ ...INITIAL_STATE });
+  },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -150,6 +156,15 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set({ accountsLoading: true, accountsError: null });
     try {
       const manager = RuntimeManager.getInstance();
+      if (!runtimeManagerSubscription) {
+        runtimeManagerSubscription = manager.subscribe(() => {
+          const currentAccounts = manager.accounts;
+          set({
+            accounts: currentAccounts,
+            selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
+          });
+        });
+      }
       // RuntimeManager가 초기화되어 있지 않으면 초기화
       if (!manager.accounts.length) {
         await manager.initialize();
@@ -166,18 +181,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }));
 
       // RuntimeManager 구독 — 최초 한 번만 등록 (중복 구독 방지)
-      (window as unknown as Record<string, unknown>)["__RM_SUBSCRIBED__"] =
-        (window as unknown as Record<string, unknown>)["__RM_SUBSCRIBED__"] ??
-        (() => {
-          const unsub = manager.subscribe(() => {
-            const currentAccounts = manager.accounts;
-            set({
-              accounts: currentAccounts,
-              selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
-            });
-          });
-          return unsub;
-        })();
     } catch (err) {
       set({
         accountsLoading: false,

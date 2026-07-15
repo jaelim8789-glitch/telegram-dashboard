@@ -28,7 +28,7 @@ export default function ChatDemo() {
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
-    MESSAGES.forEach((msg, i) => {
+    MESSAGES.forEach((msg) => {
       timers.push(
         setTimeout(() => {
           if (msg.from === "bot") {
