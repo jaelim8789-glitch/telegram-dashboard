@@ -164,8 +164,50 @@ class RuntimeManager:
         return runtime.get_account()
 
     async def add_account_legacy(self, phone: str, name: str | None = None) -> Account:
-        """계정 추가하면서 인증 없이 바로 Runtime 시작 (api_id=0, api_hash="")."""
-        return await self.add_account(phone, 0, "", name)
+        """계정 추가 (인증 없이 계정만 DB에 저장, Runtime 생성).
+        
+        Telethon client는 생성하지만 start()를 호출하지 않음.
+        사용자가 이후 send-code → verify-code 플로우로 인증.
+        api_id=1, api_hash="placeholder"를 사용하여 Telethon 생성자 통과.
+        """
+        account_id = str(uuid.uuid4())
+        acct = {
+            "id": account_id,
+            "phone": phone,
+            "name": name or "",
+            "api_id": 0,
+            "api_hash": "",
+            "status": "inactive",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        # DB에 저장
+        await asyncio.to_thread(self._save_account, acct)
+
+        # Runtime 생성 (Telethon client는 생성하지만 start()는 호출하지 않음)
+        # api_id=1, api_hash="placeholder"는 Telethon 생성자 통과용 더미값
+        runtime = AccountRuntime(
+            account_id=account_id,
+            phone=phone,
+            api_id=1,
+            api_hash="placeholder",
+            session_path=f"{SESSIONS_DIR}/{account_id}.session",
+        )
+        async with self._lock:
+            self._runtimes[account_id] = runtime
+
+        # Healing Engine에 등록
+        self.healing_engine.register_account(account_id)
+
+        # Runtime에 Telethon client는 연결하지 않고 백그라운드 태스크만 시작
+        runtime._running = True
+        runtime._status = "inactive"
+        runtime.health_monitor.set_session_status(False)
+        runtime.scheduler.start()
+        runtime.broadcast_queue.start()
+
+        logger.info("[%s] Legacy account created (no auth) -- waiting for verification", account_id)
+        return runtime.get_account()
 
     async def remove_account(self, account_id: str) -> None:
         """계정을 제거하고 Runtime을 종료합니다."""

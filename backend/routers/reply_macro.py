@@ -85,6 +85,12 @@ def _init_macros_db() -> None:
             updated_at TEXT DEFAULT ''
         )
     """)
+    # Ensure all columns exist (for pre-existing DBs)
+    for col in ["reply_to_message_id INTEGER", "last_sent_at TEXT"]:
+        try:
+            conn.execute(f"ALTER TABLE reply_macros ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS reply_macro_logs (
             id TEXT PRIMARY KEY,

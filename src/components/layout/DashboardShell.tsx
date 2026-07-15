@@ -68,7 +68,7 @@ export function DashboardShell() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
-      <OnboardingTour />
+      <OnboardingTour hasAccounts={accounts.length > 0} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
       {/* Mobile nav toggle */}

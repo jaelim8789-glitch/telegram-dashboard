@@ -1,5 +1,5 @@
 """
-E2E Test Report Generator — produces structured JSON and human-readable reports.
+E2E Test Report Generator -- produces structured JSON and human-readable reports.
 
 Tracks test results, timing, failures, and generates a comprehensive report
 that can be consumed by CI/CD pipelines.
@@ -109,7 +109,7 @@ class TestReport:
     def skip_test(self, name: str, category: str, reason: str = "") -> None:
         self.add_result(name, category, "SKIP", error_message=reason)
 
-    # ── Aggregation ─────────────────────────────────────────────────
+    # -- Aggregation ---------------------------------------------------
 
     @property
     def total_passed(self) -> int:
@@ -137,7 +137,7 @@ class TestReport:
             return 0.0
         return (self.total_passed / self.total_tests) * 100.0
 
-    # ── Report Generation ───────────────────────────────────────────
+    # -- Report Generation ---------------------------------------------
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the report to a dictionary."""
@@ -204,27 +204,27 @@ class TestReport:
         print()
 
         for suite in self.suites:
-            status_icon = "✓" if suite.failed == 0 else "✗"
-            print(f"  [{status_icon}] {suite.name} ({suite.duration:.2f}s)")
+            status_icon = "[OK]" if suite.failed == 0 else "[FAIL]"
+            print(f"  {status_icon} {suite.name} ({suite.duration:.2f}s)")
             print(f"      {suite.passed}/{suite.total} passed, {suite.failed} failed, {suite.skipped} skipped")
 
             for r in suite.results:
                 if r.status == "FAIL":
-                    print(f"      └─ FAIL: {r.name} ({r.duration_seconds:.2f}s)")
+                    print(f"      +-> FAIL: {r.name} ({r.duration_seconds:.2f}s)")
                     if r.error_message:
                         print(f"           Error: {r.error_message}")
                 elif r.status == "ERROR":
-                    print(f"      └─ ERROR: {r.name} ({r.duration_seconds:.2f}s)")
+                    print(f"      +-> ERROR: {r.name} ({r.duration_seconds:.2f}s)")
                     if r.error_message:
                         print(f"           Error: {r.error_message}")
                 elif r.status == "SKIP":
-                    print(f"      └─ SKIP: {r.name} — {r.error_message}")
+                    print(f"      +-> SKIP: {r.name} -- {r.error_message}")
 
         print()
         if self.total_failed == 0:
-            print("  ✅ ALL TESTS PASSED")
+            print("  [PASS] ALL TESTS PASSED")
         else:
-            print(f"  ❌ {self.total_failed} TEST(S) FAILED")
+            print(f"  [FAIL] {self.total_failed} TEST(S) FAILED")
         print("=" * 70)
         print()
 

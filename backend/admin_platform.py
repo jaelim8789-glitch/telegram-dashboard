@@ -406,13 +406,21 @@ class AdminPlatform:
         email: str | None = None,
         phone: str | None = None,
     ) -> dict[str, Any]:
-        """Create a new admin user."""
+        """Create a new admin user.
+
+        The first registered user automatically gets super_admin role.
+        """
         user_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         password_hash = self._hash_password(password)
-        
+
+        # First user becomes super_admin automatically
         conn = self.db._get_conn()
         try:
+            existing_count = conn.execute("SELECT COUNT(*) as cnt FROM users").fetchone()["cnt"]
+            if existing_count == 0:
+                role = Role.SUPER_ADMIN
+
             conn.execute(
                 """INSERT INTO users
                    (id, username, password_hash, email, phone, role, plan,

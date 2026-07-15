@@ -1,5 +1,5 @@
 """
-E2E Test Configuration — loads Telegram account credentials and test parameters.
+E2E Test Configuration -- loads Telegram account credentials and test parameters.
 
 Supports multiple test accounts defined via environment variables or a JSON config file.
 
@@ -7,12 +7,12 @@ Environment variables (per account, up to ACCOUNT_COUNT):
   E2E_ACCOUNT_1_PHONE, E2E_ACCOUNT_1_API_ID, E2E_ACCOUNT_1_API_HASH, E2E_ACCOUNT_1_NAME
   E2E_ACCOUNT_2_PHONE, E2E_ACCOUNT_2_API_ID, E2E_ACCOUNT_2_API_HASH, E2E_ACCOUNT_2_NAME
   ...
-  E2E_ACCOUNT_COUNT          — number of test accounts (default: 2)
-  E2E_BASE_URL               — backend URL (default: http://localhost:8000)
-  E2E_TARGET_CHAT_ID         — test chat ID to send messages to
-  E2E_TEST_TIMEOUT           — per-test timeout in seconds (default: 60)
-  E2E_PERF_MESSAGE_COUNT     — messages per perf test (default: 10)
-  E2E_REPORT_PATH            — output report path (default: e2e/report.json)
+  E2E_ACCOUNT_COUNT          -- number of test accounts (default: 2)
+  E2E_BASE_URL               -- backend URL (default: http://localhost:8000)
+  E2E_TARGET_CHAT_ID         -- test chat ID to send messages to
+  E2E_TEST_TIMEOUT           -- per-test timeout in seconds (default: 60)
+  E2E_PERF_MESSAGE_COUNT     -- messages per perf test (default: 10)
+  E2E_REPORT_PATH            -- output report path (default: e2e/report.json)
 """
 
 from __future__ import annotations
@@ -77,13 +77,13 @@ def load_config() -> E2EConfig:
         name = os.environ.get(f"E2E_ACCOUNT_{i}_NAME", f"E2E Test Account {i}")
 
         if not phone or not api_hash:
-            print(f"[WARN] E2E_ACCOUNT_{i} incomplete (phone={phone!r}, hash={'set' if api_hash else 'empty'}) — skipping")
+            print(f"[WARN] E2E_ACCOUNT_{i} incomplete (phone={phone!r}, hash={'set' if api_hash else 'empty'}) -- skipping")
             continue
 
         try:
             api_id = int(api_id_str)
         except ValueError:
-            print(f"[WARN] E2E_ACCOUNT_{i} invalid API_ID={api_id_str!r} — skipping")
+            print(f"[WARN] E2E_ACCOUNT_{i} invalid API_ID={api_id_str!r} -- skipping")
             continue
 
         config.accounts.append(TelegramAccount(

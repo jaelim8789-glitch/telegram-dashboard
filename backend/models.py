@@ -206,6 +206,7 @@ class ReplyMacro(BaseModel):
     interval_hours: int = 24
     fixed_time: str | None = None
     max_sends_per_day: int = 10
+    reply_to_message_id: int | None = None
     last_sent_at: str | None = None
     created_at: str = ""
     updated_at: str = ""
