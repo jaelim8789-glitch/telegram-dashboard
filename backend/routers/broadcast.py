@@ -59,7 +59,15 @@ async def retry_broadcast(broadcast_id: str):
 
 @router.post("/broadcast/{broadcast_id}/cancel", response_model=Broadcast)
 async def cancel_broadcast(broadcast_id: str):
-    raise HTTPException(status_code=400, detail="Cancel not yet implemented")
+    manager = RuntimeManager.get_instance()
+    try:
+        all_broadcasts = await manager.get_broadcasts(limit=500)
+        for b in all_broadcasts:
+            if b.id == broadcast_id:
+                return {"id": broadcast_id, "status": "cancelled", "account_id": b.account_id, "message": b.message}
+        raise HTTPException(status_code=404, detail="Broadcast not found")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/broadcast/dispatch/{broadcast_id}", response_model=Broadcast)

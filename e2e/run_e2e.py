@@ -1,5 +1,5 @@
 """
-TeleMon E2E Test Runner — main orchestrator for all test suites.
+TeleMon E2E Test Runner -- main orchestrator for all test suites.
 
 Usage:
     python -m e2e.run_e2e                           # Run all tests (recommended)
@@ -13,11 +13,11 @@ Usage:
     python e2e/run_e2e.py --no-cleanup               # Don't cleanup test accounts
 
 Environment variables:
-    E2E_BASE_URL              — Backend URL (default: http://localhost:8000)
-    E2E_ACCOUNT_1_PHONE       — Telegram account phone (for real tests)
-    E2E_ACCOUNT_1_API_ID      — Telegram API ID
-    E2E_ACCOUNT_1_API_HASH    — Telegram API hash
-    E2E_TARGET_CHAT_ID        — Test chat ID for message delivery
+    E2E_BASE_URL              -- Backend URL (default: http://localhost:8000)
+    E2E_ACCOUNT_1_PHONE       -- Telegram account phone (for real tests)
+    E2E_ACCOUNT_1_API_ID      -- Telegram API ID
+    E2E_ACCOUNT_1_API_HASH    -- Telegram API hash
+    E2E_TARGET_CHAT_ID        -- Test chat ID for message delivery
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def run_all() -> int:
 
     print("=" * 70)
     print("  TeleMon E2E Test Runner")
-    print("  Production Hardening — Automated E2E Tests")
+    print("  Production Hardening -- Automated E2E Tests")
     print("=" * 70)
     print()
     print_config_summary()
@@ -149,9 +149,9 @@ def run_all() -> int:
 
     try:
         if args.suite in ("all", "runtime"):
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             print("  [Runtime Suite]")
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             t0 = time.time()
             fails = test_runtime.run_runtime_tests()
             dur = time.time() - t0
@@ -160,9 +160,9 @@ def run_all() -> int:
             total_failures += fails
 
         if args.suite in ("all", "workspace"):
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             print("  [Workspace Suite]")
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             t0 = time.time()
             fails = test_workspace.run_workspace_tests()
             dur = time.time() - t0
@@ -171,9 +171,9 @@ def run_all() -> int:
             total_failures += fails
 
         if args.suite in ("all", "performance"):
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             print("  [Performance Suite]")
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             t0 = time.time()
             fails = test_performance.run_performance_tests()
             dur = time.time() - t0
@@ -182,9 +182,9 @@ def run_all() -> int:
             total_failures += fails
 
         if args.suite in ("all", "regression"):
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             print("  [Regression Suite]")
-            print(f"{'─'*60}")
+            print(f"{'-'*60}")
             t0 = time.time()
             REPORT.start_suite("Regression Tests")
             try:
