@@ -40,6 +40,7 @@ type DashboardStateValue = {
   sendMessage: string;
   sendImageFile: File | null;
   sendSelectedGroupIds: string[];
+  sendReplyToMessageId: number | null;
   reuseNotice: string | null;
   tabBadges: Partial<Record<TabId, number>>;
 };
@@ -59,6 +60,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   sendMessage: "",
   sendImageFile: null,
   sendSelectedGroupIds: [],
+  sendReplyToMessageId: null,
   reuseNotice: null,
   tabBadges: {},
 };
@@ -197,7 +199,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }),
   setSendSelectedGroupIds: (ids) => set({ sendSelectedGroupIds: ids }),
   clearSendRecipients: () => set({ sendSelectedGroupIds: [] }),
-  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [], reuseNotice: null }),
+  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [], sendReplyToMessageId: null, reuseNotice: null }),
 
   reuseNotice: null,
   setReuseNotice: (notice) => set({ reuseNotice: notice }),
@@ -213,6 +215,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       sendImageFile: null,
       activeTab: "send",
       reuseNotice: "설정을 불러왔습니다. 내용을 확인 후 발송하세요.",
+      sendReplyToMessageId: broadcast.replyToMessageId ?? null,
     });
   },
 }));
