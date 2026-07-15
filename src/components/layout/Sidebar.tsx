@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Ban, CheckSquare, Clock, Layers, Plug, RefreshCw, Search, Settings, ShieldAlert, Square, Users, WifiOff, X } from "lucide-react";
+import { Ban, CheckSquare, Clock, Layers, Plug, RefreshCw, Search, Settings, ShieldAlert, Square, UserPlus, Users, WifiOff, X } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -371,7 +371,17 @@ export function Sidebar() {
           <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
         )}
         {!accountsLoading && !accountsError && accounts.length === 0 && (
-          <EmptyState icon={Users} title="계정 없음" description="계정 등록 탭에서 추가하세요." />
+          <EmptyState
+            icon={Users}
+            title="계정 없음"
+            description="계정 등록 탭에서 Telegram 계정을 추가하세요."
+            action={{
+              label: "계정 등록",
+              icon: UserPlus,
+              onClick: () => useDashboardStore.getState().setActiveTab("register"),
+            }}
+            compact
+          />
         )}
         {filteredAccounts.length === 0 && accounts.length > 0 && (
           <p className="py-6 text-center text-xs text-app-text-subtle">조건에 맞는 계정이 없습니다.</p>
