@@ -264,7 +264,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
   );
 }
 
-function ApiKeyLoginForm({ onSwitchToTrial }: { onSwitchToTrial: () => void }) {
+function ApiKeyLoginForm() {
   const router = useRouter();
   const [apiKey, setApiKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -287,13 +287,6 @@ function ApiKeyLoginForm({ onSwitchToTrial }: { onSwitchToTrial: () => void }) {
       });
     }
   }, [router]);
-
-  useEffect(() => {
-    const saved = getSessionToken();
-    if (!saved) {
-      onSwitchToTrial();
-    }
-  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -370,7 +363,7 @@ export default function AdminLoginPage() {
           </div>
           {method === "admin" && <AdminLoginForm />}
           {method === "trial" && <FreeTrialForm onGoToApiKey={() => setMethod("apikey")} />}
-          {method === "apikey" && <ApiKeyLoginForm onSwitchToTrial={() => setMethod("trial")} />}
+          {method === "apikey" && <ApiKeyLoginForm />}
         </div>
 
         <p className="mt-5 text-center text-xs text-app-text-muted">
