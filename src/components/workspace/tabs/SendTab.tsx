@@ -463,7 +463,21 @@ export function SendTab() {
   const [historyRefreshing, setHistoryRefreshing] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const HISTORY_FILTER_KEY = "telemon-history-filter";
+
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>(() => {
+    try {
+      const saved = localStorage.getItem(HISTORY_FILTER_KEY);
+      if (saved && FILTER_ORDER.includes(saved as HistoryFilter)) return saved as HistoryFilter;
+    } catch { /* ignore */ }
+    return "all";
+  });
+
+  // Persist filter to localStorage on change
+  const saveHistoryFilter = useCallback((f: HistoryFilter) => {
+    setHistoryFilter(f);
+    try { localStorage.setItem(HISTORY_FILTER_KEY, f); } catch { /* ignore */ }
+  }, []);
   const [bgPollTick, setBgPollTick] = useState(0);
 
   const selectedRecipients = useMemo(
@@ -681,7 +695,7 @@ export function SendTab() {
     }
     setSubmitError(null);
     setSubmitNotice(null);
-    setHistoryFilter("all");
+    saveHistoryFilter("all");
     if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
     else { setGroups([]); setHistory([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1571,7 +1585,7 @@ export function SendTab() {
               const count = statusCounts[f] ?? 0;
               if (f !== "all" && count === 0) return null;
               return (
-                <button key={f} type="button" onClick={() => setHistoryFilter(f)}
+                <button key={f} type="button" onClick={() => saveHistoryFilter(f)}
                   className={cn(
                     "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
                     historyFilter === f ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text",
