@@ -33,6 +33,7 @@ import { useToast } from "@/components/ui/Toast";
 import {
   loadTemplates, saveTemplate as persistTemplate,
   deleteTemplate as removeTemplate,
+  toggleTemplateFavorite,
   TEMPLATE_VARIABLES,
   type MessageTemplate,
 } from "@/lib/messageTemplates";
@@ -430,6 +431,7 @@ export function SendTab() {
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -583,6 +585,23 @@ export function SendTab() {
     removeTemplate(id);
     refreshTemplates();
   }
+
+  function handleToggleTemplateFavorite(id: string) {
+    toggleTemplateFavorite(id);
+    refreshTemplates();
+  }
+
+  const filteredTemplates = useMemo(() => {
+    const query = templateSearch.trim().toLowerCase();
+    const result = query
+      ? templates.filter((t) => t.name.toLowerCase().includes(query) || t.content.toLowerCase().includes(query))
+      : templates;
+    return [...result].sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [templates, templateSearch]);
 
   async function loadGroups(accountId: string) {
     setGroupsLoading(true);
@@ -1217,32 +1236,74 @@ export function SendTab() {
                 </div>
 
                 {/* Template library dropdown */}
-                {templateLibraryOpen && templates.length > 0 && (
-                  <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-0.5 max-h-48 overflow-y-auto">
-                    {templates.map((tpl) => (
-                      <div key={tpl.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-app-card-hover transition-colors">
+                {templateLibraryOpen && (
+                  <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-2">
+                    {/* Search inside template library */}
+                    <div className="relative">
+                      <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
+                      <input
+                        type="text"
+                        value={templateSearch}
+                        onChange={(e) => setTemplateSearch(e.target.value)}
+                        placeholder="템플릿 검색..."
+                        className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-7 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none focus:border-app-primary/60 transition-colors"
+                      />
+                      {templateSearch && (
                         <button
                           type="button"
-                          onClick={() => handleLoadTemplate(tpl)}
-                          className="flex-1 min-w-0 text-left"
+                          onClick={() => setTemplateSearch("")}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded text-app-text-subtle hover:text-app-text"
                         >
-                          <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
-                          <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
+                          <X className="h-3 w-3" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
-                          title="삭제"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                      )}
+                    </div>
+
+                    {filteredTemplates.length > 0 ? (
+                      <div className="max-h-48 space-y-0.5 overflow-y-auto">
+                        {filteredTemplates.map((tpl) => (
+                          <div key={tpl.id} className="group flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTemplateFavorite(tpl.id)}
+                              className={`shrink-0 flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                                tpl.isFavorite
+                                  ? "text-app-warning hover:text-app-warning/70"
+                                  : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning"
+                              }`}
+                              title={tpl.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+                            >
+                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleLoadTemplate(tpl)}
+                              className="flex-1 min-w-0 text-left"
+                            >
+                              <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
+                              <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTemplate(tpl.id)}
+                              className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
+                              title="삭제"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-[11px] text-app-text-subtle italic">
+                        {templates.length === 0
+                          ? "저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요."
+                          : "일치하는 템플릿이 없습니다."}
+                      </p>
+                    )}
                   </div>
-                )}
-                {templateLibraryOpen && templates.length === 0 && (
-                  <p className="text-[11px] text-app-text-subtle italic">저장된 템플릿이 없습니다. 메시지를 작성한 후 &apos;현재 메시지 저장&apos; 버튼을 눌러보세요.</p>
                 )}
                 <Field label="이미지 (선택)">
                   <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
