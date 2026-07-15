@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
+import { useAccountFavorites } from "@/lib/accountLabels";
 import * as api from "@/lib/api";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
 
@@ -36,6 +37,7 @@ export function Sidebar() {
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const { isFavorite, toggleFavorite } = useAccountFavorites();
 
   async function loadHealth() {
     try {
@@ -70,12 +72,18 @@ export function Sidebar() {
   }, [healthItems]);
 
   const filteredAccounts = useMemo(() => {
-    if (healthFilter === "all") return accounts;
-    return accounts.filter((a) => {
+    const filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
-  }, [accounts, healthByAccountId, healthFilter]);
+    // Sort: favorites first
+    filtered.sort((a, b) => {
+      const aFav = isFavorite(a.id) ? 1 : 0;
+      const bFav = isFavorite(b.id) ? 1 : 0;
+      return bFav - aFav;
+    });
+    return filtered;
+  }, [accounts, healthByAccountId, healthFilter, isFavorite]);
 
   const healthCounts = useMemo(() => {
     const counts: Record<string, number> = { all: accounts.length };
@@ -155,8 +163,10 @@ export function Sidebar() {
               selected={account.id === selectedAccountId}
               health={health?.status}
               lastError={health?.lastError}
+              isFavorite={isFavorite(account.id)}
               onSelect={selectAccount}
               onDelete={handleDelete}
+              onToggleFavorite={toggleFavorite}
             />
           );
         })}
