@@ -449,6 +449,13 @@ export function SendTab() {
   const handleReuse = useCallback((b: Broadcast) => {
     reuseBroadcast(b);
     setInlineButtons(b.inlineButtons?.filter((btn) => btn.label && btn.url) ?? []);
+    if (b.replyToMessageId != null) {
+      setReplyMacroEnabled(true);
+      setReplyToMessageId(String(b.replyToMessageId));
+    } else {
+      setReplyMacroEnabled(false);
+      setReplyToMessageId("");
+    }
   }, [reuseBroadcast]);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
