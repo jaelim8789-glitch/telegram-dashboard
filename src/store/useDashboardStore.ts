@@ -41,6 +41,7 @@ type DashboardStateValue = {
   sendImageFile: File | null;
   sendSelectedGroupIds: string[];
   reuseNotice: string | null;
+  tabBadges: Partial<Record<TabId, number>>;
 };
 
 export const INITIAL_STATE: DashboardStateValue = {
@@ -59,6 +60,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   sendImageFile: null,
   sendSelectedGroupIds: [],
   reuseNotice: null,
+  tabBadges: {},
 };
 
 interface DashboardState extends DashboardStateValue {
@@ -79,6 +81,7 @@ interface DashboardState extends DashboardStateValue {
   clearSendDraft: () => void;
   reuseBroadcast: (broadcast: Broadcast) => void;
   setReuseNotice: (notice: string | null) => void;
+  setTabBadge: (tabId: TabId, count: number) => void;
   resetStore: () => void;
 }
 
@@ -198,6 +201,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   reuseNotice: null,
   setReuseNotice: (notice) => set({ reuseNotice: notice }),
+  tabBadges: {},
+  setTabBadge: (tabId, count) => set((state) => ({
+    tabBadges: { ...state.tabBadges, [tabId]: count > 0 ? count : undefined },
+  })),
 
   reuseBroadcast: (broadcast) => {
     set({
