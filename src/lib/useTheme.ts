@@ -14,7 +14,7 @@ const STORAGE_KEY = "telemon-theme";
  * applyTheme() above exactly (default "light" when unset, "system" resolves
  * via prefers-color-scheme: light) since it can't import this file — no JS
  * bundle has loaded yet when it runs. */
-export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="system")?v:"light";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="system")?v:"system";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch(e){}})();`;
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";
@@ -42,8 +42,8 @@ function applyTheme(theme: Theme, animate = false) {
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "light";
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "system";
   });
 
   const setTheme = useCallback((t: Theme) => {
@@ -77,8 +77,8 @@ export function useTheme() {
 }
 
 export function getTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "light";
+  if (typeof window === "undefined") return "system";
+  return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "system";
 }
 
 export function getResolvedTheme(): "light" | "dark" {
