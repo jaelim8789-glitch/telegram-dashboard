@@ -30,6 +30,12 @@ import {
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
+import {
+  loadTemplates, saveTemplate as persistTemplate,
+  deleteTemplate as removeTemplate,
+  TEMPLATE_VARIABLES,
+  type MessageTemplate,
+} from "@/lib/messageTemplates";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -401,6 +407,10 @@ export function SendTab() {
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -515,6 +525,42 @@ export function SendTab() {
     draftRestoredRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId, accounts.length]);
+
+  // ── Template library ──
+  function refreshTemplates() {
+    setTemplates(loadTemplates());
+  }
+
+  useEffect(() => { refreshTemplates(); }, []);
+
+  function handleSaveTemplate() {
+    if (!message.trim()) {
+      toast("error", "템플릿으로 저장할 메시지 내용을 입력하세요.");
+      return;
+    }
+    if (!saveTemplateName.trim()) return;
+    persistTemplate(saveTemplateName.trim(), message);
+    refreshTemplates();
+    setSaveTemplateDialogOpen(false);
+    setSaveTemplateName("");
+    toast("success", `"${saveTemplateName.trim()}" 템플릿이 저장되었습니다.`);
+  }
+
+  function handleLoadTemplate(tpl: MessageTemplate) {
+    setMessage(tpl.content);
+    setTemplateLibraryOpen(false);
+    toast("info", `"${tpl.name}" 템플릿을 불러왔습니다.`);
+  }
+
+  function handleInsertVariable(variable: string) {
+    useDashboardStore.setState({ sendMessage: message + variable });
+    toast("info", `변수 ${variable}를 추가했습니다.`);
+  }
+
+  function handleDeleteTemplate(id: string) {
+    removeTemplate(id);
+    refreshTemplates();
+  }
 
   async function loadGroups(accountId: string) {
     setGroupsLoading(true);
@@ -1094,6 +1140,64 @@ export function SendTab() {
                   <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
                     placeholder="발송할 메시지를 입력하세요." required />
                 </Field>
+                {/* Template library toolbar */}
+                <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => { refreshTemplates(); setTemplateLibraryOpen(!templateLibraryOpen); }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+                  >
+                    <Copy className="h-3 w-3" /> 템플릿
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSaveTemplateName(""); setSaveTemplateDialogOpen(true); }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+                  >
+                    <Plus className="h-3 w-3" /> 현재 메시지 저장
+                  </button>
+                  <span className="mx-1 h-3 w-px bg-app-border" />
+                  {TEMPLATE_VARIABLES.map((v) => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      onClick={() => handleInsertVariable(v.key)}
+                      title={v.label}
+                      className="rounded-md bg-app-card-hover px-1.5 py-0.5 font-mono text-[10px] text-app-info hover:bg-app-info-muted/30 transition-colors"
+                    >
+                      {v.key}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Template library dropdown */}
+                {templateLibraryOpen && templates.length > 0 && (
+                  <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-0.5 max-h-48 overflow-y-auto">
+                    {templates.map((tpl) => (
+                      <div key={tpl.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-app-card-hover transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => handleLoadTemplate(tpl)}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
+                          <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
+                          title="삭제"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {templateLibraryOpen && templates.length === 0 && (
+                  <p className="text-[11px] text-app-text-subtle italic">저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요.</p>
+                )}
                 <Field label="이미지 (선택)">
                   <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
                     onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
