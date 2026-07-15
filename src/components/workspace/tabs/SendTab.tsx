@@ -19,6 +19,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
 import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
+import { RuntimeManager } from "@/lib/runtimeManager";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -355,6 +357,10 @@ export function SendTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
 
+  // ── RuntimeManager 캐시에서 데이터 즉시 로드 ──
+  const { groups: cachedGroups, broadcasts: cachedBroadcasts } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
+
   const groups = useDashboardStore((s) => s.sendGroups);
   const groupsLoading = useDashboardStore((s) => s.sendGroupsLoading);
   const setGroups = useDashboardStore((s) => s.setSendGroups);
@@ -624,43 +630,50 @@ export function SendTab() {
     });
   }, [templates, templateSearch]);
 
+  // ── 캐시에서 그룹 데이터를 즉시 로드 (API 호출 없음) ──
   async function loadGroups(accountId: string) {
-    setGroupsLoading(true);
-    setGroupsError(null);
-    try {
-      setGroups(await api.fetchGroups(accountId));
-    } catch (err) {
-      setGroups([]);
-      setGroupsError(err instanceof Error ? err.message : "그룹 목록을 불러오지 못했습니다.");
-    } finally {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
       setGroupsLoading(false);
+      setGroupsError(null);
+    } else {
+      setGroupsLoading(true);
+      runtimeActions.refreshGroups(accountId);
     }
   }
 
+  // 일반 히스토리 로드: 캐시 우선
   async function loadHistory(accountId: string, silent = false) {
     if (silent) {
-      try {
-        const logs = await api.fetchLogs({ accountId });
-        setHistory(logs);
-      } catch { /* silent refresh */ }
+      try { setHistory(cachedBroadcasts); } catch { /* silent */ }
       return;
     }
-    setHistoryLoading(true);
+    if (cachedBroadcasts.length > 0) {
+      setHistory(cachedBroadcasts);
+      setHistoryLoading(false);
+    } else {
+      setHistoryLoading(true);
+      runtimeActions.refreshBroadcasts(accountId).finally(() => {
+        setHistory(RuntimeManager.getInstance().getBroadcasts(accountId));
+        setHistoryLoading(false);
+      });
+    }
+  }
+
+  // In-flight 브로드캐스트 실시간 폴링: 직접 API 호출 (캐시 bypass)
+  async function pollInFlightBroadcasts(accountId: string) {
     try {
       const logs = await api.fetchLogs({ accountId });
       setHistory(logs);
-    } catch {
-      setHistory([]);
-    } finally {
-      setHistoryLoading(false);
-    }
+    } catch { /* silent */ }
   }
 
   // Poll while anything is pending/sending for real-time status updates.
+  // In-flight 상태일 때는 캐시를 우회하여 직접 API 호출 (3초 간격 실시간 갱신)
   useEffect(() => {
     if (pollTimer.current) { clearTimeout(pollTimer.current); pollTimer.current = null; }
     if (!selectedAccountId || !history.some(isBroadcastInFlight)) return;
-    pollTimer.current = setTimeout(() => { loadHistory(selectedAccountId, true); }, POLL_INTERVAL_MS);
+    pollTimer.current = setTimeout(() => { pollInFlightBroadcasts(selectedAccountId); }, POLL_INTERVAL_MS);
     return () => { if (pollTimer.current) clearTimeout(pollTimer.current); };
   }, [history, selectedAccountId]);
 
@@ -696,8 +709,24 @@ export function SendTab() {
     setSubmitError(null);
     setSubmitNotice(null);
     saveHistoryFilter("all");
-    if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
-    else { setGroups([]); setHistory([]); }
+    if (selectedAccountId) {
+      // 캐시에서 즉시 로드
+      const manager = RuntimeManager.getInstance();
+      const cachedGroups = manager.getGroups(selectedAccountId);
+      if (cachedGroups.length > 0) {
+        setGroups(cachedGroups);
+        setGroupsLoading(false);
+      } else {
+        runtimeActions.refreshGroups(selectedAccountId);
+      }
+      const cachedBroadcasts = manager.getBroadcasts(selectedAccountId);
+      if (cachedBroadcasts.length > 0) {
+        setHistory(cachedBroadcasts);
+        setHistoryLoading(false);
+      } else {
+        runtimeActions.refreshBroadcasts(selectedAccountId);
+      }
+    } else { setGroups([]); setHistory([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId]);
 
@@ -709,6 +738,21 @@ export function SendTab() {
     const timer = setTimeout(() => { mountGuardRef.current = false; }, 0);
     return () => clearTimeout(timer);
   }, []);
+
+  // 캐시 업데이트 시 로컬 상태 동기화 (백그라운드 fetch 완료 후)
+  useEffect(() => {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
+      setGroupsLoading(false);
+    }
+  }, [cachedGroups]);
+
+  useEffect(() => {
+    if (cachedBroadcasts.length > 0) {
+      setHistory(cachedBroadcasts);
+      setHistoryLoading(false);
+    }
+  }, [cachedBroadcasts]);
 
   function handleAddTag(groupId: string) {
     const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");

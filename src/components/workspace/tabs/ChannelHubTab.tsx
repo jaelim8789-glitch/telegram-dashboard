@@ -15,6 +15,7 @@ import { InlineError } from "@/components/ui/InlineError";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import * as api from "@/lib/api";
 
 interface ChannelHubButton {
   id: string;
@@ -140,14 +141,23 @@ export function ChannelHubTab() {
     setError(null);
 
     try {
-      // TODO: 백엔드 API /api/channel-hub/publish 연동 필요
-      // POST { account_id, channel_id, title, body, buttons, pin_message }
-      // Response: { id, message_id, published_at }
-      toast("success", "발행이 준비되었습니다. (백엔드 API 연동 시 실제 발행됩니다)");
+      await api.publishChannelPost({
+        accountId: selectedAccountId!,
+        channelId: draft.channelId.trim(),
+        title: draft.title.trim(),
+        body: draft.body.trim(),
+        buttons: draft.buttons.filter((b) => b.label.trim() && b.url.trim()),
+        pinMessage: draft.pinMessage,
+      });
+      toast("success", "채널에 성공적으로 발행되었습니다!");
       setDraft({ title: "", body: "", buttons: [], channelId: "", pinMessage: false });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "발행에 실패했습니다.";
-      setError(msg);
+      if (msg.includes("404") || msg.includes("Not Found") || msg.includes("not found")) {
+        setError("채널 허브 API를 사용할 수 없습니다. 백엔드에서 /api/channel-hub/publish 엔드포인트가 활성화되어 있는지 확인하세요.");
+      } else {
+        setError(msg);
+      }
       toast("error", msg);
     } finally {
       setSubmitting(false);

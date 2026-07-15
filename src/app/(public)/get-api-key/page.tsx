@@ -29,9 +29,9 @@ const PLANS = [
     name: "Free Trial",
     price: "0",
     period: "무료",
-    features: ["⏱ 약 1분이면 완료", "🔑 24시간 무료", "결제 정보 불필요", "모든 기능 제한 없음"],
+    features: ["⏱ 약 1분이면 완료", "🔑 3일 무료", "결제 정보 불필요", "모든 기능 제한 없음"],
     href: "/signup",
-    cta: "1분 인증 시작 · 24시간 무료",
+    cta: "1분 인증 시작 · 3일 무료",
     popular: false,
   },
   {

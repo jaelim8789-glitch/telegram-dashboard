@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache } from "@/lib/useAccountCache";
 import { useToast } from "@/components/ui/Toast";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -260,18 +261,30 @@ export function LogTab() {
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
+  // ── RuntimeManager 캐시에서 Broadcast 로그 즉시 로드 ──
+  const { broadcasts: cachedBroadcasts } = useAccountCache(accountFilter || null);
+
   const load = useCallback(async (silent = false) => {
-    if (silent) {
-      try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
+    if (silent && accountFilter) {
+      try { setLogs(cachedBroadcasts); }
       catch { /* silent */ }
+      return;
+    }
+    if (!accountFilter) {
+      setLoading(true);
+      setError(null);
+      try { setLogs(await api.fetchLogs({})); }
+      catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
+      finally { setLoading(false); }
       return;
     }
     setLoading(true);
     setError(null);
-    try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
-    catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
+    try {
+      setLogs(cachedBroadcasts.length > 0 ? cachedBroadcasts : await api.fetchLogs({ accountId: accountFilter }));
+    } catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
     finally { setLoading(false); }
-  }, [accountFilter]);
+  }, [accountFilter, cachedBroadcasts]);
 
   useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter, load]);
 

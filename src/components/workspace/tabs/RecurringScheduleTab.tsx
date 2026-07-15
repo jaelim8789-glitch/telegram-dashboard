@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Ban,
   CalendarClock,
+  CalendarDays,
   ChevronDown,
   Clock,
   Copy,
@@ -201,11 +202,138 @@ function HistoryItem({
   );
 }
 
+/** Monthly heatmap calendar showing execution status by day */
+function ExecutionHeatmap({ children }: { children: BroadcastChild[] }) {
+  const today = new Date();
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+
+  const monthLabel = new Date(currentYear, currentMonth).toLocaleString("ko-KR", { month: "long", year: "numeric" });
+
+  // Build a map of date → { total, success, failed }
+  const dayData = useMemo(() => {
+    const map: Record<string, { total: number; success: number; failed: number }> = {};
+    for (const child of children) {
+      const d = new Date(`${child.createdAt}Z`);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!map[key]) map[key] = { total: 0, success: 0, failed: 0 };
+      map[key].total++;
+      if (child.status === "sent") map[key].success++;
+      else if (child.status === "failed") map[key].failed++;
+    }
+    return map;
+  }, [children]);
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay(); // 0=Sun
+
+  const prevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
+    else setCurrentMonth(currentMonth - 1);
+  };
+  const nextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
+    else setCurrentMonth(currentMonth + 1);
+  };
+
+  function getCellColor(dateKey: string): string {
+    const data = dayData[dateKey];
+    if (!data) return "bg-app-card-hover/30";
+    if (data.failed > 0 && data.success === 0) return "bg-app-danger/30";
+    if (data.failed > 0) return "bg-app-warning/30";
+    if (data.success > 5) return "bg-app-success";
+    if (data.success > 2) return "bg-app-success/70";
+    return "bg-app-success/40";
+  }
+
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+
+  return (
+    <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <CalendarDays className="h-3.5 w-3.5 text-app-text-muted" />
+          <span className="text-xs font-semibold text-app-text">{monthLabel}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={prevMonth}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors text-sm">
+            ◀
+          </button>
+          <button type="button" onClick={nextMonth}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors text-sm">
+            ▶
+          </button>
+        </div>
+      </div>
+
+      {/* Day headers */}
+      <div className="mb-1 grid grid-cols-7 gap-0.5">
+        {dayNames.map((name) => (
+          <div key={name} className="text-center text-[10px] font-medium text-app-text-muted py-1">
+            {name}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {/* Empty cells before the 1st */}
+        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className="aspect-square" />
+        ))}
+
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const data = dayData[dateKey];
+          const isToday =
+            day === today.getDate() &&
+            currentMonth === today.getMonth() &&
+            currentYear === today.getFullYear();
+
+          return (
+            <div
+              key={dateKey}
+              title={data ? `${dateKey}: ✅${data.success} ❌${data.failed}` : dateKey}
+              className={cn(
+                "flex aspect-square items-center justify-center rounded-md text-[10px] font-medium transition-colors",
+                getCellColor(dateKey),
+                isToday && "ring-1 ring-app-primary ring-offset-1 ring-offset-app-card",
+                data ? "text-app-text" : "text-app-text-subtle",
+              )}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-2 flex items-center gap-3 text-[10px] text-app-text-muted">
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-sm bg-app-success/40" /> 많음
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-sm bg-app-success" /> 5회+
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-sm bg-app-warning/30" /> 혼합
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-sm bg-app-danger/30" /> 실패
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function ExecutionHistoryPanel({ parent, onClose }: { parent: Broadcast; onClose: () => void }) {
   const [children, setChildren] = useState<BroadcastChild[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
     let mounted = true;
@@ -259,14 +387,29 @@ function ExecutionHistoryPanel({ parent, onClose }: { parent: Broadcast; onClose
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
-            aria-label="실행 기록 닫기"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
+              className={cn(
+                "flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] font-medium transition-colors",
+                viewMode === "calendar"
+                  ? "bg-app-primary text-white"
+                  : "bg-app-card-hover text-app-text-muted hover:text-app-text"
+              )}
+            >
+              {viewMode === "calendar" ? <RefreshCw className="h-3 w-3" /> : <CalendarDays className="h-3 w-3" />}
+              {viewMode === "calendar" ? "목록" : "캘린더"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+              aria-label="실행 기록 닫기"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {stats && (
@@ -279,6 +422,13 @@ function ExecutionHistoryPanel({ parent, onClose }: { parent: Broadcast; onClose
               value={`${stats.successRate}%`}
               tone={stats.successRate >= 90 ? "success" : stats.successRate >= 70 ? "warning" : "danger"}
             />
+          </div>
+        )}
+
+        {/* Calendar heatmap toggle */}
+        {!loading && !error && children.length > 0 && viewMode === "calendar" && (
+          <div className="mt-3">
+            <ExecutionHeatmap>{children}</ExecutionHeatmap>
           </div>
         )}
 

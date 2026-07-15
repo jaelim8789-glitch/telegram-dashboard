@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
+import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,6 +49,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
+        <RuntimeInitializer />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

@@ -34,7 +34,7 @@ export function ChannelHubInspector() {
           </div>
           <div className="flex items-start gap-2">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>현재 백엔드 API 연동 전입니다. 발행 버튼은 UI 시뮬레이션으로 동작합니다.</span>
+            <span>발행 시 계정의 Telegram 세션이 필요합니다. 계정이 인증된 상태인지 확인하세요.</span>
           </div>
         </div>
       </div>
