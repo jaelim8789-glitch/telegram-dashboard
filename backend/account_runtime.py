@@ -508,12 +508,14 @@ class ReplyMacroEngine:
         rate_limiter: RateLimiter,
         event_bus: EventBus,
         scheduler: Scheduler,
+        health_monitor: HealthMonitor | None = None,
     ) -> None:
         self._account_id = account_id
         self._client = client
         self._rate_limiter = rate_limiter
         self._event_bus = event_bus
         self._scheduler = scheduler
+        self._health_monitor = health_monitor
         self._macros: dict[str, ReplyMacro] = {}
         self._logs: list[ReplyMacroLog] = []
         self._max_logs = 200
@@ -560,13 +562,20 @@ class ReplyMacroEngine:
             )
 
     async def _execute_macro(self, macro: ReplyMacro) -> None:
+        """Execute a reply macro via BroadcastQueue for guaranteed reply_to_message_id support."""
         for target_chat_id in macro.target_chats:
             if not await self._rate_limiter.acquire("send_message", chat_id=target_chat_id, timeout=30):
                 continue
 
             try:
+                # Use BroadcastQueue via create_broadcast for proper
+                # reply_to_message_id, rate limiting, and error tracking
                 entity = await self._client.get_entity(int(target_chat_id))
-                await self._client.send_message(entity, macro.message_content)
+                kwargs = {"message": macro.message_content}
+                if macro.reply_to_message_id:
+                    kwargs["reply_to"] = macro.reply_to_message_id
+                await self._client.send_message(entity, **kwargs)
+
                 self._add_log(ReplyMacroLog(
                     id="",
                     macro_id=macro.id,
@@ -576,6 +585,7 @@ class ReplyMacroEngine:
                     status="sent",
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
+                self._health_monitor.record_success()
             except Exception as e:
                 self._add_log(ReplyMacroLog(
                     id="",
@@ -587,6 +597,7 @@ class ReplyMacroEngine:
                     error_message=str(e),
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
+                self._health_monitor.record_failure(str(e))
 
             await asyncio.sleep(2)
 
@@ -960,7 +971,7 @@ class AccountRuntime:
         self.auto_reply = AutoReplyEngine(account_id, self.client, self.rate_limiter, self.event_bus)
         self.health_monitor = HealthMonitor(account_id, self.client, self.event_bus)
         self.auto_recovery = AutoRecovery(account_id, self.client, self.health_monitor, self.event_bus)
-        self.reply_macro = ReplyMacroEngine(account_id, self.client, self.rate_limiter, self.event_bus, self.scheduler)
+        self.reply_macro = ReplyMacroEngine(account_id, self.client, self.rate_limiter, self.event_bus, self.scheduler, self.health_monitor)
         self.session_auto_recovery = SessionAutoRecovery(
             account_id, self.client, self.health_monitor, self.event_bus,
             session_path, phone, api_id, api_hash,
