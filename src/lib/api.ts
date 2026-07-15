@@ -44,6 +44,7 @@ function authHeaders(): Record<string, string> {
 }
 
 function extractDetailMessage(body: unknown): string | null {
+  if (typeof body === "string") return body.trim() || null;
   if (!body || typeof body !== "object" || !("detail" in body)) return null;
   const detail = (body as { detail: unknown }).detail;
   if (typeof detail === "string") return detail;
@@ -57,6 +58,16 @@ function extractDetailMessage(body: unknown): string | null {
       .join(", ");
   }
   return null;
+}
+
+async function readErrorBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
 }
 
 interface ApiAccount {
@@ -106,15 +117,22 @@ export class ApiError extends Error {
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       signal: controller.signal,
       headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
     });
+
+    if (!res.ok) {
+      const body = await readErrorBody(res);
+      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      throw new ApiError(detail, res.status, false);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
   } catch (err) {
-    clearTimeout(timeoutId);
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new ApiError(
         "서버 응답이 30초 이상 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
@@ -127,17 +145,9 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       undefined,
       true,
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
-  clearTimeout(timeoutId);
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-    throw new ApiError(detail, res.status, false);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 export async function fetchAccounts(): Promise<Account[]> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, KeyRound, Shield, Smartphone, CheckCircle2, Star, Sparkles, Heart,
@@ -11,9 +11,6 @@ import { useFadeIn } from "@/lib/useFadeIn";
 import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
-import { getApiBaseUrl } from "@/lib/api";
-
-const API_BASE = getApiBaseUrl();
 const POLL_TIMEOUT_SECONDS = 180;
 
 // requestPlanId values are canonical plan ids (free/pro/team) matching the
@@ -119,7 +116,7 @@ export default function GetApiKeyPage() {
     if (target) {
       handleRequestKey(target.name, planParam);
     }
-  }, []);
+  }, [requestingPlanId]);
 
   // Poll payment status
   useEffect(() => {
