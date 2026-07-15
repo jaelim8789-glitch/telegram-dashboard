@@ -7,3 +7,9 @@ npm-debug.log*
 test-results
 playwright-report
 e2e
+data/
+sessions/
+*.db
+*.session
+.backup
+*.log
