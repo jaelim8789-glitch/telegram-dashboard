@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { FullscreenToggle } from "@/components/ui/FullscreenToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
@@ -74,6 +75,8 @@ export function Header() {
           <span className="status-dot online" />
           <span className="text-xs text-app-text-muted hidden sm:inline">Online</span>
         </div>
+
+        <FullscreenToggle />
 
         <ThemeToggle />
 
