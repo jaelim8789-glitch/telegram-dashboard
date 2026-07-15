@@ -135,6 +135,14 @@ class RateLimiter:
     def get_bucket(self, action: str) -> RateLimitBucket | None:
         return self._buckets.get(action)
 
+    def get_state(self) -> dict:
+        """Returns current rate limiter state for the runtime inspector."""
+        return {
+            "account_id": self._account_id,
+            "buckets": {k: {"max_rate": v.max_rate, "period": v._period_seconds} for k, v in self._buckets.items()},
+            "per_chat_buckets": len(self._per_chat_buckets),
+        }
+
     def adjust_limit(self, action: str, max_rate: float, period_seconds: float = 1.0) -> None:
         """Dynamically adjust rate limit (e.g., after a 420 FLOOD_WAIT)."""
         self._buckets[action] = RateLimitBucket(max_rate, period_seconds)

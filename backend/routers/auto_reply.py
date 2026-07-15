@@ -13,7 +13,10 @@ router = APIRouter()
 @router.get("/accounts/{account_id}/auto-reply", response_model=AutoReplySettings)
 async def get_auto_reply_settings(account_id: str):
     manager = RuntimeManager.get_instance()
-    return await manager.get_auto_reply_settings(account_id)
+    try:
+        return await manager.get_auto_reply_settings(account_id)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("/accounts/{account_id}/auto-reply", response_model=AutoReplyRule)
@@ -22,6 +25,8 @@ async def create_auto_reply_rule(account_id: str, body: dict):
     try:
         rule = await manager.create_auto_reply_rule(account_id, body)
         return rule
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -32,6 +37,8 @@ async def update_auto_reply_rule(account_id: str, rule_id: str, body: dict):
     try:
         rule = await manager.update_auto_reply_rule(account_id, rule_id, body)
         return rule
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -42,6 +49,8 @@ async def delete_auto_reply_rule(account_id: str, rule_id: str):
     try:
         await manager.delete_auto_reply_rule(account_id, rule_id)
         return {"status": "deleted"}
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -53,6 +62,8 @@ async def toggle_auto_reply(account_id: str, body: dict):
     try:
         result = await manager.toggle_auto_reply(account_id, enabled)
         return {"account_id": account_id, "auto_reply_enabled": result}
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

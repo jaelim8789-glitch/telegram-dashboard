@@ -135,7 +135,12 @@ class RuntimeManager:
         async with self._lock:
             self._runtimes[account_id] = runtime
 
-        await runtime.start()
+        try:
+            await runtime.start()
+        except Exception as e:
+            logger.warning("[%s] Runtime start failed (non-fatal): %s", account_id, e)
+            # Runtime is still registered; user can re-auth later
+
         return runtime.get_account()
 
     async def add_account_legacy(self, phone: str, name: str | None = None) -> Account:

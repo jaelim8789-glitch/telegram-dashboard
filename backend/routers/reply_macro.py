@@ -22,6 +22,8 @@ async def create_reply_macro(account_id: str, body: dict):
     try:
         macro = await manager.create_reply_macro(account_id, body)
         return macro
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -32,6 +34,8 @@ async def update_reply_macro(account_id: str, macro_id: str, body: dict):
     try:
         macro = await manager.update_reply_macro(account_id, macro_id, body)
         return macro
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -52,6 +56,8 @@ async def execute_reply_macro(account_id: str, macro_id: str):
     try:
         await manager.execute_reply_macro(account_id, macro_id)
         return {"status": "executed"}
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -37,6 +37,8 @@ class Account(BaseModel):
 class CreateAccountInput(BaseModel):
     phone: str
     name: str | None = None
+    api_id: int | None = None
+    api_hash: str | None = None
 
 
 class AccountHealthItem(BaseModel):

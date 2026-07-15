@@ -21,7 +21,12 @@ async def list_accounts():
 async def create_account(input_data: CreateAccountInput):
     manager = RuntimeManager.get_instance()
     try:
-        account = await manager.add_account(input_data.phone, input_data.name)
+        if input_data.api_id and input_data.api_hash:
+            account = await manager.add_account(
+                input_data.phone, input_data.api_id, input_data.api_hash, input_data.name
+            )
+        else:
+            account = await manager.add_account_legacy(input_data.phone, input_data.name)
         return account
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

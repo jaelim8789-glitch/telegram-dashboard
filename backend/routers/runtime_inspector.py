@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/api/runtime/inspector/{account_id}")
+@router.get("/runtime/inspector/{account_id}")
 async def get_runtime_inspector(account_id: str):
     """Get a full snapshot of a specific account runtime."""
     manager = RuntimeManager.get_instance()
@@ -30,7 +30,7 @@ async def get_runtime_inspector(account_id: str):
     return runtime.get_runtime_inspector_data()
 
 
-@router.get("/api/runtime/inspector")
+@router.get("/runtime/inspector")
 async def get_runtime_inspector_summary():
     """Get a summary of all runtimes."""
     manager = RuntimeManager.get_instance()
@@ -66,7 +66,7 @@ async def get_runtime_inspector_summary():
     }
 
 
-@router.post("/api/runtime/inspector/{account_id}/recover")
+@router.post("/runtime/inspector/{account_id}/recover")
 async def trigger_session_recovery(account_id: str):
     """Manually trigger session auto-recovery for an account."""
     manager = RuntimeManager.get_instance()
@@ -81,7 +81,7 @@ async def trigger_session_recovery(account_id: str):
     }
 
 
-@router.post("/api/runtime/inspector/{account_id}/restart")
+@router.post("/runtime/inspector/{account_id}/restart")
 async def restart_runtime(account_id: str):
     """Restart a specific account runtime."""
     manager = RuntimeManager.get_instance()
