@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Ban, Clock, Plug, RefreshCw, ShieldAlert, Users, WifiOff } from "lucide-react";
+import { Ban, Clock, Plug, RefreshCw, Search, ShieldAlert, Users, WifiOff, X } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -37,6 +37,7 @@ export function Sidebar() {
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const { isFavorite, toggleFavorite } = useAccountFavorites();
 
   async function loadHealth() {
@@ -72,10 +73,19 @@ export function Sidebar() {
   }, [healthItems]);
 
   const filteredAccounts = useMemo(() => {
-    const filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
+    const query = searchQuery.trim().toLowerCase();
+    let filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
+    // Apply search filter
+    if (query) {
+      filtered = filtered.filter((a) => {
+        const name = (a.name ?? "").toLowerCase();
+        const phone = a.phone.toLowerCase();
+        return name.includes(query) || phone.includes(query);
+      });
+    }
     // Sort: favorites first
     filtered.sort((a, b) => {
       const aFav = isFavorite(a.id) ? 1 : 0;
@@ -83,7 +93,7 @@ export function Sidebar() {
       return bFav - aFav;
     });
     return filtered;
-  }, [accounts, healthByAccountId, healthFilter, isFavorite]);
+  }, [accounts, healthByAccountId, healthFilter, searchQuery, isFavorite]);
 
   const healthCounts = useMemo(() => {
     const counts: Record<string, number> = { all: accounts.length };
@@ -114,6 +124,27 @@ export function Sidebar() {
           <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
+
+      {/* Search bar */}
+      {accounts.length > 0 && (
+        <div className="relative border-b border-app-border px-3 py-2">
+          <Search aria-hidden="true" className="pointer-events-none absolute left-5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="계정 이름 또는 전화번호 검색"
+            className="w-full rounded-xl border border-app-border bg-app-card py-2 pl-7 pr-7 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+          />
+          {searchQuery && (
+            <button type="button" onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
+              title="검색 지우기">
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
 
       {accounts.length > 0 && (
         <div className="flex flex-wrap gap-1 border-b border-app-border px-3 py-2">
