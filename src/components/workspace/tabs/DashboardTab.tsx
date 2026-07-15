@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { motion } from "framer-motion";
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, MessageSquare,
   RefreshCw, SendHorizonal, Users, XCircle, Zap,
-  ArrowRight, Ban, Copy, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
+  ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
@@ -16,7 +15,7 @@ import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId } from "@/types";
-import { isRecurringActive, isRecurringBroadcast, getRecurringState } from "@/types";
+import { isRecurringActive, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
@@ -242,11 +241,8 @@ export function DashboardTab() {
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
   const inactiveAccounts = useMemo(() => accounts.filter((a) => a.status === "inactive"), [accounts]);
   const bannedAccounts = useMemo(() => accounts.filter((a) => a.status === "banned"), [accounts]);
-  const totalSentToday = useMemo(() => accounts.reduce((sum, a) => sum + a.todaySent, 0), [accounts]);
-
   const sentCount = useMemo(() => logs.filter((l) => l.status === "sent").length, [logs]);
   const failedCount = useMemo(() => logs.filter((l) => l.status === "failed").length, [logs]);
-  const sendingCount = useMemo(() => logs.filter((l) => l.status === "sending").length, [logs]);
 
   const recentLogs = useMemo(
     () => [...logs].sort((a, b) => new Date(`${b.createdAt}Z`).getTime() - new Date(`${a.createdAt}Z`).getTime()).slice(0, 8),
@@ -280,10 +276,6 @@ export function DashboardTab() {
   const recentFailures = useMemo(() => {
     return [...logs].filter(l => l.status === "failed").sort((a, b) => new Date(`${b.createdAt}Z`).getTime() - new Date(`${a.createdAt}Z`).getTime()).slice(0, 4);
   }, [logs]);
-
-  const retryableFailures = useMemo(() => {
-    return recentFailures.filter(f => f.failureInfo?.retryable === "retryable" || f.failureInfo?.retryable === "conditional");
-  }, [recentFailures]);
 
   const nonRetryableFailures = useMemo(() => {
     return recentFailures.filter(f => f.failureInfo?.retryable === "not_retryable");
