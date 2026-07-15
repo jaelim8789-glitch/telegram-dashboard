@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import { getAccountDisplayName, isBroadcastInFlight, isRecurringActive, isRecurringBroadcast, type Broadcast, type BroadcastStatus } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 import { FailureRecoveryPanel } from "@/components/workspace/tabs/log/FailureRecoveryPanel";
+import { downloadLogsCsv } from "@/lib/exportCsv";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -373,10 +374,18 @@ export function LogTab() {
       }
       description={`${summaryStats.total}건${summaryStats.sent > 0 ? ` · 완료 ${summaryStats.sent}` : ""}${summaryStats.failed > 0 ? ` · 실패 ${summaryStats.failed}` : ""}${summaryStats.inFlight > 0 ? ` · 진행 ${summaryStats.inFlight}` : ""}`}
       action={
-        <Button variant="ghost" onClick={() => load()} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          새로고침
-        </Button>
+        <div className="flex items-center gap-1">
+          {logs.length > 0 && (
+            <Button variant="ghost" onClick={() => downloadLogsCsv(filteredLogs)} disabled={loading}>
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </Button>
+          )}
+          <Button variant="ghost" onClick={() => load()} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            새로고침
+          </Button>
+        </div>
       }
     >
       {/* Account filter + mini stats */}
