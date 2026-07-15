@@ -15,13 +15,45 @@ export interface MessageTemplate {
   content: string;
   createdAt: string;
   updatedAt: string;
+  isFavorite?: boolean;
 }
 
 const STORAGE_KEY = "telemon-message-templates";
+const FAVORITES_KEY = "telemon-template-favorites";
 const MAX_TEMPLATES = 20;
 
 function generateId(): string {
   return `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function loadFavoriteIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed.filter((f): f is string => typeof f === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFavoriteIds(favorites: Set<string>): void {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
+  } catch { /* ignore */ }
+}
+
+export function toggleTemplateFavorite(id: string): boolean {
+  const favorites = loadFavoriteIds();
+  if (favorites.has(id)) {
+    favorites.delete(id);
+    saveFavoriteIds(favorites);
+    return false;
+  } else {
+    favorites.add(id);
+    saveFavoriteIds(favorites);
+    return true;
+  }
 }
 
 export function loadTemplates(): MessageTemplate[] {
@@ -30,13 +62,14 @@ export function loadTemplates(): MessageTemplate[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
+    const favorites = loadFavoriteIds();
     return parsed.filter(
       (t: unknown): t is MessageTemplate =>
         typeof t === "object" && t !== null &&
         typeof (t as MessageTemplate).id === "string" &&
         typeof (t as MessageTemplate).name === "string" &&
         typeof (t as MessageTemplate).content === "string"
-    );
+    ).map((t) => ({ ...t, isFavorite: favorites.has(t.id) }));
   } catch {
     return [];
   }
@@ -51,11 +84,12 @@ export function saveTemplate(name: string, content: string): MessageTemplate {
     content,
     createdAt: now,
     updatedAt: now,
+    isFavorite: false,
   };
   templates.unshift(template);
   if (templates.length > MAX_TEMPLATES) templates.length = MAX_TEMPLATES;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.map(({ isFavorite, ...rest }) => rest)));
   } catch { /* ignore */ }
   return template;
 }
@@ -63,8 +97,14 @@ export function saveTemplate(name: string, content: string): MessageTemplate {
 export function deleteTemplate(id: string): void {
   const templates = loadTemplates().filter((t) => t.id !== id);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.map(({ isFavorite, ...rest }) => rest)));
   } catch { /* ignore */ }
+  // Clean up favorite reference if exists
+  const favorites = loadFavoriteIds();
+  if (favorites.has(id)) {
+    favorites.delete(id);
+    saveFavoriteIds(favorites);
+  }
 }
 
 export function updateTemplate(id: string, updates: Partial<Pick<MessageTemplate, "name" | "content">>): MessageTemplate | null {
@@ -78,7 +118,7 @@ export function updateTemplate(id: string, updates: Partial<Pick<MessageTemplate
   };
   templates[idx] = updated;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.map(({ isFavorite, ...rest }) => rest)));
   } catch { /* ignore */ }
   return updated;
 }
