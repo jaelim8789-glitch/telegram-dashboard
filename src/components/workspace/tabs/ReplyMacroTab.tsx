@@ -297,12 +297,11 @@ export function ReplyMacroTab() {
           icon={SendHorizonal}
           title="등록된 매크로 없음"
           description="답장매크로는 특정 채팅방에 정해진 시간/간격으로 메시지를 전송합니다"
-          action={
-            <Button variant="primary" size="sm" onClick={openCreateForm}>
-              <Plus className="h-3.5 w-3.5" /> 첫 매크로 추가
-            </Button>
-          }
-        />
+        >
+          <Button variant="primary" size="sm" onClick={openCreateForm}>
+            <Plus className="h-3.5 w-3.5" /> 첫 매크로 추가
+          </Button>
+        </EmptyState>
       )}
 
       {/* Empty: search no results */}
@@ -311,12 +310,11 @@ export function ReplyMacroTab() {
           icon={Search}
           title="검색 결과가 없습니다"
           description={`"${searchQuery}"와 일치하는 매크로가 없습니다`}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
-              <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
-            </Button>
-          }
-        />
+        >
+          <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
+            <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
+          </Button>
+        </EmptyState>
       )}
 
       {/* Inline create/edit form */}
