@@ -57,6 +57,8 @@ export function GroupTab() {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
   const [typeFilter, setTypeFilter] = useState<GroupType | "all">("all");
+  const [folders, setFolders] = useState<api.GroupFolder[]>([]);
+  const [folderFilter, setFolderFilter] = useState<string>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
@@ -119,6 +121,14 @@ export function GroupTab() {
   }, [selectedAccountId]);
 
   useEffect(() => {
+    setFolderFilter("all");
+    if (!selectedAccountId) { setFolders([]); return; }
+    let cancelled = false;
+    api.fetchGroupFolders(selectedAccountId).then((f) => { if (!cancelled) setFolders(f); });
+    return () => { cancelled = true; };
+  }, [selectedAccountId]);
+
+  useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (!selectedAccountId) return;
     bgPollTimer.current = setTimeout(() => { load(selectedAccountId, true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
@@ -128,12 +138,19 @@ export function GroupTab() {
   const visibleGroups = useMemo(() => {
     let filtered = groups;
     if (typeFilter !== "all") filtered = filtered.filter((g) => g.type === typeFilter);
+    if (folderFilter !== "all") {
+      const folder = folders.find((f) => f.id === folderFilter);
+      if (folder) {
+        const idSet = new Set(folder.groupIds);
+        filtered = filtered.filter((g) => idSet.has(g.id));
+      }
+    }
     filtered = filtered.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
     return sorted;
-  }, [groups, search, sortMode, isFavorite, typeFilter]);
+  }, [groups, search, sortMode, isFavorite, typeFilter, folderFilter, folders]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: groups.length };
@@ -262,6 +279,21 @@ export function GroupTab() {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {!loading && folders.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => setFolderFilter("all")}
+              className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", folderFilter === "all" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+              <Hash className="h-3 w-3" /> 전체 폴더
+            </button>
+            {folders.map((f) => (
+              <button key={f.id} type="button" onClick={() => setFolderFilter(f.id)}
+                className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", folderFilter === f.id ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                <Hash className="h-3 w-3" /> {f.title} <span className="ml-0.5 opacity-70">{f.groupIds.length}</span>
+              </button>
+            ))}
           </div>
         )}
 

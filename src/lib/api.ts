@@ -255,6 +255,25 @@ export async function fetchGroups(accountId: string): Promise<Group[]> {
   return (body.items ?? body).map(toGroup);
 }
 
+export interface GroupFolder {
+  id: string;
+  title: string;
+  groupIds: string[];
+}
+
+/** Best-effort — the backend returns [] if Telegram folders can't be read, so
+ * callers should treat this as purely additive and never block on it. */
+export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[]> {
+  try {
+    const body = await request<{ id: string; title: string; group_ids: string[] }[]>(
+      `/api/accounts/${accountId}/groups/folders`
+    );
+    return body.map((f) => ({ id: f.id, title: f.title, groupIds: f.group_ids }));
+  } catch {
+    return [];
+  }
+}
+
 interface ApiBroadcast {
   id: string;
   account_id: string;
