@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -8,10 +8,12 @@ import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((v) => !v);
@@ -22,9 +24,21 @@ export function DashboardShell() {
     setSidebarOpen(false);
   }, []);
 
+  // "?" key opens cheatsheet (only when not typing in an input)
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "?" && !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, [contenteditable]"))) {
+        setCheatsheetOpen((v) => !v);
+      }
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
       <OnboardingTour />
+      <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
