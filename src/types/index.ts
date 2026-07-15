@@ -179,6 +179,8 @@ export interface BroadcastChild {
   inlineButtons: InlineButton[] | null;
 }
 
+export const MAX_BROADCAST_RECIPIENTS = 10;
+
 export const RECURRING_INTERVALS = [
   { value: 30, label: "30분" },
   { value: 60, label: "1시간" },
