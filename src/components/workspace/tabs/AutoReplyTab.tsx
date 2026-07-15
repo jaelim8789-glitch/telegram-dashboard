@@ -410,12 +410,11 @@ export function AutoReplyTab() {
             icon={MessageSquareOff}
             title="등록된 규칙이 없습니다"
             description="자동 응답 규칙을 추가하면 키워드가 포함된 메시지에 자동으로 답장합니다"
-            action={
-              <Button variant="primary" size="sm" onClick={openCreateForm}>
-                <Plus className="h-3.5 w-3.5" /> 첫 규칙 추가
-              </Button>
-            }
-          />
+          >
+            <Button variant="primary" size="sm" onClick={openCreateForm}>
+              <Plus className="h-3.5 w-3.5" /> 첫 규칙 추가
+            </Button>
+          </EmptyState>
         )}
 
         {/* Empty: search/filter with no results */}
@@ -430,18 +429,17 @@ export function AutoReplyTab() {
                   ? `${filterMode === "active" ? "사용 중" : "중지된"} 규칙이 없습니다`
                   : ""
             }
-            action={
-              searchQuery || filterMode !== "all" ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setSearchQuery(""); setFilterMode("all"); }}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> 필터 초기화
-                </Button>
-              ) : undefined
-            }
-          />
+          >
+            {searchQuery || filterMode !== "all" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setSearchQuery(""); setFilterMode("all"); }}
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> 필터 초기화
+              </Button>
+            ) : undefined}
+          </EmptyState>
         )}
 
         {/* Inline create/edit form */}

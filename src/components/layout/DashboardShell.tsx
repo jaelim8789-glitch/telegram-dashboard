@@ -9,6 +9,8 @@ import { Inspector } from "@/components/layout/Inspector";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
+import { ScrollToTop } from "@/components/ui/ScrollToTop";
+import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import { useNotification } from "@/lib/useNotification";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -123,6 +125,10 @@ export function DashboardShell() {
             <Inspector />
           </div>
         </div>
+      </div>
+      <ScrollToTop />
+      <div className="hidden sm:flex absolute bottom-2 left-72">
+        <KeyboardShortcutHints compact />
       </div>
     </div>
   );

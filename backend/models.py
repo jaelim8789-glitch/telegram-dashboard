@@ -3,6 +3,8 @@ Pydantic models for the Account Runtime API.
 
 These mirror the TypeScript types from the frontend (src/types/index.ts)
 so the API contract is consistent.
+
+v2 — Enterprise SaaS: Organization, Team, Workspace, Activity, Webhook, Import/Export.
 """
 
 from __future__ import annotations
@@ -296,3 +298,282 @@ class DeliveryOverview(BaseModel):
 class BatchStatusUpdate(BaseModel):
     account_ids: list[str]
     status: str
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Enterprise SaaS Models (v2)
+# ═════════════════════════════════════════════════════════════════════
+
+# ── 1. Multi-Tenant Organization ────────────────────────────────────
+
+class Organization(BaseModel):
+    id: str
+    name: str
+    slug: str
+    owner_user_id: str
+    plan: str = "free"
+    is_active: bool = True
+    max_members: int = 5
+    max_accounts: int = 25
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class OrganizationCreateInput(BaseModel):
+    name: str
+    slug: str
+
+
+class OrganizationUpdateInput(BaseModel):
+    name: str | None = None
+    plan: str | None = None
+    max_members: int | None = None
+    max_accounts: int | None = None
+
+
+# ── 2. Team / Member ────────────────────────────────────────────────
+
+class TeamMember(BaseModel):
+    id: str
+    organization_id: str
+    user_id: str
+    username: str
+    email: str | None = None
+    role: str = "member"  # "owner" | "admin" | "member" | "viewer"
+    status: str = "active"  # "active" | "invited" | "declined" | "removed"
+    invited_by: str | None = None
+    invited_at: str = ""
+    joined_at: str | None = None
+    created_at: str = ""
+
+
+class InviteMemberInput(BaseModel):
+    email: str
+    role: str = "member"
+
+
+class UpdateMemberRoleInput(BaseModel):
+    role: str
+
+
+# ── 3. Workspace ────────────────────────────────────────────────────
+
+class Workspace(BaseModel):
+    id: str
+    organization_id: str
+    name: str
+    description: str = ""
+    owner_user_id: str
+    is_shared: bool = False
+    shared_with: list[str] = []  # user_ids
+    account_ids: list[str] = []
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class WorkspaceCreateInput(BaseModel):
+    organization_id: str
+    name: str
+    description: str = ""
+
+
+class WorkspaceUpdateInput(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    is_shared: bool | None = None
+    account_ids: list[str] | None = None
+
+
+class WorkspaceShareInput(BaseModel):
+    user_ids: list[str]
+
+
+# ── 4. Activity Feed ────────────────────────────────────────────────
+
+class ActivityEvent(BaseModel):
+    id: str
+    organization_id: str
+    user_id: str
+    username: str
+    event_type: str  # "broadcast.sent" | "account.added" | "member.invited" | ...
+    resource_type: str  # "account" | "broadcast" | "member" | "workspace" | ...
+    resource_id: str | None = None
+    description: str = ""
+    metadata: dict[str, Any] = {}
+    severity: str = "info"  # "info" | "warning" | "error" | "critical"
+    created_at: str = ""
+
+
+class ActivityFeedQuery(BaseModel):
+    organization_id: str
+    limit: int = 50
+    offset: int = 0
+    event_type: str | None = None
+    severity: str | None = None
+    since: str | None = None
+
+
+# ── 5. Advanced Analytics ───────────────────────────────────────────
+
+class AnalyticsQuery(BaseModel):
+    organization_id: str
+    start_date: str
+    end_date: str
+    granularity: str = "day"  # "hour" | "day" | "week" | "month"
+    metric: str = "messages_sent"  # "messages_sent" | "delivery_rate" | "accounts_active" | ...
+
+
+class AnalyticsDataPoint(BaseModel):
+    period: str
+    value: float
+
+
+class AnalyticsReport(BaseModel):
+    organization_id: str
+    metric: str
+    granularity: str
+    start_date: str
+    end_date: str
+    data: list[AnalyticsDataPoint] = []
+    summary: dict[str, Any] = {}
+
+
+class AnalyticsDashboard(BaseModel):
+    organization_id: str
+    total_messages_sent: int = 0
+    total_broadcasts: int = 0
+    delivery_success_rate: float = 0.0
+    active_accounts: int = 0
+    total_accounts: int = 0
+    active_members: int = 0
+    total_members: int = 0
+    messages_today: int = 0
+    messages_this_week: int = 0
+    messages_this_month: int = 0
+    top_performing_accounts: list[dict[str, Any]] = []
+    recent_activity: list[ActivityEvent] = []
+    failure_breakdown: list[dict[str, Any]] = []
+    timeline: list[AnalyticsDataPoint] = []
+
+
+# ── 6. Bulk Operations ──────────────────────────────────────────────
+
+class BulkOperation(BaseModel):
+    id: str
+    organization_id: str
+    operation_type: str  # "status_update" | "delete_accounts" | "assign_workspace" | "send_broadcast" | ...
+    target_ids: list[str] = []
+    params: dict[str, Any] = {}
+    status: str = "pending"  # "pending" | "running" | "completed" | "failed" | "partial"
+    progress: int = 0  # 0-100
+    total: int = 0
+    succeeded: int = 0
+    failed: int = 0
+    errors: list[dict[str, Any]] = []
+    created_by: str = ""
+    created_at: str = ""
+    completed_at: str | None = None
+
+
+class BulkOperationInput(BaseModel):
+    operation_type: str
+    target_ids: list[str]
+    params: dict[str, Any] = {}
+
+
+# ── 7. Import / Export ──────────────────────────────────────────────
+
+class ImportJob(BaseModel):
+    id: str
+    organization_id: str
+    user_id: str
+    import_type: str  # "accounts" | "broadcasts" | "groups" | "auto_reply_rules"
+    file_name: str = ""
+    file_size: int = 0
+    status: str = "pending"  # "pending" | "processing" | "completed" | "failed"
+    total_rows: int = 0
+    processed_rows: int = 0
+    failed_rows: int = 0
+    errors: list[dict[str, Any]] = []
+    created_at: str = ""
+    completed_at: str | None = None
+
+
+class ExportJob(BaseModel):
+    id: str
+    organization_id: str
+    user_id: str
+    export_type: str  # "accounts" | "broadcasts" | "groups" | "auto_reply_rules" | "analytics"
+    status: str = "pending"  # "pending" | "processing" | "completed" | "failed"
+    file_format: str = "csv"  # "csv" | "json"
+    filters: dict[str, Any] = {}
+    file_url: str | None = None
+    total_rows: int = 0
+    created_at: str = ""
+    completed_at: str | None = None
+
+
+class ExportInput(BaseModel):
+    export_type: str
+    file_format: str = "csv"
+    filters: dict[str, Any] = {}
+
+
+# ── 8. Webhook ──────────────────────────────────────────────────────
+
+class Webhook(BaseModel):
+    id: str
+    organization_id: str
+    user_id: str
+    name: str
+    url: str
+    events: list[str] = []  # e.g. ["broadcast.sent", "account.added", "member.joined"]
+    is_active: bool = True
+    secret: str = ""
+    last_triggered_at: str | None = None
+    last_response_code: int | None = None
+    failure_count: int = 0
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class WebhookCreateInput(BaseModel):
+    name: str
+    url: str
+    events: list[str] = []
+    is_active: bool = True
+
+
+class WebhookUpdateInput(BaseModel):
+    name: str | None = None
+    url: str | None = None
+    events: list[str] | None = None
+    is_active: bool | None = None
+
+
+class WebhookDelivery(BaseModel):
+    id: str
+    webhook_id: str
+    event_type: str
+    payload: dict[str, Any] = {}
+    status: str = "pending"  # "pending" | "delivered" | "failed"
+    response_code: int | None = None
+    response_body: str | None = None
+    duration_ms: int = 0
+    created_at: str = ""
+
+
+# ── Public API v2 ───────────────────────────────────────────────────
+
+class APIResponse(BaseModel):
+    success: bool = True
+    data: Any = None
+    error: str | None = None
+    pagination: dict[str, Any] | None = None
+
+
+class PaginationParams(BaseModel):
+    page: int = 1
+    per_page: int = 20
+    sort_by: str = "created_at"
+    sort_order: str = "desc"
