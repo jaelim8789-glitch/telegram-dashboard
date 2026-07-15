@@ -1196,7 +1196,7 @@ export function SendTab() {
                   </div>
                 )}
                 {templateLibraryOpen && templates.length === 0 && (
-                  <p className="text-[11px] text-app-text-subtle italic">저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요.</p>
+                  <p className="text-[11px] text-app-text-subtle italic">저장된 템플릿이 없습니다. 메시지를 작성한 후 &apos;현재 메시지 저장&apos; 버튼을 눌러보세요.</p>
                 )}
                 <Field label="이미지 (선택)">
                   <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
