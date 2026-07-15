@@ -68,20 +68,70 @@ router = APIRouter()
 
 # ── Auth Dependencies ───────────────────────────────────────────────
 
-# Simple token storage (in production, use JWT with Redis)
-_tokens: dict[str, dict[str, Any]] = {}
+# DB-backed session tokens (persist across restarts)
+import sqlite3
+import secrets as secrets_module
+import threading
+
+SESSION_DB_PATH = "data/sessions.db"
+_token_cleanup_lock = threading.Lock()
+
+
+def _init_session_db() -> None:
+    """Initialize the session database table."""
+    import os
+    os.makedirs(os.path.dirname(SESSION_DB_PATH) or ".", exist_ok=True)
+    conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            created_at REAL NOT NULL,
+            expires_at REAL NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sessions_expires 
+        ON sessions(expires_at)
+    """)
+    conn.commit()
+    conn.close()
+
+
+def _cleanup_expired_sessions() -> None:
+    """Remove expired sessions from the database."""
+    with _token_cleanup_lock:
+        try:
+            conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
+            conn.execute("DELETE FROM sessions WHERE expires_at < ?", (time.time(),))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+
+# Initialize session DB on module load
+_init_session_db()
 _token_expiry = 86400  # 24 hours
 
 
 def _generate_token(user_id: str) -> str:
-    """Generate a simple session token."""
-    import secrets
-    token = f"tm_admin_{secrets.token_urlsafe(32)}"
-    _tokens[token] = {
-        "user_id": user_id,
-        "created_at": time.time(),
-        "expires_at": time.time() + _token_expiry,
-    }
+    """Generate a DB-backed session token."""
+    token = f"tm_admin_{secrets_module.token_urlsafe(32)}"
+    now = time.time()
+    expires_at = now + _token_expiry
+    
+    conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
+    try:
+        conn.execute(
+            "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+            (token, user_id, now, expires_at),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    
     return token
 
 
@@ -97,13 +147,20 @@ async def get_current_user(
     if token.startswith("Bearer "):
         token = token[7:]
     
-    # Check session token
-    session = _tokens.get(token)
+    # Check session token (DB-backed)
+    conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute(
+            "SELECT * FROM sessions WHERE token = ? AND expires_at > ?",
+            (token, time.time()),
+        )
+        session = cursor.fetchone()
+    finally:
+        conn.close()
+    
     if session:
-        if time.time() > session["expires_at"]:
-            del _tokens[token]
-            raise HTTPException(status_code=401, detail="Token expired")
-        
+        session = dict(session)
         admin = AdminPlatform.get_instance()
         user = admin.get_user(session["user_id"])
         if not user:
