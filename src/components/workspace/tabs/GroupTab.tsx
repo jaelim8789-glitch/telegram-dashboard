@@ -71,8 +71,12 @@ export function GroupTab() {
     if (!savedGroupStorageKey) { setSavedSendGroupIds([]); return; }
     try {
       const stored = localStorage.getItem(savedGroupStorageKey);
-      if (stored) setSavedSendGroupIds(JSON.parse(stored));
-      else setSavedSendGroupIds([]);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setSavedSendGroupIds(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setSavedSendGroupIds([]);
+      }
     } catch { setSavedSendGroupIds([]); }
   }, [savedGroupStorageKey]);
 
