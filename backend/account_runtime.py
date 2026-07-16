@@ -20,6 +20,7 @@ v2 — Session Auto Recovery, enhanced health tracking, runtime inspector.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import sqlite3
@@ -189,6 +190,86 @@ class GroupCache:
 
 
 # ── Broadcast Queue ─────────────────────────────────────────────────
+
+
+_BROADCAST_DB_PATH = "data/runtime.db"
+
+
+def _persist_broadcast(broadcast: Broadcast) -> None:
+    """Insert or update a broadcast in the SQLite broadcasts table."""
+    os.makedirs(os.path.dirname(_BROADCAST_DB_PATH) or ".", exist_ok=True)
+    conn = sqlite3.connect(_BROADCAST_DB_PATH)
+    try:
+        conn.execute(
+            """INSERT OR REPLACE INTO broadcasts
+               (id, account_id, message, recipients, status,
+                scheduled_at, sent_at, created_at, error_message,
+                recurring_interval_minutes, cancelled_at, next_scheduled_at,
+                is_recurring_paused, delivery_mode, reply_to_message_id,
+                failure_info, inline_buttons)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                broadcast.id, broadcast.account_id, broadcast.message,
+                json.dumps(broadcast.recipients), broadcast.status,
+                broadcast.scheduled_at, broadcast.sent_at, broadcast.created_at,
+                broadcast.error_message,
+                broadcast.recurring_interval_minutes, broadcast.cancelled_at,
+                broadcast.next_scheduled_at,
+                1 if broadcast.is_recurring_paused else 0,
+                broadcast.delivery_mode, broadcast.reply_to_message_id,
+                json.dumps(broadcast.failure_info) if broadcast.failure_info else None,
+                json.dumps(broadcast.inline_buttons) if broadcast.inline_buttons else None,
+            ),
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        logger.exception("Failed to persist broadcast %s", broadcast.id)
+    finally:
+        conn.close()
+
+
+def _load_broadcasts(account_id: str, limit: int = 500) -> list[Broadcast]:
+    """Load broadcasts from SQLite for a given account."""
+    conn = sqlite3.connect(_BROADCAST_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        cursor = conn.execute(
+            "SELECT * FROM broadcasts WHERE account_id = ? ORDER BY created_at DESC LIMIT ?",
+            (account_id, limit),
+        )
+        result = []
+        for row in cursor.fetchall():
+            row_dict = dict(row)
+            try:
+                recipients = json.loads(row_dict["recipients"]) if isinstance(row_dict.get("recipients"), str) else (row_dict.get("recipients") or [])
+                failure_info = json.loads(row_dict["failure_info"]) if row_dict.get("failure_info") and isinstance(row_dict["failure_info"], str) else None
+                inline_buttons = json.loads(row_dict["inline_buttons"]) if row_dict.get("inline_buttons") and isinstance(row_dict["inline_buttons"], str) else None
+                result.append(Broadcast(
+                    id=row_dict["id"],
+                    account_id=row_dict["account_id"],
+                    message=row_dict.get("message") or "",
+                    recipients=recipients,
+                    status=row_dict.get("status") or "pending",
+                    scheduled_at=row_dict.get("scheduled_at"),
+                    sent_at=row_dict.get("sent_at"),
+                    created_at=row_dict.get("created_at") or "",
+                    error_message=row_dict.get("error_message"),
+                    recurring_interval_minutes=row_dict.get("recurring_interval_minutes"),
+                    cancelled_at=row_dict.get("cancelled_at"),
+                    next_scheduled_at=row_dict.get("next_scheduled_at"),
+                    is_recurring_paused=bool(row_dict.get("is_recurring_paused")),
+                    delivery_mode=row_dict.get("delivery_mode") or "normal",
+                    reply_to_message_id=row_dict.get("reply_to_message_id"),
+                    failure_info=failure_info,
+                    inline_buttons=inline_buttons,
+                ))
+            except (json.JSONDecodeError, KeyError, TypeError):
+                continue
+        return result
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
 
 
 class BroadcastQueue:
@@ -365,6 +446,9 @@ class BroadcastQueue:
                 if sb.id == broadcast.id:
                     self._broadcast_store_ref[i] = broadcast
                     break
+
+        # Persist final status to SQLite
+        _persist_broadcast(broadcast)
 
         self._prune_cancelled_set(broadcast.id)
 
@@ -1191,7 +1275,7 @@ class AccountRuntime:
         self._session_path = session_path
 
         # Persistence (set before BroadcastQueue so it can receive the ref)
-        self._broadcast_store: list[Broadcast] = []
+        self._broadcast_store: list[Broadcast] = _load_broadcasts(account_id, self._max_broadcasts)
         self._max_broadcasts = 500
 
         # Core components
@@ -1486,6 +1570,8 @@ class AccountRuntime:
         self._broadcast_store.append(broadcast)
         if len(self._broadcast_store) > self._max_broadcasts:
             self._broadcast_store = self._broadcast_store[-self._max_broadcasts:]
+
+        _persist_broadcast(broadcast)
 
         if input_data.scheduled_at:
             # Schedule for later
