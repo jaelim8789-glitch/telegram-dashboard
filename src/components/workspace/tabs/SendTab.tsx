@@ -908,9 +908,8 @@ export function SendTab() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
-    const hasMessage = message.trim().length > 0 && (!replyMacroEnabled || replyToMessageId.trim().length > 0);
-    if (!hasMessage) {
-      setSubmitError(replyMacroEnabled ? "메시지 내용과 답장할 메시지 ID를 모두 입력하세요." : "메시지 내용을 입력하세요.");
+    if (!message.trim()) {
+      setSubmitError("메시지 내용을 입력하세요.");
       return;
     }
     if (isScheduled && !scheduledAtLocal) return;
@@ -921,7 +920,6 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
-      const mode = replyMacroEnabled ? "reply" : deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
@@ -929,8 +927,8 @@ export function SendTab() {
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
-        deliveryMode: mode,
-        delaySeconds: mode === "normal" ? normalDelaySeconds : undefined,
+        deliveryMode,
+        delaySeconds: deliveryMode === "normal" ? normalDelaySeconds : undefined,
         replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
         inlineButtons: inlineButtons.filter((b) => b.label.trim() && b.url.trim()).length > 0
           ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
@@ -940,7 +938,7 @@ export function SendTab() {
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
-      const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : mode === "reply" ? "답장" : "발송";
+      const modeLabel = deliveryMode === "cycle" ? "사이클 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
       if (isRecurring) {
         const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
         setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
@@ -1034,7 +1032,7 @@ export function SendTab() {
   }
 
   const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!replyMacroEnabled || replyToMessageId.trim().length > 0) && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -1571,9 +1569,8 @@ export function SendTab() {
               </p>
             )}
 
-            {/* Delivery Mode Selector — pacing modes don't apply to a single reply send */}
-            {!replyMacroEnabled && (
-              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+            {/* Delivery Mode Selector */}
+            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
                   <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
                   발송 방식
@@ -1620,7 +1617,6 @@ export function SendTab() {
                   </label>
                 </div>
               </div>
-            )}
 
             {/* "답장으로 보내기" toggle */}
             <div className="flex items-center gap-2">
