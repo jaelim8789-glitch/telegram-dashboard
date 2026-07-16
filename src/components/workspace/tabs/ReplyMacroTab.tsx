@@ -53,6 +53,7 @@ export function ReplyMacroTab() {
   const [intervalHours, setIntervalHours] = useState(24);
   const [fixedTime, setFixedTime] = useState("09:00");
   const [maxSendsPerDay, setMaxSendsPerDay] = useState(10);
+  const [replyToMessageId, setReplyToMessageId] = useState("");
   const [macroFile, setMacroFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -121,6 +122,7 @@ export function ReplyMacroTab() {
     setIntervalHours(24);
     setFixedTime("09:00");
     setMaxSendsPerDay(10);
+    setReplyToMessageId("");
     setMacroFile(null);
     setEditingId(null);
     setSubmitError(null);
@@ -143,6 +145,7 @@ export function ReplyMacroTab() {
     setIntervalHours(macro.intervalHours);
     setFixedTime(macro.fixedTime || "09:00");
     setMaxSendsPerDay(macro.maxSendsPerDay);
+    setReplyToMessageId(macro.replyToMessageId ? String(macro.replyToMessageId) : "");
     setShowForm(true);
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -156,6 +159,7 @@ export function ReplyMacroTab() {
     setIntervalHours(macro.intervalHours);
     setFixedTime(macro.fixedTime || "09:00");
     setMaxSendsPerDay(macro.maxSendsPerDay);
+    setReplyToMessageId(macro.replyToMessageId ? String(macro.replyToMessageId) : "");
     setShowForm(true);
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -186,6 +190,7 @@ export function ReplyMacroTab() {
       intervalHours,
       fixedTime: scheduleType === "fixed" ? fixedTime : undefined,
       maxSendsPerDay,
+      replyToMessageId: replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
       file: macroFile ?? undefined,
     };
     try {
@@ -377,6 +382,17 @@ export function ReplyMacroTab() {
                 <span className="text-[11px] text-app-text-subtle">텔레그램 최대 4096자</span>
                 <span className="text-[11px] text-app-text-muted">{messageContent.length}/4096</span>
               </div>
+            </Field>
+
+            <Field label="답장할 메시지 ID (선택)">
+              <Input
+                type="number"
+                value={replyToMessageId}
+                onChange={(e) => setReplyToMessageId(e.target.value)}
+                placeholder="텔레그램 메시지 ID (비우면 일반 발송)"
+                min={1}
+                inputMode="numeric"
+              />
             </Field>
 
             <Field label="파일 첨부 (선택)">

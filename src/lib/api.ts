@@ -1193,6 +1193,7 @@ export async function createReplyMacro(accountId: string, input: ReplyMacroInput
       fixed_time: input.fixedTime ?? "",
       max_sends_per_day: input.maxSendsPerDay ?? 10,
       is_active: input.isActive ?? true,
+      reply_to_message_id: input.replyToMessageId ?? null,
     }),
   }));
 }
