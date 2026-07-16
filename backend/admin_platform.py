@@ -1228,6 +1228,21 @@ class AdminPlatform:
     # Internal Helpers
     # ═════════════════════════════════════════════════════════════════
 
+    def update_password(self, user_id: str, new_password: str) -> None:
+        """Update a user's password hash."""
+        password_hash = self._hash_password(new_password)
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self.db._get_conn()
+        try:
+            conn.execute(
+                "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+                (password_hash, now, user_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("Password updated for user %s", user_id)
+
     def _hash_password(self, password: str) -> str:
         """Hash a password using SHA-256 with salt."""
         salt = secrets.token_hex(16)

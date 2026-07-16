@@ -311,13 +311,21 @@ async def _db_backup_loop() -> None:
                 backup_name = f"{db_name}.{timestamp}.backup"
                 backup_path = os.path.join(db_config.backup_dir, backup_name)
 
-                # Use SQLite backup API for consistency
+                # Use SQLite backup API for consistency (non-blocking via thread)
                 try:
-                    src_conn = sqlite3.connect(db_path, timeout=30)
-                    dest_conn = sqlite3.connect(backup_path, timeout=30)
-                    src_conn.backup(dest_conn, pages=100, progress=None)
-                    dest_conn.close()
-                    src_conn.close()
+
+                    def _do_backup(src: str, dst: str) -> None:
+                        src_conn = sqlite3.connect(src, timeout=30)
+                        try:
+                            dest_conn = sqlite3.connect(dst, timeout=30)
+                            try:
+                                src_conn.backup(dest_conn, pages=100, progress=None)
+                            finally:
+                                dest_conn.close()
+                        finally:
+                            src_conn.close()
+
+                    await asyncio.to_thread(_do_backup, db_path, backup_path)
 
                     # Keep only last 48 backups per database
                     _prune_backups(db_config.backup_dir, db_name, max_keep=48)
