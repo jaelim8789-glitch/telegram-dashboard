@@ -23,11 +23,12 @@ import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
+import * as folderApi from "@/lib/folderApi";
 import { cn } from "@/lib/cn";
 import {
   RECURRING_INTERVALS, NORMAL_DELAY_OPTIONS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
-  type Broadcast, type BroadcastStatus, type Group, type GroupType,
+  type Broadcast, type BroadcastStatus, type Group, type GroupType, type GroupFolder,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
@@ -443,6 +444,18 @@ export function SendTab() {
     () => groups.filter((g) => savedSendGroupIds.includes(g.id)),
     [groups, savedSendGroupIds],
   );
+
+  // ── Send Groups (folders from the Groups page) ──
+  const [sendFolders, setSendFolders] = useState<GroupFolder[]>([]);
+
+  useEffect(() => {
+    if (!selectedAccountId) { setSendFolders([]); return; }
+    let cancelled = false;
+    folderApi.fetchFolders(selectedAccountId)
+      .then((f) => { if (!cancelled) setSendFolders(f); })
+      .catch(() => { if (!cancelled) setSendFolders([]); });
+    return () => { cancelled = true; };
+  }, [selectedAccountId]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -943,6 +956,30 @@ export function SendTab() {
     toast("success", `발송그룹 ${available.length}개를 선택했습니다.`);
   }
 
+  // Selecting a folder (Send Group) adds every group in it to the current manual
+  // selection — same additive pattern as handleSelectSavedSendGroup/handleSelectAllVisible,
+  // so manual checkbox selection keeps working unchanged before and after.
+  function handleSelectFolder(folder: GroupFolder) {
+    const availableGroupIds = new Set(groups.map((g) => g.id));
+    const valid = folder.group_ids.filter((id) => availableGroupIds.has(id));
+    const toAdd = valid.filter((id) => !selectedIds.includes(id));
+    if (valid.length === 0) {
+      toast("error", "이 폴더에는 현재 계정에서 사용할 수 있는 그룹이 없습니다.");
+      return;
+    }
+    if (toAdd.length === 0) {
+      toast("info", `"${folder.name}" 폴더의 모든 그룹이 이미 선택되어 있습니다.`);
+      return;
+    }
+    const next = [...selectedIds, ...toAdd];
+    setSendSelectedGroupIds(next);
+    if (toAdd.length < valid.length) {
+      toast("success", `"${folder.name}" 폴더에서 ${toAdd.length}개 그룹을 선택했습니다 (${valid.length - toAdd.length}개는 이미 선택됨).`);
+    } else {
+      toast("success", `"${folder.name}" 폴더의 그룹 ${toAdd.length}개를 선택했습니다.`);
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
@@ -1241,6 +1278,29 @@ export function SendTab() {
 
               {deliveryMode === "bulk" && (
                 <p className="mb-2 text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</p>
+              )}
+
+              {!groupsLoading && sendFolders.length > 0 && (
+                <div className="mb-3">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className="text-xs font-medium text-app-text-muted">그룹 폴더</span>
+                    <span className="h-px flex-1 bg-app-border/50" />
+                    <span className="text-[10px] text-app-text-subtle">{sendFolders.length}개</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sendFolders.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        onClick={() => handleSelectFolder(folder)}
+                        title={`"${folder.name}" 폴더의 그룹 ${folder.group_ids.length}개 선택`}
+                        className="rounded-full bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:text-app-text"
+                      >
+                        📁 {folder.name} <span className="text-app-text-subtle">{folder.group_ids.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {!groupsLoading && savedSendGroups.length > 0 && (
