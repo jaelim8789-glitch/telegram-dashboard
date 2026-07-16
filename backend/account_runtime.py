@@ -243,35 +243,35 @@ class BroadcastQueue:
 
     async def _dispatch(self, broadcast: Broadcast) -> None:
         """Send the broadcast message to all recipients one by one."""
+        # Clean up cancelled set before dispatch
+        self._prune_cancelled_set(broadcast.id)
+
         # Check if cancelled before starting
         if broadcast.id in self._cancelled_set:
-            broadcast.status = "cancelled"
-            broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
-            self._completed.append(broadcast)
-            if len(self._completed) > self._max_completed:
-                self._completed = self._completed[-self._max_completed:]
-            self._active_broadcasts.pop(broadcast.id, None)
-            logger.info("[%s] broadcast %s cancelled before dispatch", self._account_id, broadcast.id)
+            self._finalize_cancelled(broadcast, 0)
             return
 
         broadcast.status = "sending"
         success_count = 0
         fail_count = 0
 
-        for recipient_id in broadcast.recipients:
+        # Index-based iteration to handle duplicate recipient IDs correctly.
+        # Using list.index() on duplicates always returns the first occurrence,
+        # which would cause an infinite loop during flood-wait retry.
+        recipient_list = list(broadcast.recipients)
+        current_idx = 0
+
+        while current_idx < len(recipient_list):
+            recipient_id = recipient_list[current_idx]
+
             # Check cancellation before each recipient
             if broadcast.id in self._cancelled_set:
-                broadcast.status = "cancelled"
-                broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
-                self._completed.append(broadcast)
-                if len(self._completed) > self._max_completed:
-                    self._completed = self._completed[-self._max_completed:]
-                self._active_broadcasts.pop(broadcast.id, None)
-                logger.info("[%s] broadcast %s cancelled mid-dispatch after %d recipients", self._account_id, broadcast.id, success_count)
+                self._finalize_cancelled(broadcast, success_count)
                 return
 
             if not await self._rate_limiter.acquire("send_message", chat_id=recipient_id, timeout=30):
                 fail_count += 1
+                current_idx += 1
                 continue
 
             try:
@@ -285,6 +285,7 @@ class BroadcastQueue:
                 else:
                     await self._client.send_message(entity, broadcast.message)
                 success_count += 1
+                current_idx += 1
             except FloodWaitError as e:
                 retry_count = self._retry_counts.get(broadcast.id, 0)
                 if retry_count >= self.MAX_RETRIES:
@@ -299,14 +300,14 @@ class BroadcastQueue:
                 self._rate_limiter.adjust_limit("send_message", 1.0, max(e.seconds + 1, 5.0))
                 self._retry_counts[broadcast.id] = retry_count + 1
 
-                current_idx = list(broadcast.recipients).index(recipient_id)
-                remaining = list(broadcast.recipients)[current_idx:]
+                # Keep only the remaining recipients (including current, for retry)
+                remaining = recipient_list[current_idx:]
                 logger.info(
                     "[%s] flood wait %.0fs (retry %d/%d), %d remaining",
                     self._account_id, e.seconds, retry_count + 1, self.MAX_RETRIES, len(remaining),
                 )
                 await asyncio.sleep(min(e.seconds, 60))
-                broadcast.recipients = [recipient_id] + list(broadcast.recipients)[current_idx + 1:]
+                broadcast.recipients = remaining
                 await self._queue.put(broadcast)
                 return
             except AuthKeyUnregisteredError:
@@ -372,6 +373,24 @@ class BroadcastQueue:
                 return True  # Already cancelled/failed/sent
 
         return False
+
+    def _prune_cancelled_set(self, broadcast_id: str) -> None:
+        """Remove completed/failed broadcasts from cancelled_set to prevent memory leak."""
+        self._cancelled_set.discard(broadcast_id)
+
+    def _finalize_cancelled(self, broadcast: Broadcast, success_count: int) -> None:
+        """Mark broadcast as cancelled and clean up."""
+        broadcast.status = "cancelled"
+        broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
+        self._completed.append(broadcast)
+        if len(self._completed) > self._max_completed:
+            self._completed = self._completed[-self._max_completed:]
+        self._active_broadcasts.pop(broadcast.id, None)
+        self._prune_cancelled_set(broadcast.id)
+        logger.info(
+            "[%s] broadcast %s cancelled after %d recipients",
+            self._account_id, broadcast.id, success_count,
+        )
 
     def get_active(self) -> list[Broadcast]:
         return list(self._active_broadcasts.values())
