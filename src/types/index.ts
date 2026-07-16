@@ -251,6 +251,7 @@ export interface ReplyMacro {
   intervalHours: number;
   fixedTime: string | null;
   maxSendsPerDay: number;
+  replyToMessageId: number | null;
   lastSentAt: string | null;
   createdAt: string;
   updatedAt: string;

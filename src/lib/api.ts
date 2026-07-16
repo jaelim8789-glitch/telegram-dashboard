@@ -1146,6 +1146,7 @@ interface ApiReplyMacro {
   interval_hours: number;
   fixed_time: string | null;
   max_sends_per_day: number;
+  reply_to_message_id: number | null;
   last_sent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -1164,6 +1165,7 @@ function toReplyMacro(api: ApiReplyMacro): ReplyMacro {
     intervalHours: api.interval_hours,
     fixedTime: api.fixed_time,
     maxSendsPerDay: api.max_sends_per_day,
+    replyToMessageId: api.reply_to_message_id ?? null,
     lastSentAt: api.last_sent_at,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
@@ -1178,6 +1180,7 @@ export interface ReplyMacroInput {
   intervalHours?: number;
   fixedTime?: string;
   maxSendsPerDay?: number;
+  replyToMessageId?: number;
   isActive?: boolean;
   file?: File;
 }
@@ -1217,6 +1220,7 @@ export async function updateReplyMacro(accountId: string, macroId: string, input
   if (input.fixedTime !== undefined) body.fixed_time = input.fixedTime;
   if (input.maxSendsPerDay !== undefined) body.max_sends_per_day = input.maxSendsPerDay;
   if (input.isActive !== undefined) body.is_active = input.isActive;
+  if (input.replyToMessageId !== undefined) body.reply_to_message_id = input.replyToMessageId;
 
   const macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros/${macroId}`, {
     method: "PUT",
