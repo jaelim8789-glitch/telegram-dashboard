@@ -19,11 +19,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..models import ReplyMacro, ReplyMacroLog
 from ..runtime_manager import RuntimeManager
+from ..auth_middleware import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ def _log_row_to_dict(row: sqlite3.Row) -> dict:
 
 
 @router.get("/accounts/{account_id}/reply-macros", response_model=list[ReplyMacro])
-async def get_reply_macros(account_id: str):
+async def get_reply_macros(account_id: str, current_user: dict = Depends(get_current_user)):
     """Get all reply macros for an account (from DB)."""
     _init_macros_db()
     conn = sqlite3.connect(DB_PATH)
@@ -170,7 +171,7 @@ async def get_reply_macros(account_id: str):
 
 
 @router.post("/accounts/{account_id}/reply-macros", response_model=ReplyMacro)
-async def create_reply_macro(account_id: str, body: MacroCreate):
+async def create_reply_macro(account_id: str, body: MacroCreate, current_user: dict = Depends(get_current_user)):
     """Create a new reply macro with DB persistence."""
     _init_macros_db()
     now = datetime.now(timezone.utc).isoformat()
@@ -208,7 +209,7 @@ async def create_reply_macro(account_id: str, body: MacroCreate):
 
 
 @router.put("/accounts/{account_id}/reply-macros/{macro_id}", response_model=ReplyMacro)
-async def update_reply_macro(account_id: str, macro_id: str, body: MacroUpdate):
+async def update_reply_macro(account_id: str, macro_id: str, body: MacroUpdate, current_user: dict = Depends(get_current_user)):
     """Update a reply macro."""
     _init_macros_db()
     conn = sqlite3.connect(DB_PATH)
@@ -284,7 +285,7 @@ async def update_reply_macro(account_id: str, macro_id: str, body: MacroUpdate):
 
 
 @router.delete("/accounts/{account_id}/reply-macros/{macro_id}")
-async def delete_reply_macro(account_id: str, macro_id: str):
+async def delete_reply_macro(account_id: str, macro_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a reply macro."""
     _init_macros_db()
     conn = sqlite3.connect(DB_PATH)
@@ -312,7 +313,7 @@ async def delete_reply_macro(account_id: str, macro_id: str):
 
 
 @router.post("/accounts/{account_id}/reply-macros/{macro_id}/execute")
-async def execute_reply_macro(account_id: str, macro_id: str):
+async def execute_reply_macro(account_id: str, macro_id: str, current_user: dict = Depends(get_current_user)):
     """Execute a reply macro immediately via BroadcastQueue (reply_to_msg_id guaranteed)."""
     _init_macros_db()
     conn = sqlite3.connect(DB_PATH)
@@ -383,7 +384,7 @@ async def execute_reply_macro(account_id: str, macro_id: str):
 
 
 @router.get("/accounts/{account_id}/reply-macros/{macro_id}/logs", response_model=list[ReplyMacroLog])
-async def get_reply_macro_logs(account_id: str, macro_id: str):
+async def get_reply_macro_logs(account_id: str, macro_id: str, current_user: dict = Depends(get_current_user)):
     """Get execution logs for a reply macro."""
     _init_macros_db()
     conn = sqlite3.connect(DB_PATH)

@@ -628,10 +628,15 @@ async def update_api_key(
 @router.delete("/admin/api-keys/{key_id}")
 async def revoke_api_key(
     key_id: str,
-    current_user: dict = Depends(require_admin),
+    current_user: dict = Depends(get_current_user),
 ):
-    """Revoke (deactivate) an API key."""
+    """Revoke (deactivate) an API key. Users can revoke their own keys; admins can revoke any."""
     admin = AdminPlatform.get_instance()
+    is_admin = current_user.get("role") in (Role.ADMIN, Role.SUPER_ADMIN)
+    if not is_admin:
+        key = admin.get_api_key(key_id)
+        if not key or key.get("user_id") != current_user["id"]:
+            raise HTTPException(status_code=404, detail="API key not found")
     admin.revoke_api_key(key_id)
     return {"status": "revoked", "key_id": key_id}
 
@@ -678,14 +683,14 @@ async def reset_api_key_usage(
 # ── Plans ───────────────────────────────────────────────────────────
 
 @router.get("/admin/plans")
-async def list_plans():
+async def list_plans(current_user: dict = Depends(get_current_user)):
     """List all available plans with features and pricing."""
     admin = AdminPlatform.get_instance()
     return admin.list_plans()
 
 
 @router.get("/admin/plans/{plan_name}")
-async def get_plan(plan_name: str):
+async def get_plan(plan_name: str, current_user: dict = Depends(get_current_user)):
     """Get plan details."""
     admin = AdminPlatform.get_instance()
     plan = admin.get_plan(plan_name)
@@ -881,7 +886,7 @@ async def create_invoice(
 # ── Admin Health ────────────────────────────────────────────────────
 
 @router.get("/admin/health")
-async def admin_health():
+async def admin_health(current_user: dict = Depends(get_current_user)):
     """Admin health check endpoint."""
     admin = AdminPlatform.get_instance()
     return {
