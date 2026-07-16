@@ -269,7 +269,11 @@ async def _init_db() -> None:
                 recurring_interval_minutes INTEGER,
                 cancelled_at TEXT,
                 next_scheduled_at TEXT,
-                is_recurring_paused INTEGER DEFAULT 0
+                is_recurring_paused INTEGER DEFAULT 0,
+                delivery_mode TEXT DEFAULT 'normal',
+                reply_to_message_id INTEGER,
+                failure_info TEXT,
+                inline_buttons TEXT
             )
         """)
         conn.commit()
