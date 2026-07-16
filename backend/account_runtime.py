@@ -337,6 +337,17 @@ class BroadcastQueue:
             self._completed = self._completed[-self._max_completed:]
         self._active_broadcasts.pop(broadcast.id, None)
 
+        # Sync final status back into _broadcast_store so the store doesn't
+        # keep a stale copy (important after flood-wait retry which creates
+        # a shallow copy — the store still points to the pre-retry original).
+        if self._broadcast_store_ref is not None:
+            for i, sb in enumerate(self._broadcast_store_ref):
+                if sb.id == broadcast.id:
+                    self._broadcast_store_ref[i] = broadcast
+                    break
+
+        self._prune_cancelled_set(broadcast.id)
+
         await self._event_bus.emit(BroadcastCompletedEvent(
             broadcast_id=broadcast.id,
             status=broadcast.status,

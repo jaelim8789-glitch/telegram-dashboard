@@ -255,7 +255,13 @@ class E2EApiClient:
     # ── Groups ───────────────────────────────────────────────────────
 
     def get_groups(self, account_id: str) -> list[dict[str, Any]]:
-        return self.get(f"/accounts/{account_id}/groups", label="get_groups")
+        data = self.get(f"/accounts/{account_id}/groups", label="get_groups")
+        # The API returns {"items": [...]}, unwrap to list
+        if isinstance(data, dict):
+            return data.get("items", [])
+        if isinstance(data, list):
+            return data
+        return []
 
     def get_group_folders(self, account_id: str) -> list[dict[str, Any]]:
         return self.get(f"/accounts/{account_id}/groups/folders", label="get_group_folders")
