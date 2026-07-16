@@ -18,6 +18,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   group: Users,
   groupsearch: Search,
   linkinspector: ScanSearch,
+  templates: FileText,
   autoreply: Bot,
   replymacro: Zap,
   folders: Folder,
