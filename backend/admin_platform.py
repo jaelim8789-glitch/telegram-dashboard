@@ -53,9 +53,9 @@ class Role(str, Enum):
 
 class Plan(str, Enum):
     FREE = "free"
-    STARTER = "starter"
-    PROFESSIONAL = "professional"
-    ENTERPRISE = "enterprise"
+    PRO = "pro"
+    TEAM = "team"
+    LIFETIME = "lifetime"
 
 
 class Feature(str, Enum):
@@ -143,6 +143,8 @@ class PlanDefinition:
     api_rate_limit: int  # requests per minute
     priority_support: bool = False
     audit_log_retention_days: int = 7
+    daily_limit: int = 0  # overall daily API call limit (0 = unlimited)
+    feature_flags: dict[str, bool] = field(default_factory=dict)
 
 
 PLANS: dict[str, PlanDefinition] = {
@@ -161,32 +163,15 @@ PLANS: dict[str, PlanDefinition] = {
         price_yearly_cents=0,
         api_rate_limit=30,
         audit_log_retention_days=3,
+        daily_limit=100,
+        feature_flags={"can_export": False, "can_webhook": False},
     ),
-    Plan.STARTER: PlanDefinition(
-        name="Starter",
-        max_accounts=5,
-        max_groups_per_account=200,
-        daily_send_limit=1000,
-        daily_auto_reply_limit=500,
-        max_team_members=2,
-        features={
-            Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
-            Feature.SCHEDULED_SEND, Feature.API_ACCESS, Feature.WEBHOOKS,
-            Feature.CUSTOM_TEMPLATES, Feature.ANALYTICS, Feature.AUDIT_LOG,
-            Feature.HEALING_ENGINE,
-        },
-        price_monthly_cents=2999,  # $29.99
-        price_yearly_cents=29990,  # $299.90
-        api_rate_limit=60,
-        priority_support=False,
-        audit_log_retention_days=14,
-    ),
-    Plan.PROFESSIONAL: PlanDefinition(
-        name="Professional",
-        max_accounts=25,
+    Plan.PRO: PlanDefinition(
+        name="Pro",
+        max_accounts=10,
         max_groups_per_account=500,
-        daily_send_limit=10000,
-        daily_auto_reply_limit=5000,
+        daily_send_limit=5000,
+        daily_auto_reply_limit=2500,
         max_team_members=5,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -199,11 +184,35 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=120,
         priority_support=True,
         audit_log_retention_days=30,
+        daily_limit=1000,
+        feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True},
     ),
-    Plan.ENTERPRISE: PlanDefinition(
-        name="Enterprise",
-        max_accounts=100,
+    Plan.TEAM: PlanDefinition(
+        name="Team",
+        max_accounts=50,
         max_groups_per_account=2000,
+        daily_send_limit=50000,
+        daily_auto_reply_limit=25000,
+        max_team_members=20,
+        features={
+            Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
+            Feature.SCHEDULED_SEND, Feature.API_ACCESS, Feature.WEBHOOKS,
+            Feature.CUSTOM_TEMPLATES, Feature.ANALYTICS, Feature.AUDIT_LOG,
+            Feature.HEALING_ENGINE, Feature.PRIORITY_SUPPORT,
+            Feature.TEAM_MEMBERS,
+        },
+        price_monthly_cents=29999,  # $299.99
+        price_yearly_cents=299990,  # $2,999.90
+        api_rate_limit=300,
+        priority_support=True,
+        audit_log_retention_days=60,
+        daily_limit=5000,
+        feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": False},
+    ),
+    Plan.LIFETIME: PlanDefinition(
+        name="Lifetime",
+        max_accounts=100,
+        max_groups_per_account=5000,
         daily_send_limit=100000,
         daily_auto_reply_limit=50000,
         max_team_members=50,
@@ -215,13 +224,34 @@ PLANS: dict[str, PlanDefinition] = {
             Feature.WHITE_LABEL, Feature.TEAM_MEMBERS, Feature.SSO,
             Feature.CUSTOM_RATE_LIMITS, Feature.DEDICATED_INFRA,
         },
-        price_monthly_cents=29999,  # $299.99
-        price_yearly_cents=299990,  # $2,999.90
-        api_rate_limit=300,
+        price_monthly_cents=199999,  # $1,999.99 one-time equivalent
+        price_yearly_cents=0,
+        api_rate_limit=1000,
         priority_support=True,
-        audit_log_retention_days=90,
+        audit_log_retention_days=365,
+        daily_limit=0,
+        feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": True, "white_label": True},
     ),
 }
+
+
+# ── Backward compatibility: map old plan names to new ones ────────────
+
+_PLAN_ALIASES: dict[str, str] = {
+    "starter": "pro",
+    "professional": "pro",
+    "enterprise": "team",
+    "premium": "pro",
+}
+
+
+def resolve_plan(plan_name: str | None) -> str:
+    """Resolve any plan name (including legacy names) to a current Plan value."""
+    if not plan_name:
+        return Plan.FREE
+    if plan_name in PLANS:
+        return plan_name
+    return _PLAN_ALIASES.get(plan_name.lower(), Plan.FREE)
 
 
 # ── Admin Database ───────────────────────────────────────────────────
@@ -266,7 +296,7 @@ class AdminDB:
             )
         """)
         
-        # API Keys
+        # API Keys (enhanced: plan, feature_flags, limits, usage tracking)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS api_keys (
                 id TEXT PRIMARY KEY,
@@ -275,10 +305,16 @@ class AdminDB:
                 key_prefix TEXT NOT NULL,
                 name TEXT DEFAULT '',
                 permissions TEXT DEFAULT 'read',
+                plan TEXT DEFAULT 'free',
+                feature_flags TEXT DEFAULT '{}',
+                max_accounts INTEGER DEFAULT 0,
+                daily_limit INTEGER DEFAULT 0,
                 is_active INTEGER DEFAULT 1,
                 last_used_at TEXT,
                 expires_at TEXT,
                 created_at TEXT DEFAULT '',
+                usage_count INTEGER DEFAULT 0,
+                usage_reset_at TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -366,7 +402,39 @@ class AdminDB:
         
         conn.commit()
         conn.close()
+
+        # Run migrations for schema updates
+        self._run_migrations()
+
         logger.info("Admin database initialized at %s", self._db_path)
+
+    def _run_migrations(self) -> None:
+        """Run incremental schema migrations to preserve existing data."""
+        conn = sqlite3.connect(self._db_path, timeout=30)
+        try:
+            cursor = conn.execute("PRAGMA table_info(api_keys)")
+            columns = {row[1] for row in cursor.fetchall()}
+
+            migrations = [
+                ("plan", "ALTER TABLE api_keys ADD COLUMN plan TEXT DEFAULT 'free'"),
+                ("feature_flags", "ALTER TABLE api_keys ADD COLUMN feature_flags TEXT DEFAULT '{}'"),
+                ("max_accounts", "ALTER TABLE api_keys ADD COLUMN max_accounts INTEGER DEFAULT 0"),
+                ("daily_limit", "ALTER TABLE api_keys ADD COLUMN daily_limit INTEGER DEFAULT 0"),
+                ("usage_count", "ALTER TABLE api_keys ADD COLUMN usage_count INTEGER DEFAULT 0"),
+                ("usage_reset_at", "ALTER TABLE api_keys ADD COLUMN usage_reset_at TEXT"),
+            ]
+
+            for col_name, alter_sql in migrations:
+                if col_name not in columns:
+                    try:
+                        conn.execute(alter_sql)
+                        logger.info("Migration: added column '%s' to api_keys", col_name)
+                    except Exception as e:
+                        logger.warning("Migration skipped for '%s': %s", col_name, e)
+
+            conn.commit()
+        finally:
+            conn.close()
 
     def _get_conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path, timeout=30)
@@ -564,7 +632,7 @@ class AdminPlatform:
         user = self.get_user(user_id)
         if not user:
             return False
-        
+
         role_hierarchy = {
             Role.READ_ONLY: 0,
             Role.API_KEY: 0,
@@ -572,11 +640,33 @@ class AdminPlatform:
             Role.ADMIN: 2,
             Role.SUPER_ADMIN: 3,
         }
-        
+
         user_level = role_hierarchy.get(user.get("role", ""), 0)
         required_level = role_hierarchy.get(required_role, 0)
-        
+
         return user_level >= required_level
+
+    def validate_key_permissions(
+        self, key_data: dict[str, Any], required_feature: str | None = None
+    ) -> tuple[bool, str]:
+        """Validate an API key's plan-level permissions.
+
+        Returns (allowed, reason). Checks:
+        - Key is active and not expired (already done in validate_api_key)
+        - Plan has the required feature
+        - Feature flags permit the action
+        """
+        plan_name = key_data.get("plan", Plan.FREE)
+        plan_def = PLANS.get(resolve_plan(plan_name))
+        if not plan_def:
+            return False, f"Unknown plan: {plan_name}"
+
+        if required_feature:
+            feature_enum = next((f for f in Feature if f.value == required_feature), None)
+            if feature_enum and feature_enum not in plan_def.features:
+                return False, f"Plan '{plan_name}' does not include feature '{required_feature}'"
+
+        return True, "ok"
 
     # ═════════════════════════════════════════════════════════════════
     # 2. Permissions (Middleware-compatible)
@@ -591,30 +681,30 @@ class AdminPlatform:
         user = self.get_user(user_id)
         if not user:
             return False
-        
-        plan_name = user.get("plan", Plan.FREE)
+
+        plan_name = resolve_plan(user.get("plan", Plan.FREE))
         plan_def = PLANS.get(plan_name)
         if not plan_def:
             return False
-        
+
         # Check feature overrides
         if self._has_feature_override(user_id, feature):
             return self._get_feature_override(user_id, feature)
-        
+
         return feature in plan_def.features
 
     def check_usage_limit(
         self, user_id: str, feature: Feature, current_usage: int = 0
     ) -> tuple[bool, dict[str, Any]]:
         """Check if user has not exceeded their plan limit.
-        
+
         Returns (allowed, limit_info).
         """
         user = self.get_user(user_id)
         if not user:
             return False, {"reason": "User not found"}
-        
-        plan_name = user.get("plan", Plan.FREE)
+
+        plan_name = resolve_plan(user.get("plan", Plan.FREE))
         plan_def = PLANS.get(plan_name)
         if not plan_def:
             return False, {"reason": f"Unknown plan: {plan_name}"}
@@ -647,8 +737,9 @@ class AdminPlatform:
     # ═════════════════════════════════════════════════════════════════
 
     def get_plan(self, plan_name: str) -> PlanDefinition | None:
-        """Get plan definition."""
-        return PLANS.get(plan_name)
+        """Get plan definition (supports legacy plan names)."""
+        resolved = resolve_plan(plan_name)
+        return PLANS.get(resolved)
 
     def list_plans(self) -> dict[str, Any]:
         """List all available plans with features."""
@@ -666,6 +757,8 @@ class AdminPlatform:
                 "api_rate_limit": p.api_rate_limit,
                 "priority_support": p.priority_support,
                 "audit_log_retention_days": p.audit_log_retention_days,
+                "daily_limit": p.daily_limit,
+                "feature_flags": p.feature_flags,
             }
             for name, p in PLANS.items()
         }
@@ -813,52 +906,78 @@ class AdminPlatform:
         name: str = "",
         permissions: str = "read",
         expires_in_days: int | None = None,
+        plan: str | None = None,
+        feature_flags: dict[str, bool] | None = None,
+        max_accounts: int | None = None,
+        daily_limit: int | None = None,
     ) -> dict[str, Any]:
-        """Create a new API key for a user."""
+        """Create a new API key for a user.
+
+        When plan is provided, the key inherits plan-level limits.
+        Individual fields (max_accounts, daily_limit, feature_flags) can override plan defaults.
+        """
         key_id = str(uuid.uuid4())
         raw_key = f"tm_{secrets.token_urlsafe(32)}"
         key_hash = self._hash_api_key(raw_key)
-        key_prefix = raw_key[:12]  # Store prefix for identification
-        
+        key_prefix = raw_key[:12]
+
         now = datetime.now(timezone.utc).isoformat()
         expires_at = None
         if expires_in_days:
             expires_at = (datetime.now(timezone.utc) + timedelta(days=expires_in_days)).isoformat()
-        
+
+        # Resolve plan and limits
+        resolved_plan = plan or Plan.FREE
+        plan_def = PLANS.get(resolved_plan)
+        resolved_feature_flags = feature_flags or {}
+        resolved_max_accounts = max_accounts if max_accounts is not None else (plan_def.max_accounts if plan_def else 0)
+        resolved_daily_limit = daily_limit if daily_limit is not None else (plan_def.daily_limit if plan_def else 0)
+
         conn = self.db._get_conn()
         try:
             conn.execute(
                 """INSERT INTO api_keys
                    (id, user_id, key_hash, key_prefix, name, permissions,
-                    is_active, expires_at, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)""",
-                (key_id, user_id, key_hash, key_prefix, name, permissions, expires_at, now),
+                    plan, feature_flags, max_accounts, daily_limit,
+                    is_active, expires_at, created_at,
+                    usage_count, usage_reset_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 0, ?)""",
+                (key_id, user_id, key_hash, key_prefix, name, permissions,
+                 resolved_plan, json.dumps(resolved_feature_flags),
+                 resolved_max_accounts, resolved_daily_limit,
+                 expires_at, now, now),
             )
             conn.commit()
-            
+
             username = (self.get_user(user_id) or {}).get("username", "")
             self._audit(user_id, username,
-                       AuditAction.API_KEY_CREATED, "api_key", key_id, {"name": name})
-            
+                       AuditAction.API_KEY_CREATED, "api_key", key_id,
+                       {"name": name, "plan": resolved_plan})
+
             return {
                 "id": key_id,
-                "key": raw_key,  # Only returned once!
+                "key": raw_key,
                 "key_prefix": key_prefix,
                 "name": name,
                 "permissions": permissions,
+                "plan": resolved_plan,
+                "feature_flags": resolved_feature_flags,
+                "max_accounts": resolved_max_accounts,
+                "daily_limit": resolved_daily_limit,
                 "expires_at": expires_at,
             }
         finally:
             conn.close()
 
     def validate_api_key(self, raw_key: str) -> dict[str, Any] | None:
-        """Validate an API key. Returns user data if valid."""
+        """Validate an API key. Returns key data (including plan/limits) if valid."""
         key_hash = self._hash_api_key(raw_key)
-        
+
         conn = self.db._get_conn()
         try:
             cursor = conn.execute(
-                """SELECT k.*, u.id as user_id, u.role, u.plan, u.is_suspended
+                """SELECT k.*, u.id as user_id, u.role, u.plan as user_plan,
+                          u.is_suspended
                    FROM api_keys k
                    JOIN users u ON k.user_id = u.id
                    WHERE k.key_hash = ? AND k.is_active = 1
@@ -868,23 +987,52 @@ class AdminPlatform:
             row = cursor.fetchone()
             if not row:
                 return None
-            
+
             key_data = dict(row)
-            
+
             # Check expiry
             if key_data.get("expires_at"):
                 expires = datetime.fromisoformat(key_data["expires_at"])
                 if expires < datetime.now(timezone.utc):
                     return None
-            
-            # Update last used
+
+            # Parse feature_flags JSON
+            try:
+                key_data["feature_flags"] = json.loads(key_data.get("feature_flags", "{}"))
+            except (json.JSONDecodeError, TypeError):
+                key_data["feature_flags"] = {}
+
+            # Check daily usage limit (0 = unlimited)
+            daily_limit = key_data.get("daily_limit", 0)
+            if daily_limit > 0:
+                usage_count = key_data.get("usage_count", 0)
+                usage_reset_at = key_data.get("usage_reset_at")
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                reset_day = ""
+                if usage_reset_at:
+                    try:
+                        reset_day = datetime.fromisoformat(usage_reset_at).strftime("%Y-%m-%d")
+                    except (ValueError, TypeError):
+                        pass
+
+                if reset_day != today:
+                    # Reset counter for new day
+                    usage_count = 0
+                    conn.execute(
+                        "UPDATE api_keys SET usage_count = 0, usage_reset_at = ? WHERE id = ?",
+                        (datetime.now(timezone.utc).isoformat(), key_data["id"]),
+                    )
+                elif usage_count >= daily_limit:
+                    return None  # Daily limit exceeded
+
+            # Update last used and increment usage counter
             now = datetime.now(timezone.utc).isoformat()
             conn.execute(
-                "UPDATE api_keys SET last_used_at = ? WHERE id = ?",
-                (now, key_data["id"]),
+                "UPDATE api_keys SET last_used_at = ?, usage_count = usage_count + 1, usage_reset_at = COALESCE(usage_reset_at, ?) WHERE id = ?",
+                (now, now, key_data["id"]),
             )
             conn.commit()
-            
+
             return key_data
         finally:
             conn.close()
@@ -904,17 +1052,180 @@ class AdminPlatform:
         finally:
             conn.close()
 
+    def get_api_key_usage(self, key_id: str) -> dict[str, Any] | None:
+        """Get usage stats for a specific API key."""
+        conn = self.db._get_conn()
+        try:
+            cursor = conn.execute(
+                """SELECT id, key_prefix, name, plan, max_accounts, daily_limit,
+                          usage_count, usage_reset_at, last_used_at, is_active, expires_at
+                   FROM api_keys WHERE id = ?""",
+                (key_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return dict(row)
+        finally:
+            conn.close()
+
+    def reset_api_key_usage(self, key_id: str) -> None:
+        """Reset the usage counter for an API key."""
+        conn = self.db._get_conn()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "UPDATE api_keys SET usage_count = 0, usage_reset_at = ? WHERE id = ?",
+                (now, key_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
     def list_api_keys(self, user_id: str) -> list[dict[str, Any]]:
         """List all API keys for a user (without the actual keys)."""
         conn = self.db._get_conn()
         try:
             cursor = conn.execute(
-                """SELECT id, key_prefix, name, permissions, is_active,
-                          last_used_at, expires_at, created_at
+                """SELECT id, key_prefix, name, permissions, plan, feature_flags,
+                          max_accounts, daily_limit, is_active,
+                          last_used_at, expires_at, created_at,
+                          usage_count, usage_reset_at
                    FROM api_keys WHERE user_id = ? ORDER BY created_at DESC""",
                 (user_id,),
             )
-            return [dict(row) for row in cursor.fetchall()]
+            rows = []
+            for row in cursor.fetchall():
+                d = dict(row)
+                try:
+                    d["feature_flags"] = json.loads(d.get("feature_flags", "{}"))
+                except (json.JSONDecodeError, TypeError):
+                    d["feature_flags"] = {}
+                rows.append(d)
+            return rows
+        finally:
+            conn.close()
+
+    def get_api_key(self, key_id: str) -> dict[str, Any] | None:
+        """Get a single API key by ID (without the raw key)."""
+        conn = self.db._get_conn()
+        try:
+            cursor = conn.execute(
+                """SELECT k.*, u.username
+                   FROM api_keys k
+                   JOIN users u ON k.user_id = u.id
+                   WHERE k.id = ?""",
+                (key_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d.pop("key_hash", None)
+            try:
+                d["feature_flags"] = json.loads(d.get("feature_flags", "{}"))
+            except (json.JSONDecodeError, TypeError):
+                d["feature_flags"] = {}
+            return d
+        finally:
+            conn.close()
+
+    def list_all_api_keys(self) -> list[dict[str, Any]]:
+        """List all API keys across all users (admin only)."""
+        conn = self.db._get_conn()
+        try:
+            cursor = conn.execute(
+                """SELECT k.id, k.key_prefix, k.name, k.permissions,
+                          k.plan, k.max_accounts, k.daily_limit,
+                          k.is_active, k.last_used_at, k.expires_at,
+                          k.created_at, k.usage_count, k.usage_reset_at,
+                          u.username, u.id as user_id
+                   FROM api_keys k
+                   JOIN users u ON k.user_id = u.id
+                   ORDER BY k.created_at DESC""",
+            )
+            rows = []
+            for row in cursor.fetchall():
+                d = dict(row)
+                try:
+                    d["feature_flags"] = json.loads(d.get("feature_flags", "{}"))
+                except (json.JSONDecodeError, TypeError):
+                    d["feature_flags"] = {}
+                rows.append(d)
+            return rows
+        finally:
+            conn.close()
+
+    def update_api_key(
+        self,
+        key_id: str,
+        name: str | None = None,
+        permissions: str | None = None,
+        plan: str | None = None,
+        feature_flags: dict[str, bool] | None = None,
+        max_accounts: int | None = None,
+        daily_limit: int | None = None,
+        is_active: bool | None = None,
+        expires_in_days: int | None = None,
+    ) -> dict[str, Any] | None:
+        """Update an existing API key's attributes."""
+        conn = self.db._get_conn()
+        try:
+            existing = conn.execute(
+                "SELECT * FROM api_keys WHERE id = ?", (key_id,)
+            ).fetchone()
+            if not existing:
+                return None
+
+            updates = []
+            params = []
+
+            if name is not None:
+                updates.append("name = ?")
+                params.append(name)
+            if permissions is not None:
+                updates.append("permissions = ?")
+                params.append(permissions)
+            if plan is not None:
+                updates.append("plan = ?")
+                params.append(plan)
+            if feature_flags is not None:
+                updates.append("feature_flags = ?")
+                params.append(json.dumps(feature_flags))
+            if max_accounts is not None:
+                updates.append("max_accounts = ?")
+                params.append(max_accounts)
+            if daily_limit is not None:
+                updates.append("daily_limit = ?")
+                params.append(daily_limit)
+            if is_active is not None:
+                updates.append("is_active = ?")
+                params.append(1 if is_active else 0)
+            if expires_in_days is not None:
+                if expires_in_days > 0:
+                    expires_at = (datetime.now(timezone.utc) + timedelta(days=expires_in_days)).isoformat()
+                else:
+                    expires_at = None
+                updates.append("expires_at = ?")
+                params.append(expires_at)
+
+            if not updates:
+                return self.get_api_key(key_id)
+
+            now = datetime.now(timezone.utc).isoformat()
+            updates.append("last_used_at = COALESCE(last_used_at, ?)")
+            params.append(now)
+            params.append(key_id)
+
+            conn.execute(
+                f"UPDATE api_keys SET {', '.join(updates)} WHERE id = ?",
+                params,
+            )
+            conn.commit()
+
+            self._audit("system", "system", AuditAction.ADMIN_ACTION,
+                       "api_key", key_id, {"updated": [u.split(" =")[0] for u in updates]})
+            return self.get_api_key(key_id)
         finally:
             conn.close()
 
@@ -926,25 +1237,25 @@ class AdminPlatform:
         """Start a trial period for a user."""
         now = datetime.now(timezone.utc)
         trial_end = now + timedelta(days=days)
-        
+
         conn = self.db._get_conn()
         try:
             conn.execute(
                 """UPDATE users SET
                    trial_started_at = ?, trial_ends_at = ?,
-                   plan = 'professional', updated_at = ?
+                   plan = 'pro', updated_at = ?
                    WHERE id = ?""",
                 (now.isoformat(), trial_end.isoformat(), now.isoformat(), user_id),
             )
             conn.commit()
-            
+
             self._audit("system", "system", AuditAction.TRIAL_STARTED,
                        "user", user_id, {"trial_days": days, "ends_at": trial_end.isoformat()})
-            
+
             return {
                 "trial_started": now.isoformat(),
                 "trial_ends": trial_end.isoformat(),
-                "plan": "professional",
+                "plan": "pro",
             }
         finally:
             conn.close()

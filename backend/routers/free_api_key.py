@@ -21,6 +21,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from ..admin_platform import AdminPlatform
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 

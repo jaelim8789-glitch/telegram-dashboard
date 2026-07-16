@@ -71,6 +71,59 @@ class AuthMe(BaseModel):
     subscription_status: str | None = None
     plan: str | None = None
     trial_expires_at: str | None = None
+    api_key_info: dict[str, Any] | None = None
+
+
+# ── API Key ────────────────────────────────────────────────────────────
+
+class APIKeyValidation(BaseModel):
+    valid: bool = False
+    plan: str = "free"
+    permissions: str = "read"
+    feature_flags: dict[str, bool] = {}
+    max_accounts: int = 0
+    daily_limit: int = 0
+    usage_count: int = 0
+    user_id: str = ""
+    key_id: str = ""
+
+
+class APIKeyCreate(BaseModel):
+    name: str = ""
+    permissions: str = "read"
+    expires_in_days: int | None = None
+    plan: str | None = None
+    feature_flags: dict[str, bool] | None = None
+    max_accounts: int | None = None
+    daily_limit: int | None = None
+
+
+class APIKeyUpdate(BaseModel):
+    name: str | None = None
+    permissions: str | None = None
+    plan: str | None = None
+    feature_flags: dict[str, bool] | None = None
+    max_accounts: int | None = None
+    daily_limit: int | None = None
+    is_active: bool | None = None
+    expires_in_days: int | None = None
+
+
+class APIKeyResponse(BaseModel):
+    id: str
+    key_prefix: str
+    name: str = ""
+    permissions: str = "read"
+    plan: str = "free"
+    feature_flags: dict[str, bool] = {}
+    max_accounts: int = 0
+    daily_limit: int = 0
+    is_active: bool = True
+    last_used_at: str | None = None
+    expires_at: str | None = None
+    created_at: str = ""
+    usage_count: int = 0
+    usage_reset_at: str | None = None
 
 
 # ── Group ───────────────────────────────────────────────────────────

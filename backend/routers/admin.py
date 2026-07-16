@@ -60,7 +60,7 @@ from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from fastapi.responses import JSONResponse
 
 from ..admin_platform import AdminPlatform, Plan, Feature, Role, AuditAction
-from ..models import AuthMe
+from ..models import AuthMe, APIKeyCreate, APIKeyUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -233,6 +233,12 @@ async def get_current_user(
                 "is_active": True,
                 "is_suspended": 0,
                 "from_api_key": True,
+                "api_key_id": key_data.get("id", ""),
+                "api_key_name": key_data.get("name", ""),
+                "feature_flags": key_data.get("feature_flags", {}),
+                "max_accounts": key_data.get("max_accounts", 0),
+                "daily_limit": key_data.get("daily_limit", 0),
+                "usage_count": key_data.get("usage_count", 0),
             }
     
     raise HTTPException(status_code=401, detail="Invalid token")
@@ -395,7 +401,7 @@ async def admin_auth_me(current_user: dict = Depends(get_current_user)):
     """Get current admin user info."""
     admin = AdminPlatform.get_instance()
     full_user = admin.get_user(current_user["id"])
-    
+
     if not full_user:
         # For API key users
         return AuthMe(
@@ -404,8 +410,16 @@ async def admin_auth_me(current_user: dict = Depends(get_current_user)):
             subscription_status="active",
             plan=current_user.get("plan", "free"),
             trial_expires_at=None,
+            api_key_info={
+                "key_id": current_user.get("api_key_id", ""),
+                "key_name": current_user.get("api_key_name", ""),
+                "feature_flags": current_user.get("feature_flags", {}),
+                "max_accounts": current_user.get("max_accounts", 0),
+                "daily_limit": current_user.get("daily_limit", 0),
+                "usage_count": current_user.get("usage_count", 0),
+            },
         )
-    
+
     return AuthMe(
         role=full_user["role"],
         phone=full_user.get("phone"),
@@ -521,50 +535,94 @@ async def change_user_plan(
 
 @router.post("/admin/api-keys")
 async def create_api_key(
-    body: dict,
+    body: APIKeyCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Create a new API key."""
-    name = body.get("name", "")
-    permissions = body.get("permissions", "read")
-    expires_in_days = body.get("expires_in_days")
-    
+    """Create a new API key. Admin can set plan/limits; regular users get plan defaults."""
     admin = AdminPlatform.get_instance()
-    
-    # Check plan limit for API keys
+
+    # Check plan limit for API access
     allowed, limit_info = admin.check_usage_limit(
         current_user["id"], Feature.API_ACCESS
     )
     if not allowed:
         raise HTTPException(status_code=403, detail=str(limit_info))
-    
+
+    # Only admins can set plan/limits on keys
+    is_admin = current_user.get("role") in (Role.ADMIN, Role.SUPER_ADMIN)
+    plan = body.plan if (is_admin and body.plan) else None
+    feature_flags = body.feature_flags if (is_admin and body.feature_flags) else None
+    max_accounts = body.max_accounts if (is_admin and body.max_accounts) else None
+    daily_limit = body.daily_limit if (is_admin and body.daily_limit) else None
+
     key = admin.create_api_key(
         user_id=current_user["id"],
-        name=name,
-        permissions=permissions,
-        expires_in_days=expires_in_days,
+        name=body.name,
+        permissions=body.permissions,
+        expires_in_days=body.expires_in_days,
+        plan=plan,
+        feature_flags=feature_flags,
+        max_accounts=max_accounts,
+        daily_limit=daily_limit,
     )
     return key  # Contains raw key — only shown once!
 
 
 @router.get("/admin/api-keys")
-async def list_api_keys(
+async def list_api_keys_route(
+    current_user: dict = Depends(require_admin),
+    all_keys: bool = False,
+    user_id: str | None = None,
+):
+    """List API keys. Admin sees all keys; regular users see own."""
+    admin = AdminPlatform.get_instance()
+
+    if all_keys or current_user.get("role") in (Role.ADMIN, Role.SUPER_ADMIN):
+        if user_id:
+            keys = admin.list_api_keys(user_id)
+        else:
+            keys = admin.list_all_api_keys()
+        return {"items": keys}
+
+    keys = admin.list_api_keys(current_user["id"])
+    return {"items": keys}
+
+
+@router.get("/admin/api-keys/{key_id}")
+async def get_api_key(
+    key_id: str,
     current_user: dict = Depends(require_admin),
 ):
-    """List all API keys (admin: all, user: own)."""
+    """Get detailed info for a single API key."""
     admin = AdminPlatform.get_instance()
-    if current_user.get("role") in (Role.ADMIN, Role.SUPER_ADMIN):
-        # Admin sees all keys by listing all users
-        all_keys = []
-        for user in admin.list_users():
-            keys = admin.list_api_keys(user["id"])
-            for k in keys:
-                k["username"] = user["username"]
-            all_keys.extend(keys)
-        return {"items": all_keys}
-    else:
-        keys = admin.list_api_keys(current_user["id"])
-        return {"items": keys}
+    key = admin.get_api_key(key_id)
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return key
+
+
+@router.put("/admin/api-keys/{key_id}")
+async def update_api_key(
+    key_id: str,
+    body: APIKeyUpdate,
+    current_user: dict = Depends(require_admin),
+):
+    """Update an API key's attributes."""
+    admin = AdminPlatform.get_instance()
+    key = admin.update_api_key(
+        key_id=key_id,
+        name=body.name,
+        permissions=body.permissions,
+        plan=body.plan,
+        feature_flags=body.feature_flags,
+        max_accounts=body.max_accounts,
+        daily_limit=body.daily_limit,
+        is_active=body.is_active,
+        expires_in_days=body.expires_in_days,
+    )
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return key
 
 
 @router.delete("/admin/api-keys/{key_id}")
@@ -572,10 +630,49 @@ async def revoke_api_key(
     key_id: str,
     current_user: dict = Depends(require_admin),
 ):
-    """Revoke an API key."""
+    """Revoke (deactivate) an API key."""
     admin = AdminPlatform.get_instance()
     admin.revoke_api_key(key_id)
     return {"status": "revoked", "key_id": key_id}
+
+
+@router.post("/admin/api-keys/{key_id}/activate")
+async def activate_api_key(
+    key_id: str,
+    current_user: dict = Depends(require_admin),
+):
+    """Reactivate a revoked API key."""
+    admin = AdminPlatform.get_instance()
+    key = admin.update_api_key(key_id=key_id, is_active=True)
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return key
+
+
+# ── API Key Usage Tracking ──────────────────────────────────────────
+
+@router.get("/admin/api-keys/{key_id}/usage")
+async def get_api_key_usage(
+    key_id: str,
+    current_user: dict = Depends(require_admin),
+):
+    """Get usage statistics for a specific API key."""
+    admin = AdminPlatform.get_instance()
+    usage = admin.get_api_key_usage(key_id)
+    if not usage:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return usage
+
+
+@router.post("/admin/api-keys/{key_id}/reset-usage")
+async def reset_api_key_usage(
+    key_id: str,
+    current_user: dict = Depends(require_admin),
+):
+    """Reset usage counter for an API key."""
+    admin = AdminPlatform.get_instance()
+    admin.reset_api_key_usage(key_id)
+    return {"status": "reset", "key_id": key_id}
 
 
 # ── Plans ───────────────────────────────────────────────────────────
