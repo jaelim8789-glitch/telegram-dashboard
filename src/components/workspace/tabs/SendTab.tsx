@@ -510,11 +510,26 @@ export function SendTab() {
   const isInitialMount = useRef(true);
   const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
+  const replyIdInputRef = useRef<HTMLInputElement>(null);
 
   // ── Recent recipient sets ──
   useEffect(() => {
     setRecentSets(getRecentRecipientSets().slice(0, 3));
   }, []);
+
+  // Toggling "답장으로 보내기" removes the (much taller) 발송 방식 section above the
+  // checkbox, shortening the panel enough that the browser doesn't reflow scroll
+  // position to match — the newly-revealed 메시지 ID input can render above the
+  // current viewport, out of reach of a real click even though it's technically
+  // "visible" in the DOM. Bring it on-screen and focus it explicitly instead.
+  useEffect(() => {
+    if (!replyMacroEnabled) return;
+    const id = window.requestAnimationFrame(() => {
+      replyIdInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      replyIdInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [replyMacroEnabled]);
 
   // ── Draft persistence: auto-save on every meaningful state change ──
   useEffect(() => {
@@ -1287,7 +1302,7 @@ export function SendTab() {
               <>
                 <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                   <Field label="답장할 메시지 ID">
-                    <input type="number" value={replyToMessageId}
+                    <input ref={replyIdInputRef} type="number" value={replyToMessageId}
                       onChange={(e) => setReplyToMessageId(e.target.value)}
                       placeholder="예: 12345"
                       min="1"
