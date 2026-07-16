@@ -107,13 +107,15 @@ async def get_current_user(
             return {
                 "id": key_data.get("user_id", ""),
                 "username": "api_key_user",
-                "role": key_data.get("permissions", "read"),
+                # API keys are never allowed to impersonate admin roles.
+                "role": "api_key",
                 "plan": key_data.get("plan", Plan.FREE),
                 "is_active": True,
                 "is_suspended": 0,
                 "from_api_key": True,
                 "api_key_id": key_data.get("id", ""),
                 "api_key_name": key_data.get("name", ""),
+                "api_key_permissions": key_data.get("permissions", "read"),
                 "feature_flags": key_data.get("feature_flags", {}),
                 "max_accounts": key_data.get("max_accounts", 0),
                 "daily_limit": key_data.get("daily_limit", 0),

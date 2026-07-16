@@ -21,7 +21,12 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..runtime_manager import RuntimeManager
 from ..healing_engine import CircuitState
-from ..auth_middleware import get_current_user, require_admin_user
+from ..auth_middleware import (
+    get_current_user,
+    require_admin_user,
+    check_account_ownership,
+    get_owned_account_ids,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -30,7 +35,15 @@ router = APIRouter()
 @router.get("/healing/status")
 async def get_healing_status(current_user: dict = Depends(get_current_user)):
     manager = RuntimeManager.get_instance()
-    return manager.healing_engine.get_healing_status()
+    status = manager.healing_engine.get_healing_status()
+    owned_ids = await get_owned_account_ids(current_user)
+    if owned_ids is None:
+        return status
+
+    owned_set = set(owned_ids)
+    status["accounts"] = [acct for acct in status.get("accounts", []) if acct["account_id"] in owned_set]
+    status["total_accounts"] = len(status["accounts"])
+    return status
 
 
 @router.get("/healing/history")
@@ -39,9 +52,24 @@ async def get_healing_history(
     current_user: dict = Depends(get_current_user),
 ):
     manager = RuntimeManager.get_instance()
+    status = manager.healing_engine.get_healing_status()
+    owned_ids = await get_owned_account_ids(current_user)
+    if owned_ids is None:
+        return {
+            "total_events": len(manager.healing_engine._recovery_history),
+            "events": manager.healing_engine.get_recovery_history(limit=limit),
+        }
+
+    owned_set = set(owned_ids)
+    events = [
+        event
+        for event in manager.healing_engine.get_recovery_history(limit=limit)
+        if event.get("account_id") in owned_set
+    ]
     return {
-        "total_events": len(manager.healing_engine._recovery_history),
-        "events": manager.healing_engine.get_recovery_history(limit=limit),
+        "total_events": len(events),
+        "events": events,
+        "total_accounts": len([acct for acct in status.get("accounts", []) if acct["account_id"] in owned_set]),
     }
 
 
@@ -51,6 +79,7 @@ async def get_account_healing_detail(
     current_user: dict = Depends(get_current_user),
 ):
     manager = RuntimeManager.get_instance()
+    await check_account_ownership(account_id, current_user)
     detail = manager.healing_engine.get_account_health_detail(account_id)
     if not detail.get("circuit_breaker") and not detail.get("heartbeat"):
         raise HTTPException(status_code=404, detail="Account not tracked by HealingEngine")

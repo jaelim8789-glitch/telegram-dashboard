@@ -540,6 +540,8 @@ async def create_api_key(
 ):
     """Create a new API key. Admin can set plan/limits; regular users get plan defaults."""
     admin = AdminPlatform.get_instance()
+    if body.permissions not in ("read", "write"):
+        raise HTTPException(status_code=400, detail="Invalid API key permissions")
 
     # Check plan limit for API access
     allowed, limit_info = admin.check_usage_limit(
@@ -609,6 +611,8 @@ async def update_api_key(
 ):
     """Update an API key's attributes."""
     admin = AdminPlatform.get_instance()
+    if body.permissions is not None and body.permissions not in ("read", "write"):
+        raise HTTPException(status_code=400, detail="Invalid API key permissions")
     key = admin.update_api_key(
         key_id=key_id,
         name=body.name,

@@ -34,7 +34,10 @@ async def telegram_webhook(
 ):
     cfg = get_config().telegram_bot
 
-    if cfg.webhook_secret and x_telegram_bot_api_secret_token != cfg.webhook_secret:
+    if not cfg.webhook_secret:
+        raise HTTPException(status_code=503, detail="Webhook secret not configured")
+
+    if x_telegram_bot_api_secret_token != cfg.webhook_secret:
         raise HTTPException(status_code=401, detail="Invalid webhook secret")
 
     fak._init_db()
