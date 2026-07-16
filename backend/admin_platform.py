@@ -975,6 +975,9 @@ class AdminPlatform:
 
     def validate_api_key(self, raw_key: str) -> dict[str, Any] | None:
         """Validate an API key. Returns key data (including plan/limits) if valid."""
+        if raw_key.startswith("tm_free_"):
+            return self._validate_free_api_key(raw_key)
+
         key_hash = self._hash_api_key(raw_key)
 
         conn = self.db._get_conn()
@@ -1612,6 +1615,34 @@ class AdminPlatform:
             return hmac.compare_digest(computed.hex(), pwd_hash)
         except (ValueError, AttributeError):
             return False
+
+    def _validate_free_api_key(self, raw_key: str) -> dict[str, Any] | None:
+        """Validate a tm_free_* API key stored in the free_api_keys table."""
+        from .routers.free_api_key import DB_PATH as FREE_API_KEY_DB_PATH
+
+        conn = sqlite3.connect(FREE_API_KEY_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute(
+                "SELECT id, phone, api_key, created_at FROM free_api_keys WHERE api_key = ?",
+                (raw_key,),
+            ).fetchone()
+            if not row:
+                return None
+            return {
+                "id": row["id"],
+                "user_id": "free_" + row["id"],
+                "permissions": "read",
+                "plan": "free",
+                "feature_flags": json.dumps({"can_export": False, "can_webhook": False}),
+                "max_accounts": 1,
+                "daily_limit": 50,
+                "usage_count": 0,
+                "name": "free_api_key",
+                "expires_at": None,
+            }
+        finally:
+            conn.close()
 
     def _hash_api_key(self, key: str) -> str:
         """Hash an API key for storage."""
