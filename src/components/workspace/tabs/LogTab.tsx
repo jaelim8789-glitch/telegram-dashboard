@@ -277,7 +277,7 @@ function LogRow({
         cancelLabel="취소"
         onConfirm={async () => {
           setRetryConfirmOpen(false);
-          if (canRetryFromFailureInfo) onRetry(log);
+          if (canRetryFromFailureInfo(log)) onRetry(log);
         }}
         onCancel={() => setRetryConfirmOpen(false)}
       />
@@ -410,15 +410,41 @@ export function LogTab() {
     useDashboardStore.getState().setActiveTab(tab as import("@/types").TabId);
   }
 
-  function accountLabel(accountId: string): string {
-    const a = accounts.find((a) => a.id === accountId);
+  const accountLabel = useCallback((accountId: string): string => {
+    const a = accounts.find((item) => item.id === accountId);
     return a ? getAccountDisplayName(a) : accountId;
-  }
+  }, [accounts]);
 
-  const filteredLogs = useMemo(() => {
-    if (statusPillFilter === "all") return logs;
-    return logs.filter((l) => l.status === statusPillFilter);
-  }, [logs, statusPillFilter]);
+  const visibleLogs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return logs.filter((log) => {
+      if (statusPillFilter !== "all" && log.status !== statusPillFilter) return false;
+      if (dateFilter && localDateKey(log.createdAt) !== dateFilter) return false;
+      const accountName = accountLabel(log.accountId);
+      return matchesLogQuery(log, query, accountName);
+    });
+  }, [accountLabel, dateFilter, logs, searchQuery, statusPillFilter]);
+
+  const selectedLogs = useMemo(
+    () => logs.filter((log) => selectedLogIds.has(log.id)),
+    [logs, selectedLogIds],
+  );
+
+  const selectedVisibleLogs = useMemo(
+    () => visibleLogs.filter((log) => selectedLogIds.has(log.id)),
+    [selectedLogIds, visibleLogs],
+  );
+
+  const filteredLogs = visibleLogs;
+
+  useEffect(() => {
+    setSelectedLogIds((current) => {
+      if (current.size === 0) return current;
+      const valid = new Set(logs.map((log) => log.id));
+      const next = new Set(Array.from(current).filter((id) => valid.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [logs]);
 
   const statusCounts = useMemo((): Record<HistoryFilter, number> => {
     const counts: Record<string, number> = { all: logs.length };
@@ -434,6 +460,61 @@ export function LogTab() {
     return { total, sent, failed, inFlight };
   }, [logs]);
 
+  const bulkTargets = useMemo(() => {
+    if (!bulkAction) return [];
+    return selectedLogs.filter((log) => {
+      if (bulkAction === "retry") return canRetryFromFailureInfo(log);
+      if (bulkAction === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      return isRecurringActive(log) && log.status !== "cancelled";
+    });
+  }, [bulkAction, selectedLogs]);
+
+  const exportRows = selectedVisibleLogs.length > 0 ? selectedVisibleLogs : visibleLogs;
+
+  async function handleBulkAction(action: BulkAction) {
+    const targets = selectedLogs.filter((log) => {
+      if (action === "retry") return canRetryFromFailureInfo(log);
+      if (action === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      return isRecurringActive(log) && log.status !== "cancelled";
+    });
+
+    if (targets.length === 0) {
+      toast("info", "선택한 항목에 적용할 수 있는 작업이 없습니다.");
+      setBulkAction(null);
+      return;
+    }
+
+    setRetryError(null);
+    let successCount = 0;
+    const failures: string[] = [];
+
+    for (const log of targets) {
+      try {
+        if (action === "retry") {
+          await api.retryBroadcast(log.id);
+        } else if (action === "send_now") {
+          await api.sendNowBroadcast(log.id);
+        } else {
+          await api.cancelRecurringBroadcast(log.id);
+        }
+        successCount += 1;
+      } catch (err) {
+        failures.push(err instanceof Error ? err.message : log.id);
+      }
+    }
+
+    await load();
+    setSelectedLogIds(new Set());
+    setBulkAction(null);
+
+    if (failures.length === 0) {
+      toast("success", `선택한 ${successCount}건을 처리했습니다.`);
+    } else {
+      toast("warning", `${successCount}건 성공, ${failures.length}건 실패`);
+      if (failures[0]) setRetryError(failures[0]);
+    }
+  }
+
   return (
     <Panel
       title={
@@ -446,9 +527,9 @@ export function LogTab() {
       action={
         <div className="flex items-center gap-1">
           {logs.length > 0 && (
-            <Button variant="ghost" onClick={() => downloadLogsCsv(filteredLogs)} disabled={loading}>
+            <Button variant="ghost" onClick={() => downloadLogsCsv(exportRows, `telemon-logs${accountFilter ? `-${accountFilter.slice(0, 8)}` : ""}.csv`)} disabled={loading || exportRows.length === 0}>
               <Download className="h-3.5 w-3.5" />
-              CSV
+              Export CSV
             </Button>
           )}
           <Button variant="ghost" onClick={() => load()} disabled={loading}>
@@ -490,6 +571,73 @@ export function LogTab() {
           </div>
         )}
       </div>
+
+      <div className="mb-3 grid gap-3 xl:grid-cols-[1.2fr_0.8fr_auto]">
+        <Field label="Search" hint="Search messages, errors, accounts, and recipients.">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search logs"
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-app-text-muted">
+            Date
+            <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-app-text-muted">
+            Account
+            <Select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+              <option value="">All</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{getAccountDisplayName(a)}</option>
+              ))}
+            </Select>
+          </label>
+        </div>
+        {summaryStats.total > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-app-text-muted xl:justify-end">
+            {summaryStats.sent > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-success-muted/40 px-1.5 py-0.5 text-app-success">
+                <CheckCircle2 className="h-3 w-3" />{summaryStats.sent}
+              </span>
+            )}
+            {summaryStats.failed > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-danger-muted/40 px-1.5 py-0.5 text-app-danger">
+                <AlertTriangle className="h-3 w-3" />{summaryStats.failed}
+              </span>
+            )}
+            {summaryStats.inFlight > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-info-muted/40 px-1.5 py-0.5 text-app-info">
+                <RefreshCw className="h-3 w-3 animate-spin" />{summaryStats.inFlight}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {selectedLogIds.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-xs">
+          <span className="font-medium text-app-text">{selectedLogIds.size} selected</span>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set(visibleLogs.map((log) => log.id)))}>
+            Select visible
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set())}>
+            Clear
+          </Button>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setBulkAction("retry")} disabled={selectedLogs.every((log) => !canRetryFromFailureInfo(log))}>
+              Retry selected
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setBulkAction("send_now")} disabled={selectedLogs.every((log) => log.status === "sent" || log.status === "cancelled")}>
+              Send now
+            </Button>
+            <Button variant="danger" size="sm" onClick={() => setBulkAction("cancel")} disabled={selectedLogs.every((log) => !isRecurringActive(log))}>
+              Cancel recurring
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Status filter pills */}
       {!loading && logs.length > 0 && (
@@ -542,6 +690,14 @@ export function LogTab() {
               sendingNow={sendNowId}
               accountLabel={accountLabel}
               accounts={accounts}
+              selected={selectedLogIds.has(log.id)}
+              onToggleSelect={(id) => {
+                setSelectedLogIds((current) => {
+                  const next = new Set(current);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
               onRetry={handleRetry}
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
@@ -569,6 +725,18 @@ export function LogTab() {
           if (b) handleSendNow(b);
         }}
         onCancel={() => setSendNowConfirmId(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkAction !== null}
+        title={bulkAction === "retry" ? "Retry selected" : bulkAction === "send_now" ? "Send now selected" : "Cancel recurring selected"}
+        description={`${bulkTargets.length} item(s) will be processed.`}
+        variant={bulkAction === "cancel" ? "danger" : "default"}
+        confirmLabel={bulkAction === "cancel" ? "Cancel" : "Run"}
+        onConfirm={async () => {
+          if (bulkAction) await handleBulkAction(bulkAction);
+        }}
+        onCancel={() => setBulkAction(null)}
       />
     </Panel>
   );
