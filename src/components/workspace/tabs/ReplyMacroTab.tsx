@@ -255,6 +255,10 @@ export function ReplyMacroTab() {
         <div>
           <h2 className="text-sm font-semibold text-app-text">답장매크로</h2>
           <p className="text-xs text-app-text-muted">{getAccountDisplayName(account)}</p>
+          <p className="mt-1 text-xs text-app-text-muted">
+            지정한 대상 채팅방에 예약된 시간마다 메시지를 자동 발송합니다. 수신 메시지에 실시간으로 응답하려면{" "}
+            <span className="font-medium text-app-text-secondary">자동 응답</span> 메뉴를 사용하세요.
+          </p>
         </div>
         {!showForm && (
           <Button variant="primary" size="sm" onClick={openCreateForm} className="shrink-0">
