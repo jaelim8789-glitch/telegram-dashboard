@@ -60,8 +60,12 @@ async def update_account_status(account_id: str, body: dict):
     # Update the runtime's status and health monitor state
     if status == "active":
         runtime._status = "active"
+        runtime.health_monitor.set_session_status(True)
+        runtime.health_monitor._state.status = "healthy"
     elif status == "inactive":
         runtime._status = "inactive"
+        runtime.health_monitor.set_session_status(False)
+        runtime.health_monitor._state.status = "unauthorized"
     elif status == "banned":
         runtime._status = "banned"
         runtime.health_monitor._state.status = "banned"
@@ -71,9 +75,20 @@ async def update_account_status(account_id: str, body: dict):
 @router.patch("/accounts/batch/status")
 async def batch_update_status(body: BatchStatusUpdate):
     manager = RuntimeManager.get_instance()
+    updated = 0
     for aid in body.account_ids:
         runtime = manager.get_runtime(aid)
         if runtime:
-            # TODO: Implement proper status change
-            pass
-    return {"status": "updated", "count": len(body.account_ids)}
+            if body.status == "active":
+                runtime._status = "active"
+                runtime.health_monitor.set_session_status(True)
+                runtime.health_monitor._state.status = "healthy"
+            elif body.status == "inactive":
+                runtime._status = "inactive"
+                runtime.health_monitor.set_session_status(False)
+                runtime.health_monitor._state.status = "unauthorized"
+            elif body.status == "banned":
+                runtime._status = "banned"
+                runtime.health_monitor._state.status = "banned"
+            updated += 1
+    return {"status": "updated", "count": updated}

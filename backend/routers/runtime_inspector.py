@@ -83,13 +83,27 @@ async def trigger_session_recovery(account_id: str):
 
 @router.post("/runtime/inspector/{account_id}/restart")
 async def restart_runtime(account_id: str):
-    """Restart a specific account runtime."""
+    """Restart a specific account runtime.
+
+    If the runtime is not authenticated (e.g. legacy account with no
+    real api_id/api_hash), start() will fail gracefully. We still
+    mark _running=True and _status="inactive" so the runtime stays
+    operable for later code/verify flows — matching add_account_legacy.
+    """
     manager = RuntimeManager.get_instance()
     runtime = manager.get_runtime(account_id)
     if not runtime:
         raise HTTPException(status_code=404, detail="Runtime not found")
     await runtime.stop()
     started = await runtime.start()
+    if not started:
+        # Graceful degradation for unauthenticated/legacy accounts.
+        # The caller can re-auth later via send-code → verify-code flow.
+        runtime._running = True
+        runtime._status = "inactive"
+        runtime.health_monitor.set_session_status(False)
+        runtime.scheduler.start()
+        runtime.broadcast_queue.start()
     return {
         "account_id": account_id,
         "restarted": True,
