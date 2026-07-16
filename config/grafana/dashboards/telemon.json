@@ -1,0 +1,253 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "TeleMon Production Overview",
+  "uid": "telemon-overview",
+  "version": 1,
+  "schemaVersion": 38,
+  "tags": ["telemon", "production"],
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "title": "Backend Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "telemon_http_requests_total", "legendFormat": "Total Requests" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [ { "color": "green" } ] }
+        }
+      }
+    },
+    {
+      "title": "Active Runtimes",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "targets": [
+        { "expr": "telemon_runtimes_active", "legendFormat": "Active" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 50,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 1 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Request Rate (last 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 0 },
+      "targets": [
+        { "expr": "rate(telemon_http_requests_total[5m])", "legendFormat": "Requests/s" },
+        { "expr": "rate(telemon_http_requests_errors_total[5m])", "legendFormat": "Errors/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Error Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "rate(telemon_http_requests_errors_total[5m]) / rate(telemon_http_requests_total[5m]) * 100", "legendFormat": "Error %" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Response Latency (p50/p95/p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 9, "x": 6, "y": 8 },
+      "targets": [
+        { "expr": "telemon_http_request_duration_seconds_sum / telemon_http_request_duration_seconds_count", "legendFormat": "Avg Latency" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Active HTTP Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "telemon_http_requests_active", "legendFormat": "Active" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Database Operations",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "rate(telemon_db_queries_total[5m])", "legendFormat": "Queries/s" },
+        { "expr": "rate(telemon_db_queries_errors_total[5m])", "legendFormat": "Errors/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "DB Query Latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 },
+      "targets": [
+        { "expr": "telemon_db_query_duration_seconds_sum / telemon_db_query_duration_seconds_count", "legendFormat": "Avg Query Time" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Rate Limits Hit",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "rate(telemon_rate_limits_hit_total[5m])", "legendFormat": "Rate Limits/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Healing Actions",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 20 },
+      "targets": [
+        { "expr": "rate(telemon_healing_actions_total[5m])", "legendFormat": "Total/s" },
+        { "expr": "rate(telemon_healing_actions_success_total[5m])", "legendFormat": "Success/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Auto-Replies & Broadcasts",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "rate(telemon_auto_replies_total[5m])", "legendFormat": "Auto-Replies/s" },
+        { "expr": "rate(telemon_broadcasts_total[5m])", "legendFormat": "Broadcasts/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Host CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 24 },
+      "targets": [
+        { "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "CPU %" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Runtime Errors",
+      "type": "stat",
+      "gridPos": { "h": 3, "w": 3, "x": 0, "y": 28 },
+      "targets": [
+        { "expr": "telemon_runtimes_errors_total", "legendFormat": "Total Runtime Errors" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Events Log (Loki)",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 31 },
+      "targets": [
+        {
+          "expr": "{service=\"telemon\"} |= ``",
+          "datasource": "Loki",
+          "legendFormat": ""
+        }
+      ],
+      "datasource": "Loki",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        }
+      }
+    }
+  ]
+}

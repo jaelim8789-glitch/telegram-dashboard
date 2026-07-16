@@ -1,22 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Select } from "@/components/ui/Field";
+import { Input, Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache } from "@/lib/useAccountCache";
 import { useToast } from "@/components/ui/Toast";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getAccountDisplayName, isBroadcastInFlight, isRecurringActive, isRecurringBroadcast, type Broadcast, type BroadcastStatus } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 import { FailureRecoveryPanel } from "@/components/workspace/tabs/log/FailureRecoveryPanel";
+import { downloadLogsCsv } from "@/lib/exportCsv";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -38,14 +40,50 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
 
 import { formatTimestamp, formatDuration } from "@/lib/formatTime";
 
+type BulkAction = "retry" | "send_now" | "cancel";
+
+function canRetryFromFailureInfo(log: Broadcast): boolean {
+  if (log.status !== "failed" || !log.failureInfo) return false;
+  return (
+    (log.failureInfo.retryable === "retryable" || log.failureInfo.retryable === "conditional") &&
+    (log.failureInfo.recovery_action === "wait_and_retry" ||
+      log.failureInfo.recovery_action === "retry_broadcast" ||
+      log.failureInfo.recovery_action === "reauthenticate_account")
+  );
+}
+
+function localDateKey(iso: string): string {
+  const d = new Date(`${iso}Z`);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function matchesLogQuery(log: Broadcast, query: string, accountName: string): boolean {
+  if (!query) return true;
+  const haystack = [
+    log.message,
+    log.status,
+    log.errorMessage ?? "",
+    log.failureInfo?.summary ?? "",
+    log.failureInfo?.category ?? "",
+    accountName,
+    log.accountId,
+    log.recipients.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
 function LogRow({
-  log, retrying, sendingNow, accountLabel, accounts, onRetry, onEditResend, onNavigate, onSendNow,
+  log, retrying, sendingNow, accountLabel, accounts, selected, onToggleSelect, onRetry, onEditResend, onNavigate, onSendNow,
 }: {
   log: Broadcast;
   retrying: string | null;
   sendingNow: string | null;
   accountLabel: (id: string) => string;
   accounts: { id: string; name: string | null; phone: string }[];
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onRetry: (b: Broadcast) => void;
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
@@ -70,16 +108,7 @@ function LogRow({
   const accountExists = accounts.some((a) => a.id === log.accountId);
   const retryLocked = retrying === log.id;
   const sendNowLocked = sendingNow === log.id;
-
-  /** Derive whether retry is valid from failure_info semantics.
-   *  Only show/allow retry for retryable/conditional categories that
-   *  the FailureRecoveryPanel would also offer a retry action for. */
-  const canRetryFromFailureInfo = !hasFailureInfo || (
-    (log.failureInfo!.retryable === "retryable" || log.failureInfo!.retryable === "conditional") &&
-    (log.failureInfo!.recovery_action === "wait_and_retry" || log.failureInfo!.recovery_action === "retry_broadcast" ||
-     log.failureInfo!.recovery_action === "reauthenticate_account")
-  );
-  const showRetryButton = accountExists && canRetryFromFailureInfo;
+  const showRetryButton = accountExists && canRetryFromFailureInfo(log);
 
   return (
     <>
@@ -96,6 +125,19 @@ function LogRow({
       >
         {/* ── Top info line ── */}
         <div className="flex items-center gap-2 px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => onToggleSelect(log.id)}
+            className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+              selected ? "border-app-primary bg-app-primary text-white" : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
+            )}
+            aria-label={selected ? "선택 해제" : "선택"}
+            aria-pressed={selected}
+          >
+            {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-3 w-3 rounded-sm border border-current" />}
+          </button>
+
           <Icon className={cn(
             "h-4 w-4 shrink-0",
             isSending && "animate-spin text-app-info",
@@ -235,7 +277,7 @@ function LogRow({
         cancelLabel="취소"
         onConfirm={async () => {
           setRetryConfirmOpen(false);
-          if (canRetryFromFailureInfo) onRetry(log);
+          if (canRetryFromFailureInfo(log)) onRetry(log);
         }}
         onCancel={() => setRetryConfirmOpen(false)}
       />
@@ -245,6 +287,7 @@ function LogRow({
 
 export function LogTab() {
   const accounts = useDashboardStore((s) => s.accounts);
+  const setTabBadge = useDashboardStore((s) => s.setTabBadge);
   const { toast } = useToast();
   const [logs, setLogs] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(false);
@@ -255,23 +298,51 @@ export function LogTab() {
   const [sendNowConfirmId, setSendNowConfirmId] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
+  // ── RuntimeManager 캐시에서 Broadcast 로그 즉시 로드 ──
+  const { broadcasts: cachedBroadcasts } = useAccountCache(accountFilter || null);
+
   const load = useCallback(async (silent = false) => {
-    if (silent) {
-      try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
+    if (silent && accountFilter) {
+      try { setLogs(cachedBroadcasts); }
       catch { /* silent */ }
+      return;
+    }
+    if (!accountFilter) {
+      setLoading(true);
+      setError(null);
+      try { setLogs(await api.fetchLogs({})); }
+      catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
+      finally { setLoading(false); }
       return;
     }
     setLoading(true);
     setError(null);
-    try { setLogs(await api.fetchLogs({ accountId: accountFilter || undefined })); }
-    catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
+    try {
+      setLogs(cachedBroadcasts.length > 0 ? cachedBroadcasts : await api.fetchLogs({ accountId: accountFilter }));
+    } catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
     finally { setLoading(false); }
-  }, [accountFilter]);
+  }, [accountFilter, cachedBroadcasts]);
 
-  useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter, load]);
+  useEffect(() => {
+    load();
+    setStatusPillFilter("all");
+    setSearchQuery("");
+    setDateFilter("");
+    setSelectedLogIds(new Set());
+  }, [accountFilter, load]);
+
+  // Update tab badge with failed log count
+  useEffect(() => {
+    const failedCount = logs.filter((l) => l.status === "failed").length;
+    setTabBadge("log", failedCount);
+  }, [logs, setTabBadge]);
 
   useEffect(() => {
     if (!logs.some(isBroadcastInFlight)) return;
@@ -339,15 +410,41 @@ export function LogTab() {
     useDashboardStore.getState().setActiveTab(tab as import("@/types").TabId);
   }
 
-  function accountLabel(accountId: string): string {
-    const a = accounts.find((a) => a.id === accountId);
+  const accountLabel = useCallback((accountId: string): string => {
+    const a = accounts.find((item) => item.id === accountId);
     return a ? getAccountDisplayName(a) : accountId;
-  }
+  }, [accounts]);
 
-  const filteredLogs = useMemo(() => {
-    if (statusPillFilter === "all") return logs;
-    return logs.filter((l) => l.status === statusPillFilter);
-  }, [logs, statusPillFilter]);
+  const visibleLogs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return logs.filter((log) => {
+      if (statusPillFilter !== "all" && log.status !== statusPillFilter) return false;
+      if (dateFilter && localDateKey(log.createdAt) !== dateFilter) return false;
+      const accountName = accountLabel(log.accountId);
+      return matchesLogQuery(log, query, accountName);
+    });
+  }, [accountLabel, dateFilter, logs, searchQuery, statusPillFilter]);
+
+  const selectedLogs = useMemo(
+    () => logs.filter((log) => selectedLogIds.has(log.id)),
+    [logs, selectedLogIds],
+  );
+
+  const selectedVisibleLogs = useMemo(
+    () => visibleLogs.filter((log) => selectedLogIds.has(log.id)),
+    [selectedLogIds, visibleLogs],
+  );
+
+  const filteredLogs = visibleLogs;
+
+  useEffect(() => {
+    setSelectedLogIds((current) => {
+      if (current.size === 0) return current;
+      const valid = new Set(logs.map((log) => log.id));
+      const next = new Set(Array.from(current).filter((id) => valid.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [logs]);
 
   const statusCounts = useMemo((): Record<HistoryFilter, number> => {
     const counts: Record<string, number> = { all: logs.length };
@@ -363,6 +460,61 @@ export function LogTab() {
     return { total, sent, failed, inFlight };
   }, [logs]);
 
+  const bulkTargets = useMemo(() => {
+    if (!bulkAction) return [];
+    return selectedLogs.filter((log) => {
+      if (bulkAction === "retry") return canRetryFromFailureInfo(log);
+      if (bulkAction === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      return isRecurringActive(log) && log.status !== "cancelled";
+    });
+  }, [bulkAction, selectedLogs]);
+
+  const exportRows = selectedVisibleLogs.length > 0 ? selectedVisibleLogs : visibleLogs;
+
+  async function handleBulkAction(action: BulkAction) {
+    const targets = selectedLogs.filter((log) => {
+      if (action === "retry") return canRetryFromFailureInfo(log);
+      if (action === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      return isRecurringActive(log) && log.status !== "cancelled";
+    });
+
+    if (targets.length === 0) {
+      toast("info", "선택한 항목에 적용할 수 있는 작업이 없습니다.");
+      setBulkAction(null);
+      return;
+    }
+
+    setRetryError(null);
+    let successCount = 0;
+    const failures: string[] = [];
+
+    for (const log of targets) {
+      try {
+        if (action === "retry") {
+          await api.retryBroadcast(log.id);
+        } else if (action === "send_now") {
+          await api.sendNowBroadcast(log.id);
+        } else {
+          await api.cancelRecurringBroadcast(log.id);
+        }
+        successCount += 1;
+      } catch (err) {
+        failures.push(err instanceof Error ? err.message : log.id);
+      }
+    }
+
+    await load();
+    setSelectedLogIds(new Set());
+    setBulkAction(null);
+
+    if (failures.length === 0) {
+      toast("success", `선택한 ${successCount}건을 처리했습니다.`);
+    } else {
+      toast("warning", `${successCount}건 성공, ${failures.length}건 실패`);
+      if (failures[0]) setRetryError(failures[0]);
+    }
+  }
+
   return (
     <Panel
       title={
@@ -373,44 +525,99 @@ export function LogTab() {
       }
       description={`${summaryStats.total}건${summaryStats.sent > 0 ? ` · 완료 ${summaryStats.sent}` : ""}${summaryStats.failed > 0 ? ` · 실패 ${summaryStats.failed}` : ""}${summaryStats.inFlight > 0 ? ` · 진행 ${summaryStats.inFlight}` : ""}`}
       action={
-        <Button variant="ghost" onClick={() => load()} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          새로고침
-        </Button>
+        <div className="flex items-center gap-1">
+          {logs.length > 0 && (
+            <Button variant="ghost" onClick={() => downloadLogsCsv(exportRows, `telemon-logs${accountFilter ? `-${accountFilter.slice(0, 8)}` : ""}.csv`)} disabled={loading || exportRows.length === 0}>
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+          )}
+          <Button variant="ghost" onClick={() => load()} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            새로고침
+          </Button>
+        </div>
       }
     >
-      {/* Account filter + mini stats */}
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-xs text-app-text-muted">
-          계정
-          <Select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className="w-44">
-            <option value="">전체</option>
+      {/* ── Unified filter bar ── */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="메시지, 오류, 계정 등 검색"
+            aria-label="로그 검색"
+          />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="sr-only" htmlFor="log-date-filter">날짜</label>
+          <Input
+            id="log-date-filter"
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="w-36"
+            aria-label="날짜 필터"
+          />
+          <label className="sr-only" htmlFor="log-account-filter">계정</label>
+          <Select
+            id="log-account-filter"
+            value={accountFilter}
+            onChange={(e) => setAccountFilter(e.target.value)}
+            className="w-36"
+            aria-label="계정 필터"
+          >
+            <option value="">전체 계정</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{getAccountDisplayName(a)}</option>
             ))}
           </Select>
-        </label>
-
+        </div>
         {summaryStats.total > 0 && (
-          <div className="flex items-center gap-2 text-[11px] text-app-text-muted">
+          <div className="flex items-center gap-1.5 ml-auto text-[11px] text-app-text-muted shrink-0">
             {summaryStats.sent > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-app-success-muted/40 px-1.5 py-0.5 text-app-success">
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-success-muted/40 px-2 py-0.5 text-app-success font-medium">
                 <CheckCircle2 className="h-3 w-3" />{summaryStats.sent}
               </span>
             )}
             {summaryStats.failed > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-app-danger-muted/40 px-1.5 py-0.5 text-app-danger">
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-danger-muted/40 px-2 py-0.5 text-app-danger font-medium">
                 <AlertTriangle className="h-3 w-3" />{summaryStats.failed}
               </span>
             )}
             {summaryStats.inFlight > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-app-info-muted/40 px-1.5 py-0.5 text-app-info">
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-info-muted/40 px-2 py-0.5 text-app-info font-medium">
                 <RefreshCw className="h-3 w-3 animate-spin" />{summaryStats.inFlight}
               </span>
             )}
           </div>
         )}
       </div>
+
+      {selectedLogIds.size > 0 && (
+        <div className="sticky bottom-0 z-20 mb-3 -mx-4 px-4 py-2 rounded-2xl border border-app-border/60 bg-app-card/80 backdrop-blur-xl shadow-lg shadow-black/5 animate-scale-in">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-app-text text-xs">{selectedLogIds.size}건 선택됨</span>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set(visibleLogs.map((log) => log.id)))}>
+              전체 선택
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set())}>
+              선택 해제
+            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setBulkAction("retry")} disabled={selectedLogs.every((log) => !canRetryFromFailureInfo(log))}>
+                재시도
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setBulkAction("send_now")} disabled={selectedLogs.every((log) => log.status === "sent" || log.status === "cancelled")}>
+                즉시 발송
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => setBulkAction("cancel")} disabled={selectedLogs.every((log) => !isRecurringActive(log))}>
+                반복 취소
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status filter pills */}
       {!loading && logs.length > 0 && (
@@ -463,6 +670,14 @@ export function LogTab() {
               sendingNow={sendNowId}
               accountLabel={accountLabel}
               accounts={accounts}
+              selected={selectedLogIds.has(log.id)}
+              onToggleSelect={(id) => {
+                setSelectedLogIds((current) => {
+                  const next = new Set(current);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
               onRetry={handleRetry}
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
@@ -490,6 +705,18 @@ export function LogTab() {
           if (b) handleSendNow(b);
         }}
         onCancel={() => setSendNowConfirmId(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkAction !== null}
+        title={bulkAction === "retry" ? "Retry selected" : bulkAction === "send_now" ? "Send now selected" : "Cancel recurring selected"}
+        description={`${bulkTargets.length} item(s) will be processed.`}
+        variant={bulkAction === "cancel" ? "danger" : "default"}
+        confirmLabel={bulkAction === "cancel" ? "Cancel" : "Run"}
+        onConfirm={async () => {
+          if (bulkAction) await handleBulkAction(bulkAction);
+        }}
+        onCancel={() => setBulkAction(null)}
       />
     </Panel>
   );

@@ -72,23 +72,26 @@ test.describe("발송 흐름 (예약 포함)", () => {
     await expect(page.getByText("실패")).toBeVisible({ timeout: 15000 });
   });
 
-  test("답장으로 보내기 체크박스를 켜면 메시지 ID 입력이 나타나고 발송 방식 선택자는 사라지며, 끄면 되돌아온다", async ({ page }) => {
+  test("답장으로 보내기 체크박스를 켜면 추가 메시지 ID 입력이 나타나고, 끄면 사라진다 (발송 방식은 항상 표시)", async ({ page }) => {
     await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
 
+    // Delivery mode is always visible regardless of reply state
     await expect(page.getByText("발송 방식")).toBeVisible();
     await expect(page.getByLabel("답장할 메시지 ID")).toHaveCount(0);
 
+    // Toggle ON — reply ID appears, delivery mode stays
     await page.getByText("답장으로 보내기").click();
     await expect(page.getByLabel("답장할 메시지 ID")).toBeVisible();
-    await expect(page.getByText("발송 방식")).toHaveCount(0);
+    await expect(page.getByText("발송 방식")).toBeVisible();
 
+    // Toggle OFF — reply ID disappears, delivery mode stays
     await page.getByText("답장으로 보내기").click();
     await expect(page.getByText("발송 방식")).toBeVisible();
     await expect(page.getByLabel("답장할 메시지 ID")).toHaveCount(0);
   });
 
-  test("답장으로 보내기 활성화 시 발송 버튼은 메시지 ID 입력 여부만으로 좌우되고, 수신자 선택 요건은 그대로 유지된다", async ({ page }) => {
+  test("답장으로 보내기 활성화 시 발송 버튼은 메시지 내용 + 수신자 선택 요건 그대로 유지된다", async ({ page }) => {
     await page.goto("/app");
     await page.getByRole("button", { name: "발송", exact: true }).click();
 
@@ -99,6 +102,7 @@ test.describe("발송 흐름 (예약 포함)", () => {
     const sendButton = page.getByRole("button", { name: "발송", exact: true }).last();
     await expect(sendButton).toBeDisabled();
 
+    // Even with a reply ID, button stays disabled because no message content AND no recipients
     await page.getByLabel("답장할 메시지 ID").fill("12345");
     await expect(sendButton).toBeDisabled();
   });

@@ -31,7 +31,7 @@ export default defineConfig({
       // so it deliberately starts with no stored session.
       name: "chromium-no-auth",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: /admin-auth\.spec\.ts/,
+      testMatch: /(admin-auth|prod-reply-macro)\.spec\.ts/,
     },
   ],
 });

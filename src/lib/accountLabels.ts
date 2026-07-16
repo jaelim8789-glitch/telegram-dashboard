@@ -69,3 +69,55 @@ export function useAccountTags() {
 
   return { tagsByAccount, addTag, removeTag, allTags };
 }
+
+/**
+ * localStorage-based account label (별칭) storage.
+ * Operators can assign a memorable label to each account.
+ * Independent from favorites/tags — uses separate storage key.
+ */
+const LABEL_STORAGE_KEY = "telemon-account-labels";
+
+function loadLabels(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(LABEL_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) return parsed as Record<string, string>;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLabels(labels: Record<string, string>): void {
+  try {
+    localStorage.setItem(LABEL_STORAGE_KEY, JSON.stringify(labels));
+  } catch { /* silently ignore */ }
+}
+
+export function getAccountLabel(accountId: string): string | null {
+  const labels = loadLabels();
+  return labels[accountId] ?? null;
+}
+
+export function getAccountLabels(): Record<string, string> {
+  return loadLabels();
+}
+
+export function setAccountLabel(accountId: string, label: string): void {
+  const labels = loadLabels();
+  const trimmed = label.trim();
+  if (trimmed) {
+    labels[accountId] = trimmed;
+  } else {
+    delete labels[accountId];
+  }
+  saveLabels(labels);
+}
+
+export function removeAccountLabel(accountId: string): void {
+  const labels = loadLabels();
+  delete labels[accountId];
+  saveLabels(labels);
+}

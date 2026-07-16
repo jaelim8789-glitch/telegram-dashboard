@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Shield, User, Key, RefreshCw, Smartphone, Clock, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Activity, AlertTriangle, CheckCircle2, Clock,
+  Key, MessageSquare, RefreshCw, Send, Shield, Smartphone, User, XCircle,
+} from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -9,11 +12,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/cn";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { getAccountDisplayName, getAccountInitials } from "@/types";
-import type { Account } from "@/types";
+import { formatRelativeTime } from "@/lib/formatTime";
+import type { Account, Broadcast } from "@/types";
 
 export function ProfileTab() {
   const { toast } = useToast();
@@ -32,6 +38,25 @@ export function ProfileTab() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+
+  // Activity timeline
+  const [activityTimeline, setActivityTimeline] = useState<Broadcast[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  useEffect(() => {
+    if (!account?.id) { setActivityTimeline([]); return; }
+    let cancelled = false;
+    setTimelineLoading(true);
+    api.fetchLogs({ accountId: account.id })
+      .then((logs) => { if (!cancelled) setActivityTimeline(logs.slice(0, 20)); })
+      .catch(() => { if (!cancelled) setActivityTimeline([]); })
+      .finally(() => { if (!cancelled) setTimelineLoading(false); });
+    return () => { cancelled = true; };
+  }, [account?.id]);
+
+  const recentActivity = useMemo(() => {
+    return activityTimeline.filter((b) => b.status !== "pending").slice(0, 10);
+  }, [activityTimeline]);
 
   // Confirm dialogs
   const [resetSessionOpen, setResetSessionOpen] = useState(false);
@@ -307,6 +332,81 @@ export function ProfileTab() {
                 </span>
               </div>
             )}
+          </div>
+        )}
+      </Panel>
+
+      {/* ── Activity Timeline ── */}
+      <Panel
+        title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 활동</div>}
+        description={account.id && activityTimeline.length > 0 ? `최근 ${recentActivity.length}건` : undefined}
+      >
+        {timelineLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+          </div>
+        ) : recentActivity.length === 0 ? (
+          <EmptyState icon={Activity} title="최근 활동 없음" description="이 계정의 활동 기록이 아직 없습니다." />
+        ) : (
+          <div className="relative space-y-0">
+            {/* Timeline vertical line */}
+            <div className="absolute left-[15px] top-2 bottom-2 w-px bg-app-border" aria-hidden="true" />
+
+            <div className="space-y-3">
+              {recentActivity.map((b, idx) => {
+                const isSent = b.status === "sent";
+                const isFailed = b.status === "failed";
+                const isSending = b.status === "sending";
+                const Icon = isSent ? CheckCircle2 : isFailed ? XCircle : isSending ? RefreshCw : Send;
+                const iconColor = isSent ? "text-app-success" : isFailed ? "text-app-danger" : isSending ? "text-app-info" : "text-app-text-subtle";
+                const bgColor = isSent ? "bg-app-success-muted" : isFailed ? "bg-app-danger-muted" : isSending ? "bg-app-info-muted" : "bg-app-card-hover";
+                return (
+                  <div key={b.id} className="flex items-start gap-3">
+                    {/* Timeline dot */}
+                    <div className={cn(
+                      "relative z-10 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-2 border-app-bg",
+                      bgColor
+                    )}>
+                      <Icon className={cn("h-3.5 w-3.5", iconColor, isSending && "animate-spin")} aria-hidden="true" />
+                    </div>
+
+                    {/* Content card */}
+                    <div className="min-w-0 flex-1 rounded-xl border border-app-border bg-app-card/60 px-3 py-2.5 transition-colors hover:bg-app-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-app-text">
+                            {b.message || "(내용 없음)"}
+                          </p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-app-text-muted">
+                            <span className="inline-flex items-center gap-0.5">
+                              <MessageSquare className="h-2.5 w-2.5" aria-hidden="true" />
+                              {b.recipients.length}명
+                            </span>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                              {formatRelativeTime(b.createdAt)}
+                            </span>
+                            {b.scheduledAt && (
+                              <>
+                                <span>·</span>
+                                <Badge tone="info" className="text-[9px] px-1 py-0">예약</Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Badge tone={isSent ? "success" : isFailed ? "danger" : isSending ? "info" : "neutral"} className="shrink-0 text-[10px]">
+                          {b.status === "sent" ? "완료" : b.status === "failed" ? "실패" : b.status === "sending" ? "진행" : b.status === "pending" ? "대기" : b.status}
+                        </Badge>
+                      </div>
+                      {b.errorMessage && (
+                        <p className="mt-1 text-[10px] text-app-danger line-clamp-1">{b.errorMessage}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </Panel>

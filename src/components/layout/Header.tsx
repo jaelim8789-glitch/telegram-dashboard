@@ -1,10 +1,11 @@
 "use client";
 
-import { LogOut, Settings } from "lucide-react";
+import { ExternalLink, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { FullscreenToggle } from "@/components/ui/FullscreenToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
@@ -74,6 +75,17 @@ export function Header() {
           <span className="status-dot online" />
           <span className="text-xs text-app-text-muted hidden sm:inline">Online</span>
         </div>
+
+        <Link
+          href="/changelog"
+          className="hidden sm:flex h-8 items-center gap-1 rounded-lg px-2.5 text-[11px] font-medium text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+          title="변경 사항"
+        >
+          <ExternalLink className="h-3 w-3" />
+          변경사항
+        </Link>
+
+        <FullscreenToggle />
 
         <ThemeToggle />
 

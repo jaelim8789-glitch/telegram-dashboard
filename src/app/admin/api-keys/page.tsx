@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Copy, Key, KeyRound, Plus, RefreshCw, Shield, Trash2 } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
-import { Field, Input } from "@/components/ui/Field";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -19,17 +19,42 @@ import type { ApiKey } from "@/lib/api";
 
 import { formatDateTime } from "@/lib/formatTime";
 
+const PLAN_LABEL: Record<string, string> = {
+  free: "Free",
+  pro: "Pro",
+  team: "Team",
+  lifetime: "Lifetime",
+};
+
+const PLAN_OPTIONS = [
+  { value: "free", label: "Free (1계정, 하루 100회)" },
+  { value: "pro", label: "Pro (10계정, 하루 5,000회)" },
+  { value: "team", label: "Team (50계정, 하루 50,000회)" },
+] as const;
+
 function ApiKeysContent() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [plan, setPlan] = useState<"free" | "pro" | "team">("free");
+  const [maxAccounts, setMaxAccounts] = useState<number>(1);
+  const [dailyLimit, setDailyLimit] = useState<number>(100);
   const [creating, setCreating] = useState(false);
   const [justCreatedKey, setJustCreatedKey] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Set default limits when plan changes
+  useEffect(() => {
+    switch (plan) {
+      case "free": setMaxAccounts(1); setDailyLimit(100); break;
+      case "pro": setMaxAccounts(10); setDailyLimit(5000); break;
+      case "team": setMaxAccounts(50); setDailyLimit(50000); break;
+    }
+  }, [plan]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,7 +76,7 @@ function ApiKeysContent() {
     setCreating(true);
     setError(null);
     try {
-      const created = await api.createApiKey(name.trim());
+      const created = await api.createApiKey({ name: name.trim(), plan, maxAccounts, dailyLimit });
       setJustCreatedKey(created.key);
       setName("");
       await load();
@@ -121,22 +146,53 @@ function ApiKeysContent() {
             새 API 키 발급
           </div>
         }
-        description="외부 프로그램/스크립트가 X-API-Key 헤더로 사용할 키입니다."
+        description="외부 프로그램/스크립트가 X-API-Key 헤더로 사용할 키입니다. 플랜별 제한을 설정할 수 있습니다."
       >
-        <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Field label="키 이름">
+        <form onSubmit={handleCreate} className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <div className="sm:col-span-2">
+              <Field label="키 이름">
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="예: 외부 연동용"
+                  required
+                />
+              </Field>
+            </div>
+            <div>
+              <Field label="플랜">
+                <Select value={plan} onChange={(e) => setPlan(e.target.value as "free" | "pro" | "team")}>
+                  {PLAN_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="최대 계정 수">
               <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="예: 외부 연동용"
-                required
+                type="number"
+                min={1}
+                value={maxAccounts}
+                onChange={(e) => setMaxAccounts(Number(e.target.value))}
+              />
+            </Field>
+            <Field label="일일 API 호출 제한">
+              <Input
+                type="number"
+                min={0}
+                value={dailyLimit}
+                onChange={(e) => setDailyLimit(Number(e.target.value))}
               />
             </Field>
           </div>
-          <Button type="submit" variant="primary" loading={creating} disabled={creating || !name.trim()}>
-            <Key className="h-3.5 w-3.5" /> 발급
-          </Button>
+          <div className="flex justify-end">
+            <Button type="submit" variant="primary" loading={creating} disabled={creating || !name.trim()}>
+              <Key className="h-3.5 w-3.5" /> 발급
+            </Button>
+          </div>
         </form>
 
         {justCreatedKey && (
@@ -215,10 +271,12 @@ function ApiKeysContent() {
                       <Badge tone={k.isActive ? "success" : "neutral"}>
                         {k.isActive ? "활성" : "비활성"}
                       </Badge>
+                      <Badge tone="info">{PLAN_LABEL[k.plan] ?? k.plan}</Badge>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-app-text-muted">
                       <code className="font-mono text-app-text-subtle">{k.maskedKey}</code>
                       <span>생성 {formatDateTime(k.createdAt)}</span>
+                      <span>계정 {k.maxAccounts}개 · 일일 {k.dailyLimit.toLocaleString()}회</span>
                       {k.lastUsed && <span>· 마지막 사용 {formatDateTime(k.lastUsed)}</span>}
                       {!k.lastUsed && <span className="text-app-text-subtle">· 사용 기록 없음</span>}
                     </div>

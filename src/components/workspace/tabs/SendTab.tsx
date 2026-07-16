@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning,
+  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle,
+  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -19,17 +19,28 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
 import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
+import { RuntimeManager } from "@/lib/runtimeManager";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import {
   RECURRING_INTERVALS, NORMAL_DELAY_OPTIONS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
-  type Broadcast, type BroadcastStatus, type Group,
+  type Broadcast, type BroadcastStatus, type Group, type GroupType,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
+import {
+  loadTemplates, saveTemplate as persistTemplate,
+  deleteTemplate as removeTemplate,
+  toggleTemplateFavorite,
+  TEMPLATE_VARIABLES,
+  type MessageTemplate,
+} from "@/lib/messageTemplates";
+import { MessagePreviewModal } from "@/components/workspace/MessagePreviewModal";
+import { Modal } from "@/components/ui/Modal";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -43,6 +54,18 @@ const POLL_INTERVAL_MS = 3000;
 const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
 type HistoryFilter = BroadcastStatus | "all" | "recurring";
+
+// Mirrors GroupTab's type taxonomy so a group/channel filters identically in both places.
+const TYPE_LABEL: Record<GroupType, string> = {
+  group: "그룹",
+  megagroup: "슈퍼그룹",
+  channel: "채널",
+};
+const TYPE_ICON: Record<GroupType, typeof Users> = {
+  group: Users,
+  megagroup: Users2,
+  channel: Megaphone,
+};
 
 const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed", "cancelled"];
 
@@ -262,6 +285,24 @@ function HistoryRow({
           )}
         </div>
 
+        {/* Progress bar */}
+        <div className="mt-2 w-full">
+          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-app-border/50" role="progressbar"
+            aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={isSending ? undefined : isSent ? 100 : isFailed ? 0 : 0}
+            aria-label={isSending ? "발송 진행 중" : isSent ? "발송 완료" : isFailed ? "발송 실패" : "대기 중"}>
+            {isSending ? (
+              <div className="h-full w-full animate-pulse rounded-full bg-app-info" style={{ animationDuration: '1.5s' }} />
+            ) : isSent ? (
+              <div className="h-full w-full rounded-full bg-app-success" />
+            ) : isFailed ? (
+              <div className="h-full w-3/4 rounded-full bg-app-danger" />
+            ) : (
+              <div className="h-full w-1/3 rounded-full bg-app-text-subtle/30" />
+            )}
+          </div>
+        </div>
+
         {/* Failure action hint */}
         {isFailed && failureInfo && (
           <div className="mt-1.5 flex items-center gap-2 text-[11px]">
@@ -328,6 +369,10 @@ export function SendTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
 
+  // ── RuntimeManager 캐시에서 데이터 즉시 로드 ──
+  const { groups: cachedGroups, broadcasts: cachedBroadcasts } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
+
   const groups = useDashboardStore((s) => s.sendGroups);
   const groupsLoading = useDashboardStore((s) => s.sendGroupsLoading);
   const setGroups = useDashboardStore((s) => s.setSendGroups);
@@ -358,8 +403,8 @@ export function SendTab() {
     try {
       const stored = localStorage.getItem(savedGroupStorageKey);
       if (stored) {
-        const parsed: string[] = JSON.parse(stored);
-        setSavedSendGroupIds(parsed);
+        const parsed = JSON.parse(stored);
+        setSavedSendGroupIds(Array.isArray(parsed) ? parsed : []);
       } else {
         setSavedSendGroupIds([]);
       }
@@ -367,8 +412,12 @@ export function SendTab() {
   }, [savedGroupStorageKey]);
 
   useEffect(() => {
-    if (!savedGroupStorageKey || !groups.length) return;
+    if (!savedGroupStorageKey) return;
+    // groups가 아직 로드되지 않았으면(savedSendGroupIds와 groups를 매칭할 수 없으면)
+    // savedSendGroupIds를 그대로 유지하고 groups 로드를 기다림
+    if (!groups.length) return;
     setSavedSendGroupIds((prev) => {
+      if (prev.length === 0) return prev;
       const valid = prev.filter((id) => groups.some((g) => g.id === id));
       if (valid.length !== prev.length) {
         localStorage.setItem(savedGroupStorageKey, JSON.stringify(valid));
@@ -392,6 +441,7 @@ export function SendTab() {
 
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const [typeFilter, setTypeFilter] = useState<GroupType | "all" | "saved">("all");
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
@@ -401,6 +451,12 @@ export function SendTab() {
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -416,6 +472,13 @@ export function SendTab() {
   const handleReuse = useCallback((b: Broadcast) => {
     reuseBroadcast(b);
     setInlineButtons(b.inlineButtons?.filter((btn) => btn.label && btn.url) ?? []);
+    if (b.replyToMessageId != null) {
+      setReplyMacroEnabled(true);
+      setReplyToMessageId(String(b.replyToMessageId));
+    } else {
+      setReplyMacroEnabled(false);
+      setReplyToMessageId("");
+    }
   }, [reuseBroadcast]);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
@@ -423,7 +486,21 @@ export function SendTab() {
   const [historyRefreshing, setHistoryRefreshing] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const HISTORY_FILTER_KEY = "telemon-history-filter";
+
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>(() => {
+    try {
+      const saved = localStorage.getItem(HISTORY_FILTER_KEY);
+      if (saved && FILTER_ORDER.includes(saved as HistoryFilter)) return saved as HistoryFilter;
+    } catch { /* ignore */ }
+    return "all";
+  });
+
+  // Persist filter to localStorage on change
+  const saveHistoryFilter = useCallback((f: HistoryFilter) => {
+    setHistoryFilter(f);
+    try { localStorage.setItem(HISTORY_FILTER_KEY, f); } catch { /* ignore */ }
+  }, []);
   const [bgPollTick, setBgPollTick] = useState(0);
 
   const selectedRecipients = useMemo(
@@ -435,12 +512,28 @@ export function SendTab() {
   const { toast } = useToast();
   const draftRestoredRef = useRef(false);
   const isInitialMount = useRef(true);
+  const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
+  const replyIdInputRef = useRef<HTMLInputElement>(null);
 
   // ── Recent recipient sets ──
   useEffect(() => {
     setRecentSets(getRecentRecipientSets().slice(0, 3));
   }, []);
+
+  // Toggling "답장으로 보내기" removes the (much taller) 발송 방식 section above the
+  // checkbox, shortening the panel enough that the browser doesn't reflow scroll
+  // position to match — the newly-revealed 메시지 ID input can render above the
+  // current viewport, out of reach of a real click even though it's technically
+  // "visible" in the DOM. Bring it on-screen and focus it explicitly instead.
+  useEffect(() => {
+    if (!replyMacroEnabled) return;
+    const id = window.requestAnimationFrame(() => {
+      replyIdInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      replyIdInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [replyMacroEnabled]);
 
   // ── Draft persistence: auto-save on every meaningful state change ──
   useEffect(() => {
@@ -516,43 +609,103 @@ export function SendTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId, accounts.length]);
 
+  // ── Template library ──
+  function refreshTemplates() {
+    setTemplates(loadTemplates());
+  }
+
+  useEffect(() => { refreshTemplates(); }, []);
+
+  function handleSaveTemplate() {
+    if (!message.trim()) {
+      toast("error", "템플릿으로 저장할 메시지 내용을 입력하세요.");
+      return;
+    }
+    if (!saveTemplateName.trim()) return;
+    persistTemplate(saveTemplateName.trim(), message);
+    refreshTemplates();
+    setSaveTemplateDialogOpen(false);
+    setSaveTemplateName("");
+    toast("success", `"${saveTemplateName.trim()}" 템플릿이 저장되었습니다.`);
+  }
+
+  function handleLoadTemplate(tpl: MessageTemplate) {
+    setMessage(tpl.content);
+    setTemplateLibraryOpen(false);
+    toast("info", `"${tpl.name}" 템플릿을 불러왔습니다.`);
+  }
+
+  function handleInsertVariable(variable: string) {
+    useDashboardStore.setState({ sendMessage: message + variable });
+    toast("info", `변수 ${variable}를 추가했습니다.`);
+  }
+
+  function handleDeleteTemplate(id: string) {
+    removeTemplate(id);
+    refreshTemplates();
+  }
+
+  function handleToggleTemplateFavorite(id: string) {
+    toggleTemplateFavorite(id);
+    refreshTemplates();
+  }
+
+  const filteredTemplates = useMemo(() => {
+    const query = templateSearch.trim().toLowerCase();
+    const result = query
+      ? templates.filter((t) => t.name.toLowerCase().includes(query) || t.content.toLowerCase().includes(query))
+      : templates;
+    return [...result].sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [templates, templateSearch]);
+
+  // ── 캐시에서 그룹 데이터를 즉시 로드 (API 호출 없음) ──
   async function loadGroups(accountId: string) {
-    setGroupsLoading(true);
-    setGroupsError(null);
-    try {
-      setGroups(await api.fetchGroups(accountId));
-    } catch (err) {
-      setGroups([]);
-      setGroupsError(err instanceof Error ? err.message : "그룹 목록을 불러오지 못했습니다.");
-    } finally {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
       setGroupsLoading(false);
+      setGroupsError(null);
+    } else {
+      setGroupsLoading(true);
+      runtimeActions.refreshGroups(accountId);
     }
   }
 
+  // 일반 히스토리 로드: 캐시 우선
   async function loadHistory(accountId: string, silent = false) {
     if (silent) {
-      try {
-        const logs = await api.fetchLogs({ accountId });
-        setHistory(logs);
-      } catch { /* silent refresh */ }
+      try { setHistory(cachedBroadcasts); } catch { /* silent */ }
       return;
     }
-    setHistoryLoading(true);
+    if (cachedBroadcasts.length > 0) {
+      setHistory(cachedBroadcasts);
+      setHistoryLoading(false);
+    } else {
+      setHistoryLoading(true);
+      runtimeActions.refreshBroadcasts(accountId).finally(() => {
+        setHistory(RuntimeManager.getInstance().getBroadcasts(accountId));
+        setHistoryLoading(false);
+      });
+    }
+  }
+
+  // In-flight 브로드캐스트 실시간 폴링: 직접 API 호출 (캐시 bypass)
+  async function pollInFlightBroadcasts(accountId: string) {
     try {
       const logs = await api.fetchLogs({ accountId });
       setHistory(logs);
-    } catch {
-      setHistory([]);
-    } finally {
-      setHistoryLoading(false);
-    }
+    } catch { /* silent */ }
   }
 
   // Poll while anything is pending/sending for real-time status updates.
+  // In-flight 상태일 때는 캐시를 우회하여 직접 API 호출 (3초 간격 실시간 갱신)
   useEffect(() => {
     if (pollTimer.current) { clearTimeout(pollTimer.current); pollTimer.current = null; }
     if (!selectedAccountId || !history.some(isBroadcastInFlight)) return;
-    pollTimer.current = setTimeout(() => { loadHistory(selectedAccountId, true); }, POLL_INTERVAL_MS);
+    pollTimer.current = setTimeout(() => { pollInFlightBroadcasts(selectedAccountId); }, POLL_INTERVAL_MS);
     return () => { if (pollTimer.current) clearTimeout(pollTimer.current); };
   }, [history, selectedAccountId]);
 
@@ -562,7 +715,7 @@ export function SendTab() {
     if (!selectedAccountId) return;
     historyPollTimer.current = setTimeout(() => { loadHistory(selectedAccountId, true); setBgPollTick((t) => t + 1); }, HISTORY_POLL_INTERVAL_MS);
     return () => { if (historyPollTimer.current) clearTimeout(historyPollTimer.current); };
-  }, [bgPollTick, selectedAccountId]);
+  }, [bgPollTick, selectedAccountId, loadHistory]);
 
   async function handleManualRefresh() {
     if (!selectedAccountId || historyRefreshing) return;
@@ -577,35 +730,94 @@ export function SendTab() {
   }, []);
 
   useEffect(() => {
-    clearSendDraft();
+    if (!mountGuardRef.current) {
+      clearSendDraft();
+      setIsScheduled(false); setScheduledAtLocal("");
+      setIsRecurring(false); setRecurringInterval(60);
+      setDeliveryMode("normal");
+      setReplyMacroEnabled(false); setReplyToMessageId("");
+      setSearch("");
+    }
     setSubmitError(null);
     setSubmitNotice(null);
-    setHistoryFilter("all");
-    setIsScheduled(false); setScheduledAtLocal("");
-    setIsRecurring(false); setRecurringInterval(60);
-    setDeliveryMode("normal");
-    setReplyMacroEnabled(false); setReplyToMessageId("");
-    setSearch("");
-    if (selectedAccountId) { loadGroups(selectedAccountId); loadHistory(selectedAccountId); }
-    else { setGroups([]); setHistory([]); }
+    saveHistoryFilter("all");
+    if (selectedAccountId) {
+      // 캐시에서 즉시 로드
+      const manager = RuntimeManager.getInstance();
+      const cachedGroups = manager.getGroups(selectedAccountId);
+      if (cachedGroups.length > 0) {
+        setGroups(cachedGroups);
+        setGroupsLoading(false);
+      } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setGroups([]);
+        setGroupsLoading(true);
+        runtimeActions.refreshGroups(selectedAccountId);
+      }
+      const cachedBroadcasts = manager.getBroadcasts(selectedAccountId);
+      if (cachedBroadcasts.length > 0) {
+        setHistory(cachedBroadcasts);
+        setHistoryLoading(false);
+      } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setHistory([]);
+        setHistoryLoading(true);
+        runtimeActions.refreshBroadcasts(selectedAccountId);
+      }
+    } else { setGroups([]); setHistory([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId]);
+
+  // Clear the mount guard after all mount effects have settled.
+  // Using setTimeout(0) ensures this runs after ALL synchronous re-renders
+  // triggered by programmatic account switches in the draft restoration effect,
+  // so that the guard protects all Effect 7 fires during the mount cycle.
+  useEffect(() => {
+    const timer = setTimeout(() => { mountGuardRef.current = false; }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 캐시 업데이트 시 로컬 상태 동기화 (백그라운드 fetch 완료 후)
+  useEffect(() => {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
+      setGroupsLoading(false);
+    }
+  }, [cachedGroups]);
+
+  useEffect(() => {
+    if (cachedBroadcasts.length > 0) {
+      setHistory(cachedBroadcasts);
+      setHistoryLoading(false);
+    }
+  }, [cachedBroadcasts]);
 
   function handleAddTag(groupId: string) {
     const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");
     if (tag) addTag(groupId, tag);
   }
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: groups.length, saved: savedSendGroupIds.length };
+    for (const g of groups) counts[g.type] = (counts[g.type] ?? 0) + 1;
+    return counts;
+  }, [groups, savedSendGroupIds]);
+
   const visibleGroups = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const filtered = query
+    let filtered = query
       ? groups.filter((g) => g.title.toLowerCase().includes(query) || g.id.toLowerCase().includes(query))
       : groups;
+    if (typeFilter === "saved") {
+      filtered = filtered.filter((g) => savedSendGroupIds.includes(g.id));
+    } else if (typeFilter !== "all") {
+      filtered = filtered.filter((g) => g.type === typeFilter);
+    }
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     else if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
     return sorted;
-  }, [groups, search, sortMode, isFavorite]);
+  }, [groups, search, sortMode, isFavorite, typeFilter, savedSendGroupIds]);
 
   // visibleGroups에 태그 필터 적용
   const filteredByTag = useMemo(() => {
@@ -630,23 +842,30 @@ export function SendTab() {
     if (historyFilter !== "all") return null;
     const groups: { label: string; items: Broadcast[] }[] = [];
 
-    const inFlight = history.filter((h) => h.status === "sending" || h.status === "pending");
+    // 1. 진행 중 — sending/pending (scheduled 제외)
+    const inFlight = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt));
     if (inFlight.length > 0) groups.push({ label: "진행 중", items: inFlight });
 
+    // 2. 예약됨 — pending + scheduledAt
+    const scheduled = history.filter((h) => h.status === "pending" && h.scheduledAt);
+    if (scheduled.length > 0) groups.push({ label: "예약됨", items: scheduled });
+
+    // 3. 오늘 완료 — 최근 5건만 (나머지는 필터로 조회)
     const todays = history.filter((h) => {
       if (h.status === "sending" || h.status === "pending") return false;
       const d = new Date(`${h.createdAt}Z`);
       const today = new Date();
       return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-    }).slice(0, 20);
-    if (todays.length > 0) groups.push({ label: "오늘", items: todays });
+    }).slice(0, 5);
+    if (todays.length > 0) groups.push({ label: "오늘 완료", items: todays });
 
+    // 4. 이전 — 최근 10건만 (나머지는 필터로 조회)
     const older = history.filter((h) => {
       if (h.status === "sending" || h.status === "pending") return false;
       const d = new Date(`${h.createdAt}Z`);
       const today = new Date();
       return !(d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear());
-    }).slice(0, 50);
+    }).slice(0, 10);
     if (older.length > 0) groups.push({ label: "이전", items: older });
 
     return groups.length > 0 ? groups : null;
@@ -706,9 +925,8 @@ export function SendTab() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
-    const hasMessage = replyMacroEnabled ? !!replyToMessageId.trim() : message.trim().length > 0;
-    if (!hasMessage) {
-      setSubmitError(replyMacroEnabled ? "답장할 메시지 ID를 입력하세요." : "메시지 내용을 입력하세요.");
+    if (!message.trim()) {
+      setSubmitError("메시지 내용을 입력하세요.");
       return;
     }
     if (isScheduled && !scheduledAtLocal) return;
@@ -719,16 +937,15 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
-      const mode = replyMacroEnabled ? "reply" : deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
-        message: replyMacroEnabled ? "" : message.trim(),
+        message: message.trim(),
         recipients: selectedRecipientIds,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
-        deliveryMode: mode,
-        delaySeconds: mode === "normal" ? normalDelaySeconds : undefined,
+        deliveryMode,
+        delaySeconds: deliveryMode === "normal" ? normalDelaySeconds : undefined,
         replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
         inlineButtons: inlineButtons.filter((b) => b.label.trim() && b.url.trim()).length > 0
           ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
@@ -738,7 +955,7 @@ export function SendTab() {
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
-      const modeLabel = mode === "cycle" ? "사이클 발송" : mode === "bulk" ? "전체 즉시 발송" : mode === "reply" ? "답장" : "발송";
+      const modeLabel = deliveryMode === "cycle" ? "사이클 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
       if (isRecurring) {
         const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
         setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
@@ -832,7 +1049,7 @@ export function SendTab() {
   }
 
   const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && (replyMacroEnabled ? replyToMessageId.trim().length > 0 : message.trim().length > 0) && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -958,6 +1175,33 @@ export function SendTab() {
                 )}
               </div>
 
+              {/* Type filter chips — same taxonomy (그룹/슈퍼그룹/채널) and 발송그룹 as the 그룹 tab */}
+              {!groupsLoading && groups.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  <button type="button" onClick={() => setTypeFilter("all")}
+                    className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === "all" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                    <Filter className="h-3 w-3" /> 전체 <span className="ml-0.5 opacity-70">{typeCounts.all ?? 0}</span>
+                  </button>
+                  {(["group", "megagroup", "channel"] as GroupType[]).map((t) => {
+                    const count = typeCounts[t] ?? 0;
+                    if (count === 0) return null;
+                    const Icon = TYPE_ICON[t];
+                    return (
+                      <button key={t} type="button" onClick={() => setTypeFilter(t)}
+                        className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === t ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                        <Icon className="h-3 w-3" /> {TYPE_LABEL[t]} <span className="ml-0.5 opacity-70">{count}</span>
+                      </button>
+                    );
+                  })}
+                  {typeCounts.saved > 0 && (
+                    <button type="button" onClick={() => setTypeFilter("saved")}
+                      className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", typeFilter === "saved" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                      <SendIcon className="h-3 w-3" /> 발송그룹 <span className="ml-0.5 opacity-70">{typeCounts.saved}</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Tag filter chips */}
               {allTags.length > 0 && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
@@ -1069,37 +1313,135 @@ export function SendTab() {
             )}
 
             {/* Message */}
-            {replyMacroEnabled ? (
-              <>
-                <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                  <Field label="답장할 메시지 ID">
-                    <input type="number" value={replyToMessageId}
-                      onChange={(e) => setReplyToMessageId(e.target.value)}
-                      placeholder="예: 12345"
-                      min="1"
-                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
-                  </Field>
-                  <div className="mt-2">
-                    <Field label="파일 첨부 (선택)">
-                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-                        onChange={(e) => { const f = e.target.files?.[0] ?? null; setImageFile(f); }}
-                        className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
-                    </Field>
-                  </div>
+            <Field label="메시지 내용">
+              <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
+                placeholder="발송할 메시지를 입력하세요." required />
+            </Field>
+            {/* Template library toolbar */}
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => { refreshTemplates(); setTemplateLibraryOpen(!templateLibraryOpen); }}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+              >
+                <Copy className="h-3 w-3" /> 템플릿
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSaveTemplateName(""); setSaveTemplateDialogOpen(true); }}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+              >
+                <Plus className="h-3 w-3" /> 현재 메시지 저장
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!message.trim()}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Eye className="h-3 w-3" /> 미리보기
+              </button>
+              <span className="mx-1 h-3 w-px bg-app-border" />
+              {TEMPLATE_VARIABLES.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => handleInsertVariable(v.key)}
+                  title={v.label}
+                  className="rounded-md bg-app-card-hover px-1.5 py-0.5 font-mono text-[10px] text-app-info hover:bg-app-info-muted/30 transition-colors"
+                >
+                  {v.key}
+                </button>
+              ))}
+            </div>
+
+            {/* Template library dropdown */}
+            {templateLibraryOpen && (
+              <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-2">
+                {/* Search inside template library */}
+                <div className="relative">
+                  <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
+                  <input
+                    type="text"
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
+                    placeholder="템플릿 검색..."
+                    className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-7 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none focus:border-app-primary/60 transition-colors"
+                  />
+                  {templateSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTemplateSearch("")}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded text-app-text-subtle hover:text-app-text"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
-              </>
-            ) : (
-              <>
-                <Field label="메시지 내용">
-                  <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
-                    placeholder="발송할 메시지를 입력하세요." required />
+
+                {filteredTemplates.length > 0 ? (
+                  <div className="max-h-48 space-y-0.5 overflow-y-auto">
+                    {filteredTemplates.map((tpl) => (
+                      <div key={tpl.id} className="group flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTemplateFavorite(tpl.id)}
+                          className={`shrink-0 flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                            tpl.isFavorite
+                              ? "text-app-warning hover:text-app-warning/70"
+                              : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning"
+                          }`}
+                          title={tpl.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleLoadTemplate(tpl)}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
+                          <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
+                          title="삭제"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-app-text-subtle italic">
+                    {templates.length === 0
+                      ? "저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요."
+                      : "일치하는 템플릿이 없습니다."}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Reply Message ID (only shown when reply is enabled — additional field, not a replacement) */}
+            {replyMacroEnabled && (
+              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+                <Field label="답장할 메시지 ID">
+                  <input ref={replyIdInputRef} type="number" value={replyToMessageId}
+                    onChange={(e) => setReplyToMessageId(e.target.value)}
+                    placeholder="예: 12345"
+                    min="1"
+                    className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                 </Field>
-                <Field label="이미지 (선택)">
-                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
-                </Field>
-              </>
+                {!replyToMessageId.trim() && (
+                  <p className="mt-1.5 text-xs text-app-text-muted">
+                    메시지 ID를 입력해야 답장 모드가 활성화됩니다.
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Inline buttons */}
@@ -1244,9 +1586,8 @@ export function SendTab() {
               </p>
             )}
 
-            {/* Delivery Mode Selector — pacing modes don't apply to a single reply send */}
-            {!replyMacroEnabled && (
-              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+            {/* Delivery Mode Selector */}
+            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
                   <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
                   발송 방식
@@ -1293,7 +1634,6 @@ export function SendTab() {
                   </label>
                 </div>
               </div>
-            )}
 
             {/* "답장으로 보내기" toggle */}
             <div className="flex items-center gap-2">
@@ -1353,7 +1693,7 @@ export function SendTab() {
               const count = statusCounts[f] ?? 0;
               if (f !== "all" && count === 0) return null;
               return (
-                <button key={f} type="button" onClick={() => setHistoryFilter(f)}
+                <button key={f} type="button" onClick={() => saveHistoryFilter(f)}
                   className={cn(
                     "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
                     historyFilter === f ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text",
@@ -1440,6 +1780,67 @@ export function SendTab() {
         }}
         onCancel={() => { setCancelConfirmOpen(false); setCancelTarget(null); }}
       />
+
+      {/* Message preview modal */}
+      <MessagePreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        message={message}
+        recipientCount={selectedRecipientIds.length}
+        accountPhone={account?.phone}
+        groupName={selectedRecipients.length > 0 ? selectedRecipients[0].title : undefined}
+      />
+
+      {/* Save template dialog */}
+      <Modal
+        open={saveTemplateDialogOpen}
+        onClose={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}
+        title="메시지 템플릿 저장"
+        description="현재 메시지를 템플릿으로 저장합니다. 저장한 템플릿은 나중에 불러와 사용할 수 있습니다."
+        size="sm"
+        footer={
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}>
+              취소
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!saveTemplateName.trim()}
+              onClick={handleSaveTemplate}
+            >
+              저장
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-app-text-muted">템플릿 이름</label>
+            <input
+              type="text"
+              value={saveTemplateName}
+              onChange={(e) => setSaveTemplateName(e.target.value)}
+              placeholder="예: 공지사항 템플릿"
+              className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && saveTemplateName.trim()) {
+                  handleSaveTemplate();
+                }
+              }}
+            />
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-bg/50 p-3">
+            <p className="mb-1 text-[11px] font-medium text-app-text-muted">미리보기</p>
+            <p className="whitespace-pre-wrap break-words text-sm text-app-text leading-relaxed max-h-28 overflow-y-auto">
+              {message.trim() || (
+                <span className="text-app-text-subtle italic">메시지 내용이 비어 있습니다.</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {/* Floating submit button */}
       <motion.div

@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
+import { StatCard } from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -76,47 +77,44 @@ function SummaryHierarchy({
   const sr = summary?.success_rate ?? 0;
   const fc = summary?.failed ?? 0;
   if (ta === 0) return null;
+  const failurePct = ta > 0 ? (fc / ta) * 100 : 0;
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <div className="rounded-xl border border-app-border bg-app-card p-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
-          <BarChart3 className="h-3 w-3" aria-hidden="true" />
-          총 시도
-        </div>
-        <div className="mt-1 text-xl font-bold tracking-tight text-app-text">{fmt(ta)}</div>
-        <div className="text-[10px] text-app-text-subtle">{days}일</div>
-      </div>
-      <div className="rounded-xl border border-app-border bg-app-card p-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
-          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-          성공
-        </div>
-        <div className="mt-1 text-xl font-bold tracking-tight text-app-success">{fmt(summary?.successful ?? 0)}</div>
-        <div className="flex items-center gap-1 text-[10px]">
-          <span className="text-app-text-subtle">{pct(sr)}</span>
-          <Badge tone={successTone(sr)} className="text-[9px] px-1 py-0">
-            {sr >= 90 ? "양호" : sr >= 70 ? "보통" : "저조"}
-          </Badge>
-        </div>
-      </div>
-      <div className="rounded-xl border border-app-border bg-app-card p-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
-          <XCircle className="h-3 w-3" aria-hidden="true" />
-          실패
-        </div>
-        <div className="mt-1 text-xl font-bold tracking-tight text-app-danger">{fmt(fc)}</div>
-        <div className="text-[10px] text-app-text-subtle">{fc > 0 ? `${((fc / ta) * 100).toFixed(1)}%` : "0%"}</div>
-      </div>
-      <div className="rounded-xl border border-app-border bg-app-card p-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
-          <TrendingUp className="h-3 w-3" aria-hidden="true" />
-          성공률
-        </div>
-        <div className="mt-1 text-xl font-bold tracking-tight text-app-text">{pct(sr)}</div>
-        <div className="text-[10px] text-app-text-subtle">
-          {logical ? `${fmt(logical.total_recipients)}명` : `${summary?.successful ?? 0}건`}
-        </div>
-      </div>
+      <StatCard
+        icon={<BarChart3 className="h-5 w-5" aria-hidden="true" />}
+        label="총 시도"
+        value={fmt(ta)}
+        sub={`${days}일`}
+        accent="cyan"
+      />
+      <StatCard
+        icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
+        label="성공"
+        value={fmt(summary?.successful ?? 0)}
+        sub={pct(sr)}
+        trend={sr >= 90 ? "up" : sr >= 70 ? "neutral" : "down"}
+        accent="emerald"
+      >
+        <Badge tone={successTone(sr)} className="text-[9px] px-1 py-0">
+          {sr >= 90 ? "양호" : sr >= 70 ? "보통" : "저조"}
+        </Badge>
+      </StatCard>
+      <StatCard
+        icon={<XCircle className="h-5 w-5" aria-hidden="true" />}
+        label="실패"
+        value={fmt(fc)}
+        sub={`${failurePct.toFixed(1)}%`}
+        trend={failurePct > 15 ? "down" : fc > 0 ? "neutral" : undefined}
+        accent="rose"
+      />
+      <StatCard
+        icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />}
+        label="성공률"
+        value={pct(sr)}
+        sub={logical ? `${fmt(logical.total_recipients)}명` : `${summary?.successful ?? 0}건`}
+        trend={sr >= 90 ? "up" : sr >= 70 ? "neutral" : "down"}
+        accent="indigo"
+      />
     </div>
   );
 }
@@ -536,8 +534,18 @@ export function DeliveryAnalyticsTab() {
 
       {hasData && latency != null && latency.total_measured > 0 && (
         <Panel title={<div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-app-primary" aria-hidden="true" /> 전달 지연</div>}
-          description={`${latency.total_measured}건 측정`}>
+          description={latency.total_measured > 0 ? `${latency.total_measured}건 측정` : "데이터가 수집되지 않았습니다"}>
           <LatencyBlock latency={latency} sources={latBySource} accounts={latByAccount} />
+        </Panel>
+      )}
+
+      {hasData && (latency == null || latency.total_measured === 0) && (
+        <Panel title={<div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-app-text-muted" aria-hidden="true" /> 전달 지연</div>
+        } description="측정 데이터 없음">
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <Gauge className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
+            <p className="text-xs text-app-text-muted">아직 지연 측정 데이터가 없습니다. 메시지가 발송되면 자동으로 수집됩니다.</p>
+          </div>
         </Panel>
       )}
     </div>

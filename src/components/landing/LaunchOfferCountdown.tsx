@@ -59,10 +59,10 @@ export function LaunchOfferCountdown() {
         <div className="relative z-0">
           <div className="badge-premium mx-auto w-fit mb-4">GRAND OPENING · 72H OFFER</div>
           <h2 className="text-2xl sm:text-3xl font-bold text-app-text">
-            Launch offer has ended
+            런칭 특별가가 종료되었습니다
           </h2>
           <p className="mt-3 text-sm text-app-text-secondary">
-            Thank you for your interest. Standard pricing is now in effect.
+            관심 가져주셔서 감사합니다. 지금부터는 정식 요금제가 적용됩니다.
           </p>
         </div>
       ) : (

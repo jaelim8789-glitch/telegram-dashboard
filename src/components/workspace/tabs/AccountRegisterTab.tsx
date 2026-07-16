@@ -8,14 +8,17 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  FileText,
   Phone,
   RefreshCw,
   Send,
   Shield,
   Smartphone,
+  Upload,
   UserPlus,
   Users,
   ArrowLeft,
+  XCircle,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
@@ -313,6 +316,9 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
             onSubmit={handleSubmitForm}
             onReset={resetAll}
           />
+        </div>
+        <div className="border-t border-app-border pt-5">
+          <CsvImportPanel />
         </div>
       </div>
     );
@@ -731,6 +737,232 @@ export function ReAuthPanel({ healthItems, onStartReAuth, submitting }: ReAuthPa
             >
               {submitting ? "재인증 요청 중..." : "재인증 시작"}
             </Button>
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+// ─── CSV Import Panel ────────────────────────────────────────────────
+
+interface CsvRow {
+  phone: string;
+  name: string;
+}
+
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  const re = /("(?:[^"]|"")*"|[^,]*)/g;
+  let match;
+  while ((match = re.exec(line)) !== null) {
+    let field = match[1].trim();
+    if (field.startsWith('"') && field.endsWith('"')) {
+      field = field.slice(1, -1).replace(/""/g, '"');
+    }
+    fields.push(field);
+  }
+  return fields;
+}
+
+function CsvImportPanel() {
+  const registerAccount = useDashboardStore((s) => s.registerAccount);
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [results, setResults] = useState<{ phone: string; name: string; success: boolean; error?: string }[]>([]);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || importing) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let text = ev.target?.result as string;
+      // Strip BOM character (Excel adds this for UTF-8 CSV)
+      text = text.replace(/^\uFEFF/, "");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) {
+        setRows([]);
+        return;
+      }
+      // Always treat col 0 = phone, col 1 = name (regardless of header text)
+      const parsed: CsvRow[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        const phone = cols[0]?.trim().replace(/[^\d+]/g, "") ?? "";
+        const name = cols.length > 1 ? (cols[1]?.trim() ?? "") : "";
+        if (phone) parsed.push({ phone, name });
+      }
+      setRows(parsed);
+      setResults([]);
+      setCurrentIndex(-1);
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleImport() {
+    if (importing || rows.length === 0) return;
+    setImporting(true);
+    setCurrentIndex(0);
+    setResults([]);
+
+    const outcomes: { phone: string; name: string; success: boolean; error?: string }[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      setCurrentIndex(i);
+      const row = rows[i];
+      try {
+        await registerAccount({ phone: row.phone, name: row.name || undefined });
+        outcomes.push({ phone: row.phone, name: row.name, success: true });
+      } catch (err) {
+        outcomes.push({ phone: row.phone, name: row.name, success: false, error: err instanceof Error ? err.message : "실패" });
+      }
+    }
+    setResults(outcomes);
+    setCurrentIndex(-1);
+    setImporting(false);
+  }
+
+  function handleReset() {
+    setRows([]);
+    setResults([]);
+    setCurrentIndex(-1);
+  }
+
+  const successCount = results.filter((r) => r.success).length;
+  const failCount = results.filter((r) => !r.success).length;
+
+  return (
+    <Panel
+      title={<div className="flex items-center gap-2"><Upload className="h-4 w-4 text-app-primary" /> CSV 일괄 계정 가져오기</div>}
+      description="CSV 파일(phone, name)로 여러 계정을 한 번에 등록합니다."
+    >
+      {rows.length === 0 && results.length === 0 && (
+        <div className="space-y-3">
+          <div className="rounded-xl border-2 border-dashed border-app-border bg-app-card/30 px-4 py-6 text-center transition-colors hover:border-app-primary/40">
+            <input
+              type="file"
+              accept=".csv,.txt"
+              onChange={handleFile}
+              className="hidden"
+              id="csv-file-input"
+            />
+            <label htmlFor="csv-file-input" className="cursor-pointer">
+              <FileText className="mx-auto h-8 w-8 text-app-text-muted" />
+              <p className="mt-2 text-sm font-medium text-app-text">CSV 파일 선택</p>
+              <p className="mt-0.5 text-xs text-app-text-muted">
+                첫 번째 열: 전화번호, 두 번째 열: 이름(선택)
+              </p>
+              <p className="text-xs text-app-text-subtle">예: +821012345678,연구용 계정</p>
+            </label>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card/50 px-4 py-3">
+            <p className="text-xs font-medium text-app-text-muted">CSV 형식 안내</p>
+            <ul className="mt-1.5 space-y-1 text-[11px] text-app-text-muted">
+              <li>• 첫 번째 열: 전화번호 (국가코드 포함, 예: +821012345678)</li>
+              <li>• 두 번째 열: 계정 이름 (선택, 컬럼명이 name/이름/별칭 중 하나면 자동 인식)</li>
+              <li>• 헤더 행이 필요합니다 (예: phone,name / 전화번호,이름)</li>
+              <li>• 인코딩: UTF-8 (Excel 저장 시 &quot;CSV UTF-8&quot; 선택)</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {rows.length > 0 && results.length === 0 && (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-app-border bg-app-card/50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-app-primary" />
+              <span className="text-sm font-medium text-app-text">{rows.length}개 계정</span>
+            </div>
+            <div className="mt-2 max-h-32 overflow-y-auto text-xs text-app-text-muted">
+              {rows.slice(0, 10).map((r, i) => (
+                <div key={i} className="flex gap-2 py-0.5">
+                  <span className="font-mono text-app-text">{r.phone}</span>
+                  {r.name && <span className="text-app-text-subtle">({r.name})</span>}
+                </div>
+              ))}
+              {rows.length > 10 && (
+                <p className="pt-1 text-app-text-subtle">...외 {rows.length - 10}개</p>
+              )}
+            </div>
+          </div>
+
+          {importing && currentIndex >= 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-app-text-muted">
+                  등록 중... ({currentIndex + 1}/{rows.length})
+                </span>
+                <span className="font-medium text-app-text">
+                  {Math.round(((currentIndex + 1) / rows.length) * 100)}%
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-app-border">
+                <div
+                  className="h-full rounded-full bg-app-primary transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / rows.length) * 100}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-app-text-muted">
+                {rows[currentIndex].phone} 등록 중...
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={handleReset} disabled={importing}>
+              <XCircle className="mr-1 h-4 w-4" /> 취소
+            </Button>
+            <Button type="button" variant="primary" onClick={handleImport} loading={importing}>
+              <Upload className="mr-1 h-4 w-4" /> 일괄 등록 시작
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {results.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2">
+              <CheckCircle2 className="h-4 w-4 text-app-success" />
+              <span className="text-xs font-medium text-app-success">{successCount}개 성공</span>
+            </div>
+            {failCount > 0 && (
+              <div className="flex items-center gap-1.5 rounded-xl border border-app-danger/20 bg-app-danger-muted px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-app-danger" />
+                <span className="text-xs font-medium text-app-danger">{failCount}개 실패</span>
+              </div>
+            )}
+          </div>
+
+          {failCount > 0 && (
+            <div className="max-h-40 space-y-1 overflow-y-auto">
+              {results.filter((r) => !r.success).map((r, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-lg border border-app-danger/10 bg-app-danger-muted/20 px-3 py-2 text-xs">
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-app-danger" />
+                  <div className="min-w-0">
+                    <span className="font-mono text-app-text">{r.phone}</span>
+                    {r.name && <span className="text-app-text-muted"> ({r.name})</span>}
+                    <p className="text-app-danger">{r.error}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button type="button" variant="primary" onClick={handleReset}>
+              <Upload className="mr-1 h-4 w-4" /> 새 파일 가져오기
+            </Button>
+            {failCount > 0 && (
+              <Button type="button" variant="ghost" onClick={() => {
+                const failedRows = rows.filter((r, i) => !results[i]?.success);
+                setRows(failedRows);
+                setResults([]);
+              }}>
+                <RefreshCw className="mr-1 h-4 w-4" /> 실패한 계정만 재시도
+              </Button>
+            )}
           </div>
         </div>
       )}

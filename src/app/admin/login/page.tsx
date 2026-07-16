@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -28,9 +28,10 @@ function AdminLoginForm() {
     try {
       const token = await api.adminLogin(username, password);
       setToken(token);
-      router.replace("/admin/dashboard");
+      router.replace("/app");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인 실패");
+      const message = err instanceof Error ? err.message : "로그인 실패";
+      setError(message.includes("Invalid credentials") ? "아이디 또는 비밀번호가 올바르지 않습니다." : message);
     } finally { setSubmitting(false); }
   }
 
@@ -162,7 +163,7 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         <CheckCircle2 className="h-7 w-7 text-app-success" />
       </div>
       <p className="text-sm text-app-text-secondary">무료 API 키가 발급되었습니다</p>
-      <p className="text-xs text-app-text-muted">24시간 동안 유효합니다. 아래 키를 복사하여 로그인해주세요.</p>
+      <p className="text-xs text-app-text-muted">14일 동안 유효합니다. 아래 키를 복사하여 로그인해주세요.</p>
       <div className="rounded-xl bg-app-surface border border-app-border p-3 relative">
         <code className="break-all text-xs text-app-text font-mono">{apiKey}</code>
       </div>
@@ -188,13 +189,13 @@ function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
         <li>무료 API 키 즉시 발급</li>
       </ol>
       <p className="text-xs text-app-text-muted leading-relaxed">
-        🔑 24시간 동안 모든 기능을 제한 없이 사용할 수 있습니다.<br />
+        🔑 14일 동안 모든 기능을 제한 없이 사용할 수 있습니다.<br />
         결제 정보가 필요하지 않습니다.
       </p>
       {error && <InlineError>{error}</InlineError>}
       <Button onClick={handleStart} disabled={starting} className="flex w-full h-11">
         {starting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {starting ? "시작하는 중..." : "1분 인증 시작 · 24시간 무료"}
+        {starting ? "시작하는 중..." : "1분 인증 시작 · 14일 무료"}
       </Button>
     </div>
   );
@@ -318,7 +319,7 @@ const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: str
 ];
 
 export default function AdminLoginPage() {
-  const [method, setMethod] = useState<AuthMethod>("apikey");
+  const [method, setMethod] = useState<AuthMethod>("admin");
 
   return (
     <div className="relative min-h-screen bg-app-bg flex items-center justify-center px-4 py-10">
