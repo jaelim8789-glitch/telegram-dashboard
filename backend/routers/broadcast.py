@@ -2,23 +2,58 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+import time
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from starlette.responses import JSONResponse
 
 from ..models import Broadcast, CreateBroadcastInput
 from ..runtime_manager import RuntimeManager
 
 router = APIRouter()
 
+# In-memory idempotency store: idempotency_key -> broadcast_id
+# Expires after 24 hours to prevent memory leak.
+_idempotency_store: dict[str, tuple[str, float]] = {}  # key -> (broadcast_id, expires_at)
+_IDEMPOTENCY_TTL = 86400  # 24 hours
+
 
 @router.post("/broadcast", response_model=Broadcast)
-async def create_broadcast(input_data: CreateBroadcastInput):
+async def create_broadcast(input_data: CreateBroadcastInput, request: Request):
     manager = RuntimeManager.get_instance()
+
+    # Idempotency-Key check — prevents duplicate broadcasts on network retry
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if idempotency_key:
+        now = time.time()
+        # Prune expired keys
+        stale = [k for k, v in list(_idempotency_store.items()) if v[1] < now]
+        for k in stale:
+            del _idempotency_store[k]
+
+        if idempotency_key in _idempotency_store:
+            existing_id = _idempotency_store[idempotency_key][0]
+            # Return the already-created broadcast
+            all_broadcasts = await manager.get_broadcasts(limit=500)
+            for b in all_broadcasts:
+                if b.id == existing_id:
+                    return b
+            # Stale entry — remove and proceed normally
+            del _idempotency_store[idempotency_key]
+
     try:
         broadcast = await manager.create_broadcast(input_data)
+        # Record the idempotency key for 24h
+        if idempotency_key:
+            _idempotency_store[idempotency_key] = (broadcast.id, time.time() + _IDEMPOTENCY_TTL)
         return broadcast
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        # On error, clear idempotency key so the frontend can retry
+        if idempotency_key:
+            _idempotency_store.pop(idempotency_key, None)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -99,7 +134,12 @@ async def cancel_broadcast(broadcast_id: str):
                 if not runtime:
                     raise HTTPException(status_code=404, detail="Account runtime not found")
                 cancelled = runtime.broadcast_queue.cancel_broadcast(broadcast_id)
-                if not cancelled:
+                # After cancel_broadcast() — even if it was queued via _cancelled_set —
+                # update the broadcast object's status so the response is consistent.
+                if b.status == "pending":
+                    b.status = "cancelled"
+                    b.cancelled_at = datetime.now(timezone.utc).isoformat()
+                if not cancelled and b.status != "cancelled":
                     raise HTTPException(status_code=404, detail="Broadcast not found in queue")
                 return b
         raise HTTPException(status_code=404, detail="Broadcast not found")

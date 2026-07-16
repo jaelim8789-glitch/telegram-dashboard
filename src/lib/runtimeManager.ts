@@ -468,8 +468,6 @@ export class RuntimeManager {
       const acct = this._accounts.find((a) => a.id === accountId);
       if (acct) cache.account = acct;
       this._caches.set(accountId, cache);
-      // 즉시 prefetch 시작
-      this._prefetchAccount(accountId);
     }
     return cache;
   }

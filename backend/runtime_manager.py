@@ -339,7 +339,7 @@ class RuntimeManager:
         return AutoReplySettings(
             account_id=account_id,
             auto_reply_enabled=runtime.auto_reply.is_enabled(),
-            rules=runtime.auto_reply._rules,
+            rules=list(runtime.auto_reply._rules),  # Defensive copy — prevents mutation leak
         )
 
     async def create_auto_reply_rule(self, account_id: str, body: dict) -> AutoReplyRule:
