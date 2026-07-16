@@ -34,7 +34,7 @@ services:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     ports:
-      - "127.0.0.1:9090:9090"
+      - "9090:9090"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
     container_name: telemon-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SERVER_ROOT_URL=http://localhost:3001
@@ -59,7 +59,7 @@ services:
       - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
-      - "127.0.0.1:3001:3000"
+      - "3001:3000"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
       - ./config/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki
     ports:
-      - "127.0.0.1:3100:3100"
+      - "3100:3100"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -94,9 +94,9 @@ services:
       - ./config/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo-data:/tmp/tempo
     ports:
-      - "127.0.0.1:3200:3200"   # tempo query
-      - "127.0.0.1:4318:4318"   # OTLP HTTP
-      - "127.0.0.1:4317:4317"   # OTLP gRPC
+      - "3200:3200"   # tempo query
+      - "4318:4318"   # OTLP HTTP
+      - "4317:4317"   # OTLP gRPC
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -110,7 +110,7 @@ services:
     volumes:
       - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     ports:
-      - "127.0.0.1:9093:9093"
+      - "9093:9093"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -123,7 +123,7 @@ services:
     volumes:
       - /:/host:ro,rslave
     ports:
-      - "127.0.0.1:9100:9100"
+      - "9100:9100"
     networks:
       - telemon-observability
     restart: unless-stopped

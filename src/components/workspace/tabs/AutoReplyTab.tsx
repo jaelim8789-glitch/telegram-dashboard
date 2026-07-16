@@ -112,24 +112,16 @@ export function AutoReplyTab() {
         setRulesLoading(false);
         setRulesError(null);
       } else {
-        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
-        setRules([]);
+        // 캐시 미스 — RuntimeManager를 통해 cache 갱신 + notify
         setRulesLoading(true);
         RuntimeManager.getInstance().refreshAutoReply(selectedAccountId);
       }
-      if (autoReplyLogs.length > 0) {
-        setLogs(autoReplyLogs);
-        setLogsLoading(false);
-      } else {
-        setLogs([]);
-        setLogsLoading(true);
-      }
+      setLogs(autoReplyLogs);
+      setLogsLoading(false);
     } else {
       setRules([]);
       setLogs([]);
       setEnabled(false);
-      setRulesLoading(false);
-      setLogsLoading(false);
     }
     setToggleError(null);
     setSubmitError(null);

@@ -6,7 +6,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Input, Select } from "@/components/ui/Field";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
@@ -594,27 +594,69 @@ export function LogTab() {
         )}
       </div>
 
+      <div className="mb-3 grid gap-3 xl:grid-cols-[1.2fr_0.8fr_auto]">
+        <Field label="Search" hint="Search messages, errors, accounts, and recipients.">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search logs"
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-app-text-muted">
+            Date
+            <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-app-text-muted">
+            Account
+            <Select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+              <option value="">All</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{getAccountDisplayName(a)}</option>
+              ))}
+            </Select>
+          </label>
+        </div>
+        {summaryStats.total > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-app-text-muted xl:justify-end">
+            {summaryStats.sent > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-success-muted/40 px-1.5 py-0.5 text-app-success">
+                <CheckCircle2 className="h-3 w-3" />{summaryStats.sent}
+              </span>
+            )}
+            {summaryStats.failed > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-danger-muted/40 px-1.5 py-0.5 text-app-danger">
+                <AlertTriangle className="h-3 w-3" />{summaryStats.failed}
+              </span>
+            )}
+            {summaryStats.inFlight > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-info-muted/40 px-1.5 py-0.5 text-app-info">
+                <RefreshCw className="h-3 w-3 animate-spin" />{summaryStats.inFlight}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {selectedLogIds.size > 0 && (
-        <div className="sticky bottom-0 z-20 mb-3 -mx-4 px-4 py-2 rounded-2xl border border-app-border/60 bg-app-card/80 backdrop-blur-xl shadow-lg shadow-black/5 animate-scale-in">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-app-text text-xs">{selectedLogIds.size}건 선택됨</span>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set(visibleLogs.map((log) => log.id)))}>
-              전체 선택
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-xs">
+          <span className="font-medium text-app-text">{selectedLogIds.size} selected</span>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set(visibleLogs.map((log) => log.id)))}>
+            Select visible
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set())}>
+            Clear
+          </Button>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setBulkAction("retry")} disabled={selectedLogs.every((log) => !canRetryFromFailureInfo(log))}>
+              Retry selected
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set())}>
-              선택 해제
+            <Button variant="secondary" size="sm" onClick={() => setBulkAction("send_now")} disabled={selectedLogs.every((log) => log.status === "sent" || log.status === "cancelled")}>
+              Send now
             </Button>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setBulkAction("retry")} disabled={selectedLogs.every((log) => !canRetryFromFailureInfo(log))}>
-                재시도
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setBulkAction("send_now")} disabled={selectedLogs.every((log) => log.status === "sent" || log.status === "cancelled")}>
-                즉시 발송
-              </Button>
-              <Button variant="danger" size="sm" onClick={() => setBulkAction("cancel")} disabled={selectedLogs.every((log) => !isRecurringActive(log))}>
-                반복 취소
-              </Button>
-            </div>
+            <Button variant="danger" size="sm" onClick={() => setBulkAction("cancel")} disabled={selectedLogs.every((log) => !isRecurringActive(log))}>
+              Cancel recurring
+            </Button>
           </div>
         </div>
       )}

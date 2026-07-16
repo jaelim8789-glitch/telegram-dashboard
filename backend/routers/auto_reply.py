@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from ..models import AutoReplyLog, AutoReplyRule, AutoReplySettings
 from ..runtime_manager import RuntimeManager
-from ..auth_middleware import verify_account_ownership, require_feature
 
 router = APIRouter()
 
 
 @router.get("/accounts/{account_id}/auto-reply", response_model=AutoReplySettings)
-async def get_auto_reply_settings(
-    account_id: str,
-    current_user: dict = Depends(verify_account_ownership),
-    _: dict = Depends(require_feature("auto_reply")),
-):
+async def get_auto_reply_settings(account_id: str):
     manager = RuntimeManager.get_instance()
     try:
         return await manager.get_auto_reply_settings(account_id)
@@ -25,12 +20,7 @@ async def get_auto_reply_settings(
 
 
 @router.post("/accounts/{account_id}/auto-reply", response_model=AutoReplyRule)
-async def create_auto_reply_rule(
-    account_id: str,
-    body: dict,
-    current_user: dict = Depends(verify_account_ownership),
-    _: dict = Depends(require_feature("auto_reply")),
-):
+async def create_auto_reply_rule(account_id: str, body: dict):
     manager = RuntimeManager.get_instance()
     try:
         rule = await manager.create_auto_reply_rule(account_id, body)
@@ -42,12 +32,7 @@ async def create_auto_reply_rule(
 
 
 @router.put("/accounts/{account_id}/auto-reply/{rule_id}", response_model=AutoReplyRule)
-async def update_auto_reply_rule(
-    account_id: str,
-    rule_id: str,
-    body: dict,
-    current_user: dict = Depends(verify_account_ownership),
-):
+async def update_auto_reply_rule(account_id: str, rule_id: str, body: dict):
     manager = RuntimeManager.get_instance()
     try:
         rule = await manager.update_auto_reply_rule(account_id, rule_id, body)
@@ -59,11 +44,7 @@ async def update_auto_reply_rule(
 
 
 @router.delete("/accounts/{account_id}/auto-reply/{rule_id}")
-async def delete_auto_reply_rule(
-    account_id: str,
-    rule_id: str,
-    current_user: dict = Depends(verify_account_ownership),
-):
+async def delete_auto_reply_rule(account_id: str, rule_id: str):
     manager = RuntimeManager.get_instance()
     try:
         await manager.delete_auto_reply_rule(account_id, rule_id)
@@ -75,11 +56,7 @@ async def delete_auto_reply_rule(
 
 
 @router.post("/accounts/{account_id}/auto-reply/toggle")
-async def toggle_auto_reply(
-    account_id: str,
-    body: dict,
-    current_user: dict = Depends(verify_account_ownership),
-):
+async def toggle_auto_reply(account_id: str, body: dict):
     enabled = body.get("enabled", False)
     manager = RuntimeManager.get_instance()
     try:
@@ -92,9 +69,6 @@ async def toggle_auto_reply(
 
 
 @router.get("/accounts/{account_id}/auto-reply/logs", response_model=list[AutoReplyLog])
-async def get_auto_reply_logs(
-    account_id: str,
-    current_user: dict = Depends(verify_account_ownership),
-):
+async def get_auto_reply_logs(account_id: str):
     manager = RuntimeManager.get_instance()
     return await manager.get_auto_reply_logs(account_id)

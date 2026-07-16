@@ -540,8 +540,6 @@ async def create_api_key(
 ):
     """Create a new API key. Admin can set plan/limits; regular users get plan defaults."""
     admin = AdminPlatform.get_instance()
-    if body.permissions not in ("read", "write"):
-        raise HTTPException(status_code=400, detail="Invalid API key permissions")
 
     # Check plan limit for API access
     allowed, limit_info = admin.check_usage_limit(
@@ -611,8 +609,6 @@ async def update_api_key(
 ):
     """Update an API key's attributes."""
     admin = AdminPlatform.get_instance()
-    if body.permissions is not None and body.permissions not in ("read", "write"):
-        raise HTTPException(status_code=400, detail="Invalid API key permissions")
     key = admin.update_api_key(
         key_id=key_id,
         name=body.name,
@@ -632,15 +628,10 @@ async def update_api_key(
 @router.delete("/admin/api-keys/{key_id}")
 async def revoke_api_key(
     key_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
 ):
-    """Revoke (deactivate) an API key. Users can revoke their own keys; admins can revoke any."""
+    """Revoke (deactivate) an API key."""
     admin = AdminPlatform.get_instance()
-    is_admin = current_user.get("role") in (Role.ADMIN, Role.SUPER_ADMIN)
-    if not is_admin:
-        key = admin.get_api_key(key_id)
-        if not key or key.get("user_id") != current_user["id"]:
-            raise HTTPException(status_code=404, detail="API key not found")
     admin.revoke_api_key(key_id)
     return {"status": "revoked", "key_id": key_id}
 
@@ -687,14 +678,14 @@ async def reset_api_key_usage(
 # ── Plans ───────────────────────────────────────────────────────────
 
 @router.get("/admin/plans")
-async def list_plans(current_user: dict = Depends(get_current_user)):
+async def list_plans():
     """List all available plans with features and pricing."""
     admin = AdminPlatform.get_instance()
     return admin.list_plans()
 
 
 @router.get("/admin/plans/{plan_name}")
-async def get_plan(plan_name: str, current_user: dict = Depends(get_current_user)):
+async def get_plan(plan_name: str):
     """Get plan details."""
     admin = AdminPlatform.get_instance()
     plan = admin.get_plan(plan_name)
@@ -890,7 +881,7 @@ async def create_invoice(
 # ── Admin Health ────────────────────────────────────────────────────
 
 @router.get("/admin/health")
-async def admin_health(current_user: dict = Depends(get_current_user)):
+async def admin_health():
     """Admin health check endpoint."""
     admin = AdminPlatform.get_instance()
     return {
@@ -899,27 +890,3 @@ async def admin_health(current_user: dict = Depends(get_current_user)):
         "users_count": admin.get_dashboard_stats().get("users", {}).get("total", 0),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-
-
-# ── Beta Key ────────────────────────────────────────────────────────
-
-@router.post("/admin/beta-key")
-async def create_beta_key(current_user: dict = Depends(require_admin)):
-    """Generate an unlimited beta tester API key (admin only)."""
-    admin = AdminPlatform.get_instance()
-    key = admin.create_api_key(
-        user_id=current_user["id"],
-        name="Beta Tester Unlimited",
-        permissions="write",
-        plan="lifetime",
-        feature_flags={
-            "can_export": True,
-            "can_webhook": True,
-            "bulk_operations": True,
-            "sso": True,
-            "white_label": True,
-        },
-        max_accounts=9999,
-        daily_limit=999999,
-    )
-    return key
