@@ -53,7 +53,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   plan: null,
   trialExpiresAt: null,
   accounts: [],
-  accountsLoading: false,
+  accountsLoading: true,
   accountsError: null,
   selectedAccountId: null,
   sendGroups: [],
@@ -140,7 +140,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   setSubscription: (subscriptionStatus, plan, trialExpiresAt) => set({ subscriptionStatus, plan, trialExpiresAt }),
 
   accounts: [],
-  accountsLoading: false,
+  accountsLoading: true,
   accountsError: null,
   selectedAccountId: null,
 
