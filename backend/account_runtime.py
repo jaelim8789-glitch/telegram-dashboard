@@ -1574,8 +1574,10 @@ class AccountRuntime:
         _persist_broadcast(broadcast)
 
         if input_data.scheduled_at:
-            # Schedule for later
-            pass
+            raise LookupError("예약 발송은 아직 지원되지 않습니다. 지금 발송으로 전환해주세요.")
+        if input_data.recurring_interval_minutes:
+            raise LookupError("반복 발송은 아직 지원되지 않습니다.")
+
         else:
             await self.broadcast_queue.enqueue(broadcast)
 

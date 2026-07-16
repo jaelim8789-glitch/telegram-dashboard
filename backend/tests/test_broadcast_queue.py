@@ -224,3 +224,60 @@ def test_persist_broadcast_updates_status(tmp_path):
 
     loaded = _load_broadcasts("acct-1")
     assert loaded[0].status == "sent"
+
+
+def test_create_broadcast_rejects_scheduled_at():
+    """create_broadcast must raise LookupError for scheduled broadcasts."""
+    from backend.account_runtime import AccountRuntime
+    from backend.models import CreateBroadcastInput
+
+    rt = AccountRuntime.__new__(AccountRuntime)
+    rt.account_id = "acct-1"
+    rt._broadcast_store = []
+    rt._max_broadcasts = 500
+
+    import pytest
+    with pytest.raises(LookupError, match="예약 발송은 아직 지원되지 않습니다"):
+        input_data = CreateBroadcastInput(
+            account_id="acct-1",
+            message="hi",
+            recipients=["1"],
+            scheduled_at="2026-07-17T00:00:00Z",
+        )
+        import asyncio
+        asyncio.run(rt.create_broadcast(input_data))
+
+    with pytest.raises(LookupError, match="반복 발송은 아직 지원되지 않습니다"):
+        input_data = CreateBroadcastInput(
+            account_id="acct-1",
+            message="hi",
+            recipients=["1"],
+            recurring_interval_minutes=60,
+        )
+        import asyncio
+        asyncio.run(rt.create_broadcast(input_data))
+
+
+def test_create_broadcast_still_accepts_immediate(monkeypatch):
+    """Immediate broadcast (no scheduled_at, no recurring) must still work."""
+    from backend.account_runtime import AccountRuntime, _persist_broadcast
+    from backend.models import CreateBroadcastInput
+
+    # Suppress DB persistence and broadcast queue in this unit test
+    monkeypatch.setattr("backend.account_runtime._persist_broadcast", lambda b: None)
+
+    rt = AccountRuntime.__new__(AccountRuntime)
+    rt.account_id = "acct-1"
+    rt._broadcast_store = []
+    rt._max_broadcasts = 500
+    # Fake queue that accepts enqueue without doing real work
+    class _FakeQueue:
+        async def enqueue(self, b):
+            pass
+    rt.broadcast_queue = _FakeQueue()
+
+    import asyncio
+    b = asyncio.run(rt.create_broadcast(CreateBroadcastInput(
+        account_id="acct-1", message="hi", recipients=["1"],
+    )))
+    assert b.status == "pending"
