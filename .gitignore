@@ -52,3 +52,8 @@ next-env.d.ts
 __pycache__/  
 *.session  
 data/  
+nul  
+.kilo/  
+*.db  
+e2e/test-results/  
+sessions/*.session  

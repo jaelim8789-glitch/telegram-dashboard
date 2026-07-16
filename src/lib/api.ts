@@ -460,6 +460,8 @@ export interface CreateBroadcastInput {
   delaySeconds?: number;
   replyToMessageId?: number;
   inlineButtons?: { label: string; url: string }[];
+  groupIds?: string[];
+  campaignId?: string;
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -532,6 +534,67 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
 export async function fetchUpcomingBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/scheduler/upcoming");
   return logs.map(toBroadcast);
+}
+
+export async function sendToGroup(input: {
+  accountId: string;
+  message: string;
+  groupIds: string[];
+  scheduledAt?: string;
+  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
+  delaySeconds?: number;
+  inlineButtons?: { label: string; url: string }[];
+  campaignId?: string;
+}): Promise<Broadcast> {
+  return toBroadcast(await request<ApiBroadcast>("/api/broadcast/send-group", {
+    method: "POST",
+    body: JSON.stringify({
+      account_id: input.accountId,
+      message: input.message,
+      group_ids: input.groupIds,
+      scheduled_at: input.scheduledAt ?? null,
+      delivery_mode: input.deliveryMode ?? "normal",
+      delay_seconds: input.delaySeconds ?? null,
+      inline_buttons: input.inlineButtons ?? null,
+      campaign_id: input.campaignId ?? null,
+    }),
+  }));
+}
+
+export async function batchRetryBroadcasts(broadcastIds: string[]): Promise<{ results: { id: string; status: string; error?: string }[] }> {
+  return request("/api/broadcast/batch-retry", {
+    method: "POST",
+    body: JSON.stringify({ broadcast_ids: broadcastIds }),
+  });
+}
+
+export async function fetchSchedulerStatus(): Promise<{
+  tick_interval_seconds: number;
+  next_tick_at: string | null;
+  due_broadcasts_count: number;
+  running_broadcasts_count: number;
+  running_recurring_count: number;
+  running_reply_macros_count: number;
+  scheduler_running: boolean;
+}> {
+  return request("/api/scheduler/status");
+}
+
+export async function fetchBroadcastEstimate(input: {
+  accountId: string;
+  recipientCount: number;
+  deliveryMode: "normal" | "cycle" | "bulk" | "reply";
+  delaySeconds?: number;
+}): Promise<{ estimated_seconds: number; estimated_minutes: number; readable: string }> {
+  return request("/api/broadcast/estimate", {
+    method: "POST",
+    body: JSON.stringify({
+      account_id: input.accountId,
+      recipient_count: input.recipientCount,
+      delivery_mode: input.deliveryMode,
+      delay_seconds: input.delaySeconds ?? null,
+    }),
+  });
 }
 
 let _idempotencyKey: string | null = null;
