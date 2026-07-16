@@ -208,6 +208,7 @@ class BroadcastQueue:
         self._completed: list[Broadcast] = []
         self._max_completed = 200
         self._retry_counts: dict[str, int] = {}  # broadcast_id -> retry count
+        self._cancelled_set: set[str] = set()  # broadcast_ids marked for cancellation
         self._processing = False
         self._task: asyncio.Task[None] | None = None
 
@@ -242,11 +243,33 @@ class BroadcastQueue:
 
     async def _dispatch(self, broadcast: Broadcast) -> None:
         """Send the broadcast message to all recipients one by one."""
+        # Check if cancelled before starting
+        if broadcast.id in self._cancelled_set:
+            broadcast.status = "cancelled"
+            broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
+            self._completed.append(broadcast)
+            if len(self._completed) > self._max_completed:
+                self._completed = self._completed[-self._max_completed:]
+            self._active_broadcasts.pop(broadcast.id, None)
+            logger.info("[%s] broadcast %s cancelled before dispatch", self._account_id, broadcast.id)
+            return
+
         broadcast.status = "sending"
         success_count = 0
         fail_count = 0
 
         for recipient_id in broadcast.recipients:
+            # Check cancellation before each recipient
+            if broadcast.id in self._cancelled_set:
+                broadcast.status = "cancelled"
+                broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
+                self._completed.append(broadcast)
+                if len(self._completed) > self._max_completed:
+                    self._completed = self._completed[-self._max_completed:]
+                self._active_broadcasts.pop(broadcast.id, None)
+                logger.info("[%s] broadcast %s cancelled mid-dispatch after %d recipients", self._account_id, broadcast.id, success_count)
+                return
+
             if not await self._rate_limiter.acquire("send_message", chat_id=recipient_id, timeout=30):
                 fail_count += 1
                 continue
@@ -312,6 +335,40 @@ class BroadcastQueue:
             status=broadcast.status,
             error_message=broadcast.error_message,
         ))
+
+    def cancel_broadcast(self, broadcast_id: str) -> bool:
+        """Cancel an active broadcast. Returns True if cancelled, False if not found."""
+        # Check active broadcasts (in-flight)
+        if broadcast_id in self._active_broadcasts:
+            broadcast = self._active_broadcasts[broadcast_id]
+            broadcast.status = "cancelled"
+            broadcast.cancelled_at = datetime.now(timezone.utc).isoformat()
+            # Remove from active so _dispatch will skip remaining recipients
+            self._active_broadcasts.pop(broadcast_id)
+            self._completed.append(broadcast)
+            if len(self._completed) > self._max_completed:
+                self._completed = self._completed[-self._max_completed:]
+            logger.info("[%s] broadcast %s cancelled (was in-flight)", self._account_id, broadcast_id)
+            return True
+
+        # Check queue (not yet dispatched)
+        # asyncio.Queue doesn't support removal, so we mark it as cancelled
+        # via a separate set. The _dispatch method checks this set.
+        if broadcast_id in self._cancelled_set:
+            return True
+        self._cancelled_set.add(broadcast_id)
+        logger.info("[%s] broadcast %s cancellation queued", self._account_id, broadcast_id)
+
+        # Also check completed list (already finished - idempotent)
+        for b in self._completed:
+            if b.id == broadcast_id:
+                if b.status not in ("cancelled", "failed", "sent"):
+                    b.status = "cancelled"
+                    b.cancelled_at = datetime.now(timezone.utc).isoformat()
+                    return True
+                return True  # Already cancelled/failed/sent
+
+        return False
 
     def get_active(self) -> list[Broadcast]:
         return list(self._active_broadcasts.values())

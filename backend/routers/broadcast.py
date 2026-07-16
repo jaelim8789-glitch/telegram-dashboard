@@ -64,8 +64,17 @@ async def cancel_broadcast(broadcast_id: str):
         all_broadcasts = await manager.get_broadcasts(limit=500)
         for b in all_broadcasts:
             if b.id == broadcast_id:
+                # Actually cancel via the owning runtime's BroadcastQueue
+                runtime = manager.get_runtime(b.account_id)
+                if not runtime:
+                    raise HTTPException(status_code=404, detail="Account runtime not found")
+                cancelled = runtime.broadcast_queue.cancel_broadcast(broadcast_id)
+                if not cancelled:
+                    raise HTTPException(status_code=404, detail="Broadcast not found in queue")
                 return {"id": broadcast_id, "status": "cancelled", "account_id": b.account_id, "message": b.message}
         raise HTTPException(status_code=404, detail="Broadcast not found")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
