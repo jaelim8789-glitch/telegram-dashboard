@@ -159,3 +159,114 @@ def test_observability_defaults_are_hardened():
     assert "127.0.0.1:3100:3100" in compose
     assert "127.0.0.1:3200:3200" in compose
     assert "GRAFANA_ADMIN_PASSWORD is required" in compose
+
+
+def test_free_api_key_authenticates_successfully(monkeypatch):
+    """tm_free_* keys stored in free_api_keys table must authenticate via validate_api_key."""
+    from backend import admin_platform
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = f"{tmpdir}/free_api_keys.db"
+        monkeypatch.setattr("backend.routers.free_api_key.DB_PATH", db_path)
+
+        # Create the table and insert a free key
+        conn = sqlite3.connect(db_path)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS free_api_keys (
+                id TEXT PRIMARY KEY,
+                phone TEXT NOT NULL UNIQUE,
+                api_key TEXT NOT NULL UNIQUE,
+                created_at TEXT DEFAULT ''
+            )
+        """)
+        test_key = "tm_free_" + "a" * 32
+        conn.execute(
+            "INSERT INTO free_api_keys (id, phone, api_key, created_at) VALUES (?, ?, ?, ?)",
+            ("key-1", "+8201012345678", test_key, "2026-07-16T00:00:00"),
+        )
+        conn.commit()
+        conn.close()
+
+        # Direct instantiation for test (AdminPlatform uses __init__)
+        class _FakeDb:
+            def _get_conn(self):
+                return sqlite3.connect(db_path)
+
+        ap = admin_platform.AdminPlatform.__new__(admin_platform.AdminPlatform)
+        ap.db = _FakeDb()
+        result = ap.validate_api_key(test_key)
+
+    assert result is not None
+    assert result["plan"] == "free"
+    assert result["max_accounts"] == 1
+    assert result["permissions"] == "read"
+
+
+def test_free_api_key_rejects_unknown_key():
+    """Non-existent tm_free_* key must return None."""
+    from backend import admin_platform
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = f"{tmpdir}/empty_free_api_keys.db"
+
+        class _FakeDb:
+            def _get_conn(self):
+                return sqlite3.connect(db_path)
+
+        ap = admin_platform.AdminPlatform.__new__(admin_platform.AdminPlatform)
+        ap.db = _FakeDb()
+        result = ap.validate_api_key("tm_free_" + "b" * 32)
+
+    assert result is None
+
+
+def test_regular_api_key_still_works(monkeypatch):
+    """Existing api_keys JOIN users path must be untouched by the free key change."""
+    from backend import admin_platform
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        admin_db = f"{tmpdir}/admin.db"
+        conn = sqlite3.connect(admin_db)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id TEXT PRIMARY KEY, key_hash TEXT, user_id TEXT,
+                name TEXT, key_prefix TEXT, plan TEXT, permissions TEXT,
+                max_accounts INTEGER DEFAULT 1, daily_limit INTEGER DEFAULT 0,
+                feature_flags TEXT DEFAULT '{}',
+                usage_count INTEGER DEFAULT 0, usage_reset_at TEXT,
+                last_used_at TEXT,
+                is_active INTEGER DEFAULT 1, expires_at TEXT
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY, role TEXT, plan TEXT,
+                is_active INTEGER DEFAULT 1, is_suspended INTEGER DEFAULT 0
+            )
+        """)
+        conn.execute(
+            "INSERT INTO users (id, role, plan, is_active, is_suspended) VALUES (?, ?, ?, 1, 0)",
+            ("user-1", "user", "pro"),
+        )
+        import hashlib
+        key_hash = hashlib.sha256("tm_pro_test_key".encode("utf-8")).hexdigest()
+        conn.execute(
+            "INSERT INTO api_keys (id, key_hash, user_id, name, key_prefix, plan, permissions, max_accounts, daily_limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("api-key-1", key_hash, "user-1", "test key", "tm_pro", "pro", "read", 10, 100),
+        )
+        conn.commit()
+        conn.close()
+
+        class _FakeDb:
+            def _get_conn(self):
+                conn = sqlite3.connect(admin_db)
+                conn.row_factory = sqlite3.Row
+                return conn
+
+        ap = admin_platform.AdminPlatform.__new__(admin_platform.AdminPlatform)
+        ap.db = _FakeDb()
+        result = ap.validate_api_key("tm_pro_test_key")
+
+    assert result is not None
+    assert result["plan"] == "pro"
+    assert result["max_accounts"] == 10
