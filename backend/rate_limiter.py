@@ -128,7 +128,10 @@ class RateLimiter:
         return True
 
     async def wait_and_acquire(self, action: str, chat_id: int | str | None = None) -> None:
-        """Block until a token is available (no timeout)."""
+        """Block until a token is available (no timeout).
+
+        Used by broadcast dispatch paths that must not skip a recipient.
+        """
         while not await self.acquire(action, chat_id, timeout=5.0):
             await asyncio.sleep(0.5)
 

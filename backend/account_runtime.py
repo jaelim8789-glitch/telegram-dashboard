@@ -270,8 +270,13 @@ class BroadcastQueue:
                 return
 
             if not await self._rate_limiter.acquire("send_message", chat_id=recipient_id, timeout=30):
-                fail_count += 1
-                current_idx += 1
+                logger.info(
+                    "[%s] rate limit wait for recipient %s (broadcast %s)",
+                    self._account_id,
+                    recipient_id,
+                    broadcast.id,
+                )
+                await self._rate_limiter.wait_and_acquire("send_message", chat_id=recipient_id)
                 continue
 
             try:
@@ -332,7 +337,20 @@ class BroadcastQueue:
 
             await asyncio.sleep(1)
 
-        broadcast.status = "sent" if fail_count == 0 else "failed" if success_count == 0 else "sent"
+        if fail_count == 0:
+            broadcast.status = "sent"
+            broadcast.error_message = None
+        elif success_count == 0:
+            broadcast.status = "failed"
+            if not broadcast.error_message:
+                broadcast.error_message = f"Broadcast failed for all {len(recipient_list)} recipients"
+        else:
+            broadcast.status = "failed"
+            if not broadcast.error_message:
+                broadcast.error_message = (
+                    f"Partial delivery: {success_count}/{len(recipient_list)} recipients succeeded, "
+                    f"{fail_count} failed"
+                )
         broadcast.sent_at = datetime.now(timezone.utc).isoformat()
         self._completed.append(broadcast)
         if len(self._completed) > self._max_completed:
