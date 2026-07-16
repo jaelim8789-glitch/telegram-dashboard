@@ -29,6 +29,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   log: LogInspector,
   folders: DashboardInspector,
   templates: DashboardInspector,
+  health: DashboardInspector,
   campaigns: DashboardInspector,
 };
 

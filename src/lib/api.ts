@@ -928,6 +928,42 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
   return result.api_key;
 }
 
+// === Account Health ===
+
+export interface HealthSummary {
+  total: number;
+  counts: Record<string, number>;
+  healthy_count: number;
+  unhealthy_count: number;
+  overall_success_rate: number;
+  total_success: number;
+  total_failure: number;
+  average_health_score: number;
+  health_scores: { account_id: string; score: number }[];
+}
+
+export interface HealthTrendPoint {
+  date: string;
+  total: number;
+  successful: number;
+  failed: number;
+  success_rate: number;
+  active_accounts: number;
+}
+
+export interface HealthTrend {
+  trend: HealthTrendPoint[];
+}
+
+export async function fetchHealthSummary(): Promise<HealthSummary> {
+  return request<HealthSummary>("/api/account-health/summary");
+}
+
+export async function fetchHealthTrend(days?: number): Promise<HealthTrend> {
+  const qs = days && days !== 14 ? `?days=${days}` : "";
+  return request<HealthTrend>(`/api/account-health/trend${qs}`);
+}
+
 // === Campaigns ===
 
 export interface Campaign {
