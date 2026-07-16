@@ -57,8 +57,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
   );
 }
 
-export function OnboardingTour({ hasAccounts = false }: { hasAccounts?: boolean }) {
-  const { show, dismiss } = useOnboarding(hasAccounts);
+export function OnboardingTour({ hasAccounts = false, accountsLoading = false }: { hasAccounts?: boolean; accountsLoading?: boolean }) {
+  const { show, dismiss } = useOnboarding(hasAccounts, accountsLoading);
   const [step, setStep] = useState(0);
 
   const goNext = useCallback(() => {

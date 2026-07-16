@@ -16,6 +16,8 @@ import { clearToken, clearSessionToken } from "@/lib/auth";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 function AdminDashboardContent() {
   const router = useRouter();
 

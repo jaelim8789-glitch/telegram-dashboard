@@ -20,6 +20,7 @@ export function DashboardShell() {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const accountsLoading = useDashboardStore((s) => s.accountsLoading);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((v) => !v);
@@ -70,7 +71,7 @@ export function DashboardShell() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
-      <OnboardingTour hasAccounts={accounts.length > 0} />
+      <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
       {/* Mobile nav toggle */}

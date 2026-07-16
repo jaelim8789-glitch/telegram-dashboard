@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
-  Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe,
+  Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe, Folder,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS, type TabDef } from "@/types";
@@ -20,6 +20,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   linkinspector: ScanSearch,
   autoreply: Bot,
   replymacro: Zap,
+  folders: Folder,
   deliveryanalytics: BarChart3,
   channelhub: Globe,
   profile: User,

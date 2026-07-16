@@ -348,6 +348,9 @@ class BroadcastQueue:
             self._completed.append(broadcast)
             if len(self._completed) > self._max_completed:
                 self._completed = self._completed[-self._max_completed:]
+            # CRITICAL: Also add to _cancelled_set so the running _dispatch loop
+            # checks this set before each recipient and stops sending.
+            self._cancelled_set.add(broadcast_id)
             logger.info("[%s] broadcast %s cancelled (was in-flight)", self._account_id, broadcast_id)
             return True
 
