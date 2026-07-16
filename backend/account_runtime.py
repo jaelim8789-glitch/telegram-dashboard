@@ -343,6 +343,7 @@ class AutoReplyEngine:
         self._max_logs = 200
         self._daily_counts: dict[str, int] = defaultdict(int)
         self._last_cooldown: dict[str, float] = {}
+        self._last_cooldown_cleanup: float = time.time()
         self._handler: Any = None
         self._lock = asyncio.Lock()
 
@@ -380,6 +381,21 @@ class AutoReplyEngine:
     def get_logs(self) -> list[AutoReplyLog]:
         return list(self._logs)
 
+    def _cleanup_cooldown(self) -> None:
+        """Remove cooldown entries older than 24 hours to prevent memory leak."""
+        now = time.time()
+        if now - self._last_cooldown_cleanup < 3600:
+            return
+        self._last_cooldown_cleanup = now
+        cutoff = now - 86400
+        stale = [k for k, v in self._last_cooldown.items() if v < cutoff]
+        for k in stale:
+            del self._last_cooldown[k]
+        # Also reset daily counts for rules with no recent activity
+        stale_rules = [k for k, v in self._daily_counts.items() if v == 0]
+        for k in stale_rules:
+            del self._daily_counts[k]
+
     async def _on_message(self, event: Any) -> None:
         async with self._lock:
             enabled = self._enabled
@@ -387,6 +403,7 @@ class AutoReplyEngine:
 
         if not enabled or not rules:
             return
+        self._cleanup_cooldown()
 
         message = event.message
         if not message or not message.text:

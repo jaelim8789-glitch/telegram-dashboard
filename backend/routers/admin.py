@@ -72,9 +72,60 @@ router = APIRouter()
 import sqlite3
 import secrets as secrets_module
 import threading
+import hashlib
 
 SESSION_DB_PATH = "data/sessions.db"
 _token_cleanup_lock = threading.Lock()
+
+# ── Login Rate Limiting ────────────────────────────────────────────
+# Prevents brute-force attacks by tracking failed attempts per IP.
+# Threshold: 10 failed attempts within 300 seconds → 15-minute block.
+_LOGIN_ATTEMPT_LOCK = threading.Lock()
+_LOGIN_ATTEMPTS: dict[str, list[float]] = {}  # ip -> list of timestamps
+_LOGIN_BLOCKED: dict[str, float] = {}  # ip -> unblock timestamp
+
+def _check_login_rate_limit(ip: str) -> None:
+    """Check if IP has exceeded login attempt threshold. Raises 429 if blocked."""
+    now = time.time()
+    with _LOGIN_ATTEMPT_LOCK:
+        # Check if currently blocked
+        unblock_until = _LOGIN_BLOCKED.get(ip, 0)
+        if now < unblock_until:
+            raise HTTPException(
+                status_code=429,
+                detail="너무 많은 로그인 시도가 있었습니다. 15분 후에 다시 시도해주세요."
+            )
+        # Prune attempts older than 5 minutes
+        cutoff = now - 300
+        attempts = [t for t in _LOGIN_ATTEMPTS.get(ip, []) if t > cutoff]
+        _LOGIN_ATTEMPTS[ip] = attempts
+
+def _record_login_attempt(ip: str, success: bool) -> None:
+    """Record login attempt. If threshold exceeded, block the IP."""
+    now = time.time()
+    with _LOGIN_ATTEMPT_LOCK:
+        if success:
+            # Clear failed attempts on success
+            _LOGIN_ATTEMPTS.pop(ip, None)
+            _LOGIN_BLOCKED.pop(ip, None)
+            return
+        attempts = _LOGIN_ATTEMPTS.get(ip, [])
+        attempts.append(now)
+        # Keep only last 5 minutes
+        cutoff = now - 300
+        attempts = [t for t in attempts if t > cutoff]
+        _LOGIN_ATTEMPTS[ip] = attempts
+        # Block after 10 failed attempts within 5 minutes
+        if len(attempts) >= 10:
+            _LOGIN_BLOCKED[ip] = now + 900  # 15 minute block
+            logger.warning("IP %s blocked for 15 minutes due to excessive login failures", ip)
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, respecting proxies."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def _init_session_db() -> None:
@@ -234,20 +285,26 @@ async def register_user(body: dict):
 
 
 @router.post("/admin/login")
-async def login(body: dict):
+async def login(body: dict, request: Request):
     """Login and get session token."""
+    ip = _get_client_ip(request)
+    _check_login_rate_limit(ip)
+
     username = body.get("username")
     password = body.get("password")
     
     if not username or not password:
+        _record_login_attempt(ip, False)
         raise HTTPException(status_code=400, detail="Username and password required")
     
     admin = AdminPlatform.get_instance()
     user = admin.authenticate(username, password)
     
     if not user:
+        _record_login_attempt(ip, False)
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    _record_login_attempt(ip, True)
     token = _generate_token(user["id"])
     
     # Write audit
@@ -263,6 +320,73 @@ async def login(body: dict):
             "role": user["role"],
             "plan": user["plan"],
         },
+    }
+
+
+# ── Session Management ───────────────────────────────────────────────
+
+def _revoke_all_user_sessions(user_id: str) -> None:
+    """Revoke all sessions for a given user."""
+    with _token_cleanup_lock:
+        try:
+            conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error("Failed to revoke sessions for user %s: %s", user_id, e)
+
+
+@router.post("/admin/change-password")
+async def change_password(
+    body: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Change the current user's password. Invalidates all existing sessions."""
+    ip = _get_client_ip(request)
+    _check_login_rate_limit(ip)
+
+    old_password = body.get("old_password")
+    new_password = body.get("new_password")
+    
+    if not old_password or not new_password:
+        raise HTTPException(status_code=400, detail="old_password and new_password required")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    
+    admin = AdminPlatform.get_instance()
+    user = admin.authenticate(current_user["username"], old_password)
+    if not user:
+        _record_login_attempt(ip, False)
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    # Update password
+    admin.update_password(current_user["id"], new_password)
+    
+    # Revoke all existing sessions (forces re-login with new password)
+    _revoke_all_user_sessions(current_user["id"])
+    
+    # Generate new session token
+    token = _generate_token(current_user["id"])
+    
+    logger.info("Password changed for user %s, all sessions revoked", current_user["id"])
+    
+    return {
+        "status": "ok",
+        "message": "비밀번호가 변경되었습니다. 모든 기기에서 로그아웃되었습니다.",
+        "access_token": token,
+    }
+
+
+@router.post("/admin/logout-all")
+async def logout_all(current_user: dict = Depends(get_current_user)):
+    """Revoke all sessions for the current user."""
+    _revoke_all_user_sessions(current_user["id"])
+    logger.info("All sessions revoked for user %s", current_user["id"])
+    return {
+        "status": "ok",
+        "message": "모든 기기에서 로그아웃되었습니다.",
     }
 
 
