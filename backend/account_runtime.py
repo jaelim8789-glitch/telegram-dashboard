@@ -198,7 +198,7 @@ class BroadcastQueue:
     MAX_RETRIES = 5
     """Maximum number of flood-wait retries before marking a broadcast as failed."""
 
-    def __init__(self, account_id: str, client: TelegramClient, rate_limiter: RateLimiter, event_bus: EventBus) -> None:
+    def __init__(self, account_id: str, client: TelegramClient, rate_limiter: RateLimiter, event_bus: EventBus, broadcast_store_ref: list[Broadcast] | None = None) -> None:
         self._account_id = account_id
         self._client = client
         self._rate_limiter = rate_limiter
@@ -209,6 +209,7 @@ class BroadcastQueue:
         self._max_completed = 200
         self._retry_counts: dict[str, int] = {}  # broadcast_id -> retry count
         self._cancelled_set: set[str] = set()  # broadcast_ids marked for cancellation
+        self._broadcast_store_ref: list[Broadcast] | None = broadcast_store_ref  # reference to AccountRuntime._broadcast_store
         self._processing = False
         self._task: asyncio.Task[None] | None = None
 
@@ -243,15 +244,10 @@ class BroadcastQueue:
 
     async def _dispatch(self, broadcast: Broadcast) -> None:
         """Send the broadcast message to all recipients one by one."""
-        # Check if cancelled before starting — must check BEFORE pruning
-        # so that cancel_broadcast() has a window to set the flag.
+        # Check if cancelled before starting
         if broadcast.id in self._cancelled_set:
             self._finalize_cancelled(broadcast, 0)
             return
-
-        # Prune the cancelled set *after* the check to avoid a race where
-        # cancel_broadcast() adds the ID between the check and the prune.
-        self._prune_cancelled_set(broadcast.id)
 
         broadcast.status = "sending"
         success_count = 0
@@ -309,8 +305,14 @@ class BroadcastQueue:
                     self._account_id, e.seconds, retry_count + 1, self.MAX_RETRIES, len(remaining),
                 )
                 await asyncio.sleep(min(e.seconds, 60))
-                broadcast.recipients = remaining
-                await self._queue.put(broadcast)
+                # CRITICAL: Create a copy before modifying recipients so _broadcast_store
+                # still has the original full recipient list. If we modify broadcast in-place,
+                # the store entry is also truncated and the frontend shows fewer recipients.
+                import copy
+                retry_broadcast = copy.copy(broadcast)
+                retry_broadcast.recipients = remaining
+                self._active_broadcasts[broadcast.id] = retry_broadcast
+                await self._queue.put(retry_broadcast)
                 return
             except AuthKeyUnregisteredError:
                 broadcast.status = "failed"
@@ -375,6 +377,16 @@ class BroadcastQueue:
                     b.cancelled_at = datetime.now(timezone.utc).isoformat()
                     return True
                 return True  # Already cancelled/failed/sent
+
+        # Broadcast queued via _cancelled_set — update status in broadcast_store
+        # so the frontend doesn't see it as "pending" forever.
+        if hasattr(self, '_broadcast_store_ref') and self._broadcast_store_ref is not None:
+            for b in self._broadcast_store_ref:
+                if b.id == broadcast_id:
+                    if b.status == "pending":
+                        b.status = "cancelled"
+                        b.cancelled_at = datetime.now(timezone.utc).isoformat()
+                    return True
 
         return False
 
@@ -1061,23 +1073,7 @@ class AccountRuntime:
         self.account_id = account_id
         self.phone = phone
 
-        # Core components
-        self.client = TelegramClient(session_path, api_id, api_hash)
-        self.event_bus = EventBus(account_id)
-        self.rate_limiter = RateLimiter(account_id)
-        self.scheduler = Scheduler(account_id)
-        self.group_cache = GroupCache(account_id)
-        self.broadcast_queue = BroadcastQueue(account_id, self.client, self.rate_limiter, self.event_bus)
-        self.auto_reply = AutoReplyEngine(account_id, self.client, self.rate_limiter, self.event_bus)
-        self.health_monitor = HealthMonitor(account_id, self.client, self.event_bus)
-        self.auto_recovery = AutoRecovery(account_id, self.client, self.health_monitor, self.event_bus)
-        self.reply_macro = ReplyMacroEngine(account_id, self.client, self.rate_limiter, self.event_bus, self.scheduler, self.health_monitor)
-        self.session_auto_recovery = SessionAutoRecovery(
-            account_id, self.client, self.health_monitor, self.event_bus,
-            session_path, phone, api_id, api_hash,
-        )
-
-        # State
+        # State (must be set before components that reference them)
         self._name: str | None = None
         self._status: str = "inactive"
         self._auto_reply_enabled: bool = False
@@ -1086,9 +1082,25 @@ class AccountRuntime:
         self._running = False
         self._session_path = session_path
 
-        # Persistence
+        # Persistence (set before BroadcastQueue so it can receive the ref)
         self._broadcast_store: list[Broadcast] = []
         self._max_broadcasts = 500
+
+        # Core components
+        self.client = TelegramClient(session_path, api_id, api_hash)
+        self.event_bus = EventBus(account_id)
+        self.rate_limiter = RateLimiter(account_id)
+        self.scheduler = Scheduler(account_id)
+        self.group_cache = GroupCache(account_id)
+        self.broadcast_queue = BroadcastQueue(account_id, self.client, self.rate_limiter, self.event_bus, broadcast_store_ref=self._broadcast_store)
+        self.auto_reply = AutoReplyEngine(account_id, self.client, self.rate_limiter, self.event_bus)
+        self.health_monitor = HealthMonitor(account_id, self.client, self.event_bus)
+        self.auto_recovery = AutoRecovery(account_id, self.client, self.health_monitor, self.event_bus)
+        self.reply_macro = ReplyMacroEngine(account_id, self.client, self.rate_limiter, self.event_bus, self.scheduler, self.health_monitor)
+        self.session_auto_recovery = SessionAutoRecovery(
+            account_id, self.client, self.health_monitor, self.event_bus,
+            session_path, phone, api_id, api_hash,
+        )
 
         # Wire up event bus subscriptions
         self.event_bus.subscribe(BroadcastCompletedEvent, self._on_broadcast_completed)
@@ -1140,6 +1152,7 @@ class AccountRuntime:
         self.scheduler.stop()
         self.broadcast_queue.stop()
         self.auto_reply.stop()
+        self.event_bus.clear()  # Prevent zombie handlers from leaking on restart
         await self.client.disconnect()
         logger.info("[%s] runtime stopped", self.account_id)
 

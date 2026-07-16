@@ -53,7 +53,18 @@ async def update_account_status(account_id: str, body: dict):
     status = body.get("status")
     if status not in ("active", "inactive", "banned"):
         raise HTTPException(status_code=400, detail="Invalid status")
-    # TODO: Implement status change in runtime
+    manager = RuntimeManager.get_instance()
+    runtime = manager.get_runtime(account_id)
+    if not runtime:
+        raise HTTPException(status_code=404, detail="Account not found")
+    # Update the runtime's status and health monitor state
+    if status == "active":
+        runtime._status = "active"
+    elif status == "inactive":
+        runtime._status = "inactive"
+    elif status == "banned":
+        runtime._status = "banned"
+        runtime.health_monitor._state.status = "banned"
     return {"status": "updated"}
 
 
