@@ -186,7 +186,7 @@ export function Sidebar() {
     <aside className="dashboard-sidebar flex w-64 shrink-0 flex-col">
       <div className="flex items-center justify-between border-b border-app-border px-4 py-3.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-app-text-muted">
-          계정 <span className="text-app-primary">{accounts.length}</span>
+          계정 목록 (<span className="text-app-primary">{accounts.length}</span>)
         </span>
         <div className="flex items-center gap-1">
           <button
