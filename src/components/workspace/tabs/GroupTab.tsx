@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { useFavoriteGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -50,6 +51,10 @@ export function GroupTab() {
   const account = accounts.find((a) => a.id === selectedAccountId);
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
 
+  // ── RuntimeManager 캐시에서 그룹 데이터 즉시 로드 ──
+  const { groups: cachedGroups } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,6 +62,8 @@ export function GroupTab() {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
   const [typeFilter, setTypeFilter] = useState<GroupType | "all">("all");
+  const [folders, setFolders] = useState<api.GroupFolder[]>([]);
+  const [folderFilter, setFolderFilter] = useState<string>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
@@ -71,8 +78,12 @@ export function GroupTab() {
     if (!savedGroupStorageKey) { setSavedSendGroupIds([]); return; }
     try {
       const stored = localStorage.getItem(savedGroupStorageKey);
-      if (stored) setSavedSendGroupIds(JSON.parse(stored));
-      else setSavedSendGroupIds([]);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setSavedSendGroupIds(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setSavedSendGroupIds([]);
+      }
     } catch { setSavedSendGroupIds([]); }
   }, [savedGroupStorageKey]);
 
@@ -90,46 +101,75 @@ export function GroupTab() {
     [groups, savedSendGroupIds],
   );
 
-  async function load(accountId: string, silent = false) {
-    if (silent) {
-      try { setGroups(await api.fetchGroups(accountId)); } catch { /* ignore */ }
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try { setGroups(await api.fetchGroups(accountId)); }
-    catch (err) { setGroups([]); setError(err instanceof Error ? err.message : "그룹 목록을 불러오지 못했습니다."); }
-    finally { setLoading(false); }
-  }
-
   async function handleRefresh() {
     if (!selectedAccountId || refreshing) return;
     setRefreshing(true);
-    await load(selectedAccountId);
+    await runtimeActions.refreshGroups(selectedAccountId);
     setRefreshing(false);
   }
 
+  // 캐시에서 즉시 데이터 로드 (계정 전환 시 API 호출 없음)
   useEffect(() => {
-    if (selectedAccountId) { load(selectedAccountId); }
-    else { setGroups([]); }
+    if (selectedAccountId) {
+      if (cachedGroups.length > 0) {
+        setGroups(cachedGroups);
+        setLoading(false);
+      } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setGroups([]);
+        setLoading(true);
+        runtimeActions.refreshGroups(selectedAccountId);
+      }
+    } else {
+      setGroups([]);
+      setLoading(false);
+    }
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
+
+  // 캐시 업데이트 시 동기화
+  useEffect(() => {
+    if (cachedGroups.length > 0) {
+      setGroups(cachedGroups);
+      setLoading(false);
+    }
+  }, [cachedGroups]);
+
+  useEffect(() => {
+    setFolderFilter("all");
+    if (!selectedAccountId) { setFolders([]); return; }
+    let cancelled = false;
+    api.fetchGroupFolders(selectedAccountId).then((f) => { if (!cancelled) setFolders(f); });
+    return () => { cancelled = true; };
   }, [selectedAccountId]);
 
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (!selectedAccountId) return;
-    bgPollTimer.current = setTimeout(() => { load(selectedAccountId, true); setPollTick((t) => t + 1); }, BACKGROUND_POLL_INTERVAL_MS);
+    bgPollTimer.current = setTimeout(() => {
+      runtimeActions.refreshGroups(selectedAccountId);
+      setPollTick((t) => t + 1);
+    }, BACKGROUND_POLL_INTERVAL_MS);
     return () => { if (bgPollTimer.current) clearTimeout(bgPollTimer.current); };
-  }, [pollTick, selectedAccountId]);
+  }, [pollTick, selectedAccountId, runtimeActions]);
 
   const visibleGroups = useMemo(() => {
     let filtered = groups;
     if (typeFilter !== "all") filtered = filtered.filter((g) => g.type === typeFilter);
+    if (folderFilter !== "all") {
+      const folder = folders.find((f) => f.id === folderFilter);
+      if (folder) {
+        const idSet = new Set(folder.groupIds);
+        filtered = filtered.filter((g) => idSet.has(g.id));
+      }
+    }
     filtered = filtered.filter((g) => g.title.toLowerCase().includes(search.trim().toLowerCase()));
     const sorted = [...filtered];
     if (sortMode === "members") sorted.sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
     if (sortMode === "favorites") sorted.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
     return sorted;
-  }, [groups, search, sortMode, isFavorite, typeFilter]);
+  }, [groups, search, sortMode, isFavorite, typeFilter, folderFilter, folders]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: groups.length };
@@ -258,6 +298,21 @@ export function GroupTab() {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {!loading && folders.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => setFolderFilter("all")}
+              className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", folderFilter === "all" ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+              <Hash className="h-3 w-3" /> 전체 폴더
+            </button>
+            {folders.map((f) => (
+              <button key={f.id} type="button" onClick={() => setFolderFilter(f.id)}
+                className={cn("rounded-full px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1", folderFilter === f.id ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text")}>
+                <Hash className="h-3 w-3" /> {f.title} <span className="ml-0.5 opacity-70">{f.groupIds.length}</span>
+              </button>
+            ))}
           </div>
         )}
 

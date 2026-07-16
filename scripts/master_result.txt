@@ -1,0 +1,60 @@
+======================================== 
+MASTER MERGE AND BUILD SCRIPT 
+2026-07-15 17:56:50.97 
+======================================== 
+ 
+[STATE BEFORE] 
+d91505b37bd35bffb94c9e79d6b340059d915911
+d91505b Merge feat/02-account-favorites: account favorites and tags (localStorage)
+d75edaa Merge feat/01-darkmode-persist: darkmode default to system with localStorage persist
+1423674 feat: account favorites and tags (localStorage)
+48993b3 feat: darkmode default to system with localStorage persist
+64da62a chore: remove debug/temp files from merge
+ 
+ 
+===== CHAIN A MERGES ===== 
+ 
+--- Merging feat/06-cheatsheet-modal --- 
+Merge made by the 'ort' strategy.
+ src/components/layout/DashboardShell.tsx     |  16 ++++-
+ src/components/workspace/CheatsheetModal.tsx | 102 +++++++++++++++++++++++++++
+ 2 files changed, 117 insertions(+), 1 deletion(-)
+ create mode 100644 src/components/workspace/CheatsheetModal.tsx
+[OK] feat/06-cheatsheet-modal merged successfully 
+ 
+--- Merging feat/11-fullscreen-toggle --- 
+Merge made by the 'ort' strategy.
+ src/components/layout/Header.tsx       |  3 +++
+ src/components/ui/FullscreenToggle.tsx | 39 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+ create mode 100644 src/components/ui/FullscreenToggle.tsx
+[OK] feat/11-fullscreen-toggle merged successfully 
+ 
+--- Merging feat/10-account-search-enhance --- 
+Merge made by the 'ort' strategy.
+ src/components/layout/Sidebar.tsx | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
+[OK] feat/10-account-search-enhance merged successfully 
+ 
+--- Merging feat/15-delivery-analytics-csv --- 
+Merge made by the 'ort' strategy.
+ src/lib/exportCsv.ts | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+ create mode 100644 src/lib/exportCsv.ts
+[OK] feat/15-delivery-analytics-csv merged successfully 
+ 
+===== CHAIN A COMPLETE ===== 
+ 
+=== TypeScript Check (after Chain A) === 
+[OK] TypeScript check passed 
+ 
+===== CHAIN B MERGES ===== 
+ 
+--- Merging feat/account-labels --- 
+Auto-merging src/components/sidebar/AccountCard.tsx
+CONFLICT (content): Merge conflict in src/components/sidebar/AccountCard.tsx
+Auto-merging src/lib/accountLabels.ts
+CONFLICT (add/add): Merge conflict in src/lib/accountLabels.ts
+Automatic merge failed; fix conflicts and then commit the result.
+[FAIL] feat/account-labels FAILED with code 1 
+=== ABORTING === 

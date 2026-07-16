@@ -2,10 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, UserX, Users, XCircle, Search, ExternalLink, CheckCircle2, AlertCircle, Copy } from "lucide-react";
+import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
-import { Field, Input } from "@/components/ui/Field";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -21,6 +21,7 @@ import { formatDateTime } from "@/lib/formatTime";
 function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [memo, setMemo] = useState("");
+  const [plan, setPlan] = useState<"free" | "pro" | "team">("team");
   const [lookupResult, setLookupResult] = useState<UserLookupResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [issuing, setIssuing] = useState(false);
@@ -44,7 +45,7 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
     if (!lookupResult?.phone || issuing) return;
     setIssuing(true); setError(null); setIssuedKey(null);
     try {
-      const result = await api.manualIssueApiKey(lookupResult.phone, memo.trim() || undefined);
+      const result = await api.manualIssueApiKey(lookupResult.phone, memo.trim() || undefined, plan);
       if (result.alreadyIssued) {
         setError("이미 API 키가 발급된 사용자입니다.");
       } else {
@@ -147,6 +148,13 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
                   onChange={(e) => setMemo(e.target.value)}
                   placeholder="예: 자동 발급 실패로 인한 운영자 수동 발급"
                 />
+              </Field>
+              <Field label="플랜">
+                <Select value={plan} onChange={(e) => setPlan(e.target.value as "free" | "pro" | "team")}>
+                  <option value="team">Team (무제한에 가까움, 기본값)</option>
+                  <option value="pro">Pro</option>
+                  <option value="free">Free (체험 제한 적용)</option>
+                </Select>
               </Field>
               <Button onClick={handleIssue} variant="primary" disabled={issuing}>
                 <KeyRound className="h-3.5 w-3.5" /> API 키 수동 발급

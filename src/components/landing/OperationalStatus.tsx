@@ -6,7 +6,7 @@ import { Server, Shield, Wifi, Database } from "lucide-react";
 const ITEMS = [
   { icon: Server, title: "FastAPI 백엔드", desc: "메시지 발송, 계정 관리, API 키 인증 처리를 담당하는 핵심 서버" },
   { icon: Wifi, title: "WebSocket 알림", desc: "실시간 발송 상태 및 계정 건강 변경 알림을 브라우저에 푸시" },
-  { icon: Database, title: "PostgreSQL + Redis", desc: "계정 세션, 발송 로그, 설정 데이터를 안전하게 저장 및 캐싱" },
+  { icon: Database, title: "SQLite (WAL 모드)", desc: "계정 세션, 발송 로그, 설정 데이터를 WAL 모드로 저장하고 주기적으로 자동 백업" },
   { icon: Shield, title: "워커 프로세스", desc: "예약 발송, 반복 발송, 자동 응답을 비동기로 처리하는 백그라운드 작업자" },
 ];
 

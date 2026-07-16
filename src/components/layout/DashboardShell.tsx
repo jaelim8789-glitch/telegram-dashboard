@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -8,10 +8,19 @@ import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
+import { ScrollToTop } from "@/components/ui/ScrollToTop";
+import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
+import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
+import { useNotification } from "@/lib/useNotification";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const accountsLoading = useDashboardStore((s) => s.accountsLoading);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((v) => !v);
@@ -22,9 +31,48 @@ export function DashboardShell() {
     setSidebarOpen(false);
   }, []);
 
+  // "?" key opens cheatsheet (only when not typing in an input)
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "?" && !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, [contenteditable]"))) {
+        setCheatsheetOpen((v) => !v);
+      }
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  const shortcutHandlers = useMemo(() => ({
+    onNavigate: (tabId: import("@/types").TabId) => setActiveTab(tabId),
+  }), [setActiveTab]);
+  useKeyboardShortcuts(shortcutHandlers);
+
+  // ── Browser notifications ──
+  const { notify, isSupported } = useNotification();
+
+  // Notify when broadcasts complete
+  const accounts = useDashboardStore((s) => s.accounts);
+  const prevRef = useRef({ sent: accounts.reduce((s, a) => s + a.todaySent, 0) });
+  useEffect(() => {
+    if (!isSupported) return;
+    const totalNow = accounts.reduce((s, a) => s + a.todaySent, 0);
+    const prev = prevRef.current.sent;
+    if (totalNow > prev && prev > 0) {
+      notify({
+        title: "✅ 발송 완료",
+        body: `새로운 발송이 완료되었습니다 (${totalNow - prev}건)`,
+        tag: "broadcast-sent",
+      });
+    }
+    if (totalNow !== prev) {
+      prevRef.current = { sent: totalNow };
+    }
+  }, [accounts, notify, isSupported]);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
-      <OnboardingTour />
+      <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
+      <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
@@ -78,6 +126,10 @@ export function DashboardShell() {
             <Inspector />
           </div>
         </div>
+      </div>
+      <ScrollToTop />
+      <div className="hidden sm:flex absolute bottom-2 left-72">
+        <KeyboardShortcutHints compact />
       </div>
     </div>
   );

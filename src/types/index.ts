@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -28,6 +28,7 @@ export const TABS: TabDef[] = [
   { id: "linkinspector", label: "링크 검사", group: "manage" },
   { id: "autoreply", label: "자동 응답", group: "manage" },
   { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "folders", label: "폴더", group: "manage" },
   { id: "channelhub", label: "채널 허브", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
@@ -250,6 +251,7 @@ export interface ReplyMacro {
   intervalHours: number;
   fixedTime: string | null;
   maxSendsPerDay: number;
+  replyToMessageId: number | null;
   lastSentAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -437,4 +439,85 @@ export interface AnalyticsLatency {
   by_source: Record<string, { avg_ms: number; p50_ms: number; p90_ms: number; count: number }>;
   by_account: Record<string, { avg_ms: number; count: number }>;
   period_days: number;
+}
+
+// ─── Group Folders (per-account, backend-persisted) ─────────────────
+
+export interface GroupFolder {
+  id: string;
+  account_id: string;
+  name: string;
+  description: string;
+  color: string;
+  icon: string;
+  group_ids: string[];
+  order: number;
+  parent_id: string | null;
+  is_collapsed: boolean;
+  is_smart: boolean;
+  smart_type: string | null;
+  created_at: string;
+  updated_at: string;
+  children?: GroupFolder[];
+}
+
+export interface FolderCreateInput {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  group_ids?: string[];
+  parent_id?: string | null;
+}
+
+export interface FolderUpdateInput {
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  group_ids?: string[];
+  order?: number;
+  parent_id?: string | null;
+  is_collapsed?: boolean;
+}
+
+export interface BatchMoveInput {
+  source_folder_id?: string;
+  target_folder_id?: string;
+  group_ids: string[];
+}
+
+export interface FolderSendInput {
+  folder_ids: string[];
+  message: string;
+  exclude_group_ids?: string[];
+}
+
+export interface FolderReorderInput {
+  folder_id: string;
+  order: number;
+  parent_id: string | null;
+}
+
+export type SmartFolderType = "recent_activity" | "unsent" | "vip" | "auto_classify";
+
+export interface SmartFolderConfig {
+  name: string;
+  smart_type: SmartFolderType;
+  color?: string;
+  icon?: string;
+  description?: string;
+  params?: Record<string, unknown>;
+}
+
+// ─── Account Groups (localStorage only) ──────────────────────────────
+
+export interface AccountGroup {
+  id: string;
+  name: string;
+  description: string;
+  accountIds: string[];
+  color: string;
+  createdAt: string;
+  updatedAt: string;
 }

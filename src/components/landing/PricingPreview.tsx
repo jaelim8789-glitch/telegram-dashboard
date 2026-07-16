@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Star, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Star } from "lucide-react";
 
 const PLANS = [
   {

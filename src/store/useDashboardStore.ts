@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Account, Broadcast, Group, TabId } from "@/types";
 import * as api from "@/lib/api";
+import { RuntimeManager } from "@/lib/runtimeManager";
 
 function dedupeGroups(groups: Group[]): Group[] {
   const seen = new Set<string>();
@@ -40,7 +41,9 @@ type DashboardStateValue = {
   sendMessage: string;
   sendImageFile: File | null;
   sendSelectedGroupIds: string[];
+  sendReplyToMessageId: number | null;
   reuseNotice: string | null;
+  tabBadges: Partial<Record<TabId, number>>;
 };
 
 export const INITIAL_STATE: DashboardStateValue = {
@@ -50,7 +53,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   plan: null,
   trialExpiresAt: null,
   accounts: [],
-  accountsLoading: false,
+  accountsLoading: true,
   accountsError: null,
   selectedAccountId: null,
   sendGroups: [],
@@ -58,7 +61,9 @@ export const INITIAL_STATE: DashboardStateValue = {
   sendMessage: "",
   sendImageFile: null,
   sendSelectedGroupIds: [],
+  sendReplyToMessageId: null,
   reuseNotice: null,
+  tabBadges: {},
 };
 
 interface DashboardState extends DashboardStateValue {
@@ -79,10 +84,12 @@ interface DashboardState extends DashboardStateValue {
   clearSendDraft: () => void;
   reuseBroadcast: (broadcast: Broadcast) => void;
   setReuseNotice: (notice: string | null) => void;
+  setTabBadge: (tabId: TabId, count: number) => void;
   resetStore: () => void;
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
+let runtimeManagerSubscription: (() => void) | null = null;
 
 function saveRecentRecipientSets(sets: string[][]): void {
   try {
@@ -115,7 +122,12 @@ export function getRecentRecipientSets(): string[][] {
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   ...INITIAL_STATE,
 
-  resetStore: () => set({ ...INITIAL_STATE }),
+  resetStore: () => {
+    runtimeManagerSubscription?.();
+    runtimeManagerSubscription = null;
+    RuntimeManager.getInstance().destroy();
+    set({ ...INITIAL_STATE });
+  },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -128,20 +140,47 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   setSubscription: (subscriptionStatus, plan, trialExpiresAt) => set({ subscriptionStatus, plan, trialExpiresAt }),
 
   accounts: [],
-  accountsLoading: false,
+  accountsLoading: true,
   accountsError: null,
   selectedAccountId: null,
-  selectAccount: (id) => set({ selectedAccountId: id }),
 
+  /** RuntimeManager를 통해 즉시 계정 전환 — API 재호출 없음 */
+  selectAccount: (id) => {
+    set({ selectedAccountId: id });
+    // RuntimeManager에도 동기화하여 캐시된 데이터가 준비되도록 함
+    RuntimeManager.getInstance().selectAccount(id);
+  },
+
+  /** RuntimeManager를 통해 계정 목록 로드 (캐시 우선) */
   fetchAccounts: async () => {
     set({ accountsLoading: true, accountsError: null });
     try {
-      const accounts = await api.fetchAccounts();
+      const manager = RuntimeManager.getInstance();
+      if (!runtimeManagerSubscription) {
+        runtimeManagerSubscription = manager.subscribe(() => {
+          const currentAccounts = manager.accounts;
+          set({
+            accounts: currentAccounts,
+            selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
+          });
+        });
+      }
+      // RuntimeManager가 초기화되어 있지 않으면 초기화
+      if (!manager.accounts.length) {
+        await manager.initialize();
+      } else {
+        // 이미 초기화됨 — 백그라운드 refresh만 트리거
+        manager.refreshAll().catch(() => {});
+      }
+
+      const accounts = manager.accounts;
       set((state) => ({
         accounts,
         accountsLoading: false,
         selectedAccountId: state.selectedAccountId ?? accounts[0]?.id ?? null,
       }));
+
+      // RuntimeManager 구독 — 최초 한 번만 등록 (중복 구독 방지)
     } catch (err) {
       set({
         accountsLoading: false,
@@ -152,14 +191,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   registerAccount: async (input) => {
     const account = await api.createAccount(input);
-    await get().fetchAccounts();
+    // RuntimeManager에 새 계정 반영
+    const manager = RuntimeManager.getInstance();
+    await manager.refreshAll();
+    set((state) => ({
+      accounts: manager.accounts,
+      selectedAccountId: state.selectedAccountId ?? account.id,
+    }));
     return account;
   },
 
   removeAccount: async (id) => {
     await api.deleteAccount(id);
+    // RuntimeManager에서도 제거
+    const manager = RuntimeManager.getInstance();
+    await manager.refreshAll();
     set((state) => ({
-      accounts: state.accounts.filter((a) => a.id !== id),
+      accounts: manager.accounts,
       selectedAccountId: state.selectedAccountId === id ? null : state.selectedAccountId,
     }));
   },
@@ -194,10 +242,14 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }),
   setSendSelectedGroupIds: (ids) => set({ sendSelectedGroupIds: ids }),
   clearSendRecipients: () => set({ sendSelectedGroupIds: [] }),
-  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [], reuseNotice: null }),
+  clearSendDraft: () => set({ sendMessage: "", sendImageFile: null, sendSelectedGroupIds: [], sendReplyToMessageId: null, reuseNotice: null }),
 
   reuseNotice: null,
   setReuseNotice: (notice) => set({ reuseNotice: notice }),
+  tabBadges: {},
+  setTabBadge: (tabId, count) => set((state) => ({
+    tabBadges: { ...state.tabBadges, [tabId]: count > 0 ? count : undefined },
+  })),
 
   reuseBroadcast: (broadcast) => {
     set({
@@ -206,6 +258,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       sendImageFile: null,
       activeTab: "send",
       reuseNotice: "설정을 불러왔습니다. 내용을 확인 후 발송하세요.",
+      sendReplyToMessageId: broadcast.replyToMessageId ?? null,
     });
   },
 }));

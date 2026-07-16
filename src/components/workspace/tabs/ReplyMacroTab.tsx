@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
-import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock, Image } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
+import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import {
-  fetchReplyMacros,
   createReplyMacro,
   updateReplyMacro,
   deleteReplyMacro,
@@ -53,6 +53,7 @@ export function ReplyMacroTab() {
   const [intervalHours, setIntervalHours] = useState(24);
   const [fixedTime, setFixedTime] = useState("09:00");
   const [maxSendsPerDay, setMaxSendsPerDay] = useState(10);
+  const [replyToMessageId, setReplyToMessageId] = useState("");
   const [macroFile, setMacroFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -69,25 +70,38 @@ export function ReplyMacroTab() {
 
   const { toast } = useToast();
 
-  const loadMacros = useCallback(async () => {
-    if (!selectedAccountId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchReplyMacros(selectedAccountId);
-      setMacros(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "로딩 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAccountId]);
+  // ── RuntimeManager 캐시에서 ReplyMacro 데이터 즉시 로드 ──
+  const { replyMacros } = useAccountCache(selectedAccountId);
+  const runtimeActions = useRuntimeActions();
 
   useEffect(() => {
     setSearchQuery("");
-    if (selectedAccountId) loadMacros();
-    else setMacros([]);
-  }, [selectedAccountId, loadMacros]);
+    if (selectedAccountId) {
+      const cachedMacros = replyMacros;
+      if (cachedMacros.length > 0) {
+        setMacros(cachedMacros);
+        setLoading(false);
+      } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setMacros([]);
+        setLoading(true);
+        runtimeActions.refreshReplyMacros(selectedAccountId);
+      }
+    } else {
+      setMacros([]);
+      setLoading(false);
+    }
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
+
+  // 캐시가 업데이트되면 macros 동기화
+  useEffect(() => {
+    if (replyMacros.length > 0) {
+      setMacros(replyMacros);
+      setLoading(false);
+    }
+  }, [replyMacros]);
 
   // ── Filtered macros ──
   const filteredMacros = useMemo(() => {
@@ -108,6 +122,7 @@ export function ReplyMacroTab() {
     setIntervalHours(24);
     setFixedTime("09:00");
     setMaxSendsPerDay(10);
+    setReplyToMessageId("");
     setMacroFile(null);
     setEditingId(null);
     setSubmitError(null);
@@ -130,6 +145,7 @@ export function ReplyMacroTab() {
     setIntervalHours(macro.intervalHours);
     setFixedTime(macro.fixedTime || "09:00");
     setMaxSendsPerDay(macro.maxSendsPerDay);
+    setReplyToMessageId(macro.replyToMessageId ? String(macro.replyToMessageId) : "");
     setShowForm(true);
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -143,6 +159,7 @@ export function ReplyMacroTab() {
     setIntervalHours(macro.intervalHours);
     setFixedTime(macro.fixedTime || "09:00");
     setMaxSendsPerDay(macro.maxSendsPerDay);
+    setReplyToMessageId(macro.replyToMessageId ? String(macro.replyToMessageId) : "");
     setShowForm(true);
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -173,6 +190,7 @@ export function ReplyMacroTab() {
       intervalHours,
       fixedTime: scheduleType === "fixed" ? fixedTime : undefined,
       maxSendsPerDay,
+      replyToMessageId: replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
       file: macroFile ?? undefined,
     };
     try {
@@ -184,7 +202,7 @@ export function ReplyMacroTab() {
         toast("success", "매크로가 추가되었습니다");
       }
       closeForm();
-      await loadMacros();
+      await runtimeActions.refreshReplyMacros(selectedAccountId);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "저장 실패");
       toast("error", "매크로 저장에 실패했습니다");
@@ -198,7 +216,7 @@ export function ReplyMacroTab() {
     if (!selectedAccountId || !confirmDeleteId) return;
     try {
       await deleteReplyMacro(selectedAccountId, confirmDeleteId);
-      await loadMacros();
+      await runtimeActions.refreshReplyMacros(selectedAccountId);
       toast("success", "매크로가 삭제되었습니다");
     } catch (err) {
       setError(err instanceof Error ? err.message : "삭제 실패");
@@ -242,6 +260,10 @@ export function ReplyMacroTab() {
         <div>
           <h2 className="text-sm font-semibold text-app-text">답장매크로</h2>
           <p className="text-xs text-app-text-muted">{getAccountDisplayName(account)}</p>
+          <p className="mt-1 text-xs text-app-text-muted">
+            지정한 대상 채팅방에 예약된 시간마다 메시지를 자동 발송합니다. 수신 메시지에 실시간으로 응답하려면{" "}
+            <span className="font-medium text-app-text-secondary">자동 응답</span> 메뉴를 사용하세요.
+          </p>
         </div>
         {!showForm && (
           <Button variant="primary" size="sm" onClick={openCreateForm} className="shrink-0">
@@ -288,12 +310,11 @@ export function ReplyMacroTab() {
           icon={SendHorizonal}
           title="등록된 매크로 없음"
           description="답장매크로는 특정 채팅방에 정해진 시간/간격으로 메시지를 전송합니다"
-          action={
-            <Button variant="primary" size="sm" onClick={openCreateForm}>
-              <Plus className="h-3.5 w-3.5" /> 첫 매크로 추가
-            </Button>
-          }
-        />
+        >
+          <Button variant="primary" size="sm" onClick={openCreateForm}>
+            <Plus className="h-3.5 w-3.5" /> 첫 매크로 추가
+          </Button>
+        </EmptyState>
       )}
 
       {/* Empty: search no results */}
@@ -302,12 +323,11 @@ export function ReplyMacroTab() {
           icon={Search}
           title="검색 결과가 없습니다"
           description={`"${searchQuery}"와 일치하는 매크로가 없습니다`}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
-              <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
-            </Button>
-          }
-        />
+        >
+          <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
+            <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
+          </Button>
+        </EmptyState>
       )}
 
       {/* Inline create/edit form */}
@@ -362,6 +382,17 @@ export function ReplyMacroTab() {
                 <span className="text-[11px] text-app-text-subtle">텔레그램 최대 4096자</span>
                 <span className="text-[11px] text-app-text-muted">{messageContent.length}/4096</span>
               </div>
+            </Field>
+
+            <Field label="답장할 메시지 ID (선택)">
+              <Input
+                type="number"
+                value={replyToMessageId}
+                onChange={(e) => setReplyToMessageId(e.target.value)}
+                placeholder="텔레그램 메시지 ID (비우면 일반 발송)"
+                min={1}
+                inputMode="numeric"
+              />
             </Field>
 
             <Field label="파일 첨부 (선택)">

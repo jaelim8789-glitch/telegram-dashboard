@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Activity, AlertTriangle, Ban, ChevronLeft, ChevronRight, Clock, ExternalLink,
+  Activity, AlertTriangle, Ban, ChevronLeft, ChevronRight, Clock, XCircle,
   KeyRound, MessageSquare, RefreshCw, Search, ShieldOff, Smartphone,
-  Users, XCircle,
+  Users,
 } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { InlineError } from "@/components/ui/InlineError";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";

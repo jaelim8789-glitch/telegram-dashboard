@@ -17,23 +17,14 @@
 } from "@/types";
 import { getToken, getSessionToken, setSessionToken } from "@/lib/auth";
 
-// NEXT_PUBLIC_API_BASE_URL is inlined at build time.  When empty (the Dockerfile
-// default), the frontend uses relative URLs through the nginx reverse proxy
-// (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
-// frontend calls the API directly at that origin.
-// The fallback "http://localhost:8000" is for local dev without nginx.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-/** Default timeout for API requests (milliseconds).  File uploads (createBroadcast,
- *  createReplyMacro) call fetch() directly and are not affected by this timeout. */
 const REQUEST_TIMEOUT_MS = 30_000;
 
-/** Every /api/* route requires either this (an admin session) or an X-API-Key see
- * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
   const sessionToken = getSessionToken();
@@ -44,6 +35,7 @@ function authHeaders(): Record<string, string> {
 }
 
 function extractDetailMessage(body: unknown): string | null {
+  if (typeof body === "string") return body.trim() || null;
   if (!body || typeof body !== "object" || !("detail" in body)) return null;
   const detail = (body as { detail: unknown }).detail;
   if (typeof detail === "string") return detail;
@@ -57,6 +49,16 @@ function extractDetailMessage(body: unknown): string | null {
       .join(", ");
   }
   return null;
+}
+
+async function readErrorBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
 }
 
 interface ApiAccount {
@@ -106,15 +108,22 @@ export class ApiError extends Error {
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       signal: controller.signal,
       headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
     });
+
+    if (!res.ok) {
+      const body = await readErrorBody(res);
+      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      throw new ApiError(detail, res.status, false);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
   } catch (err) {
-    clearTimeout(timeoutId);
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new ApiError(
         "서버 응답이 30초 이상 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
@@ -127,17 +136,9 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       undefined,
       true,
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
-  clearTimeout(timeoutId);
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-    throw new ApiError(detail, res.status, false);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -155,6 +156,26 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
 
 export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
+}
+
+export async function updateAccountStatus(
+  accountId: string,
+  status: Account["status"]
+): Promise<void> {
+  await request<void>(`/api/accounts/${accountId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function batchUpdateAccountStatus(
+  accountIds: string[],
+  status: Account["status"]
+): Promise<void> {
+  await request<void>("/api/accounts/batch/status", {
+    method: "PATCH",
+    body: JSON.stringify({ account_ids: accountIds, status }),
+  });
 }
 
 interface ApiAccountHealthItem {
@@ -190,6 +211,71 @@ function toAccountHealthItem(api: ApiAccountHealthItem): AccountHealthItem {
 export async function fetchAccountHealth(): Promise<AccountHealthItem[]> {
   const items = await request<ApiAccountHealthItem[]>("/api/account-health");
   return items.map(toAccountHealthItem);
+}
+
+// ── Runtime Inspector API ─────────────────────────────────────────────
+
+export interface RuntimeInspectorSummary {
+  total: number;
+  active: number;
+  healthy: number;
+  unauthorized: number;
+  rate_limited: number;
+  banned: number;
+  error: number;
+  runtimes: RuntimeSummaryItem[];
+}
+
+export interface RuntimeSummaryItem {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  status: string;
+  running: boolean;
+  health_status: string;
+  has_session: boolean;
+  uptime_seconds: number;
+  today_sent: number;
+  group_count: number;
+  active_broadcasts: number;
+  queue_size: number;
+  consecutive_failures: number;
+  recovery_attempts: number;
+  last_recovery_result: string;
+}
+
+export interface RuntimeInspectorDetail {
+  account_id: string;
+  phone: string;
+  name: string | null;
+  status: string;
+  running: boolean;
+  started_at: string | null;
+  uptime_seconds: number;
+  health: Record<string, unknown>;
+  rate_limiter: Record<string, unknown>;
+  group_cache: Record<string, unknown>;
+  broadcast_queue: Record<string, unknown>;
+  auto_reply: Record<string, unknown>;
+  reply_macros: Record<string, unknown>;
+  session: Record<string, unknown>;
+  today_sent: number;
+}
+
+export async function fetchRuntimeInspectorSummary(): Promise<RuntimeInspectorSummary> {
+  return request<RuntimeInspectorSummary>("/api/runtime/inspector");
+}
+
+export async function fetchRuntimeInspectorDetail(accountId: string): Promise<RuntimeInspectorDetail> {
+  return request<RuntimeInspectorDetail>(`/api/runtime/inspector/${accountId}`);
+}
+
+export async function triggerSessionRecovery(accountId: string): Promise<{ account_id: string; recovered: boolean; health_status: string }> {
+  return request(`/api/runtime/inspector/${accountId}/recover`, { method: "POST" });
+}
+
+export async function restartRuntime(accountId: string): Promise<{ account_id: string; restarted: boolean; authenticated: boolean }> {
+  return request(`/api/runtime/inspector/${accountId}/restart`, { method: "POST" });
 }
 
 interface ApiAuthStepResult {
@@ -255,6 +341,23 @@ export async function fetchGroups(accountId: string): Promise<Group[]> {
   return (body.items ?? body).map(toGroup);
 }
 
+export interface GroupFolder {
+  id: string;
+  title: string;
+  groupIds: string[];
+}
+
+export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[]> {
+  try {
+    const body = await request<{ id: string; title: string; group_ids: string[] }[]>(
+      `/api/accounts/${accountId}/groups/folders`
+    );
+    return body.map((f) => ({ id: f.id, title: f.title, groupIds: f.group_ids }));
+  } catch {
+    return [];
+  }
+}
+
 interface ApiBroadcast {
   id: string;
   account_id: string;
@@ -302,17 +405,11 @@ export interface CreateBroadcastInput {
   message: string;
   recipients: string[];
   image?: File;
-  /** ISO 8601 datetime. Omit to send as soon as the queue/rate-limit allow it. */
   scheduledAt?: string;
-  /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
   deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
-  /** Per-group delay in seconds for normal mode (default 60) */
   delaySeconds?: number;
-  /** Reply to a specific Telegram message ID. Only honored by the backend when
-   * deliveryMode is "reply" — otherwise the message sends as a new message. */
   replyToMessageId?: number;
-  /** Inline keyboard buttons (label + URL pairs). */
   inlineButtons?: { label: string; url: string }[];
 }
 
@@ -391,64 +488,33 @@ export function clearIdempotencyKey(): void {
   _idempotencyKey = null;
 }
 
-/**
- * Retry a failed broadcast via the Sprint 24 retry API.
- * POST /api/broadcast/{broadcast_id}/retry resets status to "pending"
- * and clears the error message so the scheduler re-dispatches it.
- */
 export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/retry`, { method: "POST" }));
 }
 
-/**
- * Send a broadcast immediately as a one-time send. 
- * POST /api/broadcast/{broadcastId}/send
- */
 export async function sendNowBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/dispatch/${broadcastId}`, { method: "POST" }));
 }
 
-/**
- * Cancel a recurring broadcast. POST /api/broadcast/{broadcast_id}/cancel
- * sets status to "cancelled" so the scheduler stops dispatching it.
- */
 export async function cancelRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/cancel`, { method: "POST" }));
 }
 
-/**
- * Stop a broadcast (alias for cancel). POST /api/broadcast/{broadcast_id}/cancel
- * sets status to "cancelled" for both one-time and recurring broadcasts.
- */
 export const stopBroadcast = cancelRecurringBroadcast;
 
-/**
- * Fetch active recurring broadcasts. GET /api/broadcast/recurring
- * Returns all broadcasts with non-null recurring_interval_minutes that
- * are still active (not cancelled/failed).
- */
 export async function fetchRecurringBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/broadcast/recurring");
   return logs.map(toBroadcast);
 }
 
-/**
- * Pause a recurring broadcast. POST /api/broadcast/{broadcastId}/pause
- */
 export async function pauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/pause`, { method: "POST" }));
 }
 
-/**
- * Unpause a recurring broadcast. POST /api/broadcast/{broadcastId}/unpause
- */
 export async function unpauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/unpause`, { method: "POST" }));
 }
 
-/**
- * Fetch execution history for a recurring broadcast. GET /api/broadcast/{broadcastId}/children
- */
 export async function fetchRecurringChildren(
   broadcastId: string,
   limit?: number,
@@ -489,15 +555,18 @@ export async function adminLogin(username: string, password: string): Promise<st
 }
 
 export async function fetchAdminMe(): Promise<{ username: string }> {
-  return request("/api/admin/me");
+  return request("/api/admin/auth/me");
 }
 
-// === API keys (admin only) ===
+// === API keys (admin only) — enhanced with plan schema ===
 
 export interface ApiKeyCreated {
   id: string;
   key: string;
   name: string;
+  plan: string;
+  maxAccounts: number;
+  dailyLimit: number;
   createdAt: string;
 }
 
@@ -506,6 +575,9 @@ export interface ApiKey {
   maskedKey: string;
   name: string;
   isActive: boolean;
+  plan: string;
+  maxAccounts: number;
+  dailyLimit: number;
   tenantId: string | null;
   createdAt: string;
   lastUsed: string | null;
@@ -516,6 +588,9 @@ interface ApiApiKey {
   masked_key: string;
   name: string;
   is_active: boolean;
+  plan: string;
+  max_accounts: number;
+  daily_limit: number;
   tenant_id: string | null;
   created_at: string;
   last_used: string | null;
@@ -527,6 +602,9 @@ function toApiKey(api: ApiApiKey): ApiKey {
     maskedKey: api.masked_key,
     name: api.name,
     isActive: api.is_active,
+    plan: api.plan ?? "free",
+    maxAccounts: api.max_accounts ?? 0,
+    dailyLimit: api.daily_limit ?? 0,
     tenantId: api.tenant_id,
     createdAt: api.created_at,
     lastUsed: api.last_used,
@@ -538,12 +616,33 @@ export async function fetchApiKeys(): Promise<ApiKey[]> {
   return keys.map(toApiKey);
 }
 
-export async function createApiKey(name: string, tenantId?: string): Promise<ApiKeyCreated> {
-  const result = await request<{ id: string; key: string; name: string; created_at: string }>(
+export interface CreateApiKeyInput {
+  name: string;
+  plan?: "free" | "pro" | "team";
+  maxAccounts?: number;
+  dailyLimit?: number;
+  tenantId?: string;
+}
+
+export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyCreated> {
+  const body: Record<string, unknown> = { name: input.name };
+  if (input.plan) body.plan = input.plan;
+  if (input.maxAccounts != null) body.max_accounts = input.maxAccounts;
+  if (input.dailyLimit != null) body.daily_limit = input.dailyLimit;
+  if (input.tenantId) body.tenant_id = input.tenantId;
+  const result = await request<{ id: string; key: string; name: string; plan: string; max_accounts: number; daily_limit: number; created_at: string }>(
     "/api/admin/api-keys",
-    { method: "POST", body: JSON.stringify(tenantId ? { name, tenant_id: tenantId } : { name }) }
+    { method: "POST", body: JSON.stringify(body) }
   );
-  return { id: result.id, key: result.key, name: result.name, createdAt: result.created_at };
+  return { 
+    id: result.id, 
+    key: result.key, 
+    name: result.name, 
+    plan: result.plan ?? "free", 
+    maxAccounts: result.max_accounts ?? 0, 
+    dailyLimit: result.daily_limit ?? 0, 
+    createdAt: result.created_at 
+  };
 }
 
 export async function deleteApiKey(id: string): Promise<void> {
@@ -840,12 +939,58 @@ interface ApiManualIssueResult {
   already_issued: boolean;
 }
 
-export async function manualIssueApiKey(userIdentifier: string, memo?: string): Promise<ManualIssueResult> {
+export async function manualIssueApiKey(
+  userIdentifier: string,
+  memo?: string,
+  plan?: "free" | "pro" | "team",
+): Promise<ManualIssueResult> {
   const result = await request<ApiManualIssueResult>("/api/admin/manual-issue-key", {
     method: "POST",
-    body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null }),
+    body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null, plan: plan ?? null }),
   });
   return { userId: result.user_id, phone: result.phone, apiKey: result.api_key, alreadyIssued: result.already_issued };
+}
+
+// ─── Channel Hub ────────────────────────────────────────────────────
+
+export interface ChannelHubPublishInput {
+  accountId: string;
+  channelId: string;
+  title: string;
+  body?: string;
+  buttons?: { label: string; url: string }[];
+  pinMessage?: boolean;
+}
+
+export interface ChannelHubPublishResult {
+  id: string;
+  messageId: number;
+  publishedAt: string;
+}
+
+interface ApiChannelHubPublishResult {
+  id: string;
+  message_id: number;
+  published_at: string;
+}
+
+export async function publishChannelPost(input: ChannelHubPublishInput): Promise<ChannelHubPublishResult> {
+  const result = await request<ApiChannelHubPublishResult>("/api/channel-hub/publish", {
+    method: "POST",
+    body: JSON.stringify({
+      account_id: input.accountId,
+      channel_id: input.channelId,
+      title: input.title,
+      body: input.body ?? "",
+      buttons: input.buttons ?? [],
+      pin_message: input.pinMessage ?? false,
+    }),
+  });
+  return {
+    id: result.id,
+    messageId: result.message_id,
+    publishedAt: result.published_at,
+  };
 }
 
 // ─── Delivery Analytics ──────────────────────────────────────────────
@@ -992,6 +1137,7 @@ interface ApiReplyMacro {
   interval_hours: number;
   fixed_time: string | null;
   max_sends_per_day: number;
+  reply_to_message_id: number | null;
   last_sent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -1010,6 +1156,7 @@ function toReplyMacro(api: ApiReplyMacro): ReplyMacro {
     intervalHours: api.interval_hours,
     fixedTime: api.fixed_time,
     maxSendsPerDay: api.max_sends_per_day,
+    replyToMessageId: api.reply_to_message_id ?? null,
     lastSentAt: api.last_sent_at,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
@@ -1024,6 +1171,7 @@ export interface ReplyMacroInput {
   intervalHours?: number;
   fixedTime?: string;
   maxSendsPerDay?: number;
+  replyToMessageId?: number;
   isActive?: boolean;
   file?: File;
 }
@@ -1034,23 +1182,20 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  // Always multipart/form-data — the backend endpoint only accepts Form()
-  // fields (matching createBroadcast's pattern) so a file can be attached in
-  // the same request. Sending JSON here 422s.
-  const form = new FormData();
-  form.append("name", input.name);
-  form.append("target_chats", JSON.stringify(input.targetChats));
-  form.append("message_content", input.messageContent);
-  form.append("schedule_type", input.scheduleType ?? "interval");
-  form.append("interval_hours", String(input.intervalHours ?? 24));
-  form.append("fixed_time", input.fixedTime ?? "");
-  form.append("max_sends_per_day", String(input.maxSendsPerDay ?? 10));
-  form.append("is_active", String(input.isActive ?? true));
-  if (input.file) form.append("file", input.file);
-  const res = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/reply-macros`, { method: "POST", body: form, headers: authHeaders() });
-  if (!res.ok) throw new Error(extractDetailMessage(await res.json().catch(() => null)) ?? "매크로 생성 실패");
-  const macro: ApiReplyMacro = await res.json();
-  return toReplyMacro(macro);
+  return toReplyMacro(await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      target_chats: input.targetChats,
+      message_content: input.messageContent,
+      schedule_type: input.scheduleType ?? "interval",
+      interval_hours: input.intervalHours ?? 24,
+      fixed_time: input.fixedTime ?? "",
+      max_sends_per_day: input.maxSendsPerDay ?? 10,
+      is_active: input.isActive ?? true,
+      reply_to_message_id: input.replyToMessageId ?? null,
+    }),
+  }));
 }
 
 export async function updateReplyMacro(accountId: string, macroId: string, input: Partial<ReplyMacroInput>): Promise<ReplyMacro> {
@@ -1063,6 +1208,7 @@ export async function updateReplyMacro(accountId: string, macroId: string, input
   if (input.fixedTime !== undefined) body.fixed_time = input.fixedTime;
   if (input.maxSendsPerDay !== undefined) body.max_sends_per_day = input.maxSendsPerDay;
   if (input.isActive !== undefined) body.is_active = input.isActive;
+  if (input.replyToMessageId !== undefined) body.reply_to_message_id = input.replyToMessageId;
 
   const macro = await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros/${macroId}`, {
     method: "PUT",
@@ -1107,5 +1253,3 @@ export async function fetchReplyMacroLogs(accountId: string, macroId: string): P
   const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
   return logs.map(toReplyMacroLog);
 }
-
-
