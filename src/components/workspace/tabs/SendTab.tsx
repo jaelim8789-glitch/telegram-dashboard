@@ -491,6 +491,9 @@ export function SendTab() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [recentSets, setRecentSets] = useState<string[][]>([]);
+  const [estimatePreview, setEstimatePreview] = useState<{ estimated_seconds: number; estimated_minutes: number; readable: string } | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [batchRetrying, setBatchRetrying] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
   const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
@@ -995,6 +998,7 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
+      // Use send-to-group API when sending to groups (no manual recipients)
       await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
