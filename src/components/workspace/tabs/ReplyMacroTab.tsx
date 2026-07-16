@@ -54,6 +54,7 @@ export function ReplyMacroTab() {
   const [fixedTime, setFixedTime] = useState("09:00");
   const [maxSendsPerDay, setMaxSendsPerDay] = useState(10);
   const [replyToMessageId, setReplyToMessageId] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [macroFile, setMacroFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -62,7 +63,6 @@ export function ReplyMacroTab() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [executeConfirmId, setExecuteConfirmId] = useState<string | null>(null);
 
-  // ── New features ──
   const [searchQuery, setSearchQuery] = useState("");
 
   const formRef = useRef<HTMLDivElement>(null);
@@ -70,7 +70,6 @@ export function ReplyMacroTab() {
 
   const { toast } = useToast();
 
-  // ── RuntimeManager 캐시에서 ReplyMacro 데이터 즉시 로드 ──
   const { replyMacros } = useAccountCache(selectedAccountId);
   const runtimeActions = useRuntimeActions();
 
@@ -82,16 +81,18 @@ export function ReplyMacroTab() {
         setMacros(cachedMacros);
         setLoading(false);
       } else {
+        setMacros([]);
         setLoading(true);
         runtimeActions.refreshReplyMacros(selectedAccountId);
       }
     } else {
       setMacros([]);
+      setLoading(false);
     }
     setError(null);
-  }, [selectedAccountId, replyMacros, runtimeActions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
 
-  // 캐시가 업데이트되면 macros 동기화
   useEffect(() => {
     if (replyMacros.length > 0) {
       setMacros(replyMacros);
@@ -99,7 +100,6 @@ export function ReplyMacroTab() {
     }
   }, [replyMacros]);
 
-  // ── Filtered macros ──
   const filteredMacros = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return macros;
@@ -119,6 +119,7 @@ export function ReplyMacroTab() {
     setFixedTime("09:00");
     setMaxSendsPerDay(10);
     setReplyToMessageId("");
+    setShowAdvanced(false);
     setMacroFile(null);
     setEditingId(null);
     setSubmitError(null);
@@ -257,8 +258,8 @@ export function ReplyMacroTab() {
           <h2 className="text-sm font-semibold text-app-text">답장매크로</h2>
           <p className="text-xs text-app-text-muted">{getAccountDisplayName(account)}</p>
           <p className="mt-1 text-xs text-app-text-muted">
-            지정한 대상 채팅방에 예약된 시간마다 메시지를 자동 발송합니다. 수신 메시지에 실시간으로 응답하려면{" "}
-            <span className="font-medium text-app-text-secondary">자동 응답</span> 메뉴를 사용하세요.
+            각 대상 채팅방의 최신 메시지를 자동 조회하여 Reply로 전송합니다. 수신 메시지에 실시간으로
+            응답하려면 <span className="font-medium text-app-text-secondary">자동 응답</span> 메뉴를 사용하세요.
           </p>
         </div>
         {!showForm && (
@@ -272,7 +273,6 @@ export function ReplyMacroTab() {
         <div className="rounded-lg bg-app-danger-muted px-4 py-3 text-xs text-app-danger">{error}</div>
       )}
 
-      {/* Search */}
       {!loading && macros.length > 0 && (
         <div className="relative">
           <SearchInput
@@ -300,7 +300,6 @@ export function ReplyMacroTab() {
         </div>
       )}
 
-      {/* Empty: no macros */}
       {!loading && !error && macros.length === 0 && !showForm && !searchQuery && (
         <EmptyState
           icon={SendHorizonal}
@@ -313,7 +312,6 @@ export function ReplyMacroTab() {
         </EmptyState>
       )}
 
-      {/* Empty: search no results */}
       {!loading && !error && macros.length > 0 && filteredMacros.length === 0 && !showForm && (
         <EmptyState
           icon={Search}
@@ -326,7 +324,6 @@ export function ReplyMacroTab() {
         </EmptyState>
       )}
 
-      {/* Inline create/edit form */}
       {showForm && (
         <div ref={formRef} className="rounded-xl border border-app-border bg-app-card">
           <div className="flex items-center justify-between border-b border-app-border px-4 py-3">
@@ -380,16 +377,35 @@ export function ReplyMacroTab() {
               </div>
             </Field>
 
-            <Field label="답장할 메시지 ID (선택)">
-              <Input
-                type="number"
-                value={replyToMessageId}
-                onChange={(e) => setReplyToMessageId(e.target.value)}
-                placeholder="텔레그램 메시지 ID (비우면 일반 발송)"
-                min={1}
-                inputMode="numeric"
-              />
-            </Field>
+            {/* Advanced options toggle */}
+            <div className="border-t border-app-border pt-3">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
+              >
+                <svg
+                  className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+                고급 옵션
+              </button>
+            </div>
+
+            {showAdvanced && (
+              <Field label="답장할 메시지 ID (선택)">
+                <Input
+                  type="number"
+                  value={replyToMessageId}
+                  onChange={(e) => setReplyToMessageId(e.target.value)}
+                  placeholder="비우면 각 채팅방의 최신 메시지에 자동 Reply"
+                  min={1}
+                  inputMode="numeric"
+                />
+              </Field>
+            )}
 
             <Field label="파일 첨부 (선택)">
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
@@ -455,7 +471,6 @@ export function ReplyMacroTab() {
         </div>
       )}
 
-      {/* Macro list - compact operational rows */}
       {filteredMacros.length > 0 && (
         <div className="space-y-1.5">
           {filteredMacros.map((macro) => (
@@ -468,7 +483,6 @@ export function ReplyMacroTab() {
                   : "border-app-border/30 bg-app-card/50 opacity-60"
               )}
             >
-              {/* Left: info */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-sm font-medium text-app-text truncate max-w-[160px]" title={macro.name}>{macro.name}</span>
@@ -518,7 +532,6 @@ export function ReplyMacroTab() {
                   </div>
                 )}
               </div>
-              {/* Right: actions */}
               <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
