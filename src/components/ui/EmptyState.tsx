@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 interface EmptyStateProps {
@@ -37,7 +38,10 @@ export function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className={cn(
         "flex flex-col items-center justify-center text-center",
         compact ? "py-8 gap-3" : "py-16 gap-4",
@@ -94,6 +98,6 @@ export function EmptyState({
       {children && (
         <div className="mt-1">{children}</div>
       )}
-    </div>
+    </motion.div>
   );
 }

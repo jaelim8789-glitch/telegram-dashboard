@@ -46,8 +46,11 @@ export function Button({
       aria-busy={loading || undefined}
       className={cn(
         "focus-ring inline-flex items-center justify-center gap-1.5 font-medium",
-        "transition-all duration-150 ease-out active:scale-[0.98]",
-        "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
+        "transition-all duration-150 ease-out",
+        "active:scale-[0.97] active:duration-75",
+        "hover:-translate-y-[0.5px]",
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 disabled:active:scale-100",
+        "select-none",
         SIZE_STYLE[size],
         VARIANT_STYLE[variant],
         className
