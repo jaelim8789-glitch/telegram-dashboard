@@ -81,14 +81,18 @@ export function ReplyMacroTab() {
         setMacros(cachedMacros);
         setLoading(false);
       } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setMacros([]);
         setLoading(true);
         runtimeActions.refreshReplyMacros(selectedAccountId);
       }
     } else {
       setMacros([]);
+      setLoading(false);
     }
     setError(null);
-  }, [selectedAccountId, replyMacros, runtimeActions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
 
   // 캐시가 업데이트되면 macros 동기화
   useEffect(() => {

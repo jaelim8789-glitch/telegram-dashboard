@@ -115,14 +115,18 @@ export function GroupTab() {
         setGroups(cachedGroups);
         setLoading(false);
       } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setGroups([]);
         setLoading(true);
         runtimeActions.refreshGroups(selectedAccountId);
       }
     } else {
       setGroups([]);
+      setLoading(false);
     }
     setError(null);
-  }, [selectedAccountId, cachedGroups, runtimeActions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
 
   // 캐시 업데이트 시 동기화
   useEffect(() => {

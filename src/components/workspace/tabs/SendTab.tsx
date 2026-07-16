@@ -749,6 +749,9 @@ export function SendTab() {
         setGroups(cachedGroups);
         setGroupsLoading(false);
       } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setGroups([]);
+        setGroupsLoading(true);
         runtimeActions.refreshGroups(selectedAccountId);
       }
       const cachedBroadcasts = manager.getBroadcasts(selectedAccountId);
@@ -756,6 +759,9 @@ export function SendTab() {
         setHistory(cachedBroadcasts);
         setHistoryLoading(false);
       } else {
+        // 이전 계정의 데이터를 즉시 지우고 로딩 상태 표시
+        setHistory([]);
+        setHistoryLoading(true);
         runtimeActions.refreshBroadcasts(selectedAccountId);
       }
     } else { setGroups([]); setHistory([]); }
