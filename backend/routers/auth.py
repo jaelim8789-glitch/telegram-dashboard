@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..models import AuthMe
 from ..runtime_manager import RuntimeManager
+from ..auth_middleware import get_current_user, verify_account_ownership
+from ..admin_platform import AdminPlatform
 
 router = APIRouter()
 
 
 @router.post("/accounts/{account_id}/send-code")
-async def send_code(account_id: str):
+async def send_code(account_id: str, current_user: dict = Depends(verify_account_ownership)):
     manager = RuntimeManager.get_instance()
     try:
         result = await manager.send_code(account_id)
@@ -21,7 +23,7 @@ async def send_code(account_id: str):
 
 
 @router.post("/accounts/{account_id}/verify-code")
-async def verify_code(account_id: str, body: dict):
+async def verify_code(account_id: str, body: dict, current_user: dict = Depends(verify_account_ownership)):
     code = body.get("code")
     if not code:
         raise HTTPException(status_code=400, detail="Code is required")
@@ -34,7 +36,7 @@ async def verify_code(account_id: str, body: dict):
 
 
 @router.post("/accounts/{account_id}/verify-2fa")
-async def verify_2fa(account_id: str, body: dict):
+async def verify_2fa(account_id: str, body: dict, current_user: dict = Depends(verify_account_ownership)):
     password = body.get("password")
     if not password:
         raise HTTPException(status_code=400, detail="Password is required")
@@ -47,7 +49,7 @@ async def verify_2fa(account_id: str, body: dict):
 
 
 @router.get("/accounts/{account_id}/status")
-async def get_auth_status(account_id: str):
+async def get_auth_status(account_id: str, current_user: dict = Depends(verify_account_ownership)):
     manager = RuntimeManager.get_instance()
     try:
         result = await manager.get_auth_status(account_id)
@@ -57,7 +59,7 @@ async def get_auth_status(account_id: str):
 
 
 @router.post("/accounts/{account_id}/re-auth")
-async def re_auth(account_id: str):
+async def re_auth(account_id: str, current_user: dict = Depends(verify_account_ownership)):
     manager = RuntimeManager.get_instance()
     try:
         result = await manager.re_auth(account_id)
@@ -66,39 +68,38 @@ async def re_auth(account_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/auth/send-code")
-async def auth_send_code(body: dict):
-    # Free tier auth — handled by existing auth system
-    return {"sent": True}
-
-
-@router.post("/auth/verify-code")
-async def auth_verify_code(body: dict):
-    phone = body.get("phone")
-    code = body.get("code")
-    if not phone or not code:
-        raise HTTPException(status_code=400, detail="Phone and code required")
-    return {"api_key": "placeholder_api_key"}
-
-
 @router.post("/auth/login-with-api-key")
 async def login_with_api_key(body: dict):
     api_key = body.get("api_key")
     if not api_key:
         raise HTTPException(status_code=400, detail="API key required")
+    admin = AdminPlatform.get_instance()
+    key_data = admin.validate_api_key(api_key)
+    if not key_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired API key")
     return {
-        "access_token": "placeholder_token",
+        "access_token": api_key,
         "session_token": None,
         "token_type": "bearer",
+        "plan": key_data.get("plan", "free"),
+        "key_prefix": key_data.get("key_prefix", ""),
     }
 
 
 @router.get("/auth/me", response_model=AuthMe)
-async def auth_me():
+async def auth_me(current_user: dict = Depends(get_current_user)):
     return AuthMe(
-        role="user",
-        phone=None,
+        role=current_user.get("role", "api_key"),
+        phone=current_user.get("phone"),
         subscription_status="active",
-        plan="premium",
+        plan=current_user.get("plan", "free"),
         trial_expires_at=None,
+        api_key_info={
+            "key_id": current_user.get("api_key_id"),
+            "key_name": current_user.get("api_key_name"),
+            "feature_flags": current_user.get("feature_flags", {}),
+            "max_accounts": current_user.get("max_accounts", 0),
+            "daily_limit": current_user.get("daily_limit", 0),
+            "usage_count": current_user.get("usage_count", 0),
+        } if current_user.get("from_api_key") else None,
     )

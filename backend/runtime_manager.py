@@ -125,7 +125,9 @@ class RuntimeManager:
             self._runtimes.clear()
         logger.info("RuntimeManager 종료됨")
 
-    async def add_account(self, phone: str, api_id: int, api_hash: str, name: str | None = None) -> Account:
+    async def add_account(
+        self, phone: str, api_id: int, api_hash: str, name: str | None = None, user_id: str | None = None
+    ) -> Account:
         """새 계정을 추가하고 Runtime을 시작합니다."""
         account_id = str(uuid.uuid4())
         acct = {
@@ -136,6 +138,7 @@ class RuntimeManager:
             "api_hash": api_hash,
             "status": "inactive",
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_id": user_id,
         }
 
         # DB 저장
@@ -163,9 +166,11 @@ class RuntimeManager:
 
         return runtime.get_account()
 
-    async def add_account_legacy(self, phone: str, name: str | None = None) -> Account:
+    async def add_account_legacy(
+        self, phone: str, name: str | None = None, user_id: str | None = None
+    ) -> Account:
         """계정 추가 (인증 없이 계정만 DB에 저장, Runtime 생성).
-        
+
         Telethon client는 생성하지만 start()를 호출하지 않음.
         사용자가 이후 send-code → verify-code 플로우로 인증.
         api_id=1, api_hash="placeholder"를 사용하여 Telethon 생성자 통과.
@@ -179,6 +184,7 @@ class RuntimeManager:
             "api_hash": "",
             "status": "inactive",
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_id": user_id,
         }
 
         # DB에 저장
@@ -499,6 +505,12 @@ class RuntimeManager:
                 created_at TEXT DEFAULT ''
             )
         """)
+        # Migration: owner tracking for tenant isolation (added for auth hardening).
+        # Existing rows keep user_id = NULL (legacy/unclaimed) until backfilled.
+        try:
+            conn.execute("ALTER TABLE accounts ADD COLUMN user_id TEXT")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
         conn.close()
 
@@ -506,7 +518,7 @@ class RuntimeManager:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.execute(
-            "SELECT id, phone, name, api_id, api_hash, status, created_at FROM accounts ORDER BY created_at"
+            "SELECT id, phone, name, api_id, api_hash, status, created_at, user_id FROM accounts ORDER BY created_at"
         )
         rows = [dict(row) for row in cursor.fetchall()]
         conn.close()
@@ -516,11 +528,12 @@ class RuntimeManager:
         conn = sqlite3.connect(DB_PATH)
         conn.execute(
             """INSERT OR REPLACE INTO accounts
-               (id, phone, name, api_id, api_hash, status, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               (id, phone, name, api_id, api_hash, status, created_at, user_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (acct["id"], acct["phone"], acct.get("name", ""),
              acct.get("api_id", 0), acct.get("api_hash", ""),
-             acct.get("status", "inactive"), acct.get("created_at", "")),
+             acct.get("status", "inactive"), acct.get("created_at", ""),
+             acct.get("user_id")),
         )
         conn.commit()
         conn.close()
@@ -530,3 +543,27 @@ class RuntimeManager:
         conn.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
         conn.commit()
         conn.close()
+
+    # ── Ownership lookup (tenant isolation) ────────────────────────
+
+    def get_account_owner(self, account_id: str) -> dict[str, Any] | None:
+        """Returns {"user_id": ...} for an existing account, or None if the
+        account doesn't exist. user_id may itself be None for accounts
+        created before ownership tracking existed."""
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute("SELECT user_id FROM accounts WHERE id = ?", (account_id,)).fetchone()
+            return dict(row) if row is not None else None
+        finally:
+            conn.close()
+
+    def get_account_ids_by_user(self, user_id: str) -> list[str]:
+        """Returns the account_ids explicitly owned by this user (does not
+        include legacy/unclaimed accounts with user_id = NULL)."""
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            rows = conn.execute("SELECT id FROM accounts WHERE user_id = ?", (user_id,)).fetchall()
+            return [r[0] for r in rows]
+        finally:
+            conn.close()

@@ -1,0 +1,131 @@
+{
+  "timestamp": "2026-07-16T06:40:25.594715+00:00",
+  "summary": {
+    "pass": 16,
+    "fail": 4,
+    "skip": 0,
+    "total": 20
+  },
+  "results": [
+    {
+      "name": "Admin Login",
+      "result": "PASS",
+      "detail": "JWT token acquired",
+      "bug": ""
+    },
+    {
+      "name": "Account List",
+      "result": "PASS",
+      "detail": "3 account(s) found",
+      "bug": ""
+    },
+    {
+      "name": "Account Health",
+      "result": "PASS",
+      "detail": "3 account(s)",
+      "bug": ""
+    },
+    {
+      "name": "Auto-Reply GET",
+      "result": "PASS",
+      "detail": "account=563968c1 active=False rules=0",
+      "bug": ""
+    },
+    {
+      "name": "Auto-Reply CREATE (JSON)",
+      "result": "PASS",
+      "detail": "rule_id=609984e2 - Uses JSON body",
+      "bug": ""
+    },
+    {
+      "name": "Auto-Reply DELETE",
+      "result": "PASS",
+      "detail": "HTTP 204",
+      "bug": ""
+    },
+    {
+      "name": "Auto-Reply TOGGLE ON",
+      "result": "FAIL",
+      "detail": "HTTP 400: {\"detail\":\"계정이 아직 인증되지 않았습니다. 먼저 '계정 등록'에서 Telegram 인증을 완료해주세요.\"}",
+      "bug": "Auto-Reply toggle returned 400 (account needs Telegram session)"
+    },
+    {
+      "name": "Auto-Reply LOGS",
+      "result": "PASS",
+      "detail": "0 log entries",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro LIST",
+      "result": "PASS",
+      "detail": "0 macro(s) existing",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro CREATE",
+      "result": "PASS",
+      "detail": "macro_id=e56995c7",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro UPDATE",
+      "result": "FAIL",
+      "detail": "HTTP 422: {\"detail\":[{\"type\":\"model_attributes_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid dictionary ",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro GET",
+      "result": "PASS",
+      "detail": "",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro EXECUTE",
+      "result": "FAIL",
+      "detail": "HTTP 202: {\"status\":\"accepted\",\"macro_id\":\"e56995c7-fbef-4829-a0f8-e1f55e877d23\"}",
+      "bug": "Reply Macro execute returned 202"
+    },
+    {
+      "name": "Reply Macro LOGS",
+      "result": "PASS",
+      "detail": "0 log entries",
+      "bug": ""
+    },
+    {
+      "name": "Reply Macro DELETE",
+      "result": "PASS",
+      "detail": "",
+      "bug": ""
+    },
+    {
+      "name": "Broadcast CREATE",
+      "result": "FAIL",
+      "detail": "HTTP 202: {\"id\":\"8dfcbeb6-2786-4b3d-9c5a-a92cb2c5828c\",\"account_id\":\"563968c1-72c5-47e4-be24-401eab3549cb\",\"message\":\"Test broadcast message from verification\",\"media_path\":null,\"recipients\":[\"@test_recipient_1",
+      "bug": "Broadcast CREATE failed (202)"
+    },
+    {
+      "name": "Broadcast RECURRING",
+      "result": "PASS",
+      "detail": "0 recurring broadcast(s)",
+      "bug": ""
+    },
+    {
+      "name": "Scheduler UPCOMING",
+      "result": "PASS",
+      "detail": "0 upcoming broadcast(s)",
+      "bug": ""
+    },
+    {
+      "name": "Broadcast Logs",
+      "result": "PASS",
+      "detail": "1 log entries",
+      "bug": ""
+    },
+    {
+      "name": "API returns accounts",
+      "result": "PASS",
+      "detail": "3 accounts",
+      "bug": ""
+    }
+  ]
+}

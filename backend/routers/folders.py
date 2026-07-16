@@ -20,10 +20,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..runtime_manager import RuntimeManager
+from ..auth_middleware import verify_account_ownership, check_daily_send_limit
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +249,7 @@ async def _compute_smart_folder_groups(
 
 
 @router.get("", response_model=list[FolderResponse])
-async def list_folders(account_id: str, tree: bool = False):
+async def list_folders(account_id: str, tree: bool = False, current_user: dict = Depends(verify_account_ownership)):
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -274,7 +275,7 @@ async def list_folders(account_id: str, tree: bool = False):
 
 
 @router.post("", response_model=FolderResponse, status_code=201)
-async def create_folder(account_id: str, body: FolderCreate):
+async def create_folder(account_id: str, body: FolderCreate, current_user: dict = Depends(verify_account_ownership)):
     _init_folders_db()
     now = datetime.now(timezone.utc).isoformat()
     folder_id = str(uuid.uuid4())
@@ -314,7 +315,7 @@ async def create_folder(account_id: str, body: FolderCreate):
 
 
 @router.post("/smart", response_model=FolderResponse, status_code=201)
-async def create_smart_folder(account_id: str, body: SmartFolderConfig):
+async def create_smart_folder(account_id: str, body: SmartFolderConfig, current_user: dict = Depends(verify_account_ownership)):
     """Create a smart folder that computes its group_ids dynamically."""
     _init_folders_db()
     now = datetime.now(timezone.utc).isoformat()
@@ -349,7 +350,7 @@ async def create_smart_folder(account_id: str, body: SmartFolderConfig):
 
 
 @router.put("/{folder_id}", response_model=FolderResponse)
-async def update_folder(account_id: str, folder_id: str, body: FolderUpdate):
+async def update_folder(account_id: str, folder_id: str, body: FolderUpdate, current_user: dict = Depends(verify_account_ownership)):
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -408,7 +409,7 @@ async def update_folder(account_id: str, folder_id: str, body: FolderUpdate):
 
 
 @router.delete("/{folder_id}", status_code=204)
-async def delete_folder(account_id: str, folder_id: str):
+async def delete_folder(account_id: str, folder_id: str, current_user: dict = Depends(verify_account_ownership)):
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.execute(
@@ -433,7 +434,7 @@ async def delete_folder(account_id: str, folder_id: str):
 
 
 @router.post("/reorder", status_code=200)
-async def reorder_folders(account_id: str, body: list[FolderReorderInput]):
+async def reorder_folders(account_id: str, body: list[FolderReorderInput], current_user: dict = Depends(verify_account_ownership)):
     """Bulk reorder folders via drag & drop."""
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)
@@ -452,7 +453,7 @@ async def reorder_folders(account_id: str, body: list[FolderReorderInput]):
 
 
 @router.post("/batch/move", status_code=200)
-async def batch_move_groups(account_id: str, body: BatchMoveInput):
+async def batch_move_groups(account_id: str, body: BatchMoveInput, current_user: dict = Depends(verify_account_ownership)):
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -499,7 +500,7 @@ async def batch_move_groups(account_id: str, body: BatchMoveInput):
 
 
 @router.post("/sync", response_model=list[FolderResponse])
-async def sync_telegram_folders(account_id: str):
+async def sync_telegram_folders(account_id: str, current_user: dict = Depends(verify_account_ownership)):
     manager = RuntimeManager.get_instance()
     telegram_folders = await manager.get_group_folders(account_id)
     if not telegram_folders:
@@ -555,7 +556,12 @@ async def sync_telegram_folders(account_id: str):
 
 
 @router.post("/send", status_code=202)
-async def send_to_folder(account_id: str, body: FolderSendInput):
+async def send_to_folder(
+    account_id: str,
+    body: FolderSendInput,
+    current_user: dict = Depends(verify_account_ownership),
+    _: bool = Depends(check_daily_send_limit),
+):
     manager = RuntimeManager.get_instance()
     runtime = manager.get_runtime(account_id)
     if not runtime:
@@ -616,7 +622,7 @@ async def send_to_folder(account_id: str, body: FolderSendInput):
 
 
 @router.post("/workspace-state", status_code=200)
-async def save_workspace_state(account_id: str, body: dict):
+async def save_workspace_state(account_id: str, body: dict, current_user: dict = Depends(verify_account_ownership)):
     """Save workspace collapse states, pinned folders, and view preferences."""
     _init_folders_db()
     conn = sqlite3.connect(DB_PATH)

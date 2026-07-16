@@ -412,8 +412,12 @@ export function SendTab() {
   }, [savedGroupStorageKey]);
 
   useEffect(() => {
-    if (!savedGroupStorageKey || !groups.length) return;
+    if (!savedGroupStorageKey) return;
+    // groups가 아직 로드되지 않았으면(savedSendGroupIds와 groups를 매칭할 수 없으면)
+    // savedSendGroupIds를 그대로 유지하고 groups 로드를 기다림
+    if (!groups.length) return;
     setSavedSendGroupIds((prev) => {
+      if (prev.length === 0) return prev;
       const valid = prev.filter((id) => groups.some((g) => g.id === id));
       if (valid.length !== prev.length) {
         localStorage.setItem(savedGroupStorageKey, JSON.stringify(valid));
@@ -832,23 +836,30 @@ export function SendTab() {
     if (historyFilter !== "all") return null;
     const groups: { label: string; items: Broadcast[] }[] = [];
 
-    const inFlight = history.filter((h) => h.status === "sending" || h.status === "pending");
+    // 1. 진행 중 — sending/pending (scheduled 제외)
+    const inFlight = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt));
     if (inFlight.length > 0) groups.push({ label: "진행 중", items: inFlight });
 
+    // 2. 예약됨 — pending + scheduledAt
+    const scheduled = history.filter((h) => h.status === "pending" && h.scheduledAt);
+    if (scheduled.length > 0) groups.push({ label: "예약됨", items: scheduled });
+
+    // 3. 오늘 완료 — 최근 5건만 (나머지는 필터로 조회)
     const todays = history.filter((h) => {
       if (h.status === "sending" || h.status === "pending") return false;
       const d = new Date(`${h.createdAt}Z`);
       const today = new Date();
       return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-    }).slice(0, 20);
-    if (todays.length > 0) groups.push({ label: "오늘", items: todays });
+    }).slice(0, 5);
+    if (todays.length > 0) groups.push({ label: "오늘 완료", items: todays });
 
+    // 4. 이전 — 최근 10건만 (나머지는 필터로 조회)
     const older = history.filter((h) => {
       if (h.status === "sending" || h.status === "pending") return false;
       const d = new Date(`${h.createdAt}Z`);
       const today = new Date();
       return !(d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear());
-    }).slice(0, 50);
+    }).slice(0, 10);
     if (older.length > 0) groups.push({ label: "이전", items: older });
 
     return groups.length > 0 ? groups : null;

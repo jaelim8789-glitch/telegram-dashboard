@@ -17,25 +17,27 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..runtime_manager import RuntimeManager
 from ..healing_engine import CircuitState
+from ..auth_middleware import get_current_user, require_admin_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get("/healing/status")
-async def get_healing_status():
-    """Get comprehensive healing status for all accounts."""
+async def get_healing_status(current_user: dict = Depends(get_current_user)):
     manager = RuntimeManager.get_instance()
     return manager.healing_engine.get_healing_status()
 
 
 @router.get("/healing/history")
-async def get_healing_history(limit: int = 100):
-    """Get recent recovery events."""
+async def get_healing_history(
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user),
+):
     manager = RuntimeManager.get_instance()
     return {
         "total_events": len(manager.healing_engine._recovery_history),
@@ -44,8 +46,10 @@ async def get_healing_history(limit: int = 100):
 
 
 @router.get("/healing/accounts/{account_id}")
-async def get_account_healing_detail(account_id: str):
-    """Get detailed healing info for a single account."""
+async def get_account_healing_detail(
+    account_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     manager = RuntimeManager.get_instance()
     detail = manager.healing_engine.get_account_health_detail(account_id)
     if not detail.get("circuit_breaker") and not detail.get("heartbeat"):
@@ -54,8 +58,10 @@ async def get_account_healing_detail(account_id: str):
 
 
 @router.post("/healing/accounts/{account_id}/recover")
-async def trigger_healing_recovery(account_id: str):
-    """Manually trigger healing recovery for an account."""
+async def trigger_healing_recovery(
+    account_id: str,
+    current_user: dict = Depends(require_admin_user),
+):
     manager = RuntimeManager.get_instance()
     runtime = manager.get_runtime(account_id)
     if not runtime:
@@ -76,8 +82,10 @@ async def trigger_healing_recovery(account_id: str):
 
 
 @router.post("/healing/accounts/{account_id}/quarantine")
-async def quarantine_account(account_id: str):
-    """Force quarantine an account."""
+async def quarantine_account(
+    account_id: str,
+    current_user: dict = Depends(require_admin_user),
+):
     manager = RuntimeManager.get_instance()
     cb = manager.healing_engine._circuit_breakers.get(account_id)
     if not cb:
@@ -92,8 +100,10 @@ async def quarantine_account(account_id: str):
 
 
 @router.post("/healing/accounts/{account_id}/reset")
-async def reset_circuit_breaker(account_id: str):
-    """Reset circuit breaker for an account (force CLOSED)."""
+async def reset_circuit_breaker(
+    account_id: str,
+    current_user: dict = Depends(require_admin_user),
+):
     manager = RuntimeManager.get_instance()
     cb = manager.healing_engine._circuit_breakers.get(account_id)
     if not cb:
@@ -112,8 +122,9 @@ async def reset_circuit_breaker(account_id: str):
 
 
 @router.post("/healing/recover-all")
-async def recover_all_accounts():
-    """Queue recovery for all degraded/quarantined accounts."""
+async def recover_all_accounts(
+    current_user: dict = Depends(require_admin_user),
+):
     manager = RuntimeManager.get_instance()
     status = manager.healing_engine.get_healing_status()
     queued = 0

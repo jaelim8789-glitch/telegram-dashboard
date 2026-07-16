@@ -895,3 +895,27 @@ async def admin_health(current_user: dict = Depends(get_current_user)):
         "users_count": admin.get_dashboard_stats().get("users", {}).get("total", 0),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ── Beta Key ────────────────────────────────────────────────────────
+
+@router.post("/admin/beta-key")
+async def create_beta_key(current_user: dict = Depends(require_admin)):
+    """Generate an unlimited beta tester API key (admin only)."""
+    admin = AdminPlatform.get_instance()
+    key = admin.create_api_key(
+        user_id=current_user["id"],
+        name="Beta Tester Unlimited",
+        permissions="write",
+        plan="lifetime",
+        feature_flags={
+            "can_export": True,
+            "can_webhook": True,
+            "bulk_operations": True,
+            "sso": True,
+            "white_label": True,
+        },
+        max_accounts=9999,
+        daily_limit=999999,
+    )
+    return key

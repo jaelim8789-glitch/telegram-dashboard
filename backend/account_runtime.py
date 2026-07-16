@@ -22,7 +22,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import sqlite3
 import time
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -620,6 +622,64 @@ class AutoReplyEngine:
 
 # ── ReplyMacro Engine ────────────────────────────────────────────────
 
+# Same file/table backend/routers/reply_macro.py writes to for the manual
+# "/execute" path — reused here so scheduled runs land in the same place
+# the /logs REST endpoint actually reads from.
+_REPLY_MACRO_DB_PATH = "data/runtime.db"
+
+
+def _reply_macro_sent_count_today(macro_id: str) -> int:
+    """Count today's successful sends for a macro (scheduled + manual combined)."""
+    today_start = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00")
+    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM reply_macro_logs WHERE macro_id = ? AND status = 'sent' AND created_at >= ?",
+            (macro_id, today_start),
+        ).fetchone()
+        return row[0] if row else 0
+    except sqlite3.OperationalError:
+        return 0  # reply_macro_logs doesn't exist yet (no macro has ever been created via the API)
+    finally:
+        conn.close()
+
+
+def _persist_reply_macro_log(
+    macro_id: str,
+    account_id: str,
+    target_chat_id: str,
+    message_sent: str,
+    status: str,
+    reply_to_message_id: int | None = None,
+    error_message: str | None = None,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
+    try:
+        conn.execute(
+            """INSERT INTO reply_macro_logs
+               (id, macro_id, account_id, target_chat_id, message_sent, status, error_message, reply_to_message_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (str(uuid.uuid4()), macro_id, account_id, target_chat_id, message_sent,
+             status, error_message, reply_to_message_id, now),
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        logger.warning("[%s] Could not persist reply-macro log for %s (table missing)", account_id, macro_id)
+    finally:
+        conn.close()
+
+
+def _persist_reply_macro_last_sent(macro_id: str, last_sent_at: str) -> None:
+    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
+    try:
+        conn.execute("UPDATE reply_macros SET last_sent_at = ? WHERE id = ?", (last_sent_at, macro_id))
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+    finally:
+        conn.close()
+
 
 class ReplyMacroEngine:
     """Manages scheduled message macros (interval-based or fixed-time)."""
@@ -686,7 +746,16 @@ class ReplyMacroEngine:
 
     async def _execute_macro(self, macro: ReplyMacro) -> None:
         """Execute a reply macro via BroadcastQueue for guaranteed reply_to_message_id support."""
+        sent_today = _reply_macro_sent_count_today(macro.id)
+
         for target_chat_id in macro.target_chats:
+            if macro.max_sends_per_day > 0 and sent_today >= macro.max_sends_per_day:
+                logger.info(
+                    "[%s] Macro %s reached max_sends_per_day (%d); skipping remaining targets",
+                    self._account_id, macro.id, macro.max_sends_per_day,
+                )
+                break
+
             if not await self._rate_limiter.acquire("send_message", chat_id=target_chat_id, timeout=30):
                 continue
 
@@ -708,6 +777,11 @@ class ReplyMacroEngine:
                     status="sent",
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
+                _persist_reply_macro_log(
+                    macro.id, self._account_id, target_chat_id, macro.message_content,
+                    "sent", reply_to_message_id=macro.reply_to_message_id,
+                )
+                sent_today += 1
                 self._health_monitor.record_success()
             except Exception as e:
                 self._add_log(ReplyMacroLog(
@@ -720,11 +794,16 @@ class ReplyMacroEngine:
                     error_message=str(e),
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
+                _persist_reply_macro_log(
+                    macro.id, self._account_id, target_chat_id, macro.message_content,
+                    "failed", reply_to_message_id=macro.reply_to_message_id, error_message=str(e),
+                )
                 self._health_monitor.record_failure(str(e))
 
             await asyncio.sleep(2)
 
         macro.last_sent_at = datetime.now(timezone.utc).isoformat()
+        _persist_reply_macro_last_sent(macro.id, macro.last_sent_at)
 
     async def _check_fixed_time(self, macro: ReplyMacro) -> None:
         if not macro.fixed_time:
