@@ -64,7 +64,27 @@ async def get_logs(
 
 @router.post("/broadcast/{broadcast_id}/retry", response_model=Broadcast)
 async def retry_broadcast(broadcast_id: str):
-    raise HTTPException(status_code=400, detail="Retry not yet implemented")
+    manager = RuntimeManager.get_instance()
+    try:
+        all_broadcasts = await manager.get_broadcasts(limit=500)
+        for b in all_broadcasts:
+            if b.id == broadcast_id:
+                runtime = manager.get_runtime(b.account_id)
+                if not runtime:
+                    raise HTTPException(status_code=404, detail="Account runtime not found")
+                # Reset status to pending and clear error so the scheduler re-dispatches
+                b.status = "pending"
+                b.error_message = None
+                b.failure_info = None
+                b.sent_at = None
+                # Re-enqueue via the runtime's broadcast queue
+                await runtime.broadcast_queue.enqueue(b)
+                return b
+        raise HTTPException(status_code=404, detail="Broadcast not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/broadcast/{broadcast_id}/cancel", response_model=Broadcast)
@@ -91,7 +111,26 @@ async def cancel_broadcast(broadcast_id: str):
 
 @router.post("/broadcast/dispatch/{broadcast_id}", response_model=Broadcast)
 async def send_now(broadcast_id: str):
-    raise HTTPException(status_code=400, detail="Send-now not yet implemented")
+    manager = RuntimeManager.get_instance()
+    try:
+        all_broadcasts = await manager.get_broadcasts(limit=500)
+        for b in all_broadcasts:
+            if b.id == broadcast_id:
+                runtime = manager.get_runtime(b.account_id)
+                if not runtime:
+                    raise HTTPException(status_code=404, detail="Account runtime not found")
+                # Clear scheduled_at so it sends immediately
+                b.scheduled_at = None
+                b.status = "pending"
+                b.error_message = None
+                # Enqueue for immediate dispatch
+                await runtime.broadcast_queue.enqueue(b)
+                return b
+        raise HTTPException(status_code=404, detail="Broadcast not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/scheduler/upcoming", response_model=list[Broadcast])
