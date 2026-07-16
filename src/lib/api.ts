@@ -439,6 +439,10 @@ export interface CreateBroadcastInput {
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
+  // The backend accepts JSON (Pydantic CreateBroadcastInput), NOT multipart/form-data.
+  // Sending FormData causes a 422 because FastAPI cannot deserialize list[str] recipients
+  // or nested InlineButton objects from form fields.
+  // For image uploads, a separate multipart endpoint is used (not yet implemented).
   const body: Record<string, unknown> = {
     account_id: input.accountId,
     message: input.message,
@@ -1191,23 +1195,23 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  // Always multipart/form-data — the backend endpoint only accepts Form()
-  // fields (matching createBroadcast's pattern) so a file can be attached in
-  // the same request. Sending JSON here 422s.
-  const form = new FormData();
-  form.append("name", input.name);
-  form.append("target_chats", JSON.stringify(input.targetChats));
-  form.append("message_content", input.messageContent);
-  form.append("schedule_type", input.scheduleType ?? "interval");
-  form.append("interval_hours", String(input.intervalHours ?? 24));
-  form.append("fixed_time", input.fixedTime ?? "");
-  form.append("max_sends_per_day", String(input.maxSendsPerDay ?? 10));
-  form.append("is_active", String(input.isActive ?? true));
-  if (input.file) form.append("file", input.file);
-  const res = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/reply-macros`, { method: "POST", body: form, headers: authHeaders() });
-  if (!res.ok) throw new Error(extractDetailMessage(await res.json().catch(() => null)) ?? "매크로 생성 실패");
-  const macro: ApiReplyMacro = await res.json();
-  return toReplyMacro(macro);
+  // The backend expects JSON (MacroCreate Pydantic model), NOT multipart/form-data.
+  // Sending FormData causes a 422 because FastAPI cannot deserialize list[str] target_chats
+  // from a form field.
+  // For file uploads, a separate multipart endpoint should be used.
+  return toReplyMacro(await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      target_chats: input.targetChats,
+      message_content: input.messageContent,
+      schedule_type: input.scheduleType ?? "interval",
+      interval_hours: input.intervalHours ?? 24,
+      fixed_time: input.fixedTime ?? "",
+      max_sends_per_day: input.maxSendsPerDay ?? 10,
+      is_active: input.isActive ?? true,
+    }),
+  }));
 }
 
 export async function updateReplyMacro(accountId: string, macroId: string, input: Partial<ReplyMacroInput>): Promise<ReplyMacro> {
@@ -1265,5 +1269,3 @@ export async function fetchReplyMacroLogs(accountId: string, macroId: string): P
   const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
   return logs.map(toReplyMacroLog);
 }
-
-
