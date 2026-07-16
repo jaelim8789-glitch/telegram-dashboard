@@ -37,6 +37,7 @@ import {
   deleteTemplate as removeTemplate,
   toggleTemplateFavorite,
   TEMPLATE_VARIABLES,
+  previewTemplate,
   type MessageTemplate,
 } from "@/lib/messageTemplates";
 import { MessagePreviewModal } from "@/components/workspace/MessagePreviewModal";
@@ -1337,6 +1338,39 @@ export function SendTab() {
               <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
                 placeholder="발송할 메시지를 입력하세요." required />
             </Field>
+
+            {/* ── Inline variable preview ── */}
+            {message.trim() && TEMPLATE_VARIABLES.some((v) => message.includes(v.key)) && (
+              <div className="rounded-xl border border-app-info/15 bg-app-info-muted/5 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-info mb-1">
+                  <Eye className="h-3 w-3" />
+                  변수 치환 미리보기
+                </div>
+                <div className="whitespace-pre-wrap break-words rounded-lg border border-app-border/50 bg-app-card/50 px-3 py-2 text-sm leading-relaxed text-app-text">
+                  {previewTemplate(message, {
+                    name: selectedRecipients[0]?.title ?? "샘플 그룹",
+                    phone: account?.phone ?? "010-0000-0000",
+                    count: selectedRecipientIds.length || 10,
+                  })}
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
+                  {TEMPLATE_VARIABLES.filter((v) => message.includes(v.key)).map((v) => {
+                    let sample = "";
+                    if (v.key === "{{name}}") sample = selectedRecipients[0]?.title ?? "샘플 그룹";
+                    else if (v.key === "{{phone}}") sample = account?.phone ?? "010-0000-0000";
+                    else if (v.key === "{{count}}") sample = String(selectedRecipientIds.length || 10);
+                    return (
+                      <span key={v.key} className="inline-flex items-center gap-1">
+                        <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-[10px] text-app-info">{v.key}</code>
+                        <span className="text-app-text-subtle">→</span>
+                        <span className="font-medium text-app-text">{sample}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Template library toolbar */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
               <button
