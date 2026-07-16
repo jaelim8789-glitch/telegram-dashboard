@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import sqlite3
 import uuid
 
 import pytest
@@ -110,3 +112,115 @@ async def test_full_success_stays_sent() -> None:
     assert client.sent == [(101, "hello", None), (102, "hello", None)]
     assert broadcast.status == "sent"
     assert broadcast.error_message is None
+
+
+# ── Broadcast Persistence Tests ────────────────────────────────────────
+
+
+def test_persist_broadcast_inserts_and_loads(tmp_path):
+    """Broadcast persisted via _persist_broadcast must be loadable via _load_broadcasts."""
+    import os
+    from backend.account_runtime import _persist_broadcast, _load_broadcasts, _BROADCAST_DB_PATH
+
+    db_path = tmp_path / "test_broadcasts.db"
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("backend.account_runtime._BROADCAST_DB_PATH", str(db_path))
+    monkeypatch.setattr("backend.account_runtime.os.makedirs", lambda p, exist_ok: None)
+
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
+            message TEXT DEFAULT '', recipients TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'pending', scheduled_at TEXT,
+            sent_at TEXT, created_at TEXT DEFAULT '',
+            error_message TEXT, recurring_interval_minutes INTEGER,
+            cancelled_at TEXT, next_scheduled_at TEXT,
+            is_recurring_paused INTEGER DEFAULT 0,
+            delivery_mode TEXT DEFAULT 'normal',
+            reply_to_message_id INTEGER,
+            failure_info TEXT, inline_buttons TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+    b = Broadcast(
+        id="test-b-1",
+        account_id="acct-1",
+        message="hello world",
+        recipients=["101", "102"],
+        status="pending",
+        created_at="2026-07-16T00:00:00Z",
+    )
+    _persist_broadcast(b)
+
+    loaded = _load_broadcasts("acct-1")
+    assert len(loaded) == 1
+    assert loaded[0].id == "test-b-1"
+    assert loaded[0].message == "hello world"
+    assert loaded[0].recipients == ["101", "102"]
+
+
+def test_load_broadcasts_returns_empty_for_unknown_account(tmp_path):
+    from backend.account_runtime import _load_broadcasts, _BROADCAST_DB_PATH
+
+    db_path = tmp_path / "test_broadcasts_empty.db"
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("backend.account_runtime._BROADCAST_DB_PATH", str(db_path))
+
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id TEXT PRIMARY KEY, account_id TEXT NOT NULL, message TEXT DEFAULT '',
+            recipients TEXT DEFAULT '[]', status TEXT DEFAULT 'pending',
+            scheduled_at TEXT, sent_at TEXT, created_at TEXT DEFAULT '',
+            error_message TEXT, recurring_interval_minutes INTEGER,
+            cancelled_at TEXT, next_scheduled_at TEXT,
+            is_recurring_paused INTEGER DEFAULT 0,
+            delivery_mode TEXT DEFAULT 'normal',
+            reply_to_message_id INTEGER,
+            failure_info TEXT, inline_buttons TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+    result = _load_broadcasts("non-existent-account")
+    assert result == []
+
+
+def test_persist_broadcast_updates_status(tmp_path):
+    """_persist_broadcast must update (INSERT OR REPLACE) status on second call."""
+    from backend.account_runtime import _persist_broadcast, _load_broadcasts, _BROADCAST_DB_PATH
+
+    db_path = tmp_path / "test_broadcasts_update.db"
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("backend.account_runtime._BROADCAST_DB_PATH", str(db_path))
+
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
+            message TEXT DEFAULT '', recipients TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'pending', scheduled_at TEXT,
+            sent_at TEXT, created_at TEXT DEFAULT '',
+            error_message TEXT, recurring_interval_minutes INTEGER,
+            cancelled_at TEXT, next_scheduled_at TEXT,
+            is_recurring_paused INTEGER DEFAULT 0,
+            delivery_mode TEXT DEFAULT 'normal',
+            reply_to_message_id INTEGER,
+            failure_info TEXT, inline_buttons TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+    b = Broadcast(id="u-1", account_id="acct-1", message="hi", recipients=["1"], status="pending")
+    _persist_broadcast(b)
+
+    b.status = "sent"
+    _persist_broadcast(b)
+
+    loaded = _load_broadcasts("acct-1")
+    assert loaded[0].status == "sent"

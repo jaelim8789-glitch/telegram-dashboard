@@ -1623,10 +1623,13 @@ class AdminPlatform:
         conn = sqlite3.connect(FREE_API_KEY_DB_PATH)
         conn.row_factory = sqlite3.Row
         try:
-            row = conn.execute(
-                "SELECT id, phone, api_key, created_at FROM free_api_keys WHERE api_key = ?",
-                (raw_key,),
-            ).fetchone()
+            try:
+                row = conn.execute(
+                    "SELECT id, phone, api_key, created_at FROM free_api_keys WHERE api_key = ?",
+                    (raw_key,),
+                ).fetchone()
+            except sqlite3.OperationalError:
+                return None
             if not row:
                 return None
             return {
