@@ -80,24 +80,6 @@ class RateLimitConfig:
 
 
 @dataclass
-class TelegramBotConfig:
-    """Telegram Bot API configuration (separate from Telethon account runtimes).
-
-    This bot talks to the Bot API only — it never touches the Telethon
-    account/session layer used for broadcasting.
-    """
-    bot_token: str = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    webhook_secret: str = os.environ.get("TELEGRAM_BOT_WEBHOOK_SECRET", "")
-    channel_id: str = os.environ.get("TELEGRAM_CHANNEL_ID", "")  # e.g. "@telemon_channel" or "-100123456789"
-    admin_chat_ids: list[str] = field(default_factory=lambda: [
-        c.strip() for c in os.environ.get("TELEGRAM_ADMIN_CHAT_IDS", "").split(",") if c.strip()
-    ])
-
-    def is_configured(self) -> bool:
-        return bool(self.bot_token and self.channel_id)
-
-
-@dataclass
 class ProductionConfig:
     """Aggregate all configuration sections."""
     db: DatabaseConfig = field(default_factory=DatabaseConfig)
@@ -106,7 +88,6 @@ class ProductionConfig:
     monitoring: MonitoringConfig = field(default_factory=MonitoringConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     rate_limit: RateLimitConfig = field(default_factory=RateLimitConfig)
-    telegram_bot: TelegramBotConfig = field(default_factory=TelegramBotConfig)
     environment: str = os.environ.get("ENVIRONMENT", "production")
     app_name: str = "telemon"
     app_version: str = "1.0.0"

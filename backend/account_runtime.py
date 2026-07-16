@@ -20,12 +20,9 @@ v2 — Session Auto Recovery, enhanced health tracking, runtime inspector.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
-import sqlite3
 import time
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -192,86 +189,6 @@ class GroupCache:
 # ── Broadcast Queue ─────────────────────────────────────────────────
 
 
-_BROADCAST_DB_PATH = "data/runtime.db"
-
-
-def _persist_broadcast(broadcast: Broadcast) -> None:
-    """Insert or update a broadcast in the SQLite broadcasts table."""
-    os.makedirs(os.path.dirname(_BROADCAST_DB_PATH) or ".", exist_ok=True)
-    conn = sqlite3.connect(_BROADCAST_DB_PATH)
-    try:
-        conn.execute(
-            """INSERT OR REPLACE INTO broadcasts
-               (id, account_id, message, recipients, status,
-                scheduled_at, sent_at, created_at, error_message,
-                recurring_interval_minutes, cancelled_at, next_scheduled_at,
-                is_recurring_paused, delivery_mode, reply_to_message_id,
-                failure_info, inline_buttons)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                broadcast.id, broadcast.account_id, broadcast.message,
-                json.dumps(broadcast.recipients), broadcast.status,
-                broadcast.scheduled_at, broadcast.sent_at, broadcast.created_at,
-                broadcast.error_message,
-                broadcast.recurring_interval_minutes, broadcast.cancelled_at,
-                broadcast.next_scheduled_at,
-                1 if broadcast.is_recurring_paused else 0,
-                broadcast.delivery_mode, broadcast.reply_to_message_id,
-                json.dumps(broadcast.failure_info) if broadcast.failure_info else None,
-                json.dumps(broadcast.inline_buttons) if broadcast.inline_buttons else None,
-            ),
-        )
-        conn.commit()
-    except sqlite3.OperationalError:
-        logger.exception("Failed to persist broadcast %s", broadcast.id)
-    finally:
-        conn.close()
-
-
-def _load_broadcasts(account_id: str, limit: int = 500) -> list[Broadcast]:
-    """Load broadcasts from SQLite for a given account."""
-    conn = sqlite3.connect(_BROADCAST_DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        cursor = conn.execute(
-            "SELECT * FROM broadcasts WHERE account_id = ? ORDER BY created_at DESC LIMIT ?",
-            (account_id, limit),
-        )
-        result = []
-        for row in cursor.fetchall():
-            row_dict = dict(row)
-            try:
-                recipients = json.loads(row_dict["recipients"]) if isinstance(row_dict.get("recipients"), str) else (row_dict.get("recipients") or [])
-                failure_info = json.loads(row_dict["failure_info"]) if row_dict.get("failure_info") and isinstance(row_dict["failure_info"], str) else None
-                inline_buttons = json.loads(row_dict["inline_buttons"]) if row_dict.get("inline_buttons") and isinstance(row_dict["inline_buttons"], str) else None
-                result.append(Broadcast(
-                    id=row_dict["id"],
-                    account_id=row_dict["account_id"],
-                    message=row_dict.get("message") or "",
-                    recipients=recipients,
-                    status=row_dict.get("status") or "pending",
-                    scheduled_at=row_dict.get("scheduled_at"),
-                    sent_at=row_dict.get("sent_at"),
-                    created_at=row_dict.get("created_at") or "",
-                    error_message=row_dict.get("error_message"),
-                    recurring_interval_minutes=row_dict.get("recurring_interval_minutes"),
-                    cancelled_at=row_dict.get("cancelled_at"),
-                    next_scheduled_at=row_dict.get("next_scheduled_at"),
-                    is_recurring_paused=bool(row_dict.get("is_recurring_paused")),
-                    delivery_mode=row_dict.get("delivery_mode") or "normal",
-                    reply_to_message_id=row_dict.get("reply_to_message_id"),
-                    failure_info=failure_info,
-                    inline_buttons=inline_buttons,
-                ))
-            except (json.JSONDecodeError, KeyError, TypeError):
-                continue
-        return result
-    except sqlite3.OperationalError:
-        return []
-    finally:
-        conn.close()
-
-
 class BroadcastQueue:
     """Async queue that dispatches messages to Telegram recipients.
 
@@ -351,13 +268,8 @@ class BroadcastQueue:
                 return
 
             if not await self._rate_limiter.acquire("send_message", chat_id=recipient_id, timeout=30):
-                logger.info(
-                    "[%s] rate limit wait for recipient %s (broadcast %s)",
-                    self._account_id,
-                    recipient_id,
-                    broadcast.id,
-                )
-                await self._rate_limiter.wait_and_acquire("send_message", chat_id=recipient_id)
+                fail_count += 1
+                current_idx += 1
                 continue
 
             try:
@@ -418,20 +330,7 @@ class BroadcastQueue:
 
             await asyncio.sleep(1)
 
-        if fail_count == 0:
-            broadcast.status = "sent"
-            broadcast.error_message = None
-        elif success_count == 0:
-            broadcast.status = "failed"
-            if not broadcast.error_message:
-                broadcast.error_message = f"Broadcast failed for all {len(recipient_list)} recipients"
-        else:
-            broadcast.status = "failed"
-            if not broadcast.error_message:
-                broadcast.error_message = (
-                    f"Partial delivery: {success_count}/{len(recipient_list)} recipients succeeded, "
-                    f"{fail_count} failed"
-                )
+        broadcast.status = "sent" if fail_count == 0 else "failed" if success_count == 0 else "sent"
         broadcast.sent_at = datetime.now(timezone.utc).isoformat()
         self._completed.append(broadcast)
         if len(self._completed) > self._max_completed:
@@ -446,9 +345,6 @@ class BroadcastQueue:
                 if sb.id == broadcast.id:
                     self._broadcast_store_ref[i] = broadcast
                     break
-
-        # Persist final status to SQLite
-        _persist_broadcast(broadcast)
 
         self._prune_cancelled_set(broadcast.id)
 
@@ -724,64 +620,6 @@ class AutoReplyEngine:
 
 # ── ReplyMacro Engine ────────────────────────────────────────────────
 
-# Same file/table backend/routers/reply_macro.py writes to for the manual
-# "/execute" path — reused here so scheduled runs land in the same place
-# the /logs REST endpoint actually reads from.
-_REPLY_MACRO_DB_PATH = "data/runtime.db"
-
-
-def _reply_macro_sent_count_today(macro_id: str) -> int:
-    """Count today's successful sends for a macro (scheduled + manual combined)."""
-    today_start = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00")
-    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
-    try:
-        row = conn.execute(
-            "SELECT COUNT(*) FROM reply_macro_logs WHERE macro_id = ? AND status = 'sent' AND created_at >= ?",
-            (macro_id, today_start),
-        ).fetchone()
-        return row[0] if row else 0
-    except sqlite3.OperationalError:
-        return 0  # reply_macro_logs doesn't exist yet (no macro has ever been created via the API)
-    finally:
-        conn.close()
-
-
-def _persist_reply_macro_log(
-    macro_id: str,
-    account_id: str,
-    target_chat_id: str,
-    message_sent: str,
-    status: str,
-    reply_to_message_id: int | None = None,
-    error_message: str | None = None,
-) -> None:
-    now = datetime.now(timezone.utc).isoformat()
-    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
-    try:
-        conn.execute(
-            """INSERT INTO reply_macro_logs
-               (id, macro_id, account_id, target_chat_id, message_sent, status, error_message, reply_to_message_id, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (str(uuid.uuid4()), macro_id, account_id, target_chat_id, message_sent,
-             status, error_message, reply_to_message_id, now),
-        )
-        conn.commit()
-    except sqlite3.OperationalError:
-        logger.warning("[%s] Could not persist reply-macro log for %s (table missing)", account_id, macro_id)
-    finally:
-        conn.close()
-
-
-def _persist_reply_macro_last_sent(macro_id: str, last_sent_at: str) -> None:
-    conn = sqlite3.connect(_REPLY_MACRO_DB_PATH)
-    try:
-        conn.execute("UPDATE reply_macros SET last_sent_at = ? WHERE id = ?", (last_sent_at, macro_id))
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
-    finally:
-        conn.close()
-
 
 class ReplyMacroEngine:
     """Manages scheduled message macros (interval-based or fixed-time)."""
@@ -848,16 +686,7 @@ class ReplyMacroEngine:
 
     async def _execute_macro(self, macro: ReplyMacro) -> None:
         """Execute a reply macro via BroadcastQueue for guaranteed reply_to_message_id support."""
-        sent_today = _reply_macro_sent_count_today(macro.id)
-
         for target_chat_id in macro.target_chats:
-            if macro.max_sends_per_day > 0 and sent_today >= macro.max_sends_per_day:
-                logger.info(
-                    "[%s] Macro %s reached max_sends_per_day (%d); skipping remaining targets",
-                    self._account_id, macro.id, macro.max_sends_per_day,
-                )
-                break
-
             if not await self._rate_limiter.acquire("send_message", chat_id=target_chat_id, timeout=30):
                 continue
 
@@ -879,11 +708,6 @@ class ReplyMacroEngine:
                     status="sent",
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
-                _persist_reply_macro_log(
-                    macro.id, self._account_id, target_chat_id, macro.message_content,
-                    "sent", reply_to_message_id=macro.reply_to_message_id,
-                )
-                sent_today += 1
                 self._health_monitor.record_success()
             except Exception as e:
                 self._add_log(ReplyMacroLog(
@@ -896,16 +720,11 @@ class ReplyMacroEngine:
                     error_message=str(e),
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ))
-                _persist_reply_macro_log(
-                    macro.id, self._account_id, target_chat_id, macro.message_content,
-                    "failed", reply_to_message_id=macro.reply_to_message_id, error_message=str(e),
-                )
                 self._health_monitor.record_failure(str(e))
 
             await asyncio.sleep(2)
 
         macro.last_sent_at = datetime.now(timezone.utc).isoformat()
-        _persist_reply_macro_last_sent(macro.id, macro.last_sent_at)
 
     async def _check_fixed_time(self, macro: ReplyMacro) -> None:
         if not macro.fixed_time:
@@ -1275,7 +1094,7 @@ class AccountRuntime:
         self._session_path = session_path
 
         # Persistence (set before BroadcastQueue so it can receive the ref)
-        self._broadcast_store: list[Broadcast] = _load_broadcasts(account_id, self._max_broadcasts)
+        self._broadcast_store: list[Broadcast] = []
         self._max_broadcasts = 500
 
         # Core components
@@ -1301,21 +1120,6 @@ class AccountRuntime:
 
     # ── Lifecycle ─────────────────────────────────────────────────
 
-    async def _register_periodic_tasks(self) -> None:
-        """Register periodic scheduler tasks and start auto-reply listener.
-
-        Extracted so both start() and add_account_legacy() call the same setup,
-        ensuring group refresh, health checks, and auto-reply always run.
-        """
-        self.scheduler.every("refresh_groups", 300, self._refresh_groups)
-        self.scheduler.every("check_health", 60, self._check_health)
-        self.scheduler.every("session_verify", 300, self._verify_session)
-        await self.auto_reply.start()
-        try:
-            await self._refresh_groups()
-        except Exception:
-            logger.warning("[%s] initial group refresh deferred (session may not be ready)", self.account_id)
-
     async def start(self) -> bool:
         """Connect the Telethon client and start all subsystems.
 
@@ -1336,7 +1140,14 @@ class AccountRuntime:
 
             self.scheduler.start()
             self.broadcast_queue.start()
-            await self._register_periodic_tasks()
+            await self.auto_reply.start()
+
+            # Schedule periodic tasks
+            self.scheduler.every("refresh_groups", 300, self._refresh_groups)
+            self.scheduler.every("check_health", 60, self._check_health)
+            self.scheduler.every("session_verify", 300, self._verify_session)
+
+            await self._refresh_groups()
 
             logger.info("[%s] runtime started (authenticated=%s)", self.account_id, bool(me))
             return bool(me)
@@ -1571,13 +1382,9 @@ class AccountRuntime:
         if len(self._broadcast_store) > self._max_broadcasts:
             self._broadcast_store = self._broadcast_store[-self._max_broadcasts:]
 
-        _persist_broadcast(broadcast)
-
         if input_data.scheduled_at:
-            raise LookupError("예약 발송은 아직 지원되지 않습니다. 지금 발송으로 전환해주세요.")
-        if input_data.recurring_interval_minutes:
-            raise LookupError("반복 발송은 아직 지원되지 않습니다.")
-
+            # Schedule for later
+            pass
         else:
             await self.broadcast_queue.enqueue(broadcast)
 

@@ -158,6 +158,10 @@ export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
 
+/**
+ * Update an account's status (active/inactive/banned).
+ * PATCH /api/accounts/{accountId}/status
+ */
 export async function updateAccountStatus(
   accountId: string,
   status: Account["status"]
@@ -168,6 +172,10 @@ export async function updateAccountStatus(
   });
 }
 
+/**
+ * Batch enable or disable multiple accounts.
+ * PATCH /api/accounts/batch/status
+ */
 export async function batchUpdateAccountStatus(
   accountIds: string[],
   status: Account["status"]
@@ -347,6 +355,8 @@ export interface GroupFolder {
   groupIds: string[];
 }
 
+/** Best-effort — the backend returns [] if Telegram folders can't be read, so
+ * callers should treat this as purely additive and never block on it. */
 export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[]> {
   try {
     const body = await request<{ id: string; title: string; group_ids: string[] }[]>(
@@ -414,6 +424,14 @@ export interface CreateBroadcastInput {
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
+  // MUST be multipart/form-data — verified directly against the deployed backend source
+  // (telegram-dashboard-backend/app/api/broadcast.py, POST /api/broadcast): every parameter
+  // is declared `Annotated[str, Form()]` / `Annotated[UploadFile | None, File()]`, there is no
+  // pydantic JSON-body parameter on that route at all. A JSON body makes every Form field
+  // report "field required" (422). If you're reading this because it got reverted to JSON
+  // again: re-check that file's actual signature before changing it, don't go by a schema
+  // name (e.g. "CreateBroadcastInput") that only exists in the unrelated, never-deployed
+  // prototype at c:\Dev\TeleMon\backend — this file talks to the real backend, not that one.
   const form = new FormData();
   form.append("account_id", input.accountId);
   form.append("message", input.message);
@@ -974,6 +992,10 @@ interface ApiChannelHubPublishResult {
   published_at: string;
 }
 
+/**
+ * Publish a message to a Telegram channel via the Channel Hub.
+ * POST /api/channel-hub/publish
+ */
 export async function publishChannelPost(input: ChannelHubPublishInput): Promise<ChannelHubPublishResult> {
   const result = await request<ApiChannelHubPublishResult>("/api/channel-hub/publish", {
     method: "POST",
@@ -1182,6 +1204,10 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
+  // The backend expects JSON (MacroCreate Pydantic model), NOT multipart/form-data.
+  // Sending FormData causes a 422 because FastAPI cannot deserialize list[str] target_chats
+  // from a form field.
+  // For file uploads, a separate multipart endpoint should be used.
   return toReplyMacro(await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
     method: "POST",
     body: JSON.stringify({
@@ -1193,7 +1219,6 @@ export async function createReplyMacro(accountId: string, input: ReplyMacroInput
       fixed_time: input.fixedTime ?? "",
       max_sends_per_day: input.maxSendsPerDay ?? 10,
       is_active: input.isActive ?? true,
-      reply_to_message_id: input.replyToMessageId ?? null,
     }),
   }));
 }

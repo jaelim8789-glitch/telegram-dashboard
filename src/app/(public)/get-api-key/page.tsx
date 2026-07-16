@@ -1,24 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, KeyRound, Shield, Smartphone, CheckCircle2, Star, Sparkles, Heart,
 } from "lucide-react";
 import { useFadeIn } from "@/lib/useFadeIn";
 import { LaunchOfferCountdown } from "@/components/landing/LaunchOfferCountdown";
+import { InlineError } from "@/components/ui/InlineError";
+import { useToast } from "@/components/ui/Toast";
+const POLL_TIMEOUT_SECONDS = 180;
 
-// Pro/Team/Lifetime all use a mailto contact link rather than an automated
-// checkout flow -- there is no payment backend deployed yet, so an
-// automated "pay now" button would fail for every paying customer.
-// Switch these to a real checkout call once payment processing exists.
+// requestPlanId values are canonical plan ids (free/pro/team) matching the
+// backend's PLAN_CATALOG (app/core/plans.py, branch fix/p0-2-pricing-contract-v2:
+// pro=$100/monthly, team=$199/quarterly — same prices shown below). That branch
+// is not yet merged to the backend's master; until it deploys, /api/payment/
+// request-key?plan=team will 400 against the current stale billing.py catalog
+// (which only knows free/basic/pro/enterprise). No id-mapping or stale pricing
+// is used here — this intentionally targets the canonical contract, not the
+// currently-deployed one.
 const PLANS = [
   {
     name: "Free Trial",
     price: "0",
     period: "무료",
-    features: ["⏱ 약 1분이면 완료", "🔑 14일 무료", "결제 정보 불필요", "모든 기능 제한 없음"],
+    features: ["⏱ 약 1분이면 완료", "🔑 3일 무료", "결제 정보 불필요", "모든 기능 제한 없음"],
     href: "/signup",
-    cta: "1분 인증 시작 · 14일 무료",
+    cta: "1분 인증 시작 · 3일 무료",
     popular: false,
   },
   {
@@ -79,6 +87,103 @@ const PLANS = [
 
 export default function GetApiKeyPage() {
   useFadeIn();
+  const { toast } = useToast();
+
+  const [flowStep, setFlowStep] = useState<FlowStep>("browse");
+  const [selectedPlanName, setSelectedPlanName] = useState<string | null>(null);
+  const [requestingPlanId, setRequestingPlanId] = useState<string | null>(null);
+  const [paymentRef, setPaymentRef] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedWallet, setCopiedWallet] = useState(false);
+  const [copiedMemo, setCopiedMemo] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [waitingTime, setWaitingTime] = useState(0);
+
+  // Preselect plan from URL ?plan= parameter (e.g. from signup page)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const planParam = params.get("plan");
+    if (!planParam || requestingPlanId) return;
+    const target = PLANS.find((p) => p.requestPlanId === planParam);
+    if (target) {
+      handleRequestKey(target.name, planParam);
+    }
+  }, [requestingPlanId]);
+
+  // Poll payment status
+  useEffect(() => {
+    if (flowStep !== "waiting" || !paymentRef) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${SITE.api}/api/payment/status/${paymentRef}`);
+        if (!res.ok) { /* non-2xx — keep polling */ return; }
+        const data = await res.json();
+        if (data.status === "completed") {
+          const key = data.api_key ?? data.api_key_masked ?? null;
+          if (key) {
+            setApiKey(key);
+            setFlowStep("done");
+            toast("success", "🎉 입금 확인! API 키가 발급되었습니다.");
+            clearInterval(interval);
+          }
+        }
+      } catch { /* ignore — retry next interval */ }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [flowStep, paymentRef, toast]);
+
+  // Waiting time counter + timeout
+  useEffect(() => {
+    if (flowStep !== "waiting") { setWaitingTime(0); return; }
+    let mount = true;
+    const t = setInterval(() => {
+      if (!mount) return;
+      setWaitingTime((p) => {
+        if (p + 1 >= POLL_TIMEOUT_SECONDS) {
+          setFlowStep("browse");
+          setError("입금 확인 시간이 초과되었습니다. 다시 시도해주세요.");
+          return 0;
+        }
+        return p + 1;
+      });
+    }, 1000);
+    return () => { mount = false; clearInterval(t); };
+  }, [flowStep]);
+
+  async function handleRequestKey(planName: string, requestPlanId: string) {
+    setRequestingPlanId(requestPlanId);
+    setError(null);
+    try {
+      const res = await fetch(`${SITE.api}/api/payment/request-key?plan=${requestPlanId}`, { method: "POST" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.detail || "요청 실패");
+      setSelectedPlanName(planName);
+      setPaymentRef(data.payment_ref);
+      setWalletAddress(data.wallet_address);
+      setAmount(data.amount_usdt);
+      setFlowStep("payment");
+      toast("info", `결제 정보가 생성되었습니다. ${data.amount_usdt} USDT를 송금해주세요.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "요청 실패");
+    } finally {
+      setRequestingPlanId(null);
+    }
+  }
+
+  function copyToClipboard(text: string, type: "wallet" | "memo" | "key") {
+    navigator.clipboard.writeText(text).then(() => {
+      if (type === "wallet") { setCopiedWallet(true); setTimeout(() => setCopiedWallet(false), 2000); }
+      if (type === "memo") { setCopiedMemo(true); setTimeout(() => setCopiedMemo(false), 2000); }
+      if (type === "key") { setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2000); }
+      toast("success", "클립보드에 복사되었습니다");
+    }).catch(() => toast("error", "복사에 실패했습니다"));
+  }
+
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="tm-section-bg bg-grid min-h-screen px-4 py-28 sm:px-6 lg:px-8">
