@@ -117,7 +117,7 @@ class Scheduler:
         async def loop() -> None:
             while self._running:
                 try:
-                    task = asyncio.create_task(handler())
+                    await handler()
                     await asyncio.sleep(interval)
                 except asyncio.CancelledError:
                     break
