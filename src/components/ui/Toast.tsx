@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, XCircle, AlertTriangle, Info, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -48,6 +49,22 @@ const TOAST_STYLES: Record<ToastType, string> = {
   loading: "border-app-primary/30 bg-app-primary-muted text-app-primary",
 };
 
+const TOAST_VARIANTS = {
+  initial: { opacity: 0, x: 80, scale: 0.92 },
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.8 },
+  },
+  exit: {
+    opacity: 0,
+    x: 60,
+    scale: 0.95,
+    transition: { duration: 0.2, ease: "easeIn" as const },
+  },
+};
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -82,43 +99,50 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-live="polite"
         aria-label="Notifications"
       >
-        {toasts.map((t) => {
-          const Icon = TOAST_ICONS[t.type];
-          return (
-            <div
-              key={t.id}
-              role="alert"
-              className={cn(
-                "pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg animate-slide-up",
-                TOAST_STYLES[t.type]
-              )}
-            >
-              <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", t.type === "loading" && "animate-spin")} />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium">{t.message}</p>
-                {t.description && (
-                  <p className="mt-0.5 text-xs opacity-80">{t.description}</p>
+        <AnimatePresence mode="popLayout">
+          {toasts.map((t) => {
+            const Icon = TOAST_ICONS[t.type];
+            return (
+              <motion.div
+                key={t.id}
+                role="alert"
+                layout
+                variants={TOAST_VARIANTS}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className={cn(
+                  "pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg",
+                  TOAST_STYLES[t.type]
                 )}
-                {t.action && (
-                  <button
-                    type="button"
-                    onClick={t.action.onClick}
-                    className="mt-1.5 rounded-lg bg-white/20 px-2.5 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-                  >
-                    {t.action.label}
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => removeToast(t.id)}
-                className="shrink-0 rounded-md p-0.5 opacity-60 hover:opacity-100 transition-opacity"
-                aria-label="Dismiss"
               >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          );
-        })}
+                <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", t.type === "loading" && "animate-spin")} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">{t.message}</p>
+                  {t.description && (
+                    <p className="mt-0.5 text-xs opacity-80">{t.description}</p>
+                  )}
+                  {t.action && (
+                    <button
+                      type="button"
+                      onClick={t.action.onClick}
+                      className="mt-1.5 rounded-lg bg-white/20 px-2.5 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+                    >
+                      {t.action.label}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeToast(t.id)}
+                  className="shrink-0 rounded-md p-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

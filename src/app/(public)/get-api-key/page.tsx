@@ -110,7 +110,10 @@ export default function GetApiKeyPage() {
     const params = new URLSearchParams(window.location.search);
     const planParam = params.get("plan");
     if (!planParam || requestingPlanId) return;
-    const target = PLANS.find((p) => p.requestPlanId === planParam);
+    const target = PLANS.find((p) => {
+      const planId = p.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return planId === planParam;
+    });
     if (target) {
       handleRequestKey(target.name, planParam);
     }
@@ -121,7 +124,7 @@ export default function GetApiKeyPage() {
     if (flowStep !== "waiting" || !paymentRef) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${SITE.api}/api/payment/status/${paymentRef}`);
+        const res = await fetch(`/api/payment/status/${paymentRef}`);
         if (!res.ok) { /* non-2xx — keep polling */ return; }
         const data = await res.json();
         if (data.status === "completed") {
@@ -160,7 +163,7 @@ export default function GetApiKeyPage() {
     setRequestingPlanId(requestPlanId);
     setError(null);
     try {
-      const res = await fetch(`${SITE.api}/api/payment/request-key?plan=${requestPlanId}`, { method: "POST" });
+      const res = await fetch(`/api/payment/request-key?plan=${requestPlanId}`, { method: "POST" });
       const data = await res.json();
       if (!data.success) throw new Error(data.detail || "요청 실패");
       setSelectedPlanName(planName);
