@@ -174,6 +174,7 @@ function HistoryRow({
   onCancelClick,
   onRetry,
   onReuse,
+  onClone,
 }: {
   h: Broadcast;
   cancelling: string | null;
@@ -181,6 +182,7 @@ function HistoryRow({
   onCancelClick: (b: Broadcast) => void;
   onRetry: (b: Broadcast) => void;
   onReuse: (b: Broadcast) => void;
+  onClone: (b: Broadcast) => void;
 }) {
   const meta = STATUS_META[h.status];
   const Icon = meta.icon;
@@ -314,14 +316,24 @@ function HistoryRow({
 
       {/* Action buttons */}
       <div className="flex shrink-0 items-start gap-1">
+        {/* Clone button */}
+        <button
+          type="button"
+          onClick={() => onClone(h)}
+          title="복제하여 새 발송"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+
         {/* Reuse button */}
         <button
           type="button"
           onClick={() => onReuse(h)}
           title="설정 불러오기"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
         >
-          <Copy className="h-3.5 w-3.5" />
+          <ArrowUp className="h-3.5 w-3.5" />
         </button>
 
         {/* Play button for future schedule */}
@@ -510,6 +522,20 @@ export function SendTab() {
   const selectedRecipientIds = useMemo(() => selectedRecipients.map((g) => g.id), [selectedRecipients]);
 
   const { toast } = useToast();
+
+  const handleClone = useCallback((b: Broadcast) => {
+    reuseBroadcast(b);
+    setInlineButtons(b.inlineButtons?.filter((btn) => btn.label && btn.url) ?? []);
+    if (b.replyToMessageId != null) {
+      setReplyMacroEnabled(true);
+      setReplyToMessageId(String(b.replyToMessageId));
+    } else {
+      setReplyMacroEnabled(false);
+      setReplyToMessageId("");
+    }
+    toast("success", "발송이 복제되었습니다. 메시지와 대상을 확인 후 발송하세요.");
+  }, [reuseBroadcast, toast]);
+
   const draftRestoredRef = useRef(false);
   const isInitialMount = useRef(true);
   const mountGuardRef = useRef(true);
@@ -1735,6 +1761,7 @@ export function SendTab() {
                       cancelling={cancelling} retrying={retrying}
                       onCancelClick={handleCancelClick} onRetry={handleRetry}
                       onReuse={handleReuse}
+                      onClone={handleClone}
                     />
                   ))}
                 </div>
@@ -1752,6 +1779,7 @@ export function SendTab() {
                 cancelling={cancelling} retrying={retrying}
                 onCancelClick={handleCancelClick} onRetry={handleRetry}
                 onReuse={handleReuse}
+                onClone={handleClone}
               />
             ))}
           </div>
