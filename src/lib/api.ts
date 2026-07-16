@@ -439,42 +439,24 @@ export interface CreateBroadcastInput {
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
-  const form = new FormData();
-  form.append("account_id", input.accountId);
-  form.append("message", input.message);
-  form.append("recipients", JSON.stringify(input.recipients));
-  if (input.image) form.append("image", input.image);
-  if (input.scheduledAt) form.append("scheduled_at", input.scheduledAt);
-  if (input.recurringIntervalMinutes != null) form.append("recurring_interval_minutes", String(input.recurringIntervalMinutes));
-  if (input.deliveryMode) form.append("delivery_mode", input.deliveryMode);
-  if (input.delaySeconds != null) form.append("delay_seconds", String(input.delaySeconds));
-  if (input.replyToMessageId != null) form.append("reply_to_message_id", String(input.replyToMessageId));
+  const body: Record<string, unknown> = {
+    account_id: input.accountId,
+    message: input.message,
+    recipients: input.recipients,
+  };
+  if (input.scheduledAt) body.scheduled_at = input.scheduledAt;
+  if (input.recurringIntervalMinutes != null) body.recurring_interval_minutes = input.recurringIntervalMinutes;
+  if (input.deliveryMode) body.delivery_mode = input.deliveryMode;
+  if (input.delaySeconds != null) body.delay_seconds = input.delaySeconds;
+  if (input.replyToMessageId != null) body.reply_to_message_id = input.replyToMessageId;
   if (input.inlineButtons && input.inlineButtons.length > 0) {
-    form.append("inline_buttons", JSON.stringify(input.inlineButtons));
+    body.inline_buttons = input.inlineButtons;
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${API_BASE_URL}/api/broadcast`, {
-      method: "POST",
-      body: form,
-      headers: { ...authHeaders(), "Idempotency-Key": createIdempotencyKey() },
-    });
-  } catch {
-    clearIdempotencyKey();
-    throw new ApiError(
-      "서버 응답을 확인할 수 없습니다. 중복 발송 방지를 위해 확인 후 다시 시도해주세요.",
-      undefined,
-      true,
-    );
-  }
-  if (!res.ok) {
-    clearIdempotencyKey();
-    const body = await res.json().catch(() => null);
-    throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
-  }
-  clearIdempotencyKey();
-  return toBroadcast(await res.json());
+  return toBroadcast(await request<ApiBroadcast>("/api/broadcast", {
+    method: "POST",
+    body: JSON.stringify(body),
+  }));
 }
 
 export async function fetchBroadcast(id: string): Promise<Broadcast> {
