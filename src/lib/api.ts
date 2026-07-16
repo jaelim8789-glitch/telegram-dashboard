@@ -1526,3 +1526,79 @@ export async function fetchReplyMacroLogs(accountId: string, macroId: string): P
   const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
   return logs.map(toReplyMacroLog);
 }
+
+// ─── Team Management ──────────────────────────────────────────────────
+
+export interface TeamMemberData {
+  id: string;
+  tenant_id: string;
+  username: string;
+  display_name: string | null;
+  phone: string | null;
+  role: "owner" | "admin" | "member";
+  is_active: boolean;
+  invited_by: string | null;
+  invite_token: string | null;
+  invited_at: string | null;
+  joined_at: string | null;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMemberListData {
+  items: TeamMemberData[];
+  total: number;
+}
+
+export interface TeamInviteInput {
+  username: string;
+  role?: "admin" | "member";
+}
+
+export interface TeamUpdateInput {
+  role?: "admin" | "member";
+  is_active?: boolean;
+  display_name?: string;
+}
+
+export async function fetchTeamMembers(
+  tenantId: string,
+  params?: { search?: string; skip?: number; limit?: number }
+): Promise<TeamMemberListData> {
+  const qs = new URLSearchParams();
+  if (params?.search) qs.set("search", params.search);
+  if (params?.skip != null) qs.set("skip", String(params.skip));
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  const query = qs.toString();
+  return request<TeamMemberListData>(`/api/tenants/${tenantId}/team/members${query ? `?${query}` : ""}`);
+}
+
+export async function inviteTeamMember(tenantId: string, input: TeamInviteInput): Promise<TeamMemberData> {
+  return request<TeamMemberData>(`/api/tenants/${tenantId}/team/invite`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function acceptTeamInvite(token: string): Promise<TeamMemberData> {
+  return request<TeamMemberData>("/api/tenants/_/team/accept-invite", {
+    method: "POST",
+    body: JSON.stringify({ invite_token: token }),
+  });
+}
+
+export async function updateTeamMember(
+  tenantId: string,
+  memberId: string,
+  input: TeamUpdateInput
+): Promise<TeamMemberData> {
+  return request<TeamMemberData>(`/api/tenants/${tenantId}/team/members/${memberId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function removeTeamMember(tenantId: string, memberId: string): Promise<void> {
+  await request<void>(`/api/tenants/${tenantId}/team/members/${memberId}`, { method: "DELETE" });
+}

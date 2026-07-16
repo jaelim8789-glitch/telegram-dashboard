@@ -21,6 +21,7 @@ import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
 import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
 import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
 import { HealthTab } from "@/components/workspace/tabs/HealthTab";
+import { TeamTab } from "@/components/workspace/tabs/TeamTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -41,6 +42,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   templates: TemplateTab,
   health: HealthTab,
   campaigns: CampaignTab,
+  team: TeamTab,
 };
 
 export function Workspace() {
