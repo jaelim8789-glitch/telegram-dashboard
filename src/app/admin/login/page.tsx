@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -28,9 +28,10 @@ function AdminLoginForm() {
     try {
       const token = await api.adminLogin(username, password);
       setToken(token);
-      router.replace("/admin/dashboard");
+      router.replace("/app");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인 실패");
+      const message = err instanceof Error ? err.message : "로그인 실패";
+      setError(message.includes("Invalid credentials") ? "아이디 또는 비밀번호가 올바르지 않습니다." : message);
     } finally { setSubmitting(false); }
   }
 
@@ -318,7 +319,7 @@ const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: str
 ];
 
 export default function AdminLoginPage() {
-  const [method, setMethod] = useState<AuthMethod>("apikey");
+  const [method, setMethod] = useState<AuthMethod>("admin");
 
   return (
     <div className="relative min-h-screen bg-app-bg flex items-center justify-center px-4 py-10">
