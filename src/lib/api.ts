@@ -23,7 +23,14 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-const REQUEST_TIMEOUT_MS = 30_000;
+// ── Network resilience ─────────────────────────────────────────────
+// Retry with exponential backoff so Render free-tier cold starts
+// (5-30 seconds) don't surface a "서버에 연결할 수 없습니다" error.
+// Only network errors (connection refused, DNS failure) are retried;
+// HTTP 4xx/5xx responses are returned immediately.
+const REQUEST_TIMEOUT_MS = 60_000;
+const MAX_RETRIES = 2;
+const BASE_RETRY_DELAY_MS = 2_000;
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -106,48 +113,71 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    // Only set Content-Type for JSON-string bodies — GET, HEAD, and bodyless DELETE
-    // calls should not force application/json, which can confuse some backends and
-    // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
-    // hardcoded Content-Type so the browser can set the correct multipart boundary.
-    const hasJsonBody = typeof init?.body === "string";
-    const defaultHeaders: Record<string, string> = {
-      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-      ...authHeaders(),
-    };
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      signal: controller.signal,
-      headers: { ...defaultHeaders, ...init?.headers },
-    });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      // Only set Content-Type for JSON-string bodies — GET, HEAD, and bodyless DELETE
+      // calls should not force application/json, which can confuse some backends and
+      // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
+      // hardcoded Content-Type so the browser can set the correct multipart boundary.
+      const hasJsonBody = typeof init?.body === "string";
+      const defaultHeaders: Record<string, string> = {
+        ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+        ...authHeaders(),
+      };
+      const res = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: { ...defaultHeaders, ...init?.headers },
+      });
 
-    if (!res.ok) {
-      const body = await readErrorBody(res);
-      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-      throw new ApiError(detail, res.status, false);
-    }
+      if (!res.ok) {
+        const body = await readErrorBody(res);
+        const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+        // HTTP error — surface immediately, do NOT retry
+        throw new ApiError(detail, res.status, false);
+      }
 
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
+      if (res.status === 204) return undefined as T;
+      return res.json() as Promise<T>;
+    } catch (err) {
+      // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
+      if (err instanceof ApiError && !err.isNetworkError) {
+        throw err;
+      }
+
+      // Network/Abort error — retry with exponential backoff up to MAX_RETRIES
+      if (attempt < MAX_RETRIES) {
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Last attempt failed — surface the final network error
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new ApiError(
+          "서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
+          undefined,
+          true,
+        );
+      }
       throw new ApiError(
-        "서버 응답이 30초 이상 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
+        "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
         undefined,
         true,
       );
+    } finally {
+      clearTimeout(timeoutId);
     }
-    throw new ApiError(
-      "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
-      undefined,
-      true,
-    );
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  // Unreachable — the loop always throws on the last failed attempt
+  throw new ApiError(
+    "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
+    undefined,
+    true,
+  );
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -898,6 +928,77 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
   return result.api_key;
 }
 
+// === Message Templates ===
+
+export interface MessageTemplate {
+  id: string;
+  tenant_id: string;
+  name: string;
+  category: string;
+  content: string;
+  variables: string;
+  is_favorite: boolean;
+  use_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MessageTemplateList {
+  items: MessageTemplate[];
+  total: number;
+}
+
+export interface CreateTemplateInput {
+  name: string;
+  category?: string;
+  content: string;
+  variables?: string[];
+}
+
+export interface UpdateTemplateInput {
+  name?: string;
+  category?: string;
+  content?: string;
+  variables?: string[];
+  is_favorite?: boolean;
+}
+
+export async function fetchTemplates(
+  tenantId: string,
+  params?: { category?: string; search?: string; favorite_only?: boolean; skip?: number; limit?: number }
+): Promise<MessageTemplateList> {
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set("category", params.category);
+  if (params?.search) qs.set("search", params.search);
+  if (params?.favorite_only) qs.set("favorite_only", "true");
+  if (params?.skip != null) qs.set("skip", String(params.skip));
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  const query = qs.toString();
+  return request<MessageTemplateList>(`/api/tenants/${tenantId}/templates${query ? `?${query}` : ""}`);
+}
+
+export async function createTemplate(tenantId: string, input: CreateTemplateInput): Promise<MessageTemplate> {
+  return request<MessageTemplate>(`/api/tenants/${tenantId}/templates`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateTemplate(tenantId: string, templateId: string, input: UpdateTemplateInput): Promise<MessageTemplate> {
+  return request<MessageTemplate>(`/api/tenants/${tenantId}/templates/${templateId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteTemplate(tenantId: string, templateId: string): Promise<void> {
+  await request<void>(`/api/tenants/${tenantId}/templates/${templateId}`, { method: "DELETE" });
+}
+
+export async function useTemplate(tenantId: string, templateId: string): Promise<MessageTemplate> {
+  return request<MessageTemplate>(`/api/tenants/${tenantId}/templates/${templateId}/use`, { method: "POST" });
+}
+
 // === Admin user lookup + manual API key issuance ===
 
 export interface UserLookupResult {
@@ -1154,6 +1255,35 @@ export async function fetchAnalyticsLatency(params?: {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
   return request<import("@/types").AnalyticsLatency>(`/api/delivery-analytics/latency?${p.toString()}`);
+}
+
+// ─── AI Assist ────────────────────────────────────────────────────
+
+export async function generateAiMessage(prompt: string): Promise<string> {
+  const result = await request<{ content: string }>("/api/ai/generate-message", {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+  });
+  return result.content;
+}
+
+export interface AiAnalysisInput {
+  summary: string;
+  failures: string;
+  accounts: string;
+  days: number;
+}
+
+export interface AiAnalysisResult {
+  report: string;
+  anomalies: string[];
+}
+
+export async function fetchAiDeliveryAnalysis(input: AiAnalysisInput): Promise<AiAnalysisResult> {
+  return request<AiAnalysisResult>("/api/ai/analyze-delivery", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 interface ApiReplyMacro {

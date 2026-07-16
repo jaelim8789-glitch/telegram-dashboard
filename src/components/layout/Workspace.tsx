@@ -18,6 +18,7 @@ import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
 import { LogTab } from "@/components/workspace/tabs/LogTab";
 import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
 import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
+import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -35,6 +36,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   profile: ProfileTab,
   log: LogTab,
   folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
+  templates: TemplateTab,
 };
 
 export function Workspace() {

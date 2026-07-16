@@ -6,6 +6,7 @@ import {
   RefreshCw, SendHorizonal, Users, XCircle,
   ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
+  Gauge, Layers, Zap, Timer,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -150,12 +151,12 @@ export function DashboardTab() {
     try {
       const saved = localStorage.getItem("telemon-dashboard-widgets");
       return saved ? JSON.parse(saved) : {
-        attention: true, recentFailures: true, middlePanels: true,
+        realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true,
         recentActivity: true, accountOverview: true, failureIntelligence: true,
         healthTrend: true,
       };
     } catch {
-      return { attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true };
+      return { realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true };
     }
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
@@ -169,6 +170,7 @@ export function DashboardTab() {
   };
 
   const widgetKeys = [
+    { key: "realtimeMetrics", label: "실시간 메트릭" },
     { key: "attention", label: "운영 주의 사항" },
     { key: "recentFailures", label: "최근 발송 실패" },
     { key: "middlePanels", label: "예약/반복/건강 패널" },
@@ -347,6 +349,79 @@ export function DashboardTab() {
           </button>
         </div>
       </header>
+
+      {/* ── Real-time Metrics Row ──────────────── */}
+      {widgetVisibility.realtimeMetrics && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+          <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <Gauge className="h-3.5 w-3.5 text-app-info" aria-hidden="true" />
+              발송 속도
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-text">
+              {formatCompact(sentCount)}
+              <span className="text-xs font-normal text-app-text-muted">/30일</span>
+            </div>
+            <div className="text-[10px] text-app-text-subtle">
+              {failedCount > 0
+                ? <span className="text-app-danger">{((failedCount / Math.max(sentCount + failedCount, 1)) * 100).toFixed(1)}% 실패율</span>
+                : "실패 없음"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <Timer className="h-3.5 w-3.5 text-app-warning" aria-hidden="true" />
+              대기열
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-text">
+              {logs.filter(l => l.status === "pending").length}
+            </div>
+            <div className="text-[10px] text-app-text-subtle">
+              {upcoming.length > 0 ? `${upcoming.length}건 예약됨` : "대기 중 없음"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <Zap className="h-3.5 w-3.5 text-app-primary" aria-hidden="true" />
+              성공률
+            </div>
+            <div className={cn("mt-1 text-lg font-bold tabular-nums",
+              (summary?.success_rate ?? 100) >= 90 ? "text-app-success" :
+              (summary?.success_rate ?? 100) >= 70 ? "text-app-warning" : "text-app-danger"
+            )}>
+              {summary ? `${summary.success_rate.toFixed(1)}%` : "-"}
+            </div>
+            <div className="text-[10px] text-app-text-subtle">
+              {summary ? `${summary.successful}/${summary.total_attempted}건` : "데이터 없음"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <Activity className="h-3.5 w-3.5 text-app-success" aria-hidden="true" />
+              계정 건강
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums">
+              <span className="text-app-success">{healthyCount}</span>
+              <span className="text-xs font-normal text-app-text-muted">/{accounts.length}</span>
+            </div>
+            <div className="text-[10px] text-app-text-subtle">
+              {healthCritical.length > 0 ? `${healthCritical.length}개 주의 필요` : "모든 계정 정상"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <Layers className="h-3.5 w-3.5 text-app-text-muted" aria-hidden="true" />
+              반복 스케줄
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-text">{recurring.length}</div>
+            <div className="text-[10px] text-app-text-subtle">
+              {erroredRecurring.length > 0
+                ? `${erroredRecurring.length}개 오류`
+                : `${recurring.filter(r => getRecurringState(r) === "active").length}개 활성`}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Operational Summary Hierarchy ───────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
