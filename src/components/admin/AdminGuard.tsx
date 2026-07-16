@@ -52,7 +52,7 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
     return () => {
       cancelled = true;
     };
-  }, [router, requireAdmin, setRole]);
+  }, [router, requireAdmin, setRole, setSubscription]);
 
   if (!checked) {
     return (
