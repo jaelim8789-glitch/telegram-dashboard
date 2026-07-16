@@ -243,13 +243,15 @@ class BroadcastQueue:
 
     async def _dispatch(self, broadcast: Broadcast) -> None:
         """Send the broadcast message to all recipients one by one."""
-        # Clean up cancelled set before dispatch
-        self._prune_cancelled_set(broadcast.id)
-
-        # Check if cancelled before starting
+        # Check if cancelled before starting — must check BEFORE pruning
+        # so that cancel_broadcast() has a window to set the flag.
         if broadcast.id in self._cancelled_set:
             self._finalize_cancelled(broadcast, 0)
             return
+
+        # Prune the cancelled set *after* the check to avoid a race where
+        # cancel_broadcast() adds the ID between the check and the prune.
+        self._prune_cancelled_set(broadcast.id)
 
         broadcast.status = "sending"
         success_count = 0
@@ -317,9 +319,11 @@ class BroadcastQueue:
                 break
             except RPCError as e:
                 fail_count += 1
+                current_idx += 1
                 logger.warning("[%s] RPC error sending to %s: %s", self._account_id, recipient_id, e)
             except Exception as e:
                 fail_count += 1
+                current_idx += 1
                 logger.warning("[%s] error sending to %s: %s", self._account_id, recipient_id, e)
 
             await asyncio.sleep(1)
