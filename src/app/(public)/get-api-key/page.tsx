@@ -85,6 +85,8 @@ const PLANS = [
   },
 ];
 
+type FlowStep = "browse" | "payment" | "done" | "waiting";
+
 export default function GetApiKeyPage() {
   useFadeIn();
   const { toast } = useToast();
