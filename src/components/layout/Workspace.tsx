@@ -19,6 +19,7 @@ import { LogTab } from "@/components/workspace/tabs/LogTab";
 import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
 import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
 import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
+import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -37,6 +38,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   log: LogTab,
   folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
   templates: TemplateTab,
+  campaigns: CampaignTab,
 };
 
 export function Workspace() {
