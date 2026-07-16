@@ -115,14 +115,14 @@ def _upsert_request(token: str, **kwargs: Any) -> None:
     ).fetchone()
     if existing:
         sets = ", ".join(f"{k} = ?" for k in kwargs)
-        params = list(kwargs.values()) + [token]
+        params = list(kwargs.values())
         conn.execute(f"UPDATE free_api_key_requests SET {sets}, updated_at = ? WHERE token = ?", params + [now, token])
     else:
-        placeholders = ", ".join("?" for _ in kwargs)
-        cols = ", ".join(kwargs.keys())
+        cols = ", ".join(["token", *kwargs.keys()])
+        placeholders = ", ".join("?" for _ in range(len(kwargs) + 1))
         conn.execute(
             f"INSERT INTO free_api_key_requests ({cols}, created_at, updated_at) VALUES ({placeholders}, ?, ?)",
-            list(kwargs.values()) + [now, now],
+            [token, *kwargs.values(), now, now],
         )
     conn.commit()
     conn.close()
@@ -206,6 +206,7 @@ async def issue_free_api_key(body: IssueRequest):
 
     # Check if this phone already has a free key
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     existing = conn.execute(
         "SELECT api_key FROM free_api_keys WHERE phone = ?", (phone,)
     ).fetchone()
