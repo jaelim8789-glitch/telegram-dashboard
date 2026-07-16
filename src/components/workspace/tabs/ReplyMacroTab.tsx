@@ -187,7 +187,9 @@ export function ReplyMacroTab() {
       intervalHours,
       fixedTime: scheduleType === "fixed" ? fixedTime : undefined,
       maxSendsPerDay,
-      replyToMessageId: replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
+      // null (not undefined) when cleared so an edit can explicitly revert the macro back to
+      // auto-replying to each target's latest message — see ReplyMacroInput in lib/api.ts.
+      replyToMessageId: replyToMessageId.trim() ? Number(replyToMessageId.trim()) : null,
       file: macroFile ?? undefined,
     };
     try {

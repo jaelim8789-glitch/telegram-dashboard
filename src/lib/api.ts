@@ -1440,7 +1440,9 @@ export interface ReplyMacroInput {
   intervalHours?: number;
   fixedTime?: string;
   maxSendsPerDay?: number;
-  replyToMessageId?: number;
+  // undefined = leave untouched (update) / use default (create); null = explicitly clear
+  // (update only) so the macro reverts to auto-replying to each target's latest message.
+  replyToMessageId?: number | null;
   isActive?: boolean;
   file?: File;
 }
@@ -1451,23 +1453,27 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  // The backend expects JSON (MacroCreate Pydantic model), NOT multipart/form-data.
-  // Sending FormData causes a 422 because FastAPI cannot deserialize list[str] target_chats
-  // from a form field.
-  // For file uploads, a separate multipart endpoint should be used.
+  // The backend endpoint takes UploadFile/File() for the optional attachment, which forces
+  // the whole request into multipart/form-data — FastAPI cannot deserialize a Pydantic body
+  // model from form fields, so every field is submitted as its own Form field instead of a
+  // single JSON body. Do not switch this back to `body: JSON.stringify(...)`; see
+  // telegram-dashboard-backend/app/api/reply_macro.py::create_macro and
+  // tests/test_reply_macro_api.py for the regression this guards against.
+  const form = new FormData();
+  form.append("name", input.name);
+  form.append("target_chats", JSON.stringify(input.targetChats));
+  form.append("message_content", input.messageContent);
+  form.append("schedule_type", input.scheduleType ?? "interval");
+  form.append("interval_hours", String(input.intervalHours ?? 24));
+  form.append("fixed_time", input.fixedTime ?? "");
+  form.append("max_sends_per_day", String(input.maxSendsPerDay ?? 10));
+  form.append("is_active", String(input.isActive ?? true));
+  if (input.replyToMessageId != null) form.append("reply_to_message_id", String(input.replyToMessageId));
+  if (input.file) form.append("file", input.file);
+
   return toReplyMacro(await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
     method: "POST",
-    body: JSON.stringify({
-      name: input.name,
-      target_chats: input.targetChats,
-      message_content: input.messageContent,
-      schedule_type: input.scheduleType ?? "interval",
-      interval_hours: input.intervalHours ?? 24,
-      fixed_time: input.fixedTime ?? "",
-      max_sends_per_day: input.maxSendsPerDay ?? 10,
-      is_active: input.isActive ?? true,
-      reply_to_message_id: input.replyToMessageId ?? null,
-    }),
+    body: form,
   }));
 }
 
