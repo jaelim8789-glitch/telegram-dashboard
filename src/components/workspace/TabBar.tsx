@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
   Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe, Folder, Target,
+  HeartPulse,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS, type TabDef } from "@/types";
@@ -21,6 +22,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   templates: FileText,
   autoreply: Bot,
   replymacro: Zap,
+  health: HeartPulse,
   campaigns: Target,
   folders: Folder,
   deliveryanalytics: BarChart3,
