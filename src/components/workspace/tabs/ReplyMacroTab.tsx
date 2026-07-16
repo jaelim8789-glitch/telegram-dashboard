@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
-import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock, Image } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
+import { SendHorizonal, Plus, X, Search, RotateCcw, Copy, Play, Clock } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import {
@@ -88,7 +88,7 @@ export function ReplyMacroTab() {
       setMacros([]);
     }
     setError(null);
-  }, [selectedAccountId]);
+  }, [selectedAccountId, replyMacros, runtimeActions]);
 
   // 캐시가 업데이트되면 macros 동기화
   useEffect(() => {

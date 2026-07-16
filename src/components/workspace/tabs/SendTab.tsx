@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
   Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, AlertCircle, MessageCircle, Megaphone, Filter,
+  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -696,7 +696,7 @@ export function SendTab() {
     if (!selectedAccountId) return;
     historyPollTimer.current = setTimeout(() => { loadHistory(selectedAccountId, true); setBgPollTick((t) => t + 1); }, HISTORY_POLL_INTERVAL_MS);
     return () => { if (historyPollTimer.current) clearTimeout(historyPollTimer.current); };
-  }, [bgPollTick, selectedAccountId]);
+  }, [bgPollTick, selectedAccountId, loadHistory]);
 
   async function handleManualRefresh() {
     if (!selectedAccountId || historyRefreshing) return;

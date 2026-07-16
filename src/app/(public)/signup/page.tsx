@@ -321,7 +321,7 @@ export default function SignupPage() {
                 </Button>
                 {alreadyIssued && (
                   <InlineError className="mb-0">
-                    <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+                    <AlertCircle className="mr-1.5 h-4 w-4 shrink-0 inline" />
                     이미 발급된 계정입니다. 로그인 페이지에서 API 키로 로그인해주세요.
                   </InlineError>
                 )}

@@ -122,7 +122,7 @@ export function GroupTab() {
       setGroups([]);
     }
     setError(null);
-  }, [selectedAccountId]);
+  }, [selectedAccountId, cachedGroups, runtimeActions]);
 
   // 캐시 업데이트 시 동기화
   useEffect(() => {
@@ -148,7 +148,7 @@ export function GroupTab() {
       setPollTick((t) => t + 1);
     }, BACKGROUND_POLL_INTERVAL_MS);
     return () => { if (bgPollTimer.current) clearTimeout(bgPollTimer.current); };
-  }, [pollTick, selectedAccountId]);
+  }, [pollTick, selectedAccountId, runtimeActions]);
 
   const visibleGroups = useMemo(() => {
     let filtered = groups;
