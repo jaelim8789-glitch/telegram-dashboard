@@ -6,7 +6,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Select } from "@/components/ui/Field";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
@@ -40,14 +40,50 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
 
 import { formatTimestamp, formatDuration } from "@/lib/formatTime";
 
+type BulkAction = "retry" | "send_now" | "cancel";
+
+function canRetryFromFailureInfo(log: Broadcast): boolean {
+  if (log.status !== "failed" || !log.failureInfo) return false;
+  return (
+    (log.failureInfo.retryable === "retryable" || log.failureInfo.retryable === "conditional") &&
+    (log.failureInfo.recovery_action === "wait_and_retry" ||
+      log.failureInfo.recovery_action === "retry_broadcast" ||
+      log.failureInfo.recovery_action === "reauthenticate_account")
+  );
+}
+
+function localDateKey(iso: string): string {
+  const d = new Date(`${iso}Z`);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function matchesLogQuery(log: Broadcast, query: string, accountName: string): boolean {
+  if (!query) return true;
+  const haystack = [
+    log.message,
+    log.status,
+    log.errorMessage ?? "",
+    log.failureInfo?.summary ?? "",
+    log.failureInfo?.category ?? "",
+    accountName,
+    log.accountId,
+    log.recipients.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
 function LogRow({
-  log, retrying, sendingNow, accountLabel, accounts, onRetry, onEditResend, onNavigate, onSendNow,
+  log, retrying, sendingNow, accountLabel, accounts, selected, onToggleSelect, onRetry, onEditResend, onNavigate, onSendNow,
 }: {
   log: Broadcast;
   retrying: string | null;
   sendingNow: string | null;
   accountLabel: (id: string) => string;
   accounts: { id: string; name: string | null; phone: string }[];
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onRetry: (b: Broadcast) => void;
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
@@ -72,16 +108,7 @@ function LogRow({
   const accountExists = accounts.some((a) => a.id === log.accountId);
   const retryLocked = retrying === log.id;
   const sendNowLocked = sendingNow === log.id;
-
-  /** Derive whether retry is valid from failure_info semantics.
-   *  Only show/allow retry for retryable/conditional categories that
-   *  the FailureRecoveryPanel would also offer a retry action for. */
-  const canRetryFromFailureInfo = !hasFailureInfo || (
-    (log.failureInfo!.retryable === "retryable" || log.failureInfo!.retryable === "conditional") &&
-    (log.failureInfo!.recovery_action === "wait_and_retry" || log.failureInfo!.recovery_action === "retry_broadcast" ||
-     log.failureInfo!.recovery_action === "reauthenticate_account")
-  );
-  const showRetryButton = accountExists && canRetryFromFailureInfo;
+  const showRetryButton = accountExists && canRetryFromFailureInfo(log);
 
   return (
     <>
@@ -98,6 +125,19 @@ function LogRow({
       >
         {/* ── Top info line ── */}
         <div className="flex items-center gap-2 px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => onToggleSelect(log.id)}
+            className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+              selected ? "border-app-primary bg-app-primary text-white" : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
+            )}
+            aria-label={selected ? "선택 해제" : "선택"}
+            aria-pressed={selected}
+          >
+            {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-3 w-3 rounded-sm border border-current" />}
+          </button>
+
           <Icon className={cn(
             "h-4 w-4 shrink-0",
             isSending && "animate-spin text-app-info",
@@ -258,6 +298,10 @@ export function LogTab() {
   const [sendNowConfirmId, setSendNowConfirmId] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState("");
   const [statusPillFilter, setStatusPillFilter] = useState<HistoryFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
@@ -286,7 +330,13 @@ export function LogTab() {
     finally { setLoading(false); }
   }, [accountFilter, cachedBroadcasts]);
 
-  useEffect(() => { load(); setStatusPillFilter("all"); }, [accountFilter, load]);
+  useEffect(() => {
+    load();
+    setStatusPillFilter("all");
+    setSearchQuery("");
+    setDateFilter("");
+    setSelectedLogIds(new Set());
+  }, [accountFilter, load]);
 
   // Update tab badge with failed log count
   useEffect(() => {
