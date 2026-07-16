@@ -157,7 +157,7 @@ if cfg.monitoring.metrics_enabled:
 
 # ── Import and register routers ──────────────────────────────────────
 
-from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups, runtime_inspector, folders, healing, admin
+from .routers import accounts, auth, broadcast, auto_reply, reply_macro, health, groups, runtime_inspector, folders, healing, admin, free_api_key
 
 app.include_router(accounts.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
@@ -170,6 +170,7 @@ app.include_router(runtime_inspector.router, prefix="/api")
 app.include_router(folders.router)
 app.include_router(healing.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(free_api_key.router, prefix="/api")
 
 
 # ── Root health-check ────────────────────────────────────────────────
