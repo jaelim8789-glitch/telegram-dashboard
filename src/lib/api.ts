@@ -109,10 +109,19 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
+    // Only set Content-Type for JSON-string bodies — GET, HEAD, and bodyless DELETE
+    // calls should not force application/json, which can confuse some backends and
+    // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
+    // hardcoded Content-Type so the browser can set the correct multipart boundary.
+    const hasJsonBody = typeof init?.body === "string";
+    const defaultHeaders: Record<string, string> = {
+      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+    };
     const res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers },
+      headers: { ...defaultHeaders, ...init?.headers },
     });
 
     if (!res.ok) {
@@ -1219,6 +1228,7 @@ export async function createReplyMacro(accountId: string, input: ReplyMacroInput
       fixed_time: input.fixedTime ?? "",
       max_sends_per_day: input.maxSendsPerDay ?? 10,
       is_active: input.isActive ?? true,
+      reply_to_message_id: input.replyToMessageId ?? null,
     }),
   }));
 }

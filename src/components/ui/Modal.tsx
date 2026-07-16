@@ -115,8 +115,8 @@ export function Modal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-0 bg-black/60"
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={() => !preventClose && onClose()}
             aria-hidden="true"
           />
@@ -133,6 +133,7 @@ export function Modal({
             transition={{ type: "spring", stiffness: 400, damping: 32 }}
             className={cn(
               "relative flex max-h-[85vh] w-full flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl",
+              "scrollbar-thin",
               SIZE_STYLE[size],
               className
             )}
