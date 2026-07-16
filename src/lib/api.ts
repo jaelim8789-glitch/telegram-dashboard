@@ -17,23 +17,14 @@
 } from "@/types";
 import { getToken, getSessionToken, setSessionToken } from "@/lib/auth";
 
-// NEXT_PUBLIC_API_BASE_URL is inlined at build time.  When empty (the Dockerfile
-// default), the frontend uses relative URLs through the nginx reverse proxy
-// (/api/* → backend).  When set (e.g. "https://api.telemon.online"), the
-// frontend calls the API directly at that origin.
-// The fallback "http://localhost:8000" is for local dev without nginx.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-/** Default timeout for API requests (milliseconds).  File uploads (createBroadcast,
- *  createReplyMacro) call fetch() directly and are not affected by this timeout. */
 const REQUEST_TIMEOUT_MS = 30_000;
 
-/** Every /api/* route requires either this (an admin session) or an X-API-Key see
- * app/api/deps.py. The dashboard itself authenticates with the admin session token. */
 function authHeaders(): Record<string, string> {
   const token = getToken();
   const sessionToken = getSessionToken();
@@ -167,10 +158,6 @@ export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
 
-/**
- * Update an account's status (active/inactive/banned).
- * PATCH /api/accounts/{accountId}/status
- */
 export async function updateAccountStatus(
   accountId: string,
   status: Account["status"]
@@ -181,10 +168,6 @@ export async function updateAccountStatus(
   });
 }
 
-/**
- * Batch enable or disable multiple accounts.
- * PATCH /api/accounts/batch/status
- */
 export async function batchUpdateAccountStatus(
   accountIds: string[],
   status: Account["status"]
@@ -364,8 +347,6 @@ export interface GroupFolder {
   groupIds: string[];
 }
 
-/** Best-effort — the backend returns [] if Telegram folders can't be read, so
- * callers should treat this as purely additive and never block on it. */
 export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[]> {
   try {
     const body = await request<{ id: string; title: string; group_ids: string[] }[]>(
@@ -424,29 +405,15 @@ export interface CreateBroadcastInput {
   message: string;
   recipients: string[];
   image?: File;
-  /** ISO 8601 datetime. Omit to send as soon as the queue/rate-limit allow it. */
   scheduledAt?: string;
-  /** Minutes between recurring sends. Null = one-time broadcast. */
   recurringIntervalMinutes?: number;
   deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
-  /** Per-group delay in seconds for normal mode (default 60) */
   delaySeconds?: number;
-  /** Reply to a specific Telegram message ID. Only honored by the backend when
-   * deliveryMode is "reply" — otherwise the message sends as a new message. */
   replyToMessageId?: number;
-  /** Inline keyboard buttons (label + URL pairs). */
   inlineButtons?: { label: string; url: string }[];
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
-  // MUST be multipart/form-data — verified directly against the deployed backend source
-  // (telegram-dashboard-backend/app/api/broadcast.py, POST /api/broadcast): every parameter
-  // is declared `Annotated[str, Form()]` / `Annotated[UploadFile | None, File()]`, there is no
-  // pydantic JSON-body parameter on that route at all. A JSON body makes every Form field
-  // report "field required" (422). If you're reading this because it got reverted to JSON
-  // again: re-check that file's actual signature before changing it, don't go by a schema
-  // name (e.g. "CreateBroadcastInput") that only exists in the unrelated, never-deployed
-  // prototype at c:\Dev\TeleMon\backend — this file talks to the real backend, not that one.
   const form = new FormData();
   form.append("account_id", input.accountId);
   form.append("message", input.message);
@@ -521,64 +488,33 @@ export function clearIdempotencyKey(): void {
   _idempotencyKey = null;
 }
 
-/**
- * Retry a failed broadcast via the Sprint 24 retry API.
- * POST /api/broadcast/{broadcast_id}/retry resets status to "pending"
- * and clears the error message so the scheduler re-dispatches it.
- */
 export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/retry`, { method: "POST" }));
 }
 
-/**
- * Send a broadcast immediately as a one-time send. 
- * POST /api/broadcast/{broadcastId}/send
- */
 export async function sendNowBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/dispatch/${broadcastId}`, { method: "POST" }));
 }
 
-/**
- * Cancel a recurring broadcast. POST /api/broadcast/{broadcast_id}/cancel
- * sets status to "cancelled" so the scheduler stops dispatching it.
- */
 export async function cancelRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/cancel`, { method: "POST" }));
 }
 
-/**
- * Stop a broadcast (alias for cancel). POST /api/broadcast/{broadcast_id}/cancel
- * sets status to "cancelled" for both one-time and recurring broadcasts.
- */
 export const stopBroadcast = cancelRecurringBroadcast;
 
-/**
- * Fetch active recurring broadcasts. GET /api/broadcast/recurring
- * Returns all broadcasts with non-null recurring_interval_minutes that
- * are still active (not cancelled/failed).
- */
 export async function fetchRecurringBroadcasts(): Promise<Broadcast[]> {
   const logs = await request<ApiBroadcast[]>("/api/broadcast/recurring");
   return logs.map(toBroadcast);
 }
 
-/**
- * Pause a recurring broadcast. POST /api/broadcast/{broadcastId}/pause
- */
 export async function pauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/pause`, { method: "POST" }));
 }
 
-/**
- * Unpause a recurring broadcast. POST /api/broadcast/{broadcastId}/unpause
- */
 export async function unpauseRecurringBroadcast(broadcastId: string): Promise<Broadcast> {
   return toBroadcast(await request<ApiBroadcast>(`/api/broadcast/${broadcastId}/unpause`, { method: "POST" }));
 }
 
-/**
- * Fetch execution history for a recurring broadcast. GET /api/broadcast/{broadcastId}/children
- */
 export async function fetchRecurringChildren(
   broadcastId: string,
   limit?: number,
@@ -622,12 +558,15 @@ export async function fetchAdminMe(): Promise<{ username: string }> {
   return request("/api/admin/auth/me");
 }
 
-// === API keys (admin only) ===
+// === API keys (admin only) — enhanced with plan schema ===
 
 export interface ApiKeyCreated {
   id: string;
   key: string;
   name: string;
+  plan: string;
+  maxAccounts: number;
+  dailyLimit: number;
   createdAt: string;
 }
 
@@ -636,6 +575,9 @@ export interface ApiKey {
   maskedKey: string;
   name: string;
   isActive: boolean;
+  plan: string;
+  maxAccounts: number;
+  dailyLimit: number;
   tenantId: string | null;
   createdAt: string;
   lastUsed: string | null;
@@ -646,6 +588,9 @@ interface ApiApiKey {
   masked_key: string;
   name: string;
   is_active: boolean;
+  plan: string;
+  max_accounts: number;
+  daily_limit: number;
   tenant_id: string | null;
   created_at: string;
   last_used: string | null;
@@ -657,6 +602,9 @@ function toApiKey(api: ApiApiKey): ApiKey {
     maskedKey: api.masked_key,
     name: api.name,
     isActive: api.is_active,
+    plan: api.plan ?? "free",
+    maxAccounts: api.max_accounts ?? 0,
+    dailyLimit: api.daily_limit ?? 0,
     tenantId: api.tenant_id,
     createdAt: api.created_at,
     lastUsed: api.last_used,
@@ -668,12 +616,33 @@ export async function fetchApiKeys(): Promise<ApiKey[]> {
   return keys.map(toApiKey);
 }
 
-export async function createApiKey(name: string, tenantId?: string): Promise<ApiKeyCreated> {
-  const result = await request<{ id: string; key: string; name: string; created_at: string }>(
+export interface CreateApiKeyInput {
+  name: string;
+  plan?: "free" | "pro" | "team";
+  maxAccounts?: number;
+  dailyLimit?: number;
+  tenantId?: string;
+}
+
+export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyCreated> {
+  const body: Record<string, unknown> = { name: input.name };
+  if (input.plan) body.plan = input.plan;
+  if (input.maxAccounts != null) body.max_accounts = input.maxAccounts;
+  if (input.dailyLimit != null) body.daily_limit = input.dailyLimit;
+  if (input.tenantId) body.tenant_id = input.tenantId;
+  const result = await request<{ id: string; key: string; name: string; plan: string; max_accounts: number; daily_limit: number; created_at: string }>(
     "/api/admin/api-keys",
-    { method: "POST", body: JSON.stringify(tenantId ? { name, tenant_id: tenantId } : { name }) }
+    { method: "POST", body: JSON.stringify(body) }
   );
-  return { id: result.id, key: result.key, name: result.name, createdAt: result.created_at };
+  return { 
+    id: result.id, 
+    key: result.key, 
+    name: result.name, 
+    plan: result.plan ?? "free", 
+    maxAccounts: result.max_accounts ?? 0, 
+    dailyLimit: result.daily_limit ?? 0, 
+    createdAt: result.created_at 
+  };
 }
 
 export async function deleteApiKey(id: string): Promise<void> {
@@ -1005,10 +974,6 @@ interface ApiChannelHubPublishResult {
   published_at: string;
 }
 
-/**
- * Publish a message to a Telegram channel via the Channel Hub.
- * POST /api/channel-hub/publish
- */
 export async function publishChannelPost(input: ChannelHubPublishInput): Promise<ChannelHubPublishResult> {
   const result = await request<ApiChannelHubPublishResult>("/api/channel-hub/publish", {
     method: "POST",
@@ -1217,10 +1182,6 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 }
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  // The backend expects JSON (MacroCreate Pydantic model), NOT multipart/form-data.
-  // Sending FormData causes a 422 because FastAPI cannot deserialize list[str] target_chats
-  // from a form field.
-  // For file uploads, a separate multipart endpoint should be used.
   return toReplyMacro(await request<ApiReplyMacro>(`/api/accounts/${accountId}/reply-macros`, {
     method: "POST",
     body: JSON.stringify({
