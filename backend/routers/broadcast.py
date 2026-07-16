@@ -32,7 +32,17 @@ async def get_recurring_broadcasts():
 
 @router.get("/broadcast/{broadcast_id}", response_model=Broadcast)
 async def get_broadcast(broadcast_id: str):
-    raise HTTPException(status_code=404, detail="Broadcast not found")
+    manager = RuntimeManager.get_instance()
+    try:
+        broadcasts = await manager.get_broadcasts(limit=500)
+        for b in broadcasts:
+            if b.id == broadcast_id:
+                return b
+        raise HTTPException(status_code=404, detail="Broadcast not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/logs", response_model=list[Broadcast])
@@ -88,5 +98,5 @@ async def send_now(broadcast_id: str):
 async def get_upcoming_broadcasts():
     manager = RuntimeManager.get_instance()
     broadcasts = await manager.get_broadcasts(limit=200)
-    upcoming = [b for b in broadcasts if b.status in ("pending", "scheduled_at")]
+    upcoming = [b for b in broadcasts if b.status == "pending"]
     return upcoming
