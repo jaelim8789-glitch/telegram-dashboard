@@ -174,6 +174,20 @@ export async function fetchAccountByPhone(
   return accounts.find((a) => a.phone === phone);
 }
 
+export async function createFolder(
+  request: APIRequestContext,
+  params: { accountId: string; name: string; groupIds: string[] }
+): Promise<string> {
+  const res = await request.post(`/api/accounts/${params.accountId}/folders`, {
+    data: { name: params.name, group_ids: params.groupIds },
+    headers: await authHeaders(request),
+  });
+  if (!res.ok()) {
+    throw new Error(`folder create failed: ${res.status()} ${await res.text()}`);
+  }
+  return (await res.json()).id as string;
+}
+
 export async function createBroadcast(
   request: APIRequestContext,
   params: { accountId: string; message: string; recipients: string[]; scheduledAt?: string; recurringIntervalMinutes?: number }

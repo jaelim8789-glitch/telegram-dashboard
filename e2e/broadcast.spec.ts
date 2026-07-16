@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cancelBroadcast, createAccount, createBroadcast, deleteAccount, uniquePhone } from "./helpers";
+import { cancelBroadcast, createAccount, createBroadcast, createFolder, deleteAccount, uniquePhone } from "./helpers";
 
 /**
  * Covers the send flow end to end for what's true without a live Telegram session:
@@ -27,6 +27,27 @@ test.describe("발송 흐름 (예약 포함)", () => {
 
     const sendButton = page.getByRole("button", { name: "발송", exact: true }).last();
     await expect(sendButton).toBeDisabled();
+  });
+
+  test("Groups 페이지에서 만든 폴더(발송 그룹)가 발송 탭에 노출되고 선택 시 그룹이 채워진다", async ({ page, request }) => {
+    await createFolder(request, {
+      accountId,
+      name: "E2E 발송그룹",
+      groupIds: ["-100111111", "-100222222"],
+    });
+
+    await page.goto("/app");
+    await page.getByRole("button", { name: "발송", exact: true }).click();
+
+    // The folder created via the Folders/Groups API is directly selectable from Send.
+    const folderChip = page.getByRole("button", { name: /E2E 발송그룹.*2/ });
+    await expect(folderChip).toBeVisible({ timeout: 10000 });
+
+    // This account has no real Telegram groups, so the folder's saved group IDs
+    // aren't "available" to select — clicking still exercises the real selection
+    // handler end-to-end and must report that clearly rather than silently no-op.
+    await folderChip.click();
+    await expect(page.getByText(/사용할 수 있는 그룹이 없습니다/)).toBeVisible();
   });
 
   test("예약 발송 체크박스를 켜면 날짜/시간 입력이 나타나고, 끄면 사라진다", async ({ page }) => {
