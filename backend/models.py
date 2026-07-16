@@ -276,6 +276,7 @@ class ReplyMacroInput(BaseModel):
     fixed_time: str | None = None
     max_sends_per_day: int = 10
     is_active: bool = True
+    reply_to_message_id: int | None = None
 
 
 class ReplyMacroLog(BaseModel):

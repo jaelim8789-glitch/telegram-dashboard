@@ -434,6 +434,7 @@ class RuntimeManager:
             interval_hours=body.get("interval_hours", 24),
             fixed_time=body.get("fixed_time"),
             max_sends_per_day=body.get("max_sends_per_day", 10),
+            reply_to_message_id=body.get("reply_to_message_id"),
             created_at=now,
             updated_at=now,
         )
@@ -462,6 +463,8 @@ class RuntimeManager:
                     macro.fixed_time = body["fixed_time"]
                 if "max_sends_per_day" in body:
                     macro.max_sends_per_day = body["max_sends_per_day"]
+                if "reply_to_message_id" in body:
+                    macro.reply_to_message_id = body["reply_to_message_id"]
                 macro.updated_at = now
                 runtime.reply_macro.set_macros(macros)
                 return macro
