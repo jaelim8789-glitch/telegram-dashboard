@@ -928,6 +928,78 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
   return result.api_key;
 }
 
+// === Campaigns ===
+
+export interface Campaign {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  goal: string | null;
+  total_broadcasts: number;
+  total_sent: number;
+  total_failed: number;
+  total_recipients: number;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface CampaignList {
+  items: Campaign[];
+  total: number;
+}
+
+export interface CreateCampaignInput {
+  name: string;
+  description?: string;
+  goal?: string;
+}
+
+export interface UpdateCampaignInput {
+  name?: string;
+  description?: string;
+  status?: string;
+  goal?: string;
+}
+
+export async function fetchCampaigns(
+  tenantId: string,
+  params?: { status?: string; search?: string; skip?: number; limit?: number }
+): Promise<CampaignList> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  if (params?.search) qs.set("search", params.search);
+  if (params?.skip != null) qs.set("skip", String(params.skip));
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  const query = qs.toString();
+  return request<CampaignList>(`/api/tenants/${tenantId}/campaigns${query ? `?${query}` : ""}`);
+}
+
+export async function createCampaign(tenantId: string, input: CreateCampaignInput): Promise<Campaign> {
+  return request<Campaign>(`/api/tenants/${tenantId}/campaigns`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCampaign(tenantId: string, campaignId: string, input: UpdateCampaignInput): Promise<Campaign> {
+  return request<Campaign>(`/api/tenants/${tenantId}/campaigns/${campaignId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteCampaign(tenantId: string, campaignId: string): Promise<void> {
+  await request<void>(`/api/tenants/${tenantId}/campaigns/${campaignId}`, { method: "DELETE" });
+}
+
+export async function recalcCampaignStats(tenantId: string, campaignId: string): Promise<Campaign> {
+  return request<Campaign>(`/api/tenants/${tenantId}/campaigns/${campaignId}/recalc`, { method: "POST" });
+}
+
 // === Message Templates ===
 
 export interface MessageTemplate {

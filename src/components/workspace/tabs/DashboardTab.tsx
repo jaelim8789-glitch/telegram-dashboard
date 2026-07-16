@@ -6,7 +6,7 @@ import {
   RefreshCw, SendHorizonal, Users, XCircle,
   ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
-  Gauge, Layers, Zap, Timer,
+  Gauge, Layers, Zap, Timer, Sparkles,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -15,9 +15,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
-import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId } from "@/types";
+import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary } from "@/types";
 import { isRecurringActive, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
+import { DailyDigest } from "@/components/workspace/tabs/dashboard/DailyDigest";
+import { UsageChartWidget } from "@/components/workspace/tabs/dashboard/UsageChartWidget";
+import { UsageProgressWidget } from "@/components/workspace/tabs/dashboard/UsageProgressWidget";
+import { DashboardSkeleton } from "@/components/workspace/tabs/dashboard/DashboardSkeleton";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
@@ -141,10 +145,24 @@ export function DashboardTab() {
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState(false);
 
+  const plan = useDashboardStore((s) => s.plan);
+
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
   const [healthError, setHealthError] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
+
+  const [priorityVisible, setPriorityVisible] = useState<Record<string, boolean>>({});
+
+  // Priority rendering: show critical data immediately, delay lower-priority widgets
+  useEffect(() => {
+    const t1 = setTimeout(() => setPriorityVisible(p => ({ ...p, header: true })), 0);
+    const t2 = setTimeout(() => setPriorityVisible(p => ({ ...p, metrics: true })), 50);
+    const t3 = setTimeout(() => setPriorityVisible(p => ({ ...p, attention: true, progress: true })), 200);
+    const t4 = setTimeout(() => setPriorityVisible(p => ({ ...p, chart: true, activity: true })), 400);
+    const t5 = setTimeout(() => setPriorityVisible(p => ({ ...p, remainder: true })), 600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+  }, []);
 
   // ── Widget visibility ──
   const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>(() => {
@@ -153,10 +171,10 @@ export function DashboardTab() {
       return saved ? JSON.parse(saved) : {
         realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true,
         recentActivity: true, accountOverview: true, failureIntelligence: true,
-        healthTrend: true,
+        healthTrend: true, dailyDigest: true, usageChart: true, usageProgress: true,
       };
     } catch {
-      return { realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true };
+      return { realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true, dailyDigest: true, usageChart: true, usageProgress: true };
     }
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
@@ -170,7 +188,10 @@ export function DashboardTab() {
   };
 
   const widgetKeys = [
+    { key: "dailyDigest", label: "오늘의 활동" },
     { key: "realtimeMetrics", label: "실시간 메트릭" },
+    { key: "usageChart", label: "사용량 차트" },
+    { key: "usageProgress", label: "사용량 한도" },
     { key: "attention", label: "운영 주의 사항" },
     { key: "recentFailures", label: "최근 발송 실패" },
     { key: "middlePanels", label: "예약/반복/건강 패널" },
@@ -349,6 +370,11 @@ export function DashboardTab() {
           </button>
         </div>
       </header>
+
+      {/* ── Daily Digest ──────────────────────────── */}
+      {widgetVisibility.dailyDigest && (
+        <DailyDigest accounts={accounts} logs={logs} />
+      )}
 
       {/* ── Real-time Metrics Row ──────────────── */}
       {widgetVisibility.realtimeMetrics && (
@@ -644,6 +670,32 @@ export function DashboardTab() {
             className="flex w-full items-center justify-center gap-1 border-t border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
             전체 로그 보기 <ArrowRight className="h-3 w-3" />
           </button>
+        </div>
+      )}
+
+      {/* ── Usage Chart & Usage Progress (side by side) ── */}
+      {priorityVisible.progress && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {widgetVisibility.usageChart ? (
+            priorityVisible.chart ? (
+              <UsageChartWidget timeline={overview?.timeline ?? []} loading={overviewLoading} />
+            ) : (
+              <DashboardSkeleton variant="chart" priority="high" />
+            )
+          ) : null}
+          {widgetVisibility.usageProgress ? (
+            priorityVisible.progress ? (
+              <UsageProgressWidget
+                planId={plan ?? "free"}
+                summary={overview?.summary ?? null}
+                accountsCount={accounts.length}
+                autoReplyCount={accounts.filter(a => a.autoReplyEnabled).length}
+                loading={accountsLoading && accounts.length === 0}
+              />
+            ) : (
+              <DashboardSkeleton variant="progress" priority="high" />
+            )
+          ) : null}
         </div>
       )}
 
