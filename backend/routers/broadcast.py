@@ -81,7 +81,7 @@ async def cancel_broadcast(broadcast_id: str):
                 cancelled = runtime.broadcast_queue.cancel_broadcast(broadcast_id)
                 if not cancelled:
                     raise HTTPException(status_code=404, detail="Broadcast not found in queue")
-                return {"id": broadcast_id, "status": "cancelled", "account_id": b.account_id, "message": b.message}
+                return b
         raise HTTPException(status_code=404, detail="Broadcast not found")
     except HTTPException:
         raise
