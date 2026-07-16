@@ -908,9 +908,9 @@ export function SendTab() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
-    const hasMessage = replyMacroEnabled ? !!replyToMessageId.trim() : message.trim().length > 0;
+    const hasMessage = message.trim().length > 0 && (!replyMacroEnabled || replyToMessageId.trim().length > 0);
     if (!hasMessage) {
-      setSubmitError(replyMacroEnabled ? "답장할 메시지 ID를 입력하세요." : "메시지 내용을 입력하세요.");
+      setSubmitError(replyMacroEnabled ? "메시지 내용과 답장할 메시지 ID를 모두 입력하세요." : "메시지 내용을 입력하세요.");
       return;
     }
     if (isScheduled && !scheduledAtLocal) return;
@@ -924,7 +924,7 @@ export function SendTab() {
       const mode = replyMacroEnabled ? "reply" : deliveryMode;
       await api.createBroadcast({
         accountId: selectedAccountId,
-        message: replyMacroEnabled ? "" : message.trim(),
+        message: message.trim(),
         recipients: selectedRecipientIds,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
@@ -1034,7 +1034,7 @@ export function SendTab() {
   }
 
   const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && (replyMacroEnabled ? replyToMessageId.trim().length > 0 : message.trim().length > 0) && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!replyMacroEnabled || replyToMessageId.trim().length > 0) && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -1298,150 +1298,135 @@ export function SendTab() {
             )}
 
             {/* Message */}
-            {replyMacroEnabled ? (
-              <>
-                <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                  <Field label="답장할 메시지 ID">
-                    <input ref={replyIdInputRef} type="number" value={replyToMessageId}
-                      onChange={(e) => setReplyToMessageId(e.target.value)}
-                      placeholder="예: 12345"
-                      min="1"
-                      className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
-                  </Field>
-                  {!replyToMessageId.trim() && (
-                    <p className="mt-1.5 text-xs text-app-text-muted">
-                      메시지 ID를 입력하면 발송 버튼이 활성화됩니다.
-                    </p>
-                  )}
-                  <div className="mt-2">
-                    <Field label="파일 첨부 (선택)">
-                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-                        onChange={(e) => { const f = e.target.files?.[0] ?? null; setImageFile(f); }}
-                        className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
-                    </Field>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Field label="메시지 내용">
-                  <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
-                    placeholder="발송할 메시지를 입력하세요." required />
-                </Field>
-                {/* Template library toolbar */}
-                <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => { refreshTemplates(); setTemplateLibraryOpen(!templateLibraryOpen); }}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-                  >
-                    <Copy className="h-3 w-3" /> 템플릿
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setSaveTemplateName(""); setSaveTemplateDialogOpen(true); }}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-                  >
-                    <Plus className="h-3 w-3" /> 현재 메시지 저장
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewOpen(true)}
-                    disabled={!message.trim()}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Eye className="h-3 w-3" /> 미리보기
-                  </button>
-                  <span className="mx-1 h-3 w-px bg-app-border" />
-                  {TEMPLATE_VARIABLES.map((v) => (
+            <Field label="메시지 내용">
+              <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
+                placeholder="발송할 메시지를 입력하세요." required />
+            </Field>
+            {/* Template library toolbar */}
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => { refreshTemplates(); setTemplateLibraryOpen(!templateLibraryOpen); }}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+              >
+                <Copy className="h-3 w-3" /> 템플릿
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSaveTemplateName(""); setSaveTemplateDialogOpen(true); }}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+              >
+                <Plus className="h-3 w-3" /> 현재 메시지 저장
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!message.trim()}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Eye className="h-3 w-3" /> 미리보기
+              </button>
+              <span className="mx-1 h-3 w-px bg-app-border" />
+              {TEMPLATE_VARIABLES.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => handleInsertVariable(v.key)}
+                  title={v.label}
+                  className="rounded-md bg-app-card-hover px-1.5 py-0.5 font-mono text-[10px] text-app-info hover:bg-app-info-muted/30 transition-colors"
+                >
+                  {v.key}
+                </button>
+              ))}
+            </div>
+
+            {/* Template library dropdown */}
+            {templateLibraryOpen && (
+              <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-2">
+                {/* Search inside template library */}
+                <div className="relative">
+                  <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
+                  <input
+                    type="text"
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
+                    placeholder="템플릿 검색..."
+                    className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-7 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none focus:border-app-primary/60 transition-colors"
+                  />
+                  {templateSearch && (
                     <button
-                      key={v.key}
                       type="button"
-                      onClick={() => handleInsertVariable(v.key)}
-                      title={v.label}
-                      className="rounded-md bg-app-card-hover px-1.5 py-0.5 font-mono text-[10px] text-app-info hover:bg-app-info-muted/30 transition-colors"
+                      onClick={() => setTemplateSearch("")}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded text-app-text-subtle hover:text-app-text"
                     >
-                      {v.key}
+                      <X className="h-3 w-3" />
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                {/* Template library dropdown */}
-                {templateLibraryOpen && (
-                  <div className="rounded-xl border border-app-border bg-app-card p-2 space-y-2">
-                    {/* Search inside template library */}
-                    <div className="relative">
-                      <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
-                      <input
-                        type="text"
-                        value={templateSearch}
-                        onChange={(e) => setTemplateSearch(e.target.value)}
-                        placeholder="템플릿 검색..."
-                        className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-7 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none focus:border-app-primary/60 transition-colors"
-                      />
-                      {templateSearch && (
+                {filteredTemplates.length > 0 ? (
+                  <div className="max-h-48 space-y-0.5 overflow-y-auto">
+                    {filteredTemplates.map((tpl) => (
+                      <div key={tpl.id} className="group flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
                         <button
                           type="button"
-                          onClick={() => setTemplateSearch("")}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded text-app-text-subtle hover:text-app-text"
+                          onClick={() => handleToggleTemplateFavorite(tpl.id)}
+                          className={`shrink-0 flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                            tpl.isFavorite
+                              ? "text-app-warning hover:text-app-warning/70"
+                              : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning"
+                          }`}
+                          title={tpl.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
                         >
-                          <X className="h-3 w-3" />
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
                         </button>
-                      )}
-                    </div>
-
-                    {filteredTemplates.length > 0 ? (
-                      <div className="max-h-48 space-y-0.5 overflow-y-auto">
-                        {filteredTemplates.map((tpl) => (
-                          <div key={tpl.id} className="group flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleTemplateFavorite(tpl.id)}
-                              className={`shrink-0 flex h-5 w-5 items-center justify-center rounded transition-colors ${
-                                tpl.isFavorite
-                                  ? "text-app-warning hover:text-app-warning/70"
-                                  : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning"
-                              }`}
-                              title={tpl.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
-                            >
-                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleLoadTemplate(tpl)}
-                              className="flex-1 min-w-0 text-left"
-                            >
-                              <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
-                              <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTemplate(tpl.id)}
-                              className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
-                              title="삭제"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleLoadTemplate(tpl)}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
+                          <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
+                          title="삭제"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
-                    ) : (
-                      <p className="text-[11px] text-app-text-subtle italic">
-                        {templates.length === 0
-                          ? "저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요."
-                          : "일치하는 템플릿이 없습니다."}
-                      </p>
-                    )}
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-[11px] text-app-text-subtle italic">
+                    {templates.length === 0
+                      ? "저장된 템플릿이 없습니다. 메시지를 작성한 후 '현재 메시지 저장' 버튼을 눌러보세요."
+                      : "일치하는 템플릿이 없습니다."}
+                  </p>
                 )}
-                <Field label="이미지 (선택)">
-                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+              </div>
+            )}
+
+            {/* Reply Message ID (only shown when reply is enabled — additional field, not a replacement) */}
+            {replyMacroEnabled && (
+              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+                <Field label="답장할 메시지 ID">
+                  <input ref={replyIdInputRef} type="number" value={replyToMessageId}
+                    onChange={(e) => setReplyToMessageId(e.target.value)}
+                    placeholder="예: 12345"
+                    min="1"
+                    className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                 </Field>
-              </>
+                {!replyToMessageId.trim() && (
+                  <p className="mt-1.5 text-xs text-app-text-muted">
+                    메시지 ID를 입력해야 답장 모드가 활성화됩니다.
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Inline buttons */}
