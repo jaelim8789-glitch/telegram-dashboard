@@ -9,7 +9,7 @@
  *   // groups와 broadcasts는 즉시 반환 (캐시 hit) 또는 빈 배열 후 백그라운드 fetch
  */
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type {
   Account,
   AutoReplyLog,
@@ -98,7 +98,7 @@ export function useAccountCache(accountId: string | null): AccountCacheData {
 export function useRuntimeActions() {
   const manager = RuntimeManager.getInstance();
 
-  return {
+  return useMemo(() => ({
     refreshGroups: (accountId: string) => manager.refreshGroups(accountId),
     refreshBroadcasts: (accountId: string) => manager.refreshBroadcasts(accountId),
     refreshAutoReply: (accountId: string) => manager.refreshAutoReply(accountId),
@@ -106,5 +106,5 @@ export function useRuntimeActions() {
     refreshReplyMacros: (accountId: string) => manager.refreshReplyMacros(accountId),
     refreshHealth: (accountId: string) => manager.refreshHealth(accountId),
     refreshAll: () => manager.refreshAll(),
-  };
+  }), [manager]);
 }

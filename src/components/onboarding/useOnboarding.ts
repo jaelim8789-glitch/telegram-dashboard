@@ -17,11 +17,16 @@ const ONBOARDING_VERSION = 1;
  * including workspace tab buttons underneath it — which reads to the user
  * as "the tab doesn't respond to clicks."
  */
-export function useOnboarding(hasAccounts = false) {
+export function useOnboarding(hasAccounts = false, accountsLoading = false) {
   const [show, setShow] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (accountsLoading) {
+      setShow(false);
+      setReady(true);
+      return;
+    }
     if (hasAccounts) {
       setShow(false);
       setReady(true);
@@ -45,7 +50,7 @@ export function useOnboarding(hasAccounts = false) {
       setShow(true);
     }
     setReady(true);
-  }, [hasAccounts]);
+  }, [accountsLoading, hasAccounts]);
 
   const dismiss = useCallback(() => {
     try {

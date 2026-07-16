@@ -21,12 +21,6 @@ export const TABS: TabDef[] = [
   { id: "send", label: "발송", group: "operate" },
   { id: "scheduler", label: "스케줄러", group: "operate" },
   { id: "log", label: "로그", group: "operate" },
-  // "folders" intentionally omitted — FoldersTab calls a full folder-CRUD API
-  // (/api/accounts/{id}/folders, /folders/sync, /folders/reorder, etc.) that was
-  // never deployed to the production backend, so every load 404s. Hiding the tab
-  // (TABS is the single source both TabBar and CommandPalette render from) removes
-  // the broken affordance without touching the untested prototype backend under
-  // deploy time pressure. Re-add once that API ships.
   { id: "deliveryanalytics", label: "전달 분석", group: "operate" },
   { id: "register", label: "계정 등록", group: "manage" },
   { id: "group", label: "그룹", group: "manage" },
@@ -34,6 +28,7 @@ export const TABS: TabDef[] = [
   { id: "linkinspector", label: "링크 검사", group: "manage" },
   { id: "autoreply", label: "자동 응답", group: "manage" },
   { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "folders", label: "폴더", group: "manage" },
   { id: "channelhub", label: "채널 허브", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
