@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, Request
 from starlette.responses import JSONResponse
 
-from ..models import Broadcast, CreateBroadcastInput
+from ..models import Broadcast, BroadcastChild, CreateBroadcastInput
 from ..runtime_manager import RuntimeManager
 
 router = APIRouter()
