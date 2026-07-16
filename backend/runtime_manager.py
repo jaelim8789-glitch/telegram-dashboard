@@ -205,6 +205,10 @@ class RuntimeManager:
         runtime.health_monitor.set_session_status(False)
         runtime.scheduler.start()
         runtime.broadcast_queue.start()
+        # 주기적 태스크 등록 (group refresh, auto-reply listener, health check)
+        # auto-reply.start()는 client가 아직 인증되지 않았으므로 handler는 등록되지만
+        # 메시지는 client.connect() 후에만 수신됩니다.
+        asyncio.create_task(runtime._register_periodic_tasks())
 
         logger.info("[%s] Legacy account created (no auth) -- waiting for verification", account_id)
         return runtime.get_account()

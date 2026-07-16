@@ -1120,6 +1120,21 @@ class AccountRuntime:
 
     # ── Lifecycle ─────────────────────────────────────────────────
 
+    async def _register_periodic_tasks(self) -> None:
+        """Register periodic scheduler tasks and start auto-reply listener.
+
+        Extracted so both start() and add_account_legacy() call the same setup,
+        ensuring group refresh, health checks, and auto-reply always run.
+        """
+        self.scheduler.every("refresh_groups", 300, self._refresh_groups)
+        self.scheduler.every("check_health", 60, self._check_health)
+        self.scheduler.every("session_verify", 300, self._verify_session)
+        await self.auto_reply.start()
+        try:
+            await self._refresh_groups()
+        except Exception:
+            logger.warning("[%s] initial group refresh deferred (session may not be ready)", self.account_id)
+
     async def start(self) -> bool:
         """Connect the Telethon client and start all subsystems.
 
@@ -1140,14 +1155,7 @@ class AccountRuntime:
 
             self.scheduler.start()
             self.broadcast_queue.start()
-            await self.auto_reply.start()
-
-            # Schedule periodic tasks
-            self.scheduler.every("refresh_groups", 300, self._refresh_groups)
-            self.scheduler.every("check_health", 60, self._check_health)
-            self.scheduler.every("session_verify", 300, self._verify_session)
-
-            await self._refresh_groups()
+            await self._register_periodic_tasks()
 
             logger.info("[%s] runtime started (authenticated=%s)", self.account_id, bool(me))
             return bool(me)
