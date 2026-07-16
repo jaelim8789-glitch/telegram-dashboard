@@ -81,6 +81,15 @@ async def get_current_user(
             raise HTTPException(status_code=401, detail="User not found")
         if user.get("is_suspended"):
             raise HTTPException(status_code=403, detail="User is suspended")
+
+        # Period-based access gate (the primary limit lever -- see PLANS in
+        # admin_platform.py, message/send counts are intentionally generous).
+        # Auto-downgrades to free when a trial or paid subscription's period
+        # has lapsed without renewal.
+        admin.check_trial_status(user["id"])
+        admin.check_subscription_status(user["id"])
+        user = admin.get_user(user["id"]) or user  # re-fetch in case plan just changed
+
         return {
             **user,
             "from_api_key": False,

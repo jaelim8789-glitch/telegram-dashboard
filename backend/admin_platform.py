@@ -148,12 +148,16 @@ class PlanDefinition:
 
 
 PLANS: dict[str, PlanDefinition] = {
+    # Message/send count ceilings are intentionally generous (~99999) across
+    # every plan. Real access control is period-based (trial expiry, paid
+    # subscription current_period_end) -- see AdminPlatform.check_trial_status
+    # and check_subscription_status, enforced in auth_middleware.get_current_user.
     Plan.FREE: PlanDefinition(
         name="Free",
         max_accounts=1,
         max_groups_per_account=50,
-        daily_send_limit=100,
-        daily_auto_reply_limit=50,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=1,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -163,15 +167,15 @@ PLANS: dict[str, PlanDefinition] = {
         price_yearly_cents=0,
         api_rate_limit=30,
         audit_log_retention_days=3,
-        daily_limit=100,
+        daily_limit=99999,
         feature_flags={"can_export": False, "can_webhook": False},
     ),
     Plan.PRO: PlanDefinition(
         name="Pro",
         max_accounts=10,
         max_groups_per_account=500,
-        daily_send_limit=5000,
-        daily_auto_reply_limit=2500,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=5,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -184,15 +188,15 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=120,
         priority_support=True,
         audit_log_retention_days=30,
-        daily_limit=1000,
+        daily_limit=99999,
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True},
     ),
     Plan.TEAM: PlanDefinition(
         name="Team",
         max_accounts=50,
         max_groups_per_account=2000,
-        daily_send_limit=50000,
-        daily_auto_reply_limit=25000,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=20,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -206,15 +210,15 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=300,
         priority_support=True,
         audit_log_retention_days=60,
-        daily_limit=5000,
+        daily_limit=99999,
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": False},
     ),
     Plan.LIFETIME: PlanDefinition(
         name="Lifetime",
         max_accounts=100,
         max_groups_per_account=5000,
-        daily_send_limit=100000,
-        daily_auto_reply_limit=50000,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=50,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -229,7 +233,7 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=1000,
         priority_support=True,
         audit_log_retention_days=365,
-        daily_limit=0,
+        daily_limit=0,  # already unlimited -- left as-is, not reduced to 99999
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": True, "white_label": True},
     ),
 }
@@ -1290,6 +1294,42 @@ class AdminPlatform:
             }
         except (ValueError, TypeError):
             return {"is_trial": False, "is_expired": False}
+
+    def check_subscription_status(self, user_id: str) -> dict[str, Any]:
+        """Check if user's active paid subscription has lapsed past its
+        current_period_end without renewal; auto-downgrade to free if so.
+
+        Counterpart to check_trial_status() for the post-trial paid path.
+        """
+        user = self.get_user(user_id)
+        if not user:
+            return {"has_subscription": False, "is_expired": True}
+
+        sub = self.get_subscription(user_id)
+        if not sub:
+            return {"has_subscription": False, "is_expired": False}
+
+        period_end = sub.get("current_period_end")
+        if not period_end:
+            return {"has_subscription": True, "is_expired": False}
+
+        try:
+            end = datetime.fromisoformat(period_end)
+            now = datetime.now(timezone.utc)
+            is_expired = now > end
+
+            if is_expired and user.get("plan") != Plan.FREE:
+                self.change_plan(user_id, Plan.FREE)
+                self._audit("system", "system", AuditAction.SUBSCRIPTION_CANCELLED,
+                           "subscription", sub["id"], {"reason": "period_ended_no_renewal"})
+
+            return {
+                "has_subscription": True,
+                "is_expired": is_expired,
+                "current_period_end": period_end,
+            }
+        except (ValueError, TypeError):
+            return {"has_subscription": True, "is_expired": False}
 
     # ═════════════════════════════════════════════════════════════════
     # 8. Admin Dashboard
