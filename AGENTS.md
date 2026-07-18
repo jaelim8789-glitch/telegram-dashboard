@@ -6,6 +6,7 @@ Applies to Claude Code, Kiro, and Cline (and any other AGENTS.md-compliant agent
 
 - `c:\Dev\TeleMon` (this root) — Next.js frontend. Git repo: `telegram-dashboard.git`.
 - `telegram-dashboard-backend/` — FastAPI backend. **Separate git repo**: `telegram-dashboard-backend.git`. Commit and push it independently of the frontend.
+- Current workspace: `C:\Backups\emergency-20260718-211528\Dev\TeleMon`
 - Production is a single VPS running Docker Compose (`api.telemon.online`, `app.telemon.online`) — **not** Render, despite `render.yaml` existing in the backend repo. See Production deployment below.
 
 ## Core rule: MCP-first
@@ -23,7 +24,7 @@ Never guess at file contents, API shapes, DB state, or library behavior when an 
 1. `codebase-memory-mcp` — `search_graph` / `trace_path` / `get_code_snippet` / `get_architecture`. Index the project first if not yet indexed (`index_status` → `index_repository`).
 2. `context7` — current docs for any library in play (Next.js, FastAPI, SQLAlchemy, etc.) instead of relying on training-data memory.
 3. `filesystem` / native file tools — non-code files (configs, markdown, migrations).
-4. `git` — history, blame, diff context.
+4. `git` / `github` — history, blame, diff context, PR/issue management.
 
 **Debugging**
 1. `codebase-memory-mcp` `trace_path` (calls / data_flow) — trace the real call chain before speculating.
@@ -31,7 +32,8 @@ Never guess at file contents, API shapes, DB state, or library behavior when an 
 3. `redis` — inspect actual cache/queue state directly.
 4. `git log` / `git blame` — find when a bug was introduced.
 5. `playwright` — reproduce a frontend bug live instead of asking the user to describe it.
-6. Only after 1–5: ask for logs/screenshots nothing else can retrieve (e.g. VPS-only production logs).
+6. `docker` — inspect container health, logs, and image state when the bug is container-bound.
+7. Only after 1–6: ask for logs/screenshots nothing else can retrieve (e.g. VPS-only production logs).
 
 **Testing**
 1. `playwright` — drive the real frontend for UI/e2e verification.
