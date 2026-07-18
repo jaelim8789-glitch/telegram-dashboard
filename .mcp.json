@@ -31,14 +31,14 @@
     "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@3.2.4"],
+      "args": ["-y", "@upstash/context7-mcp@latest"],
       "disabled": false,
       "autoApprove": []
     },
     "filesystem": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon"],
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon", "C:\\Dev"],
       "disabled": false,
       "autoApprove": []
     },
@@ -56,6 +56,26 @@
         "/c",
         "C:\\Users\\UserC\\.claude\\mcp-wrappers\\github-mcp-server.cmd"
       ],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "graphiti": {
+      "type": "streamableHttp",
+      "url": "http://127.0.0.1:8001/mcp/",
+      "disabled": false,
+      "autoApprove": []
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "disabled": false,
       "autoApprove": []
     },
