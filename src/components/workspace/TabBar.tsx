@@ -45,11 +45,13 @@ function TabButton({ tab, active, onSelect, badge }: { tab: TabDef; active: bool
       aria-current={active ? "page" : undefined}
       className={cn(
         "focus-ring relative flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium transition-colors duration-150",
+        "min-h-[44px] min-w-[44px]",
         active ? "text-app-text" : "text-app-text-muted hover:text-app-text-secondary"
       )}
     >
       {Icon && <Icon className={cn("h-3.5 w-3.5 transition-colors", active ? "text-app-primary" : "text-app-text-subtle")} />}
-      {tab.label}
+      <span className="hidden sm:inline">{tab.label}</span>
+      <span className="sm:hidden">{tab.shortLabel ?? tab.label}</span>
       {badge != null && badge > 0 && (
         <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white">
           {badge > 99 ? "99+" : badge}

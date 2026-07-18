@@ -126,7 +126,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
             title="그룹 관리"
             onClick={(e) => { e.stopPropagation(); setGroupPickerOpen(!groupPickerOpen); }}
             className={cn(
-              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all hover:bg-app-card-hover",
+              "flex min-h-[28px] min-w-[28px] items-center justify-center rounded-md transition-all hover:bg-app-card-hover",
               belongingGroups.length > 0 ? "text-app-primary" : "text-app-text-subtle",
               selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
@@ -136,7 +136,8 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           {groupPickerOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setGroupPickerOpen(false)} />
-              <div className="absolute right-0 top-full z-40 mt-1 w-48 rounded-xl border border-app-border bg-app-surface p-1.5 shadow-xl">
+              {/* On mobile (< 640px) use a fixed bottom sheet; on desktop use absolute dropdown */}
+              <div className="fixed inset-x-4 bottom-4 z-40 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:w-48 rounded-xl border border-app-border bg-app-surface p-1.5 shadow-xl">
                 <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">그룹 지정</p>
                 {allGroups.length === 0 && (
                   <p className="px-2 py-2 text-[11px] text-app-text-muted italic">그룹이 없습니다</p>
@@ -148,7 +149,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
                       key={g.id}
                       type="button"
                       onClick={(e) => { e.stopPropagation(); toggleGroup(account.id, g.id); }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
                     >
                       <span
                         className="h-3 w-3 rounded-full shrink-0"

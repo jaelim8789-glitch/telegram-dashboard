@@ -271,19 +271,19 @@ export function Sidebar() {
       {/* Search bar */}
       {accounts.length > 0 && (
         <div className="relative border-b border-app-border px-3 py-2">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+          <Search aria-hidden="true" className="pointer-events-none absolute left-[18px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="계정 이름 또는 전화번호 검색"
-            className="w-full rounded-xl border border-app-border bg-app-card py-2 pl-7 pr-7 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+            className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
           />
           {searchQuery && (
             <button type="button" onClick={() => setSearchQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
               title="검색 지우기">
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
