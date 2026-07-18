@@ -57,3 +57,9 @@ nul
 *.db  
 e2e/test-results/  
 sessions/*.session  
+.aider*
+.mcp.json.bak*
+.playwright-mcp/
+tmp_*
+test_screenshot.png
+logs/
