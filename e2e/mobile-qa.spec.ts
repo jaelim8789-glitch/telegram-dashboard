@@ -106,9 +106,15 @@ test.describe("Mobile E2E QA — Dashboard", () => {
     test("설정 폼 상호작용", async ({ page }) => {
       test.setTimeout(20000);
       await nav(page, "/settings");
+      // Open mobile sidebar drawer first
+      const menuBtn = page.locator("button").filter({ hasText: /Menu/ }).or(page.locator("button:has(svg.lucide-menu)"));
+      if (await menuBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+        await menuBtn.first().click();
+        await page.waitForTimeout(500);
+      }
       const btn = page.locator("button, a").filter({ hasText: /저장|설정|변경|수정/ });
-      if (await btn.first().isVisible().catch(() => false)) {
-        await btn.first().click({ force: true });
+      if (await btn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+        await btn.first().click();
       }
     });
   });
@@ -125,10 +131,16 @@ test.describe("Mobile E2E QA — Dashboard", () => {
     test("사이드바 링크 클릭", async ({ page }) => {
       test.setTimeout(20000);
       await nav(page, "/send");
+      // Open mobile sidebar drawer first
+      const menuBtn = page.locator("button").filter({ hasText: /Menu/ }).or(page.locator("button:has(svg.lucide-menu)"));
+      if (await menuBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+        await menuBtn.first().click();
+        await page.waitForTimeout(500);
+      }
       // Click the sidebar "발송 로그" link
       const logLink = page.locator("a").filter({ hasText: /발송 로그|로그/ });
-      if (await logLink.first().isVisible().catch(() => false)) {
-        await logLink.first().click({ force: true });
+      if (await logLink.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+        await logLink.first().click();
         await page.waitForTimeout(1000);
       }
     });
