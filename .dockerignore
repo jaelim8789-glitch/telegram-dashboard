@@ -1,6 +1,13 @@
 node_modules
 .next
 .git
+# Stray root-level Python backend dirs that live in this repo for historical
+# reasons — NOT part of the Next.js frontend. Critically, a root /app directory
+# shadows src/app for Next.js App Router directory detection (Next.js prefers
+# <root>/app over <root>/src/app when both exist), which silently builds zero
+# routes if this dir is present in the build context. Must stay excluded.
+/app
+/backend
 .env*
 !.env.example
 npm-debug.log*
