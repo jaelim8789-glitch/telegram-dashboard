@@ -1,30 +1,32 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm -rf \"/c/Users/jaeli/AppData/Local/Temp/ai-knowledge-mcp-http-smoke-npB7kv\" 2>&1 || true *)",
-      "Bash(cp \"/c/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/c0b95446-9320-4d0f-bcf2-e9460d166957/scratchpad/smoke_test_exportimport.mjs\" /c/Dev/ai-knowledge-mcp/__smoke_ei.mjs)",
-      "Bash(node /c/Dev/ai-knowledge-mcp/__smoke_ei.mjs)",
-      "Bash(cp \"/c/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/c0b95446-9320-4d0f-bcf2-e9460d166957/scratchpad/smoke_test.mjs\" /c/Dev/ai-knowledge-mcp/__smoke_final.mjs)",
-      "Bash(node /c/Dev/ai-knowledge-mcp/__smoke_final.mjs)",
-      "Bash(git tag -a v1.0.0 -m ' *)",
-      "Bash(git tag *)",
+      "Bash(rm -rf \"C:/Users/UserC/AppData/Local/Temp/ai-knowledge-mcp-http-smoke-*\" 2>&1 || true *)",
+      "Bash(codebase-memory-mcp index_repository repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp search_graph name_pattern=\".*\" repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp trace_path symbol=\"*\" repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp get_architecture repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(npx -y codebase-memory-mcp --version *)",
       "Bash(python -c \"import httpx\")",
-      "Bash(python -m py_compile backend/bot/telegram_api.py backend/bot/db.py backend/bot/service.py backend/routers/telegram_bot.py backend/production_config.py backend/main.py scripts/register_telegram_webhook.py)",
-      "Bash(python -c \"import httpx; print\\('httpx', httpx.__version__\\)\")",
-      "Bash(python -c ' *)",
-      "Bash(ADMIN_DB_PATH=C:/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/ff68dbf0-6019-458e-ba0a-cbc8a038306e/scratchpad/test_admin.db python -c ' *)",
-      "Bash(rm -f \"C:/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/ff68dbf0-6019-458e-ba0a-cbc8a038306e/scratchpad/test_admin3.db\")",
-      "Bash(ADMIN_DB_PATH=C:/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/ff68dbf0-6019-458e-ba0a-cbc8a038306e/scratchpad/test_admin3.db python -c ' *)",
-      "Bash(rm -f \"C:/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/ff68dbf0-6019-458e-ba0a-cbc8a038306e/scratchpad/test_admin4.db\")",
-      "Bash(ADMIN_DB_PATH=C:/Users/jaeli/AppData/Local/Temp/claude/c--Dev-TeleMon/ff68dbf0-6019-458e-ba0a-cbc8a038306e/scratchpad/test_admin4.db TELEGRAM_BOT_TOKEN=fake-token TELEGRAM_CHANNEL_ID=@fakechannel TELEGRAM_ADMIN_CHAT_IDS=111,222 python -c ' *)",
-      "Bash(python -m pytest backend/tests/test_free_api_key.py -v)",
-      "Bash(python -m pytest backend/tests/ -q)",
-      "Bash(python -m py_compile backend/runtime_manager.py backend/auth_middleware.py backend/routers/accounts.py backend/routers/auth.py backend/routers/broadcast.py backend/routers/auto_reply.py backend/routers/reply_macro.py backend/routers/groups.py backend/routers/folders.py)",
-      "Bash(python -m py_compile backend/account_runtime.py backend/tests/test_reply_macro_engine.py)",
-      "Bash(python -m pytest backend/tests/test_reply_macro_engine.py -v)"
+      "Bash(python -c \"import httpx; print('httpx', httpx.__version__)\")",
+      "Bash(python -m py_compile app/api/ai_copilot.py app/api/ai.py app/services/ai_core_service.py app/services/ai_memory.py app/services/graphiti_ai_memory.py app/config.py app/models/ai.py)",
+      "Bash(python -m pytest telegram-dashboard-backend/tests/test_ai_copilot_api.py -q)",
+      "Bash(python -m pytest telegram-dashboard-backend/tests/ -q)",
+      "Bash(git status --short)",
+      "Bash(git diff --stat)",
+      "Bash(git log --oneline -5)",
+      "Bash(git add *)",
+      "Bash(git commit -m *",
+      "Bash(git push origin *)",
+      "Bash(docker ps)",
+      "Bash(docker compose ps)",
+      "Bash(npx playwright --version)",
+      "Bash(npx @upstash/context7-mcp@latest --version *)",
+      "Bash(npx mcp-postgres-server --help *)",
+      "Bash(npx @gongrzhe/server-redis-mcp@1.0.0 --help *)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\jaeli\\AppData\\Local\\Temp\\ai-knowledge-mcp-http-smoke-npB7kv"
+      "C:\\Users\\UserC\\AppData\\Local\\Temp"
     ]
   }
 }
