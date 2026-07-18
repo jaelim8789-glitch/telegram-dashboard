@@ -1,42 +1,19 @@
-# TeleMon SaaS 고도화 — 구현 진행
+# SendTab.tsx 수정 사항
 
-## Phase 1: Template 시스템 ✅
-- [x] MessageTemplate CRUD API + Frontend TemplateTab
+## 1. 반복 발송 / 예약 발송 disabled 제거
+- `isScheduled` 체크박스 (1658-1660): `disabled` 제거, `opacity-50` 제거
+- `isRecurring` 체크박스 (1679-1681): `disabled` 제거, `opacity-50` 제거
+- `disabled` 속성이 체크박스 input에 있어 모바일 터치가 안 됨
+- `opacity-50`으로 흐리게 보여 사용자 인지 어려움
 
-## Phase 2: Dashboard 고도화 (진행 중)
-- [ ] 실시간 메트릭 위젯 (발송 속도, 대기열, 성공률 트렌드)
-- [ ] 계정 Health 트렌드 차트 (시계열)
-- [ ] Campaign 진행 상황 위젯
-- [ ] 빠른 작업 위젯 (Template Quick-Insert, Quick Broadcast)
-- [ ] 위젯 레이아웃 커스터마이징 저장
+## 2. 이미지 업로드 accept에 동영상 포맷 추가
+- `accept="image/jpeg,image/png,image/webp,image/gif"` → 동영상 포맵 추가
+- 백엔드 media.py에서 지원하는 video/mp4, video/quicktime, video/x-msvideo, video/x-matroska 추가
 
-## Phase 3: Campaign 관리
-- [ ] Campaign 모델 + API (최소)
-- [ ] Campaign 관리 탭 (Frontend)
-- [ ] Broadcast → Campaign 연결
-- [ ] Campaign 대시보드
+## 3. 답장 매크로 전송 시 delivery_mode "reply" 추가
+- handleSubmit에서 `replyMacroEnabled && replyToMessageId`가 있을 때 delivery_mode를 "reply"로 설정
+- createBroadcast 호출 시 API에 전달
 
-## Phase 4: Analytics 강화
-- [ ] DeliveryAnalyticsTab 차트 시각화 개선
-- [ ] 기간별 비교 분석
-- [ ] 계정별 성능 랭킹 차트
-- [ ] 실패 패턴 분석 고도화
-
-## Phase 5: 계정 Health 관리
-- [ ] Health 트렌드 히스토리 차트
-- [ ] Health 점수 계산 및 표시
-- [ ] 자동 복구 상태 표시
-
-## Phase 6: 운영 Timeline
-- [ ] Activity Timeline 탭
-- [ ] 실시간 이벤트 스트림
-
-## Phase 7: 사용자/팀/권한 UX
-- [ ] 팀 관리 탭
-- [ ] 초대/권한 관리 UI
-- [ ] 활동 로그 (Audit Log)
-
-## Phase 8: 플랜/구독 UX 개선
-- [ ] 구독 상태 대시보드 위젯
-- [ ] 사용량 표시 (계정/발송/API)
-- [ ] 플랜 업그레이드 UI 개선
+## 4. 백엔드 media.py 이미지 MIME 타입 확장
+- 텔레그램에서 다운로드한 이미지의 MIME 타입 처리 (image/webp 등)
+- _EXTENSION_BY_CONTENT_TYPE 맵에 누락된 타입 추가
