@@ -32,3 +32,26 @@ npm run dev
 - `src/store` — Zustand 전역 상태
 - `src/lib/api.ts` — 백엔드 API 클라이언트
 - `e2e/` — Playwright E2E 스펙 (계정/발송/로그 전체 흐름)
+
+## Deployment Notes
+
+운영자가 프론트엔드를 재배포하기 전/후 반드시 확인해야 하는 사항입니다. 실제 배포 절차는
+`telegram-dashboard-backend`의 AGENTS.md "Production deployment" 섹션을 따르되, 아래는
+그 과정에서 실제로 발목을 잡았던 항목들입니다.
+
+- **Docker build context 검증 필수** — 루트 `app/`, `backend/` 디렉터리가 프론트엔드 빌드에
+  섞여 들어가면 사이트 전체가 조용히 404가 됩니다 (에러 없이 "빌드 성공"으로 표시됨). 자세한
+  원인과 `.dockerignore` 설정은 [`docs/deployment/known-issues.md`](docs/deployment/known-issues.md) 참고.
+  **빌드 후 반드시 `Route (app)` 테이블이 로그에 출력되는지, 배포된 사이트가 실제 200을
+  반환하는지 확인할 것** — 컨테이너가 "Up"이어도 라우트가 0개일 수 있습니다.
+- **배포 후 헬스체크가 `starting`에 머물러도 당황하지 말 것** — 컨테이너 내부 `wget`이
+  `localhost`를 IPv6(`::1`)로 먼저 시도하다 실패하는 기존 Dockerfile의 사소한 결함으로,
+  실제 서비스 정상 동작과는 무관합니다. `curl -H "Host: app.telemon.online" https://<서버>/`
+  같은 외부 HTTP 확인으로 실제 상태를 판단하세요.
+- **모바일 UI 변경 시** [`docs/mobile/mobile-optimization.md`](docs/mobile/mobile-optimization.md)에
+  정리된 기존 대응(dvh, bottom sheet, 44px 터치 타깃, short label, 반응형 토스트 등) 패턴을
+  따르고, 회귀시키지 않도록 확인하세요.
+- **재배포 전 origin/master 최신 상태 확인** — 이 저장소(`telegram-dashboard`)와
+  `telegram-dashboard-backend`는 완전히 분리된 별도 git 저장소입니다. 프론트엔드만 배포할
+  때도 두 저장소 각각의 `git log` / `git status`를 확인해 의도치 않은 커밋이 섞여 배포되지
+  않도록 합니다.
