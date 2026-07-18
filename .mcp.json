@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "codebase-memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "codebase-memory-mcp"],
+      "disabled": false,
+      "autoApprove": []
+    },
     "playwright": {
       "type": "stdio",
       "command": "npx",
@@ -10,7 +17,7 @@
     "docker": {
       "type": "stdio",
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock", "ghcr.io/pavelanni/mcp-docker:latest"],
+      "args": ["run", "-i", "--rm", "-v", "//./pipe/docker_engine://./pipe/docker_engine", "mcp/docker:latest"],
       "disabled": false,
       "autoApprove": []
     },
@@ -24,7 +31,7 @@
     "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "args": ["-y", "@upstash/context7-mcp@3.2.4"],
       "disabled": false,
       "autoApprove": []
     },
@@ -49,6 +56,20 @@
         "/c",
         "C:\\Users\\UserC\\.claude\\mcp-wrappers\\github-mcp-server.cmd"
       ],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-postgres-server"],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "redis": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@gongrzhe/server-redis-mcp@1.0.0", "redis://localhost:6379"],
       "disabled": false,
       "autoApprove": []
     }
