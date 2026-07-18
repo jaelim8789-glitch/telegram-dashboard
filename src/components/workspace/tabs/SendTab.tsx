@@ -472,7 +472,7 @@ export function SendTab() {
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
-  const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk">("normal");
+  const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk" | "reply">("normal");
   const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
@@ -998,6 +998,8 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
+      // 답장 모드가 활성화되면 delivery_mode를 "reply"로 설정
+      const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim() ? "reply" : deliveryMode;
       // Use send-to-group API when sending to groups (no manual recipients)
       await api.createBroadcast({
         accountId: selectedAccountId,
@@ -1006,8 +1008,8 @@ export function SendTab() {
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
-        deliveryMode,
-        delaySeconds: deliveryMode === "normal" ? normalDelaySeconds : undefined,
+        deliveryMode: effectiveDeliveryMode,
+        delaySeconds: effectiveDeliveryMode === "normal" ? normalDelaySeconds : undefined,
         replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
         inlineButtons: inlineButtons.filter((b) => b.label.trim() && b.url.trim()).length > 0
           ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
@@ -1645,22 +1647,21 @@ export function SendTab() {
               ))}
             </div>
 
-            {/* Image */}
-            <Field label="이미지 (선택)">
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+            {/* Image / Video */}
+            <Field label="이미지 또는 영상 (선택)">
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
             </Field>
 
             {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5 opacity-50">
-                <label className="flex items-center gap-2 text-sm text-app-text" title="예약 발송 기능은 현재 준비 중입니다.">
-                  <input type="checkbox" disabled checked={isScheduled}
+              <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
+                <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
+                  <input type="checkbox" checked={isScheduled}
                     onChange={(e) => { setIsScheduled(e.target.checked); if (e.target.checked) setIsRecurring(false); }} />
                   <Clock className="h-3.5 w-3.5 text-app-text-muted" />
                   예약 발송
-                  <span className="ml-auto text-[10px] text-app-text-subtle">준비 중</span>
                 </label>
                 {isScheduled && (
                   <div className="mt-2">
@@ -1675,13 +1676,12 @@ export function SendTab() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5 opacity-50">
-                <label className="flex items-center gap-2 text-sm text-app-text" title="반복 발송 기능은 현재 준비 중입니다.">
-                  <input type="checkbox" disabled checked={isRecurring}
+              <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
+                <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
+                  <input type="checkbox" checked={isRecurring}
                     onChange={(e) => { setIsRecurring(e.target.checked); if (e.target.checked) setIsScheduled(false); }} />
                   <RefreshCw className="h-3.5 w-3.5 text-app-text-muted" />
                   반복 발송
-                  <span className="ml-auto text-[10px] text-app-text-subtle">준비 중</span>
                 </label>
                 {isRecurring && (
                   <div className="mt-2">
