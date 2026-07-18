@@ -24,7 +24,7 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: "e2e/.auth/admin.json" },
       dependencies: ["setup"],
-      testIgnore: [/.*\.setup\.ts/, /admin-auth\.spec\.ts/],
+      testIgnore: [/.*\.setup\.ts/, /admin-auth\.spec\.ts/, /mobile-qa\.spec\.ts/],
     },
     {
       // admin-auth.spec.ts specifically tests the *unauthenticated* redirect/login flow,
@@ -32,6 +32,38 @@ export default defineConfig({
       name: "chromium-no-auth",
       use: { ...devices["Desktop Chrome"] },
       testMatch: /(admin-auth|prod-reply-macro)\.spec\.ts/,
+    },
+    /* ── Mobile QA projects (authenticated) ── */
+    {
+      name: "mobile-android",
+      use: {
+        ...devices["Pixel 5"],
+        storageState: "e2e/.auth/admin.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /mobile-qa\.spec\.ts/,
+      testIgnore: [/public-only\.spec\.ts/],
+    },
+    {
+      name: "mobile-ios",
+      use: {
+        ...devices["iPhone 13"],
+        storageState: "e2e/.auth/admin.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /mobile-qa\.spec\.ts/,
+      testIgnore: [/public-only\.spec\.ts/],
+    },
+    /* ── Mobile QA projects (unauthenticated — public pages) ── */
+    {
+      name: "mobile-android-no-auth",
+      use: { ...devices["Pixel 5"] },
+      testMatch: /public-only\.spec\.ts/,
+    },
+    {
+      name: "mobile-ios-no-auth",
+      use: { ...devices["iPhone 13"] },
+      testMatch: /public-only\.spec\.ts/,
     },
   ],
 });
