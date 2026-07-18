@@ -13,27 +13,29 @@ export type TabGroup = "operate" | "manage";
 export interface TabDef {
   id: TabId;
   label: string;
+  /** Shorter label used on mobile when horizontal space is limited (≤ 640px viewport). Falls back to `label` when absent. */
+  shortLabel?: string;
   group: TabGroup;
 }
 
 export const TABS: TabDef[] = [
-  { id: "dashboard", label: "대시보드", group: "operate" },
+  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "operate" },
   { id: "send", label: "발송", group: "operate" },
   { id: "scheduler", label: "스케줄러", group: "operate" },
   { id: "log", label: "로그", group: "operate" },
-  { id: "deliveryanalytics", label: "전달 분석", group: "operate" },
-  { id: "register", label: "계정 등록", group: "manage" },
+  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "operate" },
+  { id: "register", label: "계정 등록", shortLabel: "등록", group: "manage" },
   { id: "group", label: "그룹", group: "manage" },
-  { id: "groupsearch", label: "그룹 검색", group: "manage" },
-  { id: "linkinspector", label: "링크 검사", group: "manage" },
-  { id: "autoreply", label: "자동 응답", group: "manage" },
-  { id: "replymacro", label: "답장매크로", group: "manage" },
+  { id: "groupsearch", label: "그룹 검색", shortLabel: "검색", group: "manage" },
+  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "manage" },
+  { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "manage" },
+  { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "manage" },
   { id: "folders", label: "폴더", group: "manage" },
   { id: "templates", label: "템플릿", group: "manage" },
-  { id: "health", label: "계정 건강", group: "operate" },
+  { id: "health", label: "계정 건강", shortLabel: "건강", group: "operate" },
   { id: "campaigns", label: "캠페인", group: "operate" },
-  { id: "channelhub", label: "채널 허브", group: "manage" },
-  { id: "team", label: "팀 관리", group: "manage" },
+  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
+  { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
 
