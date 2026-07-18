@@ -70,7 +70,7 @@ export function DashboardShell() {
   }, [accounts, notify, isSupported]);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-app-text">
+    <div className="flex h-dvh flex-col overflow-hidden bg-app-bg text-app-text">
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />

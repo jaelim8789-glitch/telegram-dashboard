@@ -132,7 +132,7 @@ export function Modal({
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: "spring", stiffness: 400, damping: 32 }}
             className={cn(
-              "relative flex max-h-[85vh] w-full flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl",
+              "relative flex max-h-[85dvh] w-full flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl",
               "scrollbar-thin",
               SIZE_STYLE[size],
               className
