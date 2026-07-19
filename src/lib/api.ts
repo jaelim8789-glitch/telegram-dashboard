@@ -557,6 +557,8 @@ export interface CreateBroadcastInput {
   inlineButtons?: { label: string; url: string }[];
   groupIds?: string[];
   campaignId?: string;
+  /** Number of rooms to send in each batch (1, 5, 10). Only applies to "normal" delivery mode. */
+  batchSize?: number;
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {

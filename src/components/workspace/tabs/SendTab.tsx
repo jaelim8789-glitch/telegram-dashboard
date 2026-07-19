@@ -474,6 +474,7 @@ export function SendTab() {
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
   const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk" | "reply">("normal");
   const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
+  const [batchSize, setBatchSize] = useState<number>(1);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
@@ -1010,6 +1011,7 @@ export function SendTab() {
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
         deliveryMode: effectiveDeliveryMode,
         delaySeconds: effectiveDeliveryMode === "normal" ? normalDelaySeconds : undefined,
+        batchSize: effectiveDeliveryMode === "normal" ? batchSize : undefined,
         replyToMessageId: replyMacroEnabled && replyToMessageId.trim() ? Number(replyToMessageId.trim()) : undefined,
         inlineButtons: inlineButtons.filter((b) => b.label.trim() && b.url.trim()).length > 0
           ? inlineButtons.filter((b) => b.label.trim() && b.url.trim())
@@ -1713,26 +1715,57 @@ export function SendTab() {
                   발송 방식
                 </label>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
+                  <label className="flex items-start gap-2.5 rounded-lg border border-app-success/30 bg-app-success-muted/10 p-2.5 cursor-pointer hover:border-app-success/60 transition-colors">
                     <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
                       onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-app-text">일반 발송</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-app-text">일반 발송</div>
+                        <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
+                      </div>
                       {deliveryMode === "normal" ? (
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <span className="text-xs text-app-text-muted">방마다</span>
-                          <select value={normalDelaySeconds}
-                            onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
-                            className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
-                            onClick={(e) => e.stopPropagation()}>
-                            {NORMAL_DELAY_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <div className="mt-1.5 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-app-text-muted">방마다</span>
+                            <select value={normalDelaySeconds}
+                              onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
+                              className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
+                              onClick={(e) => e.stopPropagation()}>
+                              {NORMAL_DELAY_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
+                          </div>
+                          {/* Batch size selector */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-app-text-muted">묶음:</span>
+                            {[1, 5, 10].map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setBatchSize(size); }}
+                                className={cn(
+                                  "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+                                  batchSize === size
+                                    ? "border-app-primary bg-app-primary text-white"
+                                    : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
+                                )}
+                              >
+                                {size}개씩
+                                {size === 10 && <span className="ml-1 text-[9px] opacity-70">⚠️</span>}
+                                {size === 1 && <span className="ml-1 text-[9px] opacity-70">✅</span>}
+                              </button>
                             ))}
-                          </select>
-                          <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
+                            <span className={batchSize === 1 ? "text-app-success font-medium" : ""}>1개씩: 가장 안전</span>
+                            <span className={batchSize === 5 ? "text-app-warning font-medium" : ""}>5개씩: 보통</span>
+                            <span className={batchSize === 10 ? "text-app-danger font-medium" : ""}>10개씩: 위험 ⚠️</span>
+                          </div>
                         </div>
                       ) : (
-                        <div className="text-xs text-app-text-muted mt-1.5">간격을 선택하세요</div>
+                        <div className="text-xs text-app-text-muted mt-1.5">간격과 묶음 개수를 선택하세요</div>
                       )}
                     </div>
                   </label>
@@ -1747,9 +1780,12 @@ export function SendTab() {
                   <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
                     <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
                       onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
-                    <div>
-                      <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
-                      <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
+                        <Badge tone="danger" className="text-[9px] px-1.5 py-0">위험</Badge>
+                      </div>
+                      <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
                     </div>
                   </label>
                 </div>
