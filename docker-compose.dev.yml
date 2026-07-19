@@ -1,0 +1,42 @@
+# Local development override — DO NOT use in production.
+#
+# This file is intentionally separate from docker-compose.override.yml, which is
+# the production-only override (SSL cert mount, external telemon_db_net network,
+# production DB credentials). Keep that file untouched; this one is for local
+# runs where you have no Let's Encrypt certs, no external DB network, and want
+# plain HTTP on 80.
+#
+# Usage:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    environment:
+      # Local Postgres — replace host/credentials to match your local DB.
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/telegram_messenger
+    networks:
+      - default
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: telegram_messenger
+    ports:
+      - 5432:5432
+    volumes:
+      - telemon_dev_db:/var/lib/postgresql/data
+    networks:
+      - default
+
+  frontend:
+    networks:
+      - default
+
+  # No nginx/SSL in local dev — frontend and backend are reached directly.
+
+networks:
+  default:
+
+volumes:
+  telemon_dev_db:
