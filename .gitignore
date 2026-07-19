@@ -63,3 +63,6 @@ sessions/*.session
 tmp_*
 test_screenshot.png
 logs/
+
+# ad-hoc local audit/debug scripts (hardcoded local temp paths, not reusable tooling)
+audit_*.cjs
