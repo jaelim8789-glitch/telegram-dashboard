@@ -11,6 +11,7 @@ import { ProblemsSection } from "@/components/landing/ProblemsSection";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { UseCasesSection } from "@/components/landing/UseCasesSection";
+import { NewFeaturesSection } from "@/components/landing/NewFeaturesSection";
 import { PricingPreview } from "@/components/landing/PricingPreview";
 import { FAQ } from "@/components/landing/FAQ";
 import { CtaSection } from "@/components/landing/CtaSection";
@@ -42,6 +43,8 @@ export default function HomePage() {
       <HowItWorksSection />
       <SectionDivider />
       <UseCasesSection />
+      <SectionDivider />
+      <NewFeaturesSection />
       <SectionDivider />
       <PricingPreview />
       <SectionDivider />
