@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bot, Sparkles, BarChart3, Activity, Cpu, CreditCard } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
+import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 interface UsageSummary {
   features: Record<string, { requests: number; tokens: number; credits: number }>;
@@ -56,22 +57,13 @@ export function AiUsageTab() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-48">
-        <p className="text-xs text-app-text-muted">로딩 중...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Cpu className="h-5 w-5 text-app-primary" />
-        <h2 className="text-sm font-bold text-app-text">AI 사용량</h2>
-        <span className="text-[10px] text-app-text-muted">최근 30일 기준</span>
-      </div>
-
+    <AiSubTabLayout
+      icon={<Cpu className="h-5 w-5 text-app-primary" />}
+      title="AI 사용량"
+      subtitle="최근 30일 기준"
+      loading={loading}
+    >
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-app-border bg-app-card p-3">
@@ -204,6 +196,6 @@ export function AiUsageTab() {
           </div>
         </Panel>
       )}
-    </div>
+    </AiSubTabLayout>
   );
 }

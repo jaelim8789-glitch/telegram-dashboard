@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Bot, Sparkles, Loader2, FileText, Calendar, TrendingUp, Lightbulb } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
+import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 interface Report {
   id: string;
@@ -96,13 +97,22 @@ export function AiOperationsReportTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Bot className="h-5 w-5 text-app-primary" />
-        <h2 className="text-sm font-bold text-app-text">AI Operations Report</h2>
-        <Sparkles className="h-3.5 w-3.5 text-app-warning" />
-        <span className="text-[10px] text-app-text-muted">운영 분석 리포트</span>
-      </div>
+    <AiSubTabLayout
+      icon={<Bot className="h-5 w-5 text-app-primary" />}
+      title="AI Operations Report"
+      subtitle="운영 분석 리포트"
+      badge="NEW"
+      error={error}
+      loading={loading && !currentReport}
+      empty={!currentReport && !loading}
+      emptyFallback={
+        <>
+          <TrendingUp className="h-12 w-12 text-app-text-subtle mb-3" />
+          <p className="text-sm font-medium text-app-text">AI 운영 리포트</p>
+          <p className="text-xs text-app-text-muted mt-1">운영 데이터를 분석한 인사이트 리포트를 제공합니다</p>
+        </>
+      }
+    >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Sidebar */}
@@ -234,6 +244,6 @@ export function AiOperationsReportTab() {
           )}
         </div>
       </div>
-    </div>
+    </AiSubTabLayout>
   );
 }

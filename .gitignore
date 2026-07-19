@@ -66,3 +66,7 @@ logs/
 
 # ad-hoc local audit/debug scripts (hardcoded local temp paths, not reusable tooling)
 audit_*.cjs
+
+# nested backend repo checked out locally (separate git repo, not a submodule) + stray log dump
+/telegram-dashboard-backend/
+/git_log.txt

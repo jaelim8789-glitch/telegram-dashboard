@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bot, Send, Sparkles, Copy, Check, Loader2, MessageSquare } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
+import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 export function AiReplyAssistantTab() {
   const [accountId, setAccountId] = useState("");
@@ -56,13 +57,21 @@ export function AiReplyAssistantTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Bot className="h-5 w-5 text-app-primary" />
-        <h2 className="text-sm font-bold text-app-text">AI Reply Assistant</h2>
-        <Sparkles className="h-3.5 w-3.5 text-app-warning" />
-        <span className="text-[10px] text-app-text-muted">문맥 기반 답장 추천</span>
-      </div>
+    <AiSubTabLayout
+      icon={<Bot className="h-5 w-5 text-app-primary" />}
+      title="AI Reply Assistant"
+      subtitle="문맥 기반 답장 추천"
+      badge="NEW"
+      error={error}
+      empty={!suggestedReply && !loading}
+      emptyFallback={
+        <>
+          <MessageSquare className="h-8 w-8 text-app-text-subtle mb-2" />
+          <p className="text-xs text-app-text-muted">왼쪽에서 메시지를 입력하고</p>
+          <p className="text-xs text-app-text-muted">AI 답장 추천을 받아보세요</p>
+        </>
+      }
+    >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Input */}
@@ -95,7 +104,6 @@ export function AiReplyAssistantTab() {
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {loading ? "생성 중..." : "AI 답장 추천 받기"}
             </button>
-            {error && <p className="text-xs text-app-danger" role="alert">{error}</p>}
           </div>
         </Panel>
 
@@ -133,15 +141,9 @@ export function AiReplyAssistantTab() {
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-48 text-center">
-              <MessageSquare className="h-8 w-8 text-app-text-subtle mb-2" />
-              <p className="text-xs text-app-text-muted">왼쪽에서 메시지를 입력하고</p>
-              <p className="text-xs text-app-text-muted">AI 답장 추천을 받아보세요</p>
-            </div>
-          )}
+          ) : null}
         </Panel>
       </div>
-    </div>
+    </AiSubTabLayout>
   );
 }

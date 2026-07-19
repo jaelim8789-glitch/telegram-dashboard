@@ -10,6 +10,7 @@ const HEALTH_LABEL: Record<AccountHealthState, { label: string; tone: "success" 
   healthy: { label: "정상", tone: "success" },
   unauthorized: { label: "세션 만료", tone: "warning" },
   banned: { label: "차단됨", tone: "danger" },
+  restricted: { label: "제재 의심", tone: "danger" },
   rate_limited: { label: "제한됨", tone: "warning" },
   error: { label: "오류", tone: "danger" },
   unknown: { label: "미확인", tone: "neutral" },
@@ -21,6 +22,7 @@ const RECOVERY_GUIDANCE: Partial<Record<AccountHealthState, string>> = {
   rate_limited: "잠시 후 자동으로 복구됩니다. 발송 간격을 조정하세요.",
   not_configured: "계정 등록 탭에서 전화번호 인증을 완료해주세요.",
   banned: "Telegram에서 계정이 차단되었습니다. 다른 계정을 사용해주세요.",
+  restricted: "이 계정이 텔레그램 제재를 받았을 수 있습니다. 발송이 일시 중단되었습니다. 텔레그램에서 계정 상태를 확인하고, 문제가 없다면 계정 등록 탭에서 상태를 다시 활성화해주세요.",
   error: "발송 중 오류가 발생했습니다. 발송 로그에서 자세한 내용을 확인하세요.",
 };
 

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
+import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 interface McpTool {
   name: string;
@@ -85,25 +86,15 @@ export function AiOperationsCenterTab() {
   const enabledServers = catalog?.servers.filter(s => s.enabled).length ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <LayoutDashboard className="h-5 w-5 text-app-primary" />
-        <h2 className="text-sm font-bold text-app-text">AI Operations Center</h2>
-        <Sparkles className="h-3.5 w-3.5 text-app-warning" />
-        <span className="text-[10px] text-app-text-muted">LangGraph · MCP Gateway</span>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center gap-2 text-app-text-muted text-xs">
-          <Loader2 className="h-4 w-4 animate-spin" /> MCP Gateway 상태 확인 중...
-        </div>
-      ) : error ? (
-        <div className="flex items-center gap-2 text-app-danger text-xs">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      ) : (
-        <>
-          {/* Status overview */}
+    <AiSubTabLayout
+      icon={<LayoutDashboard className="h-5 w-5 text-app-primary" />}
+      title="AI Operations Center"
+      subtitle="LangGraph · MCP Gateway"
+      badge="BETA"
+      loading={loading}
+      error={error}
+    >
+      {/* Status overview */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Panel title="MCP Gateway">
               <div className="flex items-center gap-2">
@@ -196,8 +187,6 @@ export function AiOperationsCenterTab() {
             통해 Telegram / Grafana 도구를 통합합니다. Phase 1 PoC: 카탈로그 탐색 및 읽기 전용
             툴 실행이 가능하며, 외부 상태 변경 툴은 승인 게이트로 보호됩니다.
           </p>
-        </>
-      )}
-    </div>
+    </AiSubTabLayout>
   );
 }
