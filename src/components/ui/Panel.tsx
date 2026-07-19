@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 
 interface PanelProps {
   title?: ReactNode;
-  description?: string;
+  description?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -42,7 +42,7 @@ export function Panel({ title, description, action, children, className, accent,
         <div className="flex items-start justify-between gap-3 border-b border-app-border px-4 py-3.5">
           <div className="min-w-0">
             {title && <h3 className="text-sm font-semibold text-app-text">{title}</h3>}
-            {description && <p className="mt-0.5 text-xs text-app-text-muted">{description}</p>}
+            {description && <div className="mt-0.5 text-xs text-app-text-muted">{description}</div>}
           </div>
           {action}
         </div>
