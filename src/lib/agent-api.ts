@@ -208,7 +208,17 @@ export async function fetchTemplates(): Promise<Agent[]> {
   return list.map(toAgent);
 }
 
-export async function purchaseTemplate(templateId: string): Promise<Agent> {
-  const a = await request<ApiAgent>(`/api/ai/templates/${templateId}/purchase`, { method: "POST" });
-  return toAgent(a);
+export interface PurchaseResult {
+  id: string;
+  name: string;
+  role: string;
+  starsBalance: number | null;
+}
+
+export async function purchaseTemplate(templateId: string): Promise<PurchaseResult> {
+  const a = await request<{ id: string; name: string; role: string; stars_balance: number | null }>(
+    `/api/ai/templates/${templateId}/purchase`,
+    { method: "POST" }
+  );
+  return { id: a.id, name: a.name, role: a.role, starsBalance: a.stars_balance };
 }

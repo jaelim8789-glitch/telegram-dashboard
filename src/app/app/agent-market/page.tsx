@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 import * as agentApi from "@/lib/agent-api";
+import { fetchAuthMe } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -191,7 +192,13 @@ export default function AgentMarketPage() {
   // Purchase flow
   const [purchaseItem, setPurchaseItem] = useState<TemplateItem | null>(null);
   const [purchasing, setPurchasing] = useState(false);
-  const starsBalance = 42; // Mock balance — replace with real API call
+  const [starsBalance, setStarsBalance] = useState(0);
+
+  useEffect(() => {
+    fetchAuthMe()
+      .then((me) => setStarsBalance(me.stars_balance ?? 0))
+      .catch(() => {});
+  }, []);
 
   // Publish flow (my agents)
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -259,16 +266,15 @@ export default function AgentMarketPage() {
         setPurchasing(false);
         return;
       }
-      await agentApi.purchaseTemplate(purchaseItem.id).catch(() => {
-        // Mock success if API fails
-      });
+      const result = await agentApi.purchaseTemplate(purchaseItem.id);
+      if (result.starsBalance !== null) setStarsBalance(result.starsBalance);
       toast("success", `${purchaseItem.name}을(를) 구매했습니다!`, {
         description: "내 Agent 목록에 추가되었습니다.",
         duration: 5000,
       });
       setPurchaseItem(null);
-    } catch {
-      toast("error", "구매에 실패했습니다.");
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "구매에 실패했습니다.");
     }
     setPurchasing(false);
   }

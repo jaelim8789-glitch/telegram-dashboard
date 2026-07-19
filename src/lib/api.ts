@@ -631,6 +631,7 @@ export async function fetchRecurringChildren(
     id: string; account_id: string; message: string; status: BroadcastStatus;
     scheduled_at: string | null; sent_at: string | null; created_at: string; error_message: string | null;
     failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
+    delivery_mode: "normal" | "cycle" | "bulk" | "reply";
     inline_buttons: { label: string; url: string }[] | null;
   }[]>(`/api/broadcast/${broadcastId}/children${qs ? `?${qs}` : ""}`);
   return items.map((api) => ({
@@ -643,6 +644,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
+    deliveryMode: api.delivery_mode,
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }
@@ -886,6 +888,32 @@ export async function fetchAutoReplyLogs(accountId: string): Promise<AutoReplyLo
   return logs.map(toAutoReplyLog);
 }
 
+// === Telegram Login Widget ===
+
+export interface TelegramAuthData {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
+export interface TelegramLoginResult {
+  access_token: string;
+  session_token: string;
+  is_new_user: boolean;
+}
+
+export async function telegramLogin(authData: TelegramAuthData): Promise<TelegramLoginResult> {
+  const result = await request<TelegramLoginResult>("/api/auth/telegram-login", {
+    method: "POST",
+    body: JSON.stringify(authData),
+  });
+  return result;
+}
+
 // === Auth (send code / verify code / API key) ===
 
 export async function sendVerificationCode(phone: string): Promise<void> {
@@ -917,6 +945,9 @@ export interface AuthMe {
   subscription_status: string | null;
   plan: string | null;
   trial_expires_at: string | null;
+  telegram_username?: string | null;
+  telegram_photo_url?: string | null;
+  stars_balance?: number;
 }
 
 export async function fetchAuthMe(): Promise<AuthMe> {
@@ -972,6 +1003,47 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
     body: JSON.stringify(body),
   });
   return result.api_key;
+}
+
+// === Admin Dashboard Status ===
+
+export interface AdminDashboardUserStats {
+  total: number;
+  active: number;
+  inactive: number;
+}
+
+export interface AdminDashboardAccountStats {
+  total: number;
+  healthy: number;
+  unhealthy: number;
+  not_configured: number;
+  banned: number;
+  rate_limited: number;
+  unauthorized: number;
+  error_count: number;
+  unknown: number;
+  has_session: number;
+  has_errors: number;
+  total_today_sent: number;
+  total_groups: number;
+}
+
+export interface AdminDashboardBroadcastStats {
+  recent_total: number;
+  recent_failed: number;
+  failure_rate: number;
+  recent_window_hours: number;
+}
+
+export interface AdminDashboardStatus {
+  users: AdminDashboardUserStats;
+  accounts: AdminDashboardAccountStats;
+  broadcasts: AdminDashboardBroadcastStats;
+}
+
+export async function fetchAdminDashboardStatus(): Promise<AdminDashboardStatus> {
+  return request<AdminDashboardStatus>("/api/admin/dashboard/status");
 }
 
 // === Account Health ===
@@ -1633,6 +1705,185 @@ export async function inviteTeamMember(tenantId: string, input: TeamInviteInput)
   });
 }
 
+// ─── AI Reply 2.0 ─────────────────────────────────────────────────
+
+import type {
+  AiReplyRequest, AiReplyResponse, AiStreamChunk,
+  AiComparisonRequest, AiComparisonResponse,
+  AiPromptTemplate, AiTemplateCreateInput,
+  AiMemorySearchResult,
+  AiSession, AiUsageSummary, AiPlanLimits, AiSearchFilters,
+} from "@/types";
+
+export async function requestAiReply(input: AiReplyRequest): Promise<AiReplyResponse> {
+  return request<AiReplyResponse>("/api/ai/reply-assistant", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function requestAiReplyStream(
+  input: AiReplyRequest,
+  onChunk: (chunk: AiStreamChunk) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const token = getToken();
+  const url = `${API_BASE_URL}/api/ai/reply-assistant/stream`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(input),
+    signal,
+  });
+
+  if (!res.ok) {
+    const err = await readErrorBody(res).catch(() => null);
+    onChunk({ type: "error", error: extractDetailMessage(err) || "스트리밍 요청 실패" });
+    return;
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) {
+    onChunk({ type: "error", error: "응답 스트림을 읽을 수 없습니다" });
+    return;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith("data: ")) continue;
+      try {
+        const data = JSON.parse(trimmed.slice(6)) as AiStreamChunk;
+        onChunk(data);
+      } catch { /* skip malformed chunk */ }
+    }
+  }
+
+  if (buffer.trim().startsWith("data: ")) {
+    try {
+      const data = JSON.parse(buffer.trim().slice(6)) as AiStreamChunk;
+      onChunk(data);
+    } catch { /* skip */ }
+  }
+}
+
+export async function requestAiComparison(input: AiComparisonRequest): Promise<AiComparisonResponse> {
+  return request<AiComparisonResponse>("/api/ai/reply-assistant/compare", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function requestAiChat(
+  message: string,
+  sessionId?: string | null,
+): Promise<{ reply: string; session_id: string }> {
+  return request<{ reply: string; session_id: string }>("/api/ai/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, session_id: sessionId, use_memory: true }),
+  });
+}
+
+export async function listAiSessions(): Promise<{ session_id: string; first_message: string; last_message: string; message_count: number }[]> {
+  return request("/api/ai/chat/sessions");
+}
+
+export async function getAiSessionHistory(sessionId: string): Promise<{ messages: { role: "user" | "assistant"; content: string }[] }> {
+  return request(`/api/ai/chat/history/${sessionId}`);
+}
+
+// ─── AI Reply 2.0 — Session Management ────────────────────────────
+
+export async function fetchAiSessions(search?: string): Promise<AiSession[]> {
+  const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+  return request<AiSession[]>(`/api/ai/sessions${qs}`);
+}
+
+export async function deleteAiSession(sessionId: string): Promise<void> {
+  await request<void>(`/api/ai/sessions/${sessionId}`, { method: "DELETE" });
+}
+
+export async function starAiSession(sessionId: string, starred: boolean): Promise<void> {
+  await request<void>(`/api/ai/sessions/${sessionId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ isStarred: starred }),
+  });
+}
+
+// ─── AI Reply 2.0 — Prompt Templates ──────────────────────────────
+
+export async function fetchAiTemplates(category?: string): Promise<AiPromptTemplate[]> {
+  const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+  return request<AiPromptTemplate[]>(`/api/ai/templates${qs}`);
+}
+
+export async function createAiTemplate(input: AiTemplateCreateInput): Promise<AiPromptTemplate> {
+  return request<AiPromptTemplate>("/api/ai/templates", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateAiTemplate(id: string, input: Partial<AiTemplateCreateInput>): Promise<AiPromptTemplate> {
+  return request<AiPromptTemplate>(`/api/ai/templates/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteAiTemplate(id: string): Promise<void> {
+  await request<void>(`/api/ai/templates/${id}`, { method: "DELETE" });
+}
+
+// ─── AI Reply 2.0 — Memory Viewer ─────────────────────────────────
+
+export async function searchAiMemory(query: string): Promise<AiMemorySearchResult> {
+  return request<AiMemorySearchResult>(`/api/ai/memory/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function deleteAiMemoryEntry(entryId: string): Promise<void> {
+  await request<void>(`/api/ai/memory/${entryId}`, { method: "DELETE" });
+}
+
+export async function clearAiMemory(): Promise<void> {
+  await request<void>("/api/ai/memory", { method: "DELETE" });
+}
+
+// ─── AI Reply 2.0 — Usage / Analytics ─────────────────────────────
+
+export async function fetchAiUsage(days: number = 30): Promise<AiUsageSummary> {
+  return request<AiUsageSummary>(`/api/ai/usage?days=${days}`);
+}
+
+export async function fetchAiPlanLimits(): Promise<AiPlanLimits> {
+  return request<AiPlanLimits>("/api/ai/plan-limits");
+}
+
+// ─── AI Reply 2.0 — Search ────────────────────────────────────────
+
+export async function searchAiHistory(filters: AiSearchFilters): Promise<{ results: AiSession[]; total: number }> {
+  return request<{ results: AiSession[]; total: number }>("/api/ai/history/search", {
+    method: "POST",
+    body: JSON.stringify(filters),
+  });
+}
+
+// ─── Team Invites ───────────────────────────────────────────────
+
 export async function acceptTeamInvite(token: string): Promise<TeamMemberData> {
   return request<TeamMemberData>("/api/tenants/_/team/accept-invite", {
     method: "POST",
@@ -1653,4 +1904,166 @@ export async function updateTeamMember(
 
 export async function removeTeamMember(tenantId: string, memberId: string): Promise<void> {
   await request<void>(`/api/tenants/${tenantId}/team/members/${memberId}`, { method: "DELETE" });
+}
+
+// ─── Phase 2: AI Platform APIs ─────────────────────────────────────
+
+export async function fetchLangGraphWorkflows(): Promise<import("@/types").LangGraphWorkflow[]> {
+  return request<import("@/types").LangGraphWorkflow[]>("/api/ai/langgraph/workflows");
+}
+
+export async function fetchLangGraphWorkflow(id: string): Promise<import("@/types").LangGraphWorkflow> {
+  return request<import("@/types").LangGraphWorkflow>(`/api/ai/langgraph/workflows/${id}`);
+}
+
+export async function executeLangGraphWorkflow(id: string): Promise<import("@/types").LangGraphExecution> {
+  return request<import("@/types").LangGraphExecution>(`/api/ai/langgraph/workflows/${id}/execute`, { method: "POST" });
+}
+
+export async function stopLangGraphWorkflow(id: string): Promise<void> {
+  await request<void>(`/api/ai/langgraph/workflows/${id}/stop`, { method: "POST" });
+}
+
+export async function fetchLangGraphExecutions(workflowId: string): Promise<import("@/types").LangGraphExecution[]> {
+  return request<import("@/types").LangGraphExecution[]>(`/api/ai/langgraph/workflows/${workflowId}/executions`);
+}
+
+export async function fetchAIAgents(): Promise<import("@/types").AIAgent[]> {
+  return request<import("@/types").AIAgent[]>("/api/ai/agents");
+}
+
+export async function fetchAIAgent(id: string): Promise<import("@/types").AIAgent> {
+  return request<import("@/types").AIAgent>(`/api/ai/agents/${id}`);
+}
+
+export async function updateAgentStatus(id: string, status: import("@/types").AgentStatus): Promise<import("@/types").AIAgent> {
+  return request<import("@/types").AIAgent>(`/api/ai/agents/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function fetchAgentTasks(agentId: string, pageSize?: number): Promise<import("@/types").AgentTask[]> {
+  const qs = pageSize ? `?page_size=${pageSize}` : "";
+  return request<import("@/types").AgentTask[]>(`/api/ai/agents/${agentId}/tasks${qs}`);
+}
+
+export async function fetchMCPTools(): Promise<import("@/types").MCPTool[]> {
+  return request<import("@/types").MCPTool[]>("/api/ai/mcp/tools");
+}
+
+export async function fetchMCPCategories(): Promise<import("@/types").MCPCategoryInfo[]> {
+  return request<import("@/types").MCPCategoryInfo[]>("/api/ai/mcp/categories");
+}
+
+export async function executeMCPTool(toolId: string, input: Record<string, unknown>): Promise<import("@/types").MCPExecution> {
+  return request<import("@/types").MCPExecution>(`/api/ai/mcp/tools/${toolId}/execute`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function fetchMCPExecutions(toolId?: string): Promise<import("@/types").MCPExecution[]> {
+  const qs = toolId ? `?tool_id=${toolId}` : "";
+  return request<import("@/types").MCPExecution[]>(`/api/ai/mcp/executions${qs}`);
+}
+
+export async function fetchWorkflowDefinitions(): Promise<import("@/types").WorkflowDefinition[]> {
+  return request<import("@/types").WorkflowDefinition[]>("/api/ai/workflows");
+}
+
+export async function fetchWorkflowDefinition(id: string): Promise<import("@/types").WorkflowDefinition> {
+  return request<import("@/types").WorkflowDefinition>(`/api/ai/workflows/${id}`);
+}
+
+export async function createWorkflowDefinition(data: Partial<import("@/types").WorkflowDefinition>): Promise<import("@/types").WorkflowDefinition> {
+  return request<import("@/types").WorkflowDefinition>("/api/ai/workflows", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateWorkflowDefinition(id: string, data: Partial<import("@/types").WorkflowDefinition>): Promise<import("@/types").WorkflowDefinition> {
+  return request<import("@/types").WorkflowDefinition>(`/api/ai/workflows/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteWorkflowDefinition(id: string): Promise<void> {
+  await request<void>(`/api/ai/workflows/${id}`, { method: "DELETE" });
+}
+
+export async function executeWorkflowDefinition(id: string): Promise<import("@/types").WorkflowExecution> {
+  return request<import("@/types").WorkflowExecution>(`/api/ai/workflows/${id}/execute`, { method: "POST" });
+}
+
+export async function fetchWorkflowExecutions(workflowId: string): Promise<import("@/types").WorkflowExecution[]> {
+  return request<import("@/types").WorkflowExecution[]>(`/api/ai/workflows/${workflowId}/executions`);
+}
+
+export async function fetchTimelineEvents(limit?: number): Promise<import("@/types").TimelineEvent[]> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return request<import("@/types").TimelineEvent[]>(`/api/ai/timeline${qs}`);
+}
+
+export async function fetchTimelineGrouped(days?: number): Promise<import("@/types").TimelineGroup[]> {
+  const qs = days ? `?days=${days}` : "";
+  return request<import("@/types").TimelineGroup[]>(`/api/ai/timeline/grouped${qs}`);
+}
+
+export async function fetchActivityEvents(limit?: number): Promise<import("@/types").ActivityEvent[]> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return request<import("@/types").ActivityEvent[]>(`/api/ai/activity${qs}`);
+}
+
+export async function fetchActivitySessions(): Promise<import("@/types").ActivitySession[]> {
+  return request<import("@/types").ActivitySession[]>("/api/ai/activity/sessions");
+}
+
+export async function fetchMemoryGraph(): Promise<import("@/types").MemoryGraph> {
+  return request<import("@/types").MemoryGraph>("/api/ai/memory/graph");
+}
+
+export async function fetchMemoryEntities(params?: { type?: string; search?: string }): Promise<import("@/types").MemoryEntity[]> {
+  const qs = new URLSearchParams();
+  if (params?.type) qs.set("type", params.type);
+  if (params?.search) qs.set("search", params.search);
+  const query = qs.toString();
+  return request<import("@/types").MemoryEntity[]>(`/api/ai/memory/entities${query ? `?${query}` : ""}`);
+}
+
+export async function searchMemory(query: string): Promise<import("@/types").MemorySearchResult[]> {
+  return request<import("@/types").MemorySearchResult[]>(`/api/ai/memory/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function fetchMemoryRelations(entityId?: string): Promise<import("@/types").MemoryRelation[]> {
+  const qs = entityId ? `?entity_id=${entityId}` : "";
+  return request<import("@/types").MemoryRelation[]>(`/api/ai/memory/relations${qs}`);
+}
+
+export async function fetchAIAnalyticsOverview(days?: number): Promise<import("@/types").AIAnalyticsOverview> {
+  const qs = days ? `?days=${days}` : "";
+  return request<import("@/types").AIAnalyticsOverview>(`/api/ai/analytics/overview${qs}`);
+}
+
+export async function fetchAIAnalyticsDaily(days?: number): Promise<import("@/types").AIAnalyticsDaily[]> {
+  const qs = days ? `?days=${days}` : "";
+  return request<import("@/types").AIAnalyticsDaily[]>(`/api/ai/analytics/daily${qs}`);
+}
+
+export async function fetchAIAnalyticsAgentBreakdown(): Promise<import("@/types").AIAnalyticsAgentBreakdown[]> {
+  return request<import("@/types").AIAnalyticsAgentBreakdown[]>("/api/ai/analytics/agents");
+}
+
+export async function fetchAIAnalyticsToolUsage(): Promise<import("@/types").AIAnalyticsToolUsage[]> {
+  return request<import("@/types").AIAnalyticsToolUsage[]>("/api/ai/analytics/tools");
+}
+
+export async function fetchAIAnalyticsErrors(): Promise<import("@/types").AIAnalyticsErrorSummary[]> {
+  return request<import("@/types").AIAnalyticsErrorSummary[]>("/api/ai/analytics/errors");
+}
+
+export async function fetchAIAnalyticsRealtime(): Promise<{ activeAgents: number; pendingTasks: number; runningWorkflows: number; recentErrors: number }> {
+  return request("/api/ai/analytics/realtime");
 }
