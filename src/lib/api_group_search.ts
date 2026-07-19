@@ -118,6 +118,41 @@ export async function joinSelectedGroups(resultIds: string[]): Promise<{ chat_id
   });
 }
 
+export interface AutoQueueResult {
+  queued: number;
+  skippedAlreadyJoined: number;
+  skippedAlreadyQueued: number;
+  skippedBelowThreshold: number;
+  skippedNoUsername: number;
+}
+
+export async function autoQueueGroups(
+  accountId: string,
+  opts?: { keyword?: string; minMembers?: number }
+): Promise<AutoQueueResult> {
+  const r = await request<{
+    queued: number;
+    skipped_already_joined: number;
+    skipped_already_queued: number;
+    skipped_below_threshold: number;
+    skipped_no_username: number;
+  }>("/api/group-search/auto-queue", {
+    method: "POST",
+    body: JSON.stringify({
+      account_id: accountId,
+      keyword: opts?.keyword ?? null,
+      min_members: opts?.minMembers ?? 50,
+    }),
+  });
+  return {
+    queued: r.queued,
+    skippedAlreadyJoined: r.skipped_already_joined,
+    skippedAlreadyQueued: r.skipped_already_queued,
+    skippedBelowThreshold: r.skipped_below_threshold,
+    skippedNoUsername: r.skipped_no_username,
+  };
+}
+
 export async function getJoinInfo(accountId: string): Promise<JoinInfo> {
   const info = await request<ApiJoinInfo>(`/api/group-search/join-info/${accountId}`);
   return { joinedToday: info.joined_today, maxDaily: info.max_daily, remaining: info.remaining };

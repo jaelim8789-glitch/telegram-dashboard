@@ -67,6 +67,8 @@ export function GroupSearchTab() {
   const [joinInfo, setJoinInfo] = useState<JoinInfo | null>(null);
   const [joinLoading, setJoinLoading] = useState(false);
   const [retryLoading, setRetryLoading] = useState(false);
+  const [autoQueueLoading, setAutoQueueLoading] = useState(false);
+  const [autoQueueMessage, setAutoQueueMessage] = useState<string | null>(null);
   const [joinResults, setJoinResults] = useState<JoinResultItem[] | null>(null);
   const [joinLogs, setJoinLogs] = useState<GroupJoinLog[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +188,25 @@ export function GroupSearchTab() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "그룹 가입에 실패했습니다.");
     } finally { setJoinLoading(false); }
+  }
+
+  async function handleAutoQueue() {
+    if (!selectedAccountId || autoQueueLoading) return;
+    setAutoQueueLoading(true);
+    setError(null);
+    setAutoQueueMessage(null);
+    try {
+      const r = await api.autoQueueGroups(selectedAccountId, { keyword: keyword || undefined, minMembers: 50 });
+      setAutoQueueMessage(
+        r.queued > 0
+          ? `${r.queued}개 그룹을 자동입장 대기열에 등록했습니다. 순차적으로 자동 입장됩니다.`
+          : "새로 등록할 그룹이 없습니다 (이미 가입했거나, 대기열에 있거나, 최소 인원 미달)."
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "자동입장 등록에 실패했습니다.");
+    } finally {
+      setAutoQueueLoading(false);
+    }
   }
 
   async function handleRetryFailed() {
@@ -550,6 +571,33 @@ export function GroupSearchTab() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {results.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2 border-t border-app-border pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-app-text-muted">
+                  선택 없이, 조건(50명 이상 · 미가입 · 공개 그룹)을 만족하는 그룹을 자동입장 대기열에 한번에 등록합니다.
+                  실제 입장은 큐에서 안전한 속도로 순차 진행됩니다.
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAutoQueue}
+                  disabled={autoQueueLoading}
+                  className="shrink-0"
+                >
+                  {autoQueueLoading ? (
+                    <><RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" /> 등록 중...</>
+                  ) : (
+                    <><UserPlus className="mr-1.5 h-3.5 w-3.5" /> 자동입장 큐에 등록</>
+                  )}
+                </Button>
+              </div>
+              {autoQueueMessage && (
+                <p className="text-xs text-app-success">{autoQueueMessage}</p>
+              )}
+            </div>
+          )}
 
           {results.length === 0 && !searching && searchResultMeta === null && (
             <div className="flex flex-col items-center justify-center py-8 text-app-text-muted">
