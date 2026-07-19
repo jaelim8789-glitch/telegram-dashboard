@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff, Layers } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff, Layers, X } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -32,13 +32,23 @@ interface AccountCardProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => Promise<void>;
   onToggleFavorite?: (id: string) => void;
+  onClearError?: (id: string) => Promise<void>;
 }
 
-export function AccountCard({ account, selected, health, lastError, isFavorite, groupFilter, onSelect, onDelete, onToggleFavorite }: AccountCardProps) {
+export function AccountCard({ account, selected, health, lastError, isFavorite, groupFilter, onSelect, onDelete, onToggleFavorite, onClearError }: AccountCardProps) {
   const status = STATUS_STYLE[account.status];
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [clearingError, setClearingError] = useState(false);
+
+  async function handleClearError(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!onClearError || clearingError) return;
+    setClearingError(true);
+    try { await onClearError(account.id); }
+    finally { setClearingError(false); }
+  }
 
   useEffect(() => {
     if (!groupPickerOpen) return;
@@ -124,6 +134,17 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
             <span title={lastError ? `${healthMeta.title}: ${lastError}` : healthMeta.title}>
               <HealthIcon className={cn("h-3.5 w-3.5", healthMeta.color)} />
             </span>
+          )}
+          {lastError && onClearError && (
+            <button
+              type="button"
+              title="오류 확인함 (지우기)"
+              onClick={handleClearError}
+              disabled={clearingError}
+              className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger hover:bg-app-danger-muted transition-all disabled:opacity-50"
+            >
+              <X className="h-3 w-3" />
+            </button>
           )}
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot, selected && "animate-pulse")} />
           <span className="text-[11px] text-app-text-muted">{status.label}</span>
