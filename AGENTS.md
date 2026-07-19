@@ -1,12 +1,38 @@
 # AGENTS.md — TeleMon AI Agent Workflow
 
-Applies to Claude Code, Kiro, and Cline (and any other AGENTS.md-compliant agent) working in this repository.
+Applies to Claude Code, Kiro, Cline, OpenCode, and Codex (and any other AGENTS.md-compliant agent) working in this repository.
+
+**New to this project? Start at [DOCS/ONBOARDING.md](DOCS/ONBOARDING.md)** — a 5-minute path to your first commit. This file is the MANDATORY rule set; [WORKTREE_WORKFLOW.md](WORKTREE_WORKFLOW.md) is the detailed reference (branch strategy rationale, merge/release/deploy steps, appendix commands) for the rules below.
+
+## Worktree-based workflow (MANDATORY)
+
+**Every agent MUST work in its own Git Worktree.** Never modify code in the wrong worktree. See [WORKTREE_WORKFLOW.md §1–2](WORKTREE_WORKFLOW.md#1-worktree-구조) for the full structure rationale and per-agent role detail.
+
+| Worktree | Path | Branch | Allowed operations |
+|---|---|---|---|
+| **TeleMon-release** | `c:\Dev\TeleMon-release` | `worktree/release` | merge, test, build, deploy only |
+| **TeleMon-cline** | `c:\Dev\TeleMon-cline` | `worktree/cline` | develop, commit, push only |
+| **TeleMon-opencode** | `c:\Dev\TeleMon-opencode` | `worktree/opencode` | develop, commit, push only |
+| **TeleMon-kiro** | `c:\Dev\TeleMon-kiro` | `worktree/kiro` | develop, commit, push only |
+| TeleMon-codex | (future) | `worktree/codex` | develop, commit, push only |
+
+### Rules
+
+1. **Release Worktree (`TeleMon-release`):** merge, test, build, deploy만 수행
+2. **개발 Worktree (`TeleMon-cline`, `TeleMon-opencode`, `TeleMon-kiro`, `TeleMon-codex`):** 개발, commit, push만 수행
+3. **자신의 Worktree 외 수정 금지** — 다른 agent의 worktree를 건드리지 않는다
+4. **merge, rebase, deploy 금지** — 개발 worktree에서는 절대 수행하지 않는다
+5. **개발 완료 시:** commit → push → commit hash만 보고
+6. **배포는 TeleMon-release Worktree에서만 수행**
+
+브랜치 명명(`worktree/<agent>`, `feat/*`, `release-*` 등), merge 체크리스트, 금지사항 전체 목록은 [WORKTREE_WORKFLOW.md](WORKTREE_WORKFLOW.md)에 있습니다 — 여기서 반복하지 않습니다.
 
 ## Repo layout
 
-- `c:\Dev\TeleMon` (this root) — Next.js frontend. Git repo: `telegram-dashboard.git`.
+- `c:\Dev\TeleMon` (this root) — Next.js frontend. **Git worktree parent repo only. Do NOT develop here.**
 - `telegram-dashboard-backend/` — FastAPI backend. **Separate git repo**: `telegram-dashboard-backend.git`. Commit and push it independently of the frontend.
-- Current workspace: `C:\Backups\emergency-20260718-211528\Dev\TeleMon`
+- Git worktrees are at `c:\Dev\TeleMon-*` — see the table above. Always use the appropriate worktree.
+- Current workspace: `C:\Backups\emergency-20260718-211528\Dev\TeleMon` (emergency session; see [WORKTREE_WORKFLOW.md §1.1](WORKTREE_WORKFLOW.md#1-worktree-구조) footnote for how this interacts with the canonical `c:\Dev\TeleMon-*` worktrees).
 - Production is a single VPS running Docker Compose (`api.telemon.online`, `app.telemon.online`) — **not** Render, despite `render.yaml` existing in the backend repo. See Production deployment below.
 
 ## Core rule: MCP-first
