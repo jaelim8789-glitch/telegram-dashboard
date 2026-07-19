@@ -95,6 +95,9 @@ export function OnboardingTour({ hasAccounts = false, accountsLoading = false }:
         >
           <motion.div
             key={`step-${step}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`온보딩 ${step + 1}단계`}
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.96 }}

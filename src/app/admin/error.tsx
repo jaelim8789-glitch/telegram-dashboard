@@ -22,6 +22,7 @@ export default function AdminError({
             : "페이지를 불러오는 중 문제가 발생했습니다."}
         </p>
         <button
+          type="button"
           onClick={reset}
           className="inline-flex items-center gap-1.5 rounded-xl bg-app-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-app-primary/20 transition-all duration-150 hover:bg-app-primary-hover active:scale-[0.98]"
         >

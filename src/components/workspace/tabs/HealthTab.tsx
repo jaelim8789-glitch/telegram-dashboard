@@ -198,6 +198,7 @@ export function HealthTab() {
               <span className="flex items-center gap-1 text-[10px]"><span className="h-2 w-2 rounded-full bg-app-danger" /> 실패</span>
             </div>
             <select value={trendDays} onChange={(e) => setTrendDays(Number(e.target.value))}
+              aria-label="추세 기간"
               className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-[10px] text-app-text focus-ring">
               <option value={7}>7일</option>
               <option value={14}>14일</option>
@@ -290,10 +291,11 @@ export function HealthTab() {
           <div className="relative flex-1 min-w-[160px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="계정 검색..." className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle focus-ring" />
-            {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-app-text-subtle"><X className="h-3 w-3" /></button>}
+              placeholder="계정 검색..." aria-label="계정 검색" className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle focus-ring" />
+            {search && <button onClick={() => setSearch("")} aria-label="검색 지우기" className="absolute right-2 top-1/2 -translate-y-1/2 text-app-text-subtle"><X className="h-3 w-3" /></button>}
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="상태 필터"
             className="rounded-lg border border-app-border bg-app-bg px-2 py-1.5 text-xs text-app-text focus-ring">
             <option value="">전체</option>
             <option value="healthy">정상</option>

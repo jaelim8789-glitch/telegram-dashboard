@@ -38,7 +38,7 @@ export default function PublicError({
               : "일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button onClick={reset} className="btn-heritage">
+            <button type="button" onClick={reset} className="btn-heritage">
               다시 시도
             </button>
             <Link href="/" className="btn-heritage-secondary">

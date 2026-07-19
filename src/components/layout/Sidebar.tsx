@@ -73,7 +73,9 @@ export function Sidebar() {
   async function loadHealth() {
     try {
       setHealthItems(await api.fetchAccountHealth());
-    } catch { /* ignore */ }
+    } catch {
+      // Health poll failures are non-fatal — keep showing the last known state
+    }
   }
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
@@ -213,7 +215,9 @@ export function Sidebar() {
             </button>
           )}
           <button
+            type="button"
             onClick={() => { fetchAccounts(); loadHealth(); }}
+            aria-label="계정 새로고침"
             className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
@@ -277,6 +281,7 @@ export function Sidebar() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="계정 이름 또는 전화번호 검색"
+            aria-label="계정 검색"
             className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
           />
           {searchQuery && (

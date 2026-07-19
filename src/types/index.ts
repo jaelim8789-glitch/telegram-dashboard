@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "campaigns" | "health" | "team";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "campaigns" | "health" | "team" | "aichat" | "aireply" | "aibroadcast" | "aioperations" | "aiusage" | "aiopscenter";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -37,6 +37,13 @@ export const TABS: TabDef[] = [
   { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
+  // AI Features
+  { id: "aichat", label: "AI Chat", shortLabel: "AI챗", group: "operate" },
+  { id: "aireply", label: "AI 답장", shortLabel: "AI답", group: "operate" },
+  { id: "aibroadcast", label: "AI 발송", shortLabel: "AI발", group: "operate" },
+  { id: "aioperations", label: "AI 리포트", shortLabel: "AI리", group: "operate" },
+  { id: "aiopscenter", label: "AI 운영 센터", shortLabel: "AIOC", group: "operate" },
+  { id: "aiusage", label: "AI 사용량", shortLabel: "AI량", group: "manage" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned";

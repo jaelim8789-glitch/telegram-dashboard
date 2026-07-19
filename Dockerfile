@@ -25,6 +25,11 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 RUN npm run build
 
+# Post-build verification: check that App Router produced at least one route.
+# Zero routes means /app or /backend leaked into the build context and
+# shadowed src/app — the build exits 0 but every page 404s.
+RUN node scripts/verify-build.js
+
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0

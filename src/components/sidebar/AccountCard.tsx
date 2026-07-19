@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff, Layers } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
@@ -39,6 +39,15 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!groupPickerOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setGroupPickerOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [groupPickerOpen]);
 
   // ── Account label ──
   const [label, setLabel] = useState<string>(() => getAccountLabel(account.id) ?? "");

@@ -113,6 +113,22 @@ export function TabBar() {
     updateFade();
   }, [activeTab]);
 
+  const allTabs = [...operateTabs, ...manageTabs];
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    const currentIndex = allTabs.findIndex((t) => t.id === activeTab);
+    if (currentIndex === -1) return;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % allTabs.length;
+      setActiveTab(allTabs[nextIndex].id);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevIndex = (currentIndex - 1 + allTabs.length) % allTabs.length;
+      setActiveTab(allTabs[prevIndex].id);
+    }
+  }
+
   return (
     <nav aria-label="작업 영역 이동" className="relative flex shrink-0 border-b border-app-border/50 bg-app-surface/50">
       {canScrollLeft && (
@@ -121,6 +137,7 @@ export function TabBar() {
       <div
         ref={scrollRef}
         onScroll={updateFade}
+        onKeyDown={handleKeyDown}
         style={{ scrollbarWidth: "none" }}
         className="flex items-center gap-0.5 overflow-x-auto px-3 [&::-webkit-scrollbar]:hidden"
       >
