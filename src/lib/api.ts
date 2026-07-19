@@ -197,6 +197,10 @@ export async function deleteAccount(id: string): Promise<void> {
   await request<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
 
+export async function clearAccountError(id: string): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}/clear-error`, { method: "POST" });
+}
+
 /**
  * Update an account's status (active/inactive/banned).
  * PUT /api/accounts/{accountId}

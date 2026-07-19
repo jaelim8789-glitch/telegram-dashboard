@@ -315,19 +315,19 @@ export function LogTab() {
       return;
     }
     if (!accountFilter) {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       try { setLogs(await api.fetchLogs({})); }
       catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
-      finally { setLoading(false); }
+      finally { if (!silent) setLoading(false); }
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     try {
       setLogs(cachedBroadcasts.length > 0 ? cachedBroadcasts : await api.fetchLogs({ accountId: accountFilter }));
     } catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   }, [accountFilter, cachedBroadcasts]);
 
   useEffect(() => {
