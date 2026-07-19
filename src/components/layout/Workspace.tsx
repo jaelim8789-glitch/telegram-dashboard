@@ -19,10 +19,9 @@ import { LogTab } from "@/components/workspace/tabs/LogTab";
 import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
 import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
 import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
-import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
+import { AiChatTab } from "@/components/workspace/tabs/AiChatTab";
 import { HealthTab } from "@/components/workspace/tabs/HealthTab";
 import { TeamTab } from "@/components/workspace/tabs/TeamTab";
-import { AiChatTab } from "@/components/workspace/tabs/AiChatTab";
 import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
 import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
 import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
@@ -46,9 +45,8 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
   templates: TemplateTab,
   health: HealthTab,
-  campaigns: CampaignTab,
-  team: TeamTab,
   aichat: AiChatTab,
+  team: TeamTab,
   aireply: AiReplyAssistantTab,
   aibroadcast: AiBroadcastAssistantTab,
   aioperations: AiOperationsReportTab,
