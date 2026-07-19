@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "aichat" | "health" | "team" | "aireply" | "aibroadcast" | "aioperations" | "aiusage" | "aiopscenter";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -30,19 +30,19 @@ export const TABS: TabDef[] = [
   { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "manage" },
   { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "manage" },
   { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "manage" },
+  { id: "campaigns", label: "캠페인", shortLabel: "캠페인", group: "manage" },
   { id: "folders", label: "폴더", group: "manage" },
   { id: "templates", label: "템플릿", group: "manage" },
   { id: "health", label: "계정 건강", shortLabel: "건강", group: "operate" },
-  { id: "aichat", label: "AI 대화", shortLabel: "AI대화", group: "operate" },
+  { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "operate" },
+  { id: "aireply", label: "AI 답장", shortLabel: "답장", group: "operate" },
+  { id: "aibroadcast", label: "AI 발송", shortLabel: "발송", group: "operate" },
+  { id: "aioperations", label: "AI 운영", shortLabel: "운영", group: "operate" },
+  { id: "aiopscenter", label: "AI 센터", shortLabel: "센터", group: "operate" },
+  { id: "aiusage", label: "AI 사용량", shortLabel: "사용량", group: "operate" },
   { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
-  // AI Features
-  { id: "aireply", label: "AI 답장", shortLabel: "AI답", group: "operate" },
-  { id: "aibroadcast", label: "AI 발송", shortLabel: "AI발", group: "operate" },
-  { id: "aioperations", label: "AI 리포트", shortLabel: "AI리", group: "operate" },
-  { id: "aiopscenter", label: "AI 운영 센터", shortLabel: "AIOC", group: "operate" },
-  { id: "aiusage", label: "AI 사용량", shortLabel: "AI량", group: "manage" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned";
@@ -187,7 +187,7 @@ export interface BroadcastChild {
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
   /** Delivery mode inherited from parent. */
-  deliveryMode?: "normal" | "cycle" | "bulk";
+  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
   /** Inline keyboard buttons. */
   inlineButtons: InlineButton[] | null;
 }
@@ -532,4 +532,231 @@ export interface AccountGroup {
   color: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AiReplyRequest {
+  accountId: string;
+  message: string;
+  [key: string]: unknown;
+}
+
+export interface AiReplyResponse {
+  reply: string;
+  [key: string]: unknown;
+}
+
+export interface AiStreamChunk {
+  type: string;
+  text?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+export interface AiComparisonRequest {
+  accountId: string;
+  message: string;
+  variants: string[];
+  [key: string]: unknown;
+}
+
+export interface AiComparisonResponse {
+  results: Array<{
+    variant: string;
+    score: number;
+    reason?: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
+export interface AiPromptTemplate {
+  id: string;
+  name: string;
+  prompt: string;
+  [key: string]: unknown;
+}
+
+export interface AiTemplateCreateInput {
+  name: string;
+  prompt: string;
+  [key: string]: unknown;
+}
+
+export interface AiMemorySearchResult {
+  id: string;
+  content: string;
+  score: number;
+  [key: string]: unknown;
+}
+
+export interface AiSession {
+  id: string;
+  accountId: string;
+  messages: Array<{
+    role: string;
+    content: string;
+    timestamp: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
+export interface AiUsageSummary {
+  totalRequests: number;
+  totalTokens: number;
+  period: string;
+  [key: string]: unknown;
+}
+
+export interface AiPlanLimits {
+  plan: string;
+  monthlyTokens: number;
+  usedTokens: number;
+  remainingTokens: number;
+  [key: string]: unknown;
+}
+
+export interface AiSearchFilters {
+  [key: string]: unknown;
+}
+
+export interface LangGraphWorkflow {
+  id: string;
+  name: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface LangGraphExecution {
+  id: string;
+  workflowId: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface AIAgent {
+  id: string;
+  name: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export type AgentStatus = "idle" | "running" | "error" | "stopped";
+
+export interface AgentTask {
+  id: string;
+  agentId: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface MCPTool {
+  id: string;
+  name: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+export interface MCPCategoryInfo {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export interface MCPExecution {
+  id: string;
+  toolId: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface WorkflowDefinition {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export interface WorkflowExecution {
+  id: string;
+  workflowId: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface TimelineEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  [key: string]: unknown;
+}
+
+export interface TimelineGroup {
+  label: string;
+  events: TimelineEvent[];
+  [key: string]: unknown;
+}
+
+export interface ActivityEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  [key: string]: unknown;
+}
+
+export interface ActivitySession {
+  id: string;
+  events: ActivityEvent[];
+  [key: string]: unknown;
+}
+
+export interface MemoryGraph {
+  nodes: MemoryEntity[];
+  relations: MemoryRelation[];
+  [key: string]: unknown;
+}
+
+export interface MemoryEntity {
+  id: string;
+  type: string;
+  content: string;
+  [key: string]: unknown;
+}
+
+export interface MemorySearchResult {
+  id: string;
+  content: string;
+  score: number;
+  [key: string]: unknown;
+}
+
+export interface MemoryRelation {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface AIAnalyticsOverview {
+  [key: string]: unknown;
+}
+
+export interface AIAnalyticsDaily {
+  date: string;
+  [key: string]: unknown;
+}
+
+export interface AIAnalyticsAgentBreakdown {
+  agentId: string;
+  [key: string]: unknown;
+}
+
+export interface AIAnalyticsToolUsage {
+  toolId: string;
+  [key: string]: unknown;
+}
+
+export interface AIAnalyticsErrorSummary {
+  count: number;
+  [key: string]: unknown;
 }

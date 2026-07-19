@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
-import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
+import { MyAiTab } from "@/components/workspace/tabs/MyAiTab";
 import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
 import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
 import { SendTab } from "@/components/workspace/tabs/SendTab";
@@ -19,13 +19,15 @@ import { LogTab } from "@/components/workspace/tabs/LogTab";
 import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
 import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
 import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
-import { AiChatTab } from "@/components/workspace/tabs/AiChatTab";
 import { HealthTab } from "@/components/workspace/tabs/HealthTab";
 import { TeamTab } from "@/components/workspace/tabs/TeamTab";
+import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
 import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
 import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
 import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
 import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
+import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
+import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -38,20 +40,21 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   linkinspector: LinkInspectorTab,
   autoreply: AutoReplyTab,
   replymacro: ReplyMacroTab,
-  deliveryanalytics: DeliveryAnalyticsTab,
-  channelhub: ChannelHubTab,
-  profile: ProfileTab,
-  log: LogTab,
+  campaigns: CampaignTab,
   folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
   templates: TemplateTab,
   health: HealthTab,
-  aichat: AiChatTab,
-  team: TeamTab,
+  myai: MyAiTab,
   aireply: AiReplyAssistantTab,
   aibroadcast: AiBroadcastAssistantTab,
   aioperations: AiOperationsReportTab,
   aiopscenter: AiOperationsCenterTab,
-  aiusage: React.lazy(() => import("@/components/workspace/tabs/AiUsageTab").then(m => ({ default: m.AiUsageTab }))),
+  aiusage: AiUsageTab,
+  channelhub: ChannelHubTab,
+  team: TeamTab,
+  profile: ProfileTab,
+  log: LogTab,
+  deliveryanalytics: DeliveryAnalyticsTab,
 };
 
 export function Workspace() {
@@ -78,4 +81,3 @@ export function Workspace() {
     </main>
   );
 }
-
