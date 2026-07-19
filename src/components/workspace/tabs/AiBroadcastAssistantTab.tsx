@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bot, Sparkles, Copy, Check, Loader2, SendHorizontal, FileText } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
+import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 export function AiBroadcastAssistantTab() {
   const [purpose, setPurpose] = useState("");
@@ -52,13 +53,22 @@ export function AiBroadcastAssistantTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Bot className="h-5 w-5 text-app-primary" />
-        <h2 className="text-sm font-bold text-app-text">AI Broadcast Assistant</h2>
-        <Sparkles className="h-3.5 w-3.5 text-app-warning" />
-        <span className="text-[10px] text-app-text-muted">AI 메시지 생성 & A/B 테스트</span>
-      </div>
+    <AiSubTabLayout
+      icon={<Bot className="h-5 w-5 text-app-primary" />}
+      title="AI Broadcast Assistant"
+      subtitle="AI 메시지 생성 & A/B 테스트"
+      badge="NEW"
+      error={error}
+      empty={!result && !loading}
+      emptyFallback={
+        <>
+          <FileText className="h-10 w-10 text-app-text-subtle mb-3" />
+          <p className="text-sm font-medium text-app-text">AI가 메시지를 생성해드립니다</p>
+          <p className="text-xs text-app-text-muted mt-1">목적과 대상을 입력하고</p>
+          <p className="text-xs text-app-text-muted">최적의 마케팅 메시지를 받아보세요</p>
+        </>
+      }
+    >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Settings */}
@@ -109,13 +119,12 @@ export function AiBroadcastAssistantTab() {
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {loading ? "생성 중..." : "AI 메시지 생성"}
             </button>
-            {error && <p className="text-xs text-app-danger" role="alert">{error}</p>}
           </div>
         </Panel>
 
         {/* Results */}
         <div className="lg:col-span-2 space-y-4">
-          {result ? (
+          {result && (
             <>
               <Panel title="📨 추천 메시지">
                 <div className="space-y-2">
@@ -166,16 +175,9 @@ export function AiBroadcastAssistantTab() {
                 </Panel>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <FileText className="h-10 w-10 text-app-text-subtle mb-3" />
-              <p className="text-sm font-medium text-app-text">AI가 메시지를 생성해드립니다</p>
-              <p className="text-xs text-app-text-muted mt-1">목적과 대상을 입력하고</p>
-              <p className="text-xs text-app-text-muted">최적의 마케팅 메시지를 받아보세요</p>
-            </div>
           )}
         </div>
       </div>
-    </div>
+    </AiSubTabLayout>
   );
 }

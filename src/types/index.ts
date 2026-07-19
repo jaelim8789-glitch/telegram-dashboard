@@ -35,17 +35,12 @@ export const TABS: TabDef[] = [
   { id: "templates", label: "템플릿", group: "manage" },
   { id: "health", label: "계정 건강", shortLabel: "건강", group: "operate" },
   { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "operate" },
-  { id: "aireply", label: "AI 답장", shortLabel: "답장", group: "operate" },
-  { id: "aibroadcast", label: "AI 발송", shortLabel: "발송", group: "operate" },
-  { id: "aioperations", label: "AI 운영", shortLabel: "운영", group: "operate" },
-  { id: "aiopscenter", label: "AI 센터", shortLabel: "센터", group: "operate" },
-  { id: "aiusage", label: "AI 사용량", shortLabel: "사용량", group: "operate" },
   { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
 ];
 
-export type AccountStatus = "active" | "inactive" | "banned";
+export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
 
 export type AuthFlowMode = "register" | "re-auth";
 
@@ -53,6 +48,7 @@ export type AccountHealthState =
   | "healthy"
   | "unauthorized"
   | "banned"
+  | "restricted"
   | "rate_limited"
   | "error"
   | "unknown"

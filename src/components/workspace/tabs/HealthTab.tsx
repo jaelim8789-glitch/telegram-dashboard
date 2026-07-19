@@ -22,6 +22,7 @@ const HEALTH_LABELS: Record<string, { label: string; tone: "success" | "warning"
   healthy: { label: "정상", tone: "success", icon: CheckCircle2 },
   unauthorized: { label: "인증 필요", tone: "warning", icon: ShieldAlert },
   banned: { label: "차단", tone: "danger", icon: Ban },
+  restricted: { label: "제재 의심", tone: "danger", icon: ShieldAlert },
   rate_limited: { label: "제한", tone: "warning", icon: Clock },
   error: { label: "오류", tone: "danger", icon: AlertTriangle },
   not_configured: { label: "미설정", tone: "neutral", icon: ShieldOff },
@@ -224,14 +225,23 @@ export function HealthTab() {
               const acct = accounts.find((a) => a.id === h.accountId);
               const totalAttempts = h.recentSuccessCount + h.recentFailureCount;
               const successRate = totalAttempts > 0 ? (h.recentSuccessCount / totalAttempts) * 100 : 0;
+              const isRestricted = h.status === "restricted";
               return (
-                <div key={h.accountId} className="flex items-center gap-3 rounded-xl border border-app-border px-3 py-2.5 hover:border-app-border-strong transition-colors">
+                <div key={h.accountId} className={cn(
+                  "flex items-center gap-3 rounded-xl border px-3 py-2.5 hover:border-app-border-strong transition-colors",
+                  isRestricted ? "border-app-danger/40 bg-app-danger-muted/15" : "border-app-border"
+                )}>
                   <Icon className={cn("h-4 w-4 shrink-0", cfg.tone === "danger" ? "text-app-danger" : cfg.tone === "warning" ? "text-app-warning" : "text-app-text-muted")} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate text-xs font-medium text-app-text">{acct?.name?.trim() || h.phone}</span>
                       <Badge tone={cfg.tone} className="shrink-0 text-[9px] px-1 py-0">{cfg.label}</Badge>
                     </div>
+                    {isRestricted && (
+                      <p className="mt-1 text-[11px] font-medium text-app-danger">
+                        이 계정이 텔레그램 제재를 받았을 수 있습니다. 발송을 일시 중단했습니다.
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 text-[10px] text-app-text-muted mt-0.5">
                       {h.lastError && <span className="truncate max-w-[120px]">{h.lastError}</span>}
                       {h.lastActivity && <span>{formatRelativeTime(h.lastActivity)}</span>}
@@ -300,8 +310,9 @@ export function HealthTab() {
             <option value="">전체</option>
             <option value="healthy">정상</option>
             <option value="unauthorized">인증 필요</option>
-            <option value="banned">차단</option>
-            <option value="rate_limited">제한</option>
+          <option value="banned">차단</option>
+          <option value="restricted">제재 의심</option>
+          <option value="rate_limited">제한</option>
             <option value="error">오류</option>
             <option value="not_configured">미설정</option>
           </select>
