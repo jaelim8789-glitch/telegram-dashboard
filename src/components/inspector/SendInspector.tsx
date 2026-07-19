@@ -11,6 +11,7 @@ const ACCOUNT_STATUS_LABEL: Record<AccountStatus, { label: string; tone: "succes
   active: { label: "활성", tone: "success" },
   inactive: { label: "비활성", tone: "warning" },
   banned: { label: "차단됨", tone: "danger" },
+  suspended: { label: "정지됨", tone: "danger" },
 };
 
 function useObjectUrl(file: File | null): string | null {

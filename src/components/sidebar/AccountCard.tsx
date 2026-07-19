@@ -10,12 +10,14 @@ const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = 
   active: { dot: "bg-app-success", label: "활성" },
   inactive: { dot: "bg-app-text-subtle", label: "비활성" },
   banned: { dot: "bg-app-danger", label: "차단됨" },
+  suspended: { dot: "bg-app-danger", label: "정지됨" },
 };
 
 const HEALTH_ICON: Record<AccountHealthState, { icon: typeof AlertTriangle; color: string; title: string }> = {
   healthy: { icon: CheckCircle2, color: "text-app-success", title: "정상" },
   unauthorized: { icon: Plug, color: "text-app-warning", title: "세션 만료 - 재인증 필요" },
   banned: { icon: Ban, color: "text-app-danger", title: "차단됨" },
+  restricted: { icon: ShieldAlert, color: "text-app-danger", title: "그룹 발송 제한 - 텔레그램 제재 의심" },
   rate_limited: { icon: Clock, color: "text-app-warning", title: "제한 초과" },
   error: { icon: ShieldAlert, color: "text-app-danger", title: "발송 오류" },
   unknown: { icon: AlertTriangle, color: "text-app-text-muted", title: "상태 미확인" },
