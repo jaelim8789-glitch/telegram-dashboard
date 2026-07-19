@@ -1,21 +1,38 @@
 "use client";
 
-import { useState, useMemo, type FormEvent, useEffect, useRef } from "react";
+import { useState, useMemo, type FormEvent, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle, Send, ArrowLeft, ArrowRight } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { SITE } from "@/lib/site";
+import { setToken, setSessionToken } from "@/lib/auth";
 import * as freeApiKey from "@/lib/api_free_api_key";
+import * as api from "@/lib/api";
 import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
+
+declare global {
+  interface Window {
+    onTelegramAuth?: (user: api.TelegramAuthData) => void;
+  }
+}
+
+const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
+
+function validatePhone(v: string): string | null {
+  if (!v.startsWith("+")) return "국가코드(+82)를 포함한 전화번호를 입력해주세요.";
+  if (v.length < 8) return "전화번호가 너무 짧습니다.";
+  return null;
+}
 
 export default function SignupPage() {
   const router = useRouter();
   const [step, setStep] = useState<"plan" | "phone" | "channel" | "done">("plan");
   const [selectedPlan, setSelectedPlan] = useState("free");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [botDeepLink, setBotDeepLink] = useState<string | null>(null);
   const [channelUrl, setChannelUrl] = useState<string | null>(null);
@@ -27,13 +44,45 @@ export default function SignupPage() {
   const [alreadyIssued, setAlreadyIssued] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tgLoggingIn, setTgLoggingIn] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tokenRef = useRef<string | null>(null);
 
   const tgDeepLink = useMemo(() => token ? `tg://resolve?domain=telemon_verify_bot&start=${token}` : null, [token]);
 
+  // ── Telegram Login Widget (signup shortcut) ──
+  const handleTgAuth = useCallback(async (user: api.TelegramAuthData) => {
+    setTgLoggingIn(true);
+    setError(null);
+    try {
+      const result = await api.telegramLogin(user);
+      setToken(result.access_token);
+      setSessionToken(result.session_token);
+      if (result.is_new_user) {
+        setStep("done");
+        setApiKey("Telegram 계정으로 가입 완료!");
+      } else {
+        router.replace("/app");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Telegram 로그인에 실패했습니다.");
+    } finally {
+      setTgLoggingIn(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!TELEGRAM_BOT_USERNAME) return;
+    window.onTelegramAuth = handleTgAuth;
+  }, [handleTgAuth]);
+
+  // ── Verification flow ──
+
   async function handleStartVerification(e: FormEvent) {
     e.preventDefault();
+    setPhoneError(null);
+    const err = validatePhone(phone);
+    if (err) { setPhoneError(err); return; }
     if (!phone.trim() || loading) return;
     setLoading(true); setError(null);
     try {
@@ -141,7 +190,7 @@ export default function SignupPage() {
         failCount++;
         if (failCount >= 3) {
           if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-          setError("서버와 연결할 수 없습니다. 봇을 열고 인증을 완료한 후 '인증 확인 다시하기' 버튼을 눌러주세요.");
+          setError("서버와 연결할 수 없습니다. 봇을 열고 인증을 완료한 후 '인증 확인' 버튼을 눌러주세요.");
         }
       }
     };
@@ -174,14 +223,53 @@ export default function SignupPage() {
           <p className="mt-2 text-app-text-secondary">1분만에 시작하세요</p>
         </div>
 
-        {/* Steps */}
+        {/* Telegram Login Widget (shown on first step) */}
+        {step === "plan" && TELEGRAM_BOT_USERNAME && (
+          <div className="mb-8">
+            <div className="rounded-2xl border border-app-border/60 bg-app-card p-5 animate-scale-in">
+              <div className="text-center mb-3">
+                <div className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-app-text mb-0.5">
+                  <Send className="h-4 w-4 text-blue-500" />
+                  Telegram으로 바로 시작
+                </div>
+                <p className="text-xs text-app-text-muted">별도 입력 없이 텔레그램 계정으로 가입합니다</p>
+              </div>
+              {tgLoggingIn ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-app-text-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Telegram 로그인 처리 중...
+                </div>
+              ) : (
+                <div className="flex justify-center" id="tg-widget-container" ref={(el) => {
+                  if (!el || el.hasChildNodes()) return;
+                  window.onTelegramAuth = handleTgAuth;
+                  const s = document.createElement("script");
+                  s.src = "https://telegram.org/js/telegram-widget.js?22";
+                  s.setAttribute("data-telegram-login", TELEGRAM_BOT_USERNAME);
+                  s.setAttribute("data-size", "large");
+                  s.setAttribute("data-onauth", "onTelegramAuth(user)");
+                  s.setAttribute("data-request-access", "write");
+                  s.async = true;
+                  el.appendChild(s);
+                }} />
+              )}
+            </div>
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-app-border" />
+              <span className="text-xs text-app-text-muted font-medium">또는 이메일로 가입</span>
+              <div className="flex-1 h-px bg-app-border" />
+            </div>
+          </div>
+        )}
+
+        {/* Step Progress */}
         <div className="flex items-center justify-center gap-0 mb-10">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                i <= currentIdx ? "bg-app-primary text-white" : "bg-app-border text-app-text-secondary"
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
+                i <= currentIdx ? "bg-app-primary text-white scale-110" : "bg-app-border text-app-text-secondary"
               }`}>{i + 1}</div>
-              {i < 3 && <div className={`h-px w-8 ${i < currentIdx ? "bg-app-primary" : "bg-app-border"}`} />}
+              {i < 3 && <div className={`h-px w-8 transition-all duration-300 ${i < currentIdx ? "bg-app-primary" : "bg-app-border"}`} />}
             </div>
           ))}
         </div>
@@ -204,7 +292,7 @@ export default function SignupPage() {
                     }`}>
                     <div className="flex items-center justify-between">
                       <div><span className="font-semibold text-app-text">{p.name}</span><span className="ml-2 text-sm text-app-primary">{p.price}</span></div>
-                      {selectedPlan === p.id && <svg className="h-5 w-5 text-app-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                      {selectedPlan === p.id && <CheckCircle2 className="h-5 w-5 text-app-primary" />}
                     </div>
                     <p className="mt-1 text-xs text-app-text-secondary">{p.desc}</p>
                     {p.id === "free" && selectedPlan === p.id && (
@@ -213,13 +301,13 @@ export default function SignupPage() {
                   </button>
                 ))}
               </div>
-              <button onClick={() => {
+              <Button onClick={() => {
                 if (selectedPlan === "free") {
                   setStep("phone");
                 } else {
                   router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
-              }} className="btn-primary w-full h-12 rounded-xl text-sm font-semibold relative z-10">{selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}</button>
+              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}</Button>
             </div>
           )}
 
@@ -227,15 +315,25 @@ export default function SignupPage() {
             <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">전화번호 입력</h2>
               <form onSubmit={handleStartVerification} className="space-y-4">
-                <Field label="전화번호">
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+821012345678" required />
+                <Field label="전화번호" error={phoneError ?? undefined}>
+                  <Input
+                    value={phone}
+                    onChange={(e) => { setPhone(e.target.value); setPhoneError(null); }}
+                    placeholder="+821012345678"
+                    className={phoneError ? "border-red-500" : ""}
+                    required
+                  />
                 </Field>
+                {phoneError && <p className="text-xs text-red-500 -mt-2">{phoneError}</p>}
                 <p className="text-xs text-app-text-muted">국가코드 포함 (예: +82). SMS 인증 없이 텔레그램 채널 가입으로 인증합니다.</p>
                 <Button type="submit" disabled={loading} className="flex w-full h-12">
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loading ? "시작하는 중..." : "다음"}
+                  {!loading && <ArrowRight className="h-4 w-4 ml-1.5" />}
                 </Button>
-                <button type="button" onClick={() => setStep("plan")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
+                <button type="button" onClick={() => setStep("plan")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors flex items-center justify-center gap-1">
+                  <ArrowLeft className="h-3.5 w-3.5" /> 이전으로
+                </button>
               </form>
             </div>
           )}
@@ -303,12 +401,9 @@ export default function SignupPage() {
                   <Button onClick={handleCheckVerification} disabled={checking} className="flex w-full h-12">
                     {checking && <Loader2 className="h-4 w-4 animate-spin" />}
                     {checking ? "인증 확인 중..." : "인증 확인"}
+                    {!checking && <RefreshCw className="h-4 w-4 ml-1.5" />}
                   </Button>
                 </div>
-              )}
-
-              {verifyHint && verifyStatus !== "verified" && (
-                <InlineError className="mb-0"><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />{verifyHint.text}</InlineError>
               )}
 
               <div className="space-y-3 pt-1">
@@ -326,13 +421,15 @@ export default function SignupPage() {
                   </InlineError>
                 )}
               </div>
-              <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors">이전으로</button>
+              <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-app-text-muted hover:text-app-text transition-colors flex items-center justify-center gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> 이전으로
+              </button>
             </div>
           )}
 
           {step === "done" && (
             <div className="text-center space-y-6">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-app-success-muted">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-app-success-muted animate-scale-in">
                 <CheckCircle2 className="h-10 w-10 text-app-success" />
               </div>
               {alreadyIssued ? (
@@ -344,13 +441,17 @@ export default function SignupPage() {
                 <>
                   <h2 className="text-xl font-bold text-app-text">가입 완료!</h2>
                   <p className="text-sm text-app-text-secondary">아래 API 키를 안전한 곳에 저장하세요. 지금만 확인 가능합니다.</p>
-                  <div className="rounded-xl bg-app-surface border border-app-border p-4">
-                    <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
-                  </div>
+                  {apiKey && !apiKey.startsWith("Telegram") && (
+                    <div className="rounded-xl bg-app-surface border border-app-border p-4">
+                      <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
+                    </div>
+                  )}
                 </>
               )}
               <div className="space-y-3 pt-2">
-                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">대시보드로 이동</Link>
+                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">
+                  대시보드로 이동
+                </Link>
                 <Link href="/pricing" className="block text-sm text-app-text-muted hover:text-app-text transition-colors">요금제 업그레이드</Link>
               </div>
             </div>
