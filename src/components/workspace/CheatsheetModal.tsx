@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useId, useRef } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface CheatsheetModalProps {
   open: boolean;
@@ -27,15 +28,9 @@ const SHORTCUTS = [
 
 export function CheatsheetModal({ open, onClose }: CheatsheetModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  useFocusTrap(panelRef, open, onClose);
 
   return (
     <AnimatePresence>
@@ -49,10 +44,14 @@ export function CheatsheetModal({ open, onClose }: CheatsheetModalProps) {
             transition={{ duration: 0.15 }}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
+            aria-hidden="true"
           />
           {/* Panel */}
           <motion.div
             ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -60,10 +59,11 @@ export function CheatsheetModal({ open, onClose }: CheatsheetModalProps) {
             className="relative z-10 mx-4 w-full max-w-md rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-app-text">단축키</h2>
+              <h2 id={titleId} className="text-lg font-semibold text-app-text">단축키</h2>
               <button
                 type="button"
                 onClick={onClose}
+                aria-label="닫기"
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
               >
                 <X className="h-4 w-4" />

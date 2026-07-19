@@ -77,6 +77,7 @@ export function DashboardShell() {
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
         <button
+          type="button"
           onClick={toggleSidebar}
           aria-label={sidebarOpen ? "계정 사이드바 닫기" : "계정 사이드바 열기"}
           aria-expanded={sidebarOpen}
@@ -87,6 +88,7 @@ export function DashboardShell() {
         </button>
         <CommandPaletteTrigger />
         <button
+          type="button"
           onClick={toggleInspector}
           aria-label={inspectorOpen ? "인스펙터 패널 닫기" : "인스펙터 패널 열기"}
           aria-expanded={inspectorOpen}

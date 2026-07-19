@@ -19,14 +19,27 @@ export default function AppError({
         <p className="text-sm text-app-text-muted">
           {process.env.NODE_ENV === "development"
             ? error.message
-            : "대시보드를 불러오는 중 문제가 발생했습니다."}
+            : "대시보드를 불러오는 중 문제가 발생했습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해 주세요."}
         </p>
-        <button
-          onClick={reset}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-app-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-app-primary/20 transition-all duration-150 hover:bg-app-primary-hover active:scale-[0.98]"
-        >
-          다시 시도
-        </button>
+        {error.digest && (
+          <p className="text-xs text-app-text-subtle">오류 코드: {error.digest}</p>
+        )}
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/app"; }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-app-border px-5 py-2.5 text-sm font-semibold text-app-text transition-all duration-150 hover:bg-app-card-hover active:scale-[0.98]"
+          >
+            홈으로
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-app-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-app-primary/20 transition-all duration-150 hover:bg-app-primary-hover active:scale-[0.98]"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     </div>
   );

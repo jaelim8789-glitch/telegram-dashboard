@@ -299,11 +299,17 @@ export function CampaignTab() {
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditor(false)}>
-          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditor(false)} aria-hidden="true">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingCampaign ? "캠페인 수정" : "새 캠페인"}
+            className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-app-text">{editingCampaign ? "캠페인 수정" : "새 캠페인"}</h2>
-              <button onClick={() => setShowEditor(false)} className="text-app-text-muted hover:text-app-text"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setShowEditor(false)} aria-label="닫기" className="text-app-text-muted hover:text-app-text"><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-4">
               <div>
@@ -328,11 +334,11 @@ export function CampaignTab() {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={handleSave} disabled={!editName.trim() || saving}
+                <button type="button" onClick={handleSave} disabled={!editName.trim() || saving}
                   className="flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover disabled:opacity-50 transition-colors">
                   {saving ? "저장 중..." : editingCampaign ? "수정 완료" : "캠페인 생성"}
                 </button>
-                <button onClick={() => setShowEditor(false)}
+                <button type="button" onClick={() => setShowEditor(false)}
                   className="flex items-center gap-1.5 rounded-xl border border-app-border px-4 py-2 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors">취소</button>
               </div>
             </div>
@@ -346,6 +352,7 @@ export function CampaignTab() {
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="캠페인 검색..."
+            aria-label="캠페인 검색"
             className="w-full rounded-xl border border-app-border bg-app-surface py-2 pl-9 pr-3 text-xs text-app-text placeholder:text-app-text-subtle focus-ring" />
           {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-subtle hover:text-app-text"><X className="h-3 w-3" /></button>}
         </div>

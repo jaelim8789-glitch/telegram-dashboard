@@ -113,6 +113,7 @@ export function GroupManagementModal({ open, onClose }: GroupManagementModalProp
                   key={c.value}
                   type="button"
                   onClick={() => setEdit({ ...edit, color: c.value })}
+                  aria-label={`색상 ${c.label}`}
                   className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-full transition-all",
                     edit.color === c.value ? "ring-2 ring-offset-2 ring-app-border-strong scale-110" : "hover:scale-110"

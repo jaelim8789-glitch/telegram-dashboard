@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Plus, Search, Star, Trash2, Edit3, Copy, X,
   Grid3X3, List, MessageSquare, AlertCircle,
@@ -14,6 +14,7 @@ import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { MessageTemplate } from "@/lib/api";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const CATEGORIES = [
   { value: "", label: "전체" },
@@ -228,6 +229,7 @@ function TemplateEditor({
 
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={handleSave}
           disabled={!name.trim() || !content.trim() || saving}
           className="flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover disabled:opacity-50 transition-colors"
@@ -235,6 +237,7 @@ function TemplateEditor({
           {saving ? "저장 중..." : template ? "수정 완료" : "템플릿 생성"}
         </button>
         <button
+          type="button"
           onClick={onCancel}
           className="flex items-center gap-1.5 rounded-xl border border-app-border px-4 py-2 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors"
         >
@@ -265,6 +268,9 @@ export function TemplateTab() {
 
   // Confirm dialog
   const [deleteTarget, setDeleteTarget] = useState<MessageTemplate | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(editorRef, showEditor, () => setShowEditor(false));
 
   // Get tenant_id from accounts (first account's association)
   const tenantId = useMemo(() => {
@@ -373,6 +379,7 @@ export function TemplateTab() {
           <p className="text-xs text-app-text-muted">자주 사용하는 메시지를 템플릿으로 관리하세요</p>
         </div>
         <button
+          type="button"
           onClick={handleCreate}
           className="flex items-center gap-1.5 rounded-xl bg-app-primary px-3.5 py-2 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors"
         >
@@ -382,13 +389,20 @@ export function TemplateTab() {
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditor(false)}>
-          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditor(false)} aria-hidden="true">
+          <div
+            ref={editorRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingTemplate ? "템플릿 수정" : "새 템플릿"}
+            className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-app-text">
                 {editingTemplate ? "템플릿 수정" : "새 템플릿"}
               </h2>
-              <button onClick={() => setShowEditor(false)} className="text-app-text-muted hover:text-app-text">
+              <button onClick={() => setShowEditor(false)} aria-label="닫기" className="text-app-text-muted hover:text-app-text">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -411,10 +425,11 @@ export function TemplateTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="템플릿 검색..."
+            aria-label="템플릿 검색"
             className="w-full rounded-xl border border-app-border bg-app-surface py-2 pl-9 pr-3 text-xs text-app-text placeholder:text-app-text-subtle focus-ring"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-subtle hover:text-app-text">
+            <button onClick={() => setSearch("")} aria-label="검색 지우기" className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-subtle hover:text-app-text">
               <X className="h-3 w-3" />
             </button>
           )}
@@ -423,6 +438,7 @@ export function TemplateTab() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label="카테고리 필터"
           className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs text-app-text focus-ring"
         >
           {CATEGORIES.map((c) => (

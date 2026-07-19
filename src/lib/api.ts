@@ -199,29 +199,30 @@ export async function deleteAccount(id: string): Promise<void> {
 
 /**
  * Update an account's status (active/inactive/banned).
- * PATCH /api/accounts/{accountId}/status
+ * PUT /api/accounts/{accountId}
  */
 export async function updateAccountStatus(
   accountId: string,
   status: Account["status"]
 ): Promise<void> {
-  await request<void>(`/api/accounts/${accountId}/status`, {
-    method: "PATCH",
+  await request<void>(`/api/accounts/${accountId}`, {
+    method: "PUT",
     body: JSON.stringify({ status }),
   });
 }
 
 /**
  * Batch enable or disable multiple accounts.
- * PATCH /api/accounts/batch/status
+ * POST /api/accounts/bulk
  */
 export async function batchUpdateAccountStatus(
   accountIds: string[],
   status: Account["status"]
 ): Promise<void> {
-  await request<void>("/api/accounts/batch/status", {
-    method: "PATCH",
-    body: JSON.stringify({ account_ids: accountIds, status }),
+  const action = status === "active" ? "activate" : "deactivate";
+  await request<void>("/api/accounts/bulk", {
+    method: "POST",
+    body: JSON.stringify({ action, account_ids: accountIds }),
   });
 }
 
@@ -368,7 +369,7 @@ export async function getAuthStatus(accountId: string): Promise<AuthStepResult> 
 
 export async function reAuthAccount(accountId: string): Promise<AuthStepResult> {
   return toAuthStepResult(await request<ApiAuthStepResult>(
-    `/api/accounts/${accountId}/re-auth`, { method: "POST" }
+    `/api/accounts/${accountId}/send-code`, { method: "POST" }
   ));
 }
 
@@ -465,14 +466,6 @@ export interface CreateBroadcastInput {
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
-  // MUST be multipart/form-data — verified directly against the deployed backend source
-  // (telegram-dashboard-backend/app/api/broadcast.py, POST /api/broadcast): every parameter
-  // is declared `Annotated[str, Form()]` / `Annotated[UploadFile | None, File()]`, there is no
-  // pydantic JSON-body parameter on that route at all. A JSON body makes every Form field
-  // report "field required" (422). If you're reading this because it got reverted to JSON
-  // again: re-check that file's actual signature before changing it, don't go by a schema
-  // name (e.g. "CreateBroadcastInput") that only exists in the unrelated, never-deployed
-  // prototype at c:\Dev\TeleMon\backend — this file talks to the real backend, not that one.
   const form = new FormData();
   form.append("account_id", input.accountId);
   form.append("message", input.message);
@@ -487,28 +480,18 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
     form.append("inline_buttons", JSON.stringify(input.inlineButtons));
   }
 
-  let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/broadcast`, {
+    const result = await request<ApiBroadcast>("/api/broadcast", {
       method: "POST",
       body: form,
-      headers: { ...authHeaders(), "Idempotency-Key": createIdempotencyKey() },
+      headers: { "Idempotency-Key": createIdempotencyKey() },
     });
-  } catch {
     clearIdempotencyKey();
-    throw new ApiError(
-      "서버 응답을 확인할 수 없습니다. 중복 발송 방지를 위해 확인 후 다시 시도해주세요.",
-      undefined,
-      true,
-    );
-  }
-  if (!res.ok) {
+    return toBroadcast(result);
+  } catch (err) {
     clearIdempotencyKey();
-    const body = await res.json().catch(() => null);
-    throw new ApiError(extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`, res.status, false);
+    throw err;
   }
-  clearIdempotencyKey();
-  return toBroadcast(await res.json());
 }
 
 export async function fetchBroadcast(id: string): Promise<Broadcast> {

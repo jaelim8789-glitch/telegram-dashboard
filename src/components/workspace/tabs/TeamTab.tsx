@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Users, UserPlus, UserMinus, Shield, ShieldAlert, ShieldCheck, ChevronDown, Search, X, Copy, Check, Loader2 } from "lucide-react";
 import { fetchAuthMe, request } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -92,6 +94,10 @@ export function TeamTab() {
   const [inviting, setInviting] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
+  const inviteRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(inviteRef, showInviteModal, () => setShowInviteModal(false));
 
   const fetchMembers = useCallback(async () => {
     if (!tenantId) return;
@@ -150,12 +156,19 @@ export function TeamTab() {
 
   const handleRemoveMember = async (memberId: string) => {
     if (!tenantId) return;
-    if (!confirm("정말로 이 멤버를 팀에서 제거하시겠습니까?")) return;
+    const member = members.find((m) => m.id === memberId);
+    if (member) setDeleteTarget(member);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!tenantId || !deleteTarget) return;
     try {
-      await request(`/api/tenants/${tenantId}/team/members/${memberId}`, { method: "DELETE" });
+      await request(`/api/tenants/${tenantId}/team/members/${deleteTarget.id}`, { method: "DELETE" });
+      setDeleteTarget(null);
       await fetchMembers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "멤버 제거에 실패했습니다.");
+      setDeleteTarget(null);
     }
   };
 
@@ -227,6 +240,7 @@ export function TeamTab() {
         <input
           type="text"
           placeholder="멤버 검색..."
+          aria-label="멤버 검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="focus-ring w-full rounded-lg border border-app-border bg-app-surface py-2 pl-10 pr-4 text-sm text-app-text placeholder:text-app-text-muted"
@@ -235,6 +249,7 @@ export function TeamTab() {
           <button
             type="button"
             onClick={() => setSearch("")}
+            aria-label="검색 지우기"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-muted hover:text-app-text"
           >
             <X className="h-4 w-4" />
@@ -363,10 +378,30 @@ export function TeamTab() {
         </div>
       )}
 
+      {/* Delete Confirmation */}
+      {deleteTarget && (
+        <ConfirmDialog
+          open
+          title="멤버 제거"
+          description={`정말로 "${deleteTarget.display_name || deleteTarget.username}" 멤버를 팀에서 제거하시겠습니까?`}
+          confirmLabel="제거"
+          cancelLabel="취소"
+          variant="danger"
+          onConfirm={confirmRemoveMember}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       {/* Invite Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl bg-app-surface p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
+          <div
+            ref={inviteRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="멤버 초대"
+            className="w-full max-w-md rounded-xl bg-app-surface p-6 shadow-2xl"
+          >
             <h3 className="mb-4 text-base font-semibold text-app-text">멤버 초대</h3>
             <div className="space-y-4">
               <div>

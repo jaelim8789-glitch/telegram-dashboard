@@ -81,17 +81,17 @@ export function GroupSearchTab() {
 
   const loadJoinInfo = useCallback(async () => {
     if (!selectedAccountId) return;
-    try { setJoinInfo(await api.getJoinInfo(selectedAccountId)); } catch { /* ignore */ }
+    try { setJoinInfo(await api.getJoinInfo(selectedAccountId)); } catch { setError("조회 정보를 불러오지 못했습니다."); }
   }, [selectedAccountId]);
 
   const loadJoinLogs = useCallback(async () => {
     if (!selectedAccountId) return;
-    try { setJoinLogs(await api.fetchJoinLogs(selectedAccountId)); } catch { /* ignore */ }
+    try { setJoinLogs(await api.fetchJoinLogs(selectedAccountId)); } catch { setError("참여 로그를 불러오지 못했습니다."); }
   }, [selectedAccountId]);
 
   const loadSavedResults = useCallback(async () => {
     if (!selectedAccountId) return;
-    try { setResults(await api.fetchSearchResults(selectedAccountId)); } catch { /* ignore */ }
+    try { setResults(await api.fetchSearchResults(selectedAccountId)); } catch { setError("저장된 검색 결과를 불러오지 못했습니다."); }
   }, [selectedAccountId]);
 
   // Clear stale join results on account switch

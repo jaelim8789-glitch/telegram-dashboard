@@ -1,13 +1,22 @@
 node_modules
 .next
 .git
-# Stray root-level Python backend dirs that live in this repo for historical
-# reasons — NOT part of the Next.js frontend. Critically, a root /app directory
-# shadows src/app for Next.js App Router directory detection (Next.js prefers
-# <root>/app over <root>/src/app when both exist), which silently builds zero
-# routes if this dir is present in the build context. Must stay excluded.
+# ═══════════════════════════════════════════════════════════════════════════
+# CRITICAL: Stray root-level Python backend dirs that live in this repo for
+# historical reasons — NOT part of the Next.js frontend. A root /app directory
+# SHADOWS src/app for Next.js App Router detection (Next.js prefers <root>/app
+# over <root>/src/app when both exist), which SILENTLY BUILDS ZERO ROUTES if
+# this directory is present. The build exits with code 0 — no error, all 404s.
+#
+# This was a production incident on 2026-07-19 affecting telemon.online.
+# DO NOT remove these entries without adding a pre-build check.
+# ═══════════════════════════════════════════════════════════════════════════
 /app
 /backend
+# Nested backend git repo — only present in some local checkouts (on the VPS it's a
+# sibling directory outside this build context entirely). Irrelevant to the Next.js
+# build either way.
+/telegram-dashboard-backend
 .env*
 !.env.example
 npm-debug.log*

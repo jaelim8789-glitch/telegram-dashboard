@@ -22,6 +22,11 @@ import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
 import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
 import { HealthTab } from "@/components/workspace/tabs/HealthTab";
 import { TeamTab } from "@/components/workspace/tabs/TeamTab";
+import { AiChatTab } from "@/components/workspace/tabs/AiChatTab";
+import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
+import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
+import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
+import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -43,6 +48,12 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   health: HealthTab,
   campaigns: CampaignTab,
   team: TeamTab,
+  aichat: AiChatTab,
+  aireply: AiReplyAssistantTab,
+  aibroadcast: AiBroadcastAssistantTab,
+  aioperations: AiOperationsReportTab,
+  aiopscenter: AiOperationsCenterTab,
+  aiusage: React.lazy(() => import("@/components/workspace/tabs/AiUsageTab").then(m => ({ default: m.AiUsageTab }))),
 };
 
 export function Workspace() {

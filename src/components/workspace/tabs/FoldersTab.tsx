@@ -481,6 +481,7 @@ export function FoldersTab() {
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="폴더 이름을 입력하세요"
+              aria-label="새 폴더 이름"
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none"
               onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
               autoFocus
@@ -489,6 +490,7 @@ export function FoldersTab() {
             <select
               value={newFolderParentId ?? ""}
               onChange={(e) => setNewFolderParentId(e.target.value || null)}
+              aria-label="상위 폴더 선택"
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white"
             >
               <option value="">최상위 폴더</option>
@@ -502,7 +504,9 @@ export function FoldersTab() {
               {FOLDER_COLORS.map((color) => (
                 <button
                   key={color}
+                  type="button"
                   onClick={() => setNewFolderColor(color)}
+                  aria-label={`폴더 색상 ${color}`}
                   className={`h-6 w-6 rounded-full border-2 ${
                     newFolderColor === color ? "border-white" : "border-transparent"
                   }`}
@@ -564,6 +568,7 @@ export function FoldersTab() {
             <select
               className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white"
               defaultValue=""
+              aria-label="이동할 폴더 선택"
               onChange={(e) => {
                 if (e.target.value) handleBatchMove(e.target.value);
               }}
@@ -597,6 +602,7 @@ export function FoldersTab() {
             value={sendMessage}
             onChange={(e) => setSendMessage(e.target.value)}
             placeholder="폴더 단위 발송할 메시지 입력 (폴더명 옆 📤 버튼으로 개별 발송)..."
+            aria-label="발송할 메시지 입력"
             className="flex-1 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none"
             onKeyDown={(e) => {
               if (e.key === "Enter" && sendMessage.trim()) {
