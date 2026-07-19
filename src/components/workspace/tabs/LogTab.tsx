@@ -317,7 +317,7 @@ export function LogTab() {
     if (!accountFilter) {
       if (!silent) setLoading(true);
       setError(null);
-      try { setLogs(await api.fetchLogs({})); }
+      try { setLogs(await api.fetchLogs({ days: 30 })); }
       catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
       finally { if (!silent) setLoading(false); }
       return;
@@ -325,7 +325,7 @@ export function LogTab() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      setLogs(cachedBroadcasts.length > 0 ? cachedBroadcasts : await api.fetchLogs({ accountId: accountFilter }));
+      setLogs(cachedBroadcasts.length > 0 ? cachedBroadcasts : await api.fetchLogs({ accountId: accountFilter, days: 30 }));
     } catch (err) { setError(err instanceof Error ? err.message : "로그를 불러오지 못했습니다."); }
     finally { if (!silent) setLoading(false); }
   }, [accountFilter, cachedBroadcasts]);

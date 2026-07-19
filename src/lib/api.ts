@@ -28,6 +28,12 @@ export function getApiBaseUrl(): string {
 // (5-30 seconds) don't surface a "서버에 연결할 수 없습니다" error.
 // Only network errors (connection refused, DNS failure) are retried;
 // HTTP 4xx/5xx responses are returned immediately.
+//
+// request() itself is unchanged (blocks for retries).
+// requestFast() fails fast on the first network error so the UI can
+// show a fallback immediately, while silently retrying in the
+// background.  Callers that want the fast-fail UX should use
+// requestFast() and catch the initial error.
 const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 2_000;
@@ -178,6 +184,90 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     undefined,
     true,
   );
+}
+
+/**
+ * Like request(), but fails fast on the first network error so the UI can
+ * show a fallback immediately.  Retries are performed silently in the
+ * background; if a retry eventually succeeds the resolved value is returned
+ * via the returned promise (the caller can ignore it since the UI already
+ * showed a fallback).  If all retries fail, the final error is thrown.
+ *
+ * Use this for non-critical or speculative fetches where the UI should
+ * never block for 60+ seconds.
+ */
+export async function requestFast<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const hasJsonBody = typeof init?.body === "string";
+    const defaultHeaders: Record<string, string> = {
+      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+    };
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: { ...defaultHeaders, ...init?.headers },
+    });
+
+    if (!res.ok) {
+      const body = await readErrorBody(res);
+      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      throw new ApiError(detail, res.status, false);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
+    if (err instanceof ApiError && !err.isNetworkError) {
+      throw err;
+    }
+
+    // First attempt failed — surface the error to the UI immediately
+    const firstError = err instanceof DOMException && err.name === "AbortError"
+      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+      : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+
+    // Fire-and-forget background retry with exponential backoff
+    (async () => {
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        try {
+          const bgController = new AbortController();
+          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+          const hasJsonBody = typeof init?.body === "string";
+          const defaultHeaders: Record<string, string> = {
+            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+            ...authHeaders(),
+          };
+          const res = await fetch(`${API_BASE_URL}${path}`, {
+            ...init,
+            signal: bgController.signal,
+            headers: { ...defaultHeaders, ...init?.headers },
+          });
+          clearTimeout(bgTimeout);
+
+          if (!res.ok) {
+            const body = await readErrorBody(res);
+            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+            throw new ApiError(detail, res.status, false);
+          }
+
+          if (res.status === 204) return undefined as T;
+          return res.json() as Promise<T>;
+        } catch {
+          // Background retry failed — try again or give up silently
+        }
+      }
+    })();
+
+    throw firstError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -506,6 +596,8 @@ export interface LogFilters {
   accountId?: string;
   status?: BroadcastStatus;
   date?: string;
+  /** Number of recent days to fetch. When set, overrides backend default (all). */
+  days?: number;
 }
 
 export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> {
@@ -513,6 +605,7 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
   if (filters.accountId) params.set("account_id", filters.accountId);
   if (filters.status) params.set("status", filters.status);
   if (filters.date) params.set("date", filters.date);
+  if (filters.days != null) params.set("days", String(filters.days));
   const qs = params.toString();
   const logs = await request<ApiBroadcast[]>(`/api/logs${qs ? `?${qs}` : ""}`);
   return logs.map(toBroadcast);

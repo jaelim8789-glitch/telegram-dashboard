@@ -130,25 +130,21 @@ export function DashboardTab() {
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
   const [logs, setLogs] = useState<Broadcast[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
-  const [logsError, setLogsError] = useState(false);
   const [upcoming, setUpcoming] = useState<Broadcast[]>([]);
-  const [upcomingLoading, setUpcomingLoading] = useState(false);
-  const [upcomingError, setUpcomingError] = useState(false);
-
   const [recurring, setRecurring] = useState<Broadcast[]>([]);
-  const [recurringLoading, setRecurringLoading] = useState(false);
-  const [recurringError, setRecurringError] = useState(false);
   const recurringPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [overview, setOverview] = useState<DeliveryOverview | null>(null);
-  const [overviewLoading, setOverviewLoading] = useState(false);
-  const [overviewError, setOverviewError] = useState(false);
-
   const plan = useDashboardStore((s) => s.plan);
-
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
-  const [healthError, setHealthError] = useState(false);
+
+  // Unified loading: true while the initial batch is in flight
+  const [dataLoading, setDataLoading] = useState(true);
+  // Per-dataset error flags, cleared on each successful reload
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const markError = (key: string, failed: boolean) => {
+    if (failed) setErrors((prev) => ({ ...prev, [key]: true }));
+    else setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+  };
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -202,33 +198,28 @@ export function DashboardTab() {
   ];
 
   const loadLogs = async () => {
-    setLogsLoading(true); setLogsError(false);
-    try { setLogs(await api.fetchLogs()); } catch { setLogs([]); setLogsError(true); }
-    finally { setLogsLoading(false); }
+    try { setLogs(await api.fetchLogs()); markError("logs", false); }
+    catch { setLogs([]); markError("logs", true); }
   };
 
   const loadUpcoming = async () => {
-    setUpcomingLoading(true); setUpcomingError(false);
-    try { setUpcoming(await api.fetchUpcomingBroadcasts()); } catch { setUpcoming([]); setUpcomingError(true); }
-    finally { setUpcomingLoading(false); }
+    try { setUpcoming(await api.fetchUpcomingBroadcasts()); markError("upcoming", false); }
+    catch { setUpcoming([]); markError("upcoming", true); }
   };
 
   const loadRecurring = async () => {
-    setRecurringLoading(true); setRecurringError(false);
-    try { setRecurring(await api.fetchRecurringBroadcasts()); } catch { setRecurring([]); setRecurringError(true); }
-    finally { setRecurringLoading(false); }
+    try { setRecurring(await api.fetchRecurringBroadcasts()); markError("recurring", false); }
+    catch { setRecurring([]); markError("recurring", true); }
   };
 
   const loadOverview = async () => {
-    setOverviewLoading(true); setOverviewError(false);
-    try { setOverview(await api.fetchDeliveryOverview(undefined, 30)); } catch { setOverview(null); setOverviewError(true); }
-    finally { setOverviewLoading(false); }
+    try { setOverview(await api.fetchDeliveryOverview(undefined, 30)); markError("overview", false); }
+    catch { setOverview(null); markError("overview", true); }
   };
 
   const loadHealth = async () => {
-    setHealthError(false);
-    try { setHealthItems(await api.fetchAccountHealth()); }
-    catch { setHealthItems([]); setHealthError(true); }
+    try { setHealthItems(await api.fetchAccountHealth()); markError("health", false); }
+    catch { setHealthItems([]); markError("health", true); }
   };
 
   const loadAll = async () => {
@@ -241,12 +232,9 @@ export function DashboardTab() {
   };
 
   useEffect(() => {
-    fetchAccounts();
-    loadLogs();
-    loadUpcoming();
-    loadRecurring();
-    loadOverview();
-    loadHealth();
+    setDataLoading(true);
+    Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()])
+      .finally(() => setDataLoading(false));
   }, [fetchAccounts]);
 
   useEffect(() => {
@@ -570,7 +558,7 @@ export function DashboardTab() {
                 />
               );
             })}
-            {healthError && bannedAccounts.length > 0 && (
+            {errors.health && bannedAccounts.length > 0 && (
               <AttentionItem key="banned-fallback"
                 icon={<Ban className="h-3.5 w-3.5 text-app-danger" />}
                 label={`차단된 계정 ${bannedAccounts.length}개`}
@@ -678,7 +666,7 @@ export function DashboardTab() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {widgetVisibility.usageChart ? (
             priorityVisible.chart ? (
-              <UsageChartWidget timeline={overview?.timeline ?? []} loading={overviewLoading} />
+              <UsageChartWidget timeline={overview?.timeline ?? []} loading={dataLoading} />
             ) : (
               <DashboardSkeleton variant="chart" priority="high" />
             )
@@ -764,7 +752,7 @@ export function DashboardTab() {
             title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" aria-hidden="true" /> 예약된 발송</div>}
             className="lg:col-span-1"
           >
-            {upcomingLoading ? (
+            {dataLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-12 w-full rounded-xl" />
                 <Skeleton className="h-12 w-full rounded-xl" />
@@ -796,7 +784,7 @@ export function DashboardTab() {
             title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-primary" aria-hidden="true" /> 반복 발송</div>}
             className="lg:col-span-1"
           >
-            {recurringLoading ? (
+            {dataLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-14 w-full rounded-xl" />
                 <Skeleton className="h-14 w-full rounded-xl" />
@@ -825,7 +813,7 @@ export function DashboardTab() {
             title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-success" aria-hidden="true" /> 전달 건강</div>}
             className="lg:col-span-1"
           >
-            {overviewLoading ? (
+            {dataLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
@@ -905,7 +893,7 @@ export function DashboardTab() {
           title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 활동</div>}
           className="w-full"
         >
-          {logsLoading && recentLogs.length === 0 ? (
+          {dataLoading && recentLogs.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
             </div>
@@ -915,7 +903,7 @@ export function DashboardTab() {
               <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
               <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
             </div>
-          ) : recentLogs.length === 0 && !logsLoading ? (
+          ) : recentLogs.length === 0 && !dataLoading ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <MessageSquare className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
               <p className="text-sm font-medium text-app-text">아직 활동 기록이 없습니다</p>
@@ -952,7 +940,7 @@ export function DashboardTab() {
               })}
             </div>
           )}
-          {logsError && logs.length > 0 && (
+          {errors.logs && logs.length > 0 && (
             <p className="mt-2 text-[11px] text-app-warning">로그 데이터를 불러오는 중 일부 오류가 발생했습니다</p>
           )}
         </Panel>
@@ -1125,7 +1113,7 @@ export function DashboardTab() {
       )}
 
       {/* ── API errors banner — non-blocking ── */}
-      {(logsError || upcomingError || recurringError || overviewError) && (
+      {(errors.logs || errors.upcoming || errors.recurring || errors.overview) && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-app-warning/20 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>일부 데이터를 불러오지 못했습니다.</span>
@@ -1133,7 +1121,7 @@ export function DashboardTab() {
         </div>
       )}
 
-      {healthError && (
+      {errors.health && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-app-warning/20 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>계정 상태 정보를 불러올 수 없습니다.</span>
