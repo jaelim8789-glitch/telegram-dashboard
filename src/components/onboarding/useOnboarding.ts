@@ -22,12 +22,7 @@ export function useOnboarding(hasAccounts = false, accountsLoading = false) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (accountsLoading) {
-      setShow(false);
-      setReady(true);
-      return;
-    }
-    if (hasAccounts) {
+    if (accountsLoading || hasAccounts) {
       setShow(false);
       setReady(true);
       return;
