@@ -17,6 +17,13 @@
   ReplyMacroLog,
 } from "@/types";
 import { getToken, getSessionToken, setSessionToken } from "@/lib/auth";
+import type {
+  AiReplyRequest, AiReplyResponse, AiStreamChunk,
+  AiComparisonRequest, AiComparisonResponse,
+  AiPromptTemplate, AiTemplateCreateInput,
+  AiMemorySearchResult,
+  AiSession, AiUsageSummary, AiPlanLimits, AiSearchFilters,
+} from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -1127,6 +1134,11 @@ export async function toggleUser(id: string, isActive: boolean): Promise<Dashboa
   return toDashboardUser(user);
 }
 
+/** Admin: delete user + tenant + sessions by phone number */
+export async function adminDeleteUserByPhone(phone: string): Promise<{ deleted: boolean; user_id: string; phone: string }> {
+  return request(`/api/admin/users/by-phone/${encodeURIComponent(phone)}`, { method: "DELETE" });
+}
+
 export async function reissueUserApiKey(id: string, memo?: string): Promise<string> {
   const body: Record<string, unknown> = {};
   if (memo) body.memo = memo;
@@ -1879,13 +1891,7 @@ export async function inviteTeamMember(tenantId: string, input: TeamInviteInput)
 
 // ─── AI Reply 2.0 ─────────────────────────────────────────────────
 
-import type {
-  AiReplyRequest, AiReplyResponse, AiStreamChunk,
-  AiComparisonRequest, AiComparisonResponse,
-  AiPromptTemplate, AiTemplateCreateInput,
-  AiMemorySearchResult,
-  AiSession, AiUsageSummary, AiPlanLimits, AiSearchFilters,
-} from "@/types";
+
 
 export async function requestAiReply(input: AiReplyRequest): Promise<AiReplyResponse> {
   return request<AiReplyResponse>("/api/ai/reply-assistant", {

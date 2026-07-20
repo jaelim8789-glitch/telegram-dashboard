@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy } from "lucide-react";
+import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select } from "@/components/ui/Field";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import * as api from "@/lib/api";
 import type { DashboardUser, UserLookupResult } from "@/lib/api";
-
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/formatTime";
 
 function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
@@ -57,249 +57,176 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
     } finally { setIssuing(false); }
   }
 
-  async function handleCopy() {
-    if (issuedKey) {
-      try { await navigator.clipboard.writeText(issuedKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-      catch { /* fallback */ }
-    }
-  }
+  const hasResult = lookupResult && lookupResult.userId;
 
   return (
-    <Panel
-      title={
-        <div className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-app-primary" />
-          API 키 수동 발급
-        </div>
-      }
-      description="자동 발급 실패 시 운영자가 사용자를 조회하여 직접 API 키를 발급합니다. (AdminAuditLog에 기록됨)"
-    >
-      <form onSubmit={handleSearch} className="flex gap-3 items-end">
+    <Panel title={
+      <div className="flex items-center gap-2">
+        <KeyRound className="h-4 w-4 text-amber-400" />
+        수동 API 키 발급
+      </div>
+    } description="관리자가 원하는 사용자에게 직접 API 키를 발급합니다.">
+      <form onSubmit={handleSearch} className="mb-3 flex items-start gap-2">
         <div className="flex-1">
-          <Field label="전화번호 또는 텔레그램 ID">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="+821012345678 또는 tg_8916075854"
-            />
-          </Field>
+          <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="전화번호 입력..." required />
         </div>
-        <Button type="submit" variant="primary" disabled={searching || !searchQuery.trim()}>
-          <Search className="h-3.5 w-3.5" /> 조회
-        </Button>
+        <Button type="submit" disabled={searching}>{searching ? "검색 중..." : "조회"}</Button>
       </form>
-
-      {error && <InlineError className="mt-3">{error}</InlineError>}
-
-      {searching && <p className="mt-3 text-xs text-app-text-muted">조회 중...</p>}
-
-      {lookupResult === null && !searching && (
-        <p className="mt-3 text-xs text-app-text-muted">조회된 사용자가 없습니다. 전화번호 또는 tg_{"<"}id{">"} 형식으로 입력하세요.</p>
-      )}
-
-      {lookupResult && (
-        <div className="mt-4 space-y-4">
-          {/* User state */}
-          <div className="rounded-xl border border-app-border bg-app-surface p-3 space-y-1.5 text-xs">
-            <div className="flex items-center gap-2">
-              <Smartphone className="h-3.5 w-3.5 text-app-text-muted shrink-0" />
-              <span className="font-medium text-app-text">{lookupResult.phone ?? "—"}</span>
-              <Badge tone={lookupResult.isActive ? "success" : "neutral"}>
-                {lookupResult.isActive ? "활성" : "비활성"}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-app-text-subtle">
-              <span>가입 {lookupResult.createdAt ? formatDateTime(lookupResult.createdAt) : "—"}</span>
-              {lookupResult.lastLogin && <span>로그인 {formatDateTime(lookupResult.lastLogin)}</span>}
-              <Badge tone={lookupResult.hasApiKey ? "success" : "neutral"}>
-                {lookupResult.hasApiKey ? "API 키 있음" : "API 키 없음"}
-              </Badge>
-            </div>
-            {lookupResult.telegramVerificationStatus && (
-              <div className="flex items-center gap-2 text-app-text-subtle">
-                <CheckCircle2 className="h-3 w-3 text-app-success shrink-0" />
-                <span>텔레그램 인증: {lookupResult.telegramVerificationStatus}</span>
-              </div>
-            )}
-            {lookupResult.trialExpiresAt && (
-              <div className="flex items-center gap-2 text-app-text-subtle">
-                <span>체험 만료: {formatDateTime(lookupResult.trialExpiresAt)}</span>
-                <Badge tone={lookupResult.subscriptionStatus === "active" ? "success" : "neutral"}>
-                  {lookupResult.subscriptionStatus}
-                </Badge>
-              </div>
-            )}
+      {error && <InlineError className="mb-3">{error}</InlineError>}
+      {hasResult && !issuedKey && (
+        <div className="rounded-xl border border-app-border bg-app-bg p-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div><span className="text-app-text-muted">전화번호</span><p className="font-medium text-app-text">{lookupResult.phone}</p></div>
+            <div><span className="text-app-text-muted">상태</span><p className="font-medium">{lookupResult.isActive ? "활성" : "비활성"}</p></div>
+            <div><span className="text-app-text-muted">플랜</span><p className="font-medium">{lookupResult.tenantPlan ?? "-"}</p></div>
+            <div><span className="text-app-text-muted">API 키</span><p className="font-medium">{lookupResult.hasApiKey ? "✅ 있음" : "❌ 없음"}</p></div>
           </div>
-
-          {/* Issue area */}
-          {!lookupResult.phone && (
-            <p className="text-xs text-app-text-muted">연결된 사용자 계정이 없습니다. 먼저 회원가입을 진행해주세요.</p>
-          )}
-
-          {lookupResult.hasApiKey && (
-            <p className="text-xs text-app-text-muted">이미 API 키가 발급된 사용자입니다. 재발급은 위 사용자 목록에서 가능합니다.</p>
-          )}
-
-          {!lookupResult.hasApiKey && lookupResult.phone && !issuedKey && (
-            <div className="space-y-3">
-              <Field label="발급 사유 (선택, AdminAuditLog에 기록)">
-                <Input
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                  placeholder="예: 자동 발급 실패로 인한 운영자 수동 발급"
-                />
-              </Field>
-              <Field label="플랜">
-                <Select value={plan} onChange={(e) => setPlan(e.target.value as "free" | "pro" | "team")}>
-                  <option value="team">Team (무제한에 가까움, 기본값)</option>
-                  <option value="pro">Pro</option>
-                  <option value="free">Free (체험 제한 적용)</option>
-                </Select>
-              </Field>
-              <Button onClick={handleIssue} variant="primary" disabled={issuing}>
-                <KeyRound className="h-3.5 w-3.5" /> API 키 수동 발급
-              </Button>
-            </div>
-          )}
-
-          {issuedKey && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.</p>
-              <code className="block break-all rounded-lg border border-amber-500/10 bg-app-card px-3 py-2 text-sm text-app-text font-mono">
-                {issuedKey}
-              </code>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={handleCopy} className="flex-1">
-                  <Copy className="h-3.5 w-3.5" /> {copied ? "복사됨" : "복사"}
-                </Button>
-                <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setIssuedKey(null); setMemo(""); setSearchQuery(""); setLookupResult(null); }}>
-                  닫기
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Select value={plan} onChange={(e) => setPlan(e.target.value as "free" | "pro" | "team")}>
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+              <option value="team">Team</option>
+            </Select>
+            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="발급 사유 (선택)" />
+            <Button onClick={handleIssue} disabled={issuing} loading={issuing} className="w-full">
+              <KeyRound className="h-4 w-4" /> API 키 발급
+            </Button>
+          </div>
+        </div>
+      )}
+      {issuedKey && (
+        <div className="rounded-xl border border-app-success/30 bg-app-success-muted/20 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-app-success"><CheckCircle2 className="h-4 w-4" /> 발급 완료</div>
+          <code className="block break-all rounded-lg bg-app-bg p-2 text-xs font-mono">{issuedKey}</code>
+          <Button variant="ghost" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(issuedKey); } catch {} }}>
+            <Copy className="h-3 w-3" /> 복사
+          </Button>
         </div>
       )}
     </Panel>
   );
 }
 
+function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
+  const [phone, setPhone] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const { toast } = useToast();
+
+  async function handleDelete() {
+    setConfirmOpen(false);
+    if (!phone.trim() || deleting) return;
+    setDeleting(true); setError(null);
+    try {
+      const result = await api.adminDeleteUserByPhone(phone.trim());
+      setDone(true);
+      setPhone("");
+      onDeleted();
+      toast("success", `사용자 ${result.phone} 삭제 완료`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "삭제에 실패했습니다.");
+    } finally { setDeleting(false); }
+  }
+
+  return (
+    <Panel
+      accent="rose"
+      title={
+        <div className="flex items-center gap-2">
+          <Trash2 className="h-4 w-4 text-rose-400" />
+          전화번호로 사용자 삭제
+        </div>
+      }
+      description="DB에서 사용자 + Tenant + 세션을 완전히 삭제합니다. 삭제 후 Telegram Login Widget으로 재가입 가능합니다."
+    >
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="전화번호 (예: +819010679014)"
+            className="font-mono"
+          />
+        </div>
+        <Button
+          variant="danger"
+          onClick={() => setConfirmOpen(true)}
+          disabled={!phone.trim() || deleting}
+          loading={deleting}
+        >
+          <Trash2 className="h-4 w-4" /> 삭제
+        </Button>
+      </div>
+      {error && <InlineError className="mt-2">{error}</InlineError>}
+      {done && <p className="mt-2 text-xs text-app-success">✅ 삭제 완료. Telegram Login으로 재가입 가능합니다.</p>}
+      <p className="mt-2 text-[10px] text-app-text-subtle">
+        ⚠️ 이 작업은 되돌릴 수 없습니다. 사용자의 모든 데이터(발송 내역 제외)가 삭제됩니다.
+      </p>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="사용자 삭제"
+        description={`"${phone}" — 이 전화번호의 사용자와 연결된 Tenant, 세션을 영구 삭제합니다. 계속할까요?`}
+        variant="danger"
+        confirmLabel="영구 삭제"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </Panel>
+  );
+}
+
 function UsersContent() {
   const [users, setUsers] = useState<DashboardUser[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reissuedKey, setReissuedKey] = useState<string | null>(null);
   const [confirmUser, setConfirmUser] = useState<DashboardUser | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<DashboardUser | null>(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      setUsers(await api.fetchUsers());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "사용자 목록을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const load = async () => {
+    setLoading(true); setError(null);
+    try { setUsers(await api.fetchUsers()); } catch (err) { setError(err instanceof Error ? err.message : "사용자 목록 로드 실패"); }
+    finally { setLoading(false); }
+  };
 
   useEffect(() => { load(); }, []);
 
-  async function handleToggle(user: DashboardUser) {
-    try {
-      await api.toggleUser(user.id, !user.isActive);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "상태 변경에 실패했습니다.");
-    }
+  async function handleReissue(u: DashboardUser) {
+    setConfirmUser(u);
   }
-
-  async function handleReissue(user: DashboardUser) { setConfirmUser(user); }
 
   async function handleConfirmReissue() {
     if (!confirmUser) return;
     try {
-      const key = await api.reissueUserApiKey(confirmUser.id);
-      setReissuedKey(key);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "API 키 재발급에 실패했습니다.");
-    } finally { setConfirmUser(null); }
+      const newKey = await api.reissueUserApiKey(confirmUser.id, "Admin reissue");
+      alert(`새 API 키: ${newKey}\n\n이 키는 한 번만 표시됩니다.`);
+      setConfirmUser(null);
+    } catch { setError("키 재발급 실패"); }
   }
 
-  const activeCount = users.filter((u) => u.isActive).length;
+  async function handleToggle(u: DashboardUser) {
+    try {
+      await api.toggleUser(u.id, !u.isActive);
+      await load();
+    } catch { setError("상태 변경 실패"); }
+  }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
-      {/* Header */}
+    <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-app-text">사용자 관리</h1>
-          <p className="mt-0.5 text-sm text-app-text-muted">
-            {users.length}명 중 {activeCount}명 활성
-          </p>
+          <p className="text-sm text-app-text-muted">API 키 발급 및 사용자 계정 관리</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/admin/dashboard" className="flex items-center gap-1 text-xs text-app-primary-hover hover:underline transition-colors">
-            <ChevronLeft className="h-3 w-3" /> 관리자 홈
-          </Link>
-          <button
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs text-app-text-muted transition-all duration-150 hover:border-app-border-strong hover:text-app-text"
-          >
-            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> 새로고침
-          </button>
-        </div>
+        <Link href="/admin/dashboard" className="flex items-center gap-1 text-xs text-app-primary-hover hover:underline">
+          <ChevronLeft className="h-3 w-3" /> 대시보드
+        </Link>
       </div>
 
-      {/* Stats bar */}
-      {loading ? (
-        <div className="grid grid-cols-3 gap-3">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
-        </div>
-      ) : (
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-app-border bg-app-card p-3 text-center transition-colors hover:border-app-border-strong">
-          <div className="text-2xl font-bold text-app-text tabular-nums">{users.length}</div>
-          <div className="text-xs text-app-text-muted mt-0.5">전체</div>
-        </div>
-        <div className="rounded-xl border border-app-border bg-app-card p-3 text-center transition-colors hover:border-app-border-strong">
-          <div className="text-2xl font-bold text-app-success tabular-nums">{activeCount}</div>
-          <div className="text-xs text-app-text-muted mt-0.5">활성</div>
-        </div>
-        <div className="rounded-xl border border-app-border bg-app-card p-3 text-center transition-colors hover:border-app-border-strong">
-          <div className="text-2xl font-bold text-app-danger tabular-nums">{users.length - activeCount}</div>
-          <div className="text-xs text-app-text-muted mt-0.5">비활성</div>
-        </div>
-      </div>
-      )}
-
-      {/* Manual API key issuance section */}
+      <DeleteUserByPhoneSection onDeleted={load} />
       <ManualIssueSection onIssued={load} />
-
-      {/* Reissued key dialog */}
-      {reissuedKey && (
-        <Panel
-          accent="amber"
-          title={
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-amber-400" />
-              재발급된 API 키
-            </div>
-          }
-        >
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">지금만 전체가 표시됩니다. 안전한 곳에 복사해두세요.</p>
-            <code className="mt-2 block break-all rounded-lg border border-amber-500/10 bg-app-card px-3 py-2 text-sm text-app-text font-mono">
-              {reissuedKey}
-            </code>
-          </div>
-          <Button variant="ghost" size="sm" className="mt-3" onClick={() => setReissuedKey(null)}>
-            닫기
-          </Button>
-        </Panel>
-      )}
 
       {/* User list */}
       <Panel
