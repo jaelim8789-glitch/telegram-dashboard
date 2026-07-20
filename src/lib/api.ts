@@ -1170,6 +1170,45 @@ export async function fetchAdminDashboardStatus(): Promise<AdminDashboardStatus>
   return request<AdminDashboardStatus>("/api/admin/dashboard/status");
 }
 
+// === AI Style Profiles (admin only) ===
+
+export interface StyleProfile {
+  id: string;
+  name: string;
+  source_type: string;
+  source_text: string;
+  tone_analysis: Record<string, unknown>;
+  style_prompt: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function analyzeStyleProfile(input: { name: string; source_type: string; source_text: string }): Promise<StyleProfile> {
+  return request<StyleProfile>("/api/admin/style-profiles/analyze", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function fetchStyleProfiles(): Promise<StyleProfile[]> {
+  return request<StyleProfile[]>("/api/admin/style-profiles");
+}
+
+export async function fetchStyleProfile(id: string): Promise<StyleProfile> {
+  return request<StyleProfile>(`/api/admin/style-profiles/${id}`);
+}
+
+export async function updateStyleProfile(id: string, input: { name: string }): Promise<StyleProfile> {
+  return request<StyleProfile>(`/api/admin/style-profiles/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteStyleProfile(id: string): Promise<void> {
+  await request<void>(`/api/admin/style-profiles/${id}`, { method: "DELETE" });
+}
+
 // === Account Health ===
 
 export interface HealthSummary {
