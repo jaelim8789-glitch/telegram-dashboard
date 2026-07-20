@@ -263,3 +263,53 @@ def mark_scheduled_message_failed(msg_id: str, error: str) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def cancel_scheduled_message(msg_id: str) -> bool:
+    """Cancel a pending scheduled message. Returns True if cancelled, False if not found."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        cur = conn.execute(
+            "UPDATE ai_scheduled_messages SET status = 'cancelled' WHERE id = ? AND status = 'pending'",
+            (msg_id,),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_scheduled_messages(
+    status: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Get scheduled messages, optionally filtered by status."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.row_factory = sqlite3.Row
+    try:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM ai_scheduled_messages WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+                (status, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM ai_scheduled_messages ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def delete_group_style_profile(chat_id: int) -> bool:
+    """Delete a group's style profile. Returns True if deleted, False if not found."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        cur = conn.execute(
+            "DELETE FROM ai_group_style_profiles WHERE chat_id = ?", (chat_id,),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()

@@ -111,6 +111,22 @@ class AiEmployee:
 
     # ── 예약 발송 ────────────────────────────────────────────────────
 
+    async def cancel_scheduled_message(self, msg_id: str) -> bool:
+        """예약된 메시지를 취소합니다.
+
+        Args:
+            msg_id: 취소할 메시지 ID.
+
+        Returns:
+            취소 성공 여부 (이미 발송되었거나 없는 ID면 False).
+        """
+        result = bot_db.cancel_scheduled_message(msg_id)
+        if result:
+            logger.info("[ai_employee] scheduled message %s cancelled", msg_id)
+        else:
+            logger.warning("[ai_employee] failed to cancel message %s (already sent or not found)", msg_id)
+        return result
+
     async def schedule_message(
         self,
         chat_id: int,
