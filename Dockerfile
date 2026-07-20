@@ -16,12 +16,18 @@ COPY . .
 #     served from a different origin than the backend.
 #   NEXT_PUBLIC_SITE_URL    — public marketing domain for cross-domain links.
 #   NEXT_PUBLIC_APP_URL     — application dashboard domain for cross-domain links.
+#   NEXT_PUBLIC_TELEGRAM_BOT_USERNAME — bot @username backing the Telegram Login
+#     Widget on /admin/login; must match the bot behind TELEGRAM_BOT_TOKEN in the
+#     backend's .env and be registered via @BotFather /setdomain for this origin.
+#     Empty means the widget silently renders nothing.
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ARG NEXT_PUBLIC_SITE_URL=""
 ARG NEXT_PUBLIC_APP_URL=""
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=""
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 
 RUN npm run build
 
