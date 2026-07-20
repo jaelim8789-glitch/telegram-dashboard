@@ -21,6 +21,10 @@ import type { StyleProfile } from "@/lib/api";
 
 import { formatDateTime } from "@/lib/formatTime";
 
+function safeStr(v: unknown): string {
+  return v != null ? String(v) : "";
+}
+
 function StyleProfilesContent() {
   const [profiles, setProfiles] = useState<StyleProfile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -209,7 +213,8 @@ function StyleProfilesContent() {
             {profiles.map((p) => {
               const isDeleting = deletingId === p.id;
               const isExpanded = expandedId === p.id;
-              const analysis = p.tone_analysis as Record<string, unknown>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tone_analysis is a loosely-shaped JSON blob rendered ad hoc below
+              const analysis = p.tone_analysis as Record<string, any>;
               const tone = (analysis?.tone as string) || "neutral";
 
               return (
@@ -259,9 +264,11 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">격식 수준</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {typeof analysis.formality_level === "number"
-                                ? `${(analysis.formality_level * 100).toFixed(0)}%`
-                                : String(analysis.formality_level)}
+                              {safeStr(
+                                typeof analysis.formality_level === "number"
+                                  ? `${(analysis.formality_level * 100).toFixed(0)}%`
+                                  : analysis.formality_level
+                              )}
                             </div>
                           </div>
                         )}
@@ -269,7 +276,7 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">문장 길이</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {String(analysis.avg_sentence_length)}
+                              {safeStr(analysis.avg_sentence_length)}
                             </div>
                           </div>
                         )}
@@ -277,7 +284,7 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">이모지 사용</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {String(analysis.emoji_usage)}
+                              {safeStr(analysis.emoji_usage)}
                             </div>
                           </div>
                         )}
@@ -285,7 +292,7 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">어휘 스타일</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {String(analysis.vocabulary_style)}
+                              {safeStr(analysis.vocabulary_style)}
                             </div>
                           </div>
                         )}
@@ -293,7 +300,7 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">인사 스타일</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {String(analysis.greeting_style)}
+                              {safeStr(analysis.greeting_style)}
                             </div>
                           </div>
                         )}
@@ -301,7 +308,7 @@ function StyleProfilesContent() {
                           <div>
                             <span className="text-app-text-muted">마무리 스타일</span>
                             <div className="mt-0.5 font-medium text-app-text">
-                              {String(analysis.closing_style)}
+                              {safeStr(analysis.closing_style)}
                             </div>
                           </div>
                         )}
@@ -310,7 +317,7 @@ function StyleProfilesContent() {
                       {analysis?.summary && (
                         <div className="text-xs">
                           <span className="text-app-text-muted">요약</span>
-                          <p className="mt-0.5 text-app-text">{String(analysis.summary)}</p>
+                          <p className="mt-0.5 text-app-text">{safeStr(analysis.summary)}</p>
                         </div>
                       )}
 

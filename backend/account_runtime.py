@@ -274,7 +274,16 @@ class BroadcastQueue:
 
             try:
                 entity = await self._client.get_entity(int(recipient_id))
-                if broadcast.reply_to_message_id:
+                if broadcast.media_path:
+                    # Send with media (photo/video/document) + optional caption
+                    caption = broadcast.message or None
+                    await self._client.send_file(
+                        entity,
+                        broadcast.media_path,
+                        caption=caption,
+                        reply_to=broadcast.reply_to_message_id,
+                    )
+                elif broadcast.reply_to_message_id:
                     await self._client.send_message(
                         entity,
                         broadcast.message,
@@ -1369,6 +1378,7 @@ class AccountRuntime:
             id=str(uuid.uuid4()),
             account_id=self.account_id,
             message=input_data.message,
+            media_path=input_data.image,  # image file path from upload
             recipients=input_data.recipients,
             status="pending",
             scheduled_at=input_data.scheduled_at,

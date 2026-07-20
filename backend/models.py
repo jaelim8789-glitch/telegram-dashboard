@@ -200,6 +200,7 @@ class CreateBroadcastInput(BaseModel):
     delay_seconds: int | None = None
     reply_to_message_id: int | None = None
     inline_buttons: list[InlineButton] | None = None
+    image: str | None = None  # file path after upload
 
 
 # ── Auto Reply ──────────────────────────────────────────────────────

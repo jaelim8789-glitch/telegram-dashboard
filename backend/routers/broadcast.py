@@ -2,16 +2,48 @@
 
 from __future__ import annotations
 
+import json
+import os
 import time
+import uuid
 from datetime import datetime, timezone
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, Form, File
 from starlette.responses import JSONResponse
 
+from ..media import safe_filename
 from ..models import Broadcast, BroadcastChild, CreateBroadcastInput
 from ..runtime_manager import RuntimeManager
 
 router = APIRouter()
+
+# ── Media upload directory ────────────────────────────────────────────
+
+_MEDIA_DIR = os.environ.get("TELEMON_MEDIA_DIR", "data/media")
+
+
+def _ensure_media_dir() -> None:
+    os.makedirs(_MEDIA_DIR, exist_ok=True)
+
+
+async def _save_upload(file: UploadFile) -> str:
+    """Save an uploaded file to the media directory and return its path."""
+    _ensure_media_dir()
+    ext = safe_filename(file.filename, file.content_type)
+    # Use file extension from safe_filename
+    if "." in (ext or ""):
+        _, ext_part = ext.rsplit(".", 1)
+        ext = f".{ext_part}"
+    else:
+        ext = ""
+    filename = f"{uuid.uuid4().hex}{ext}"
+    dest = os.path.join(_MEDIA_DIR, filename)
+    content = await file.read()
+    with open(dest, "wb") as f:
+        f.write(content)
+    return dest
+
 
 # In-memory idempotency store: idempotency_key -> broadcast_id
 # Expires after 24 hours to prevent memory leak.
@@ -19,9 +51,72 @@ _idempotency_store: dict[str, tuple[str, float]] = {}  # key -> (broadcast_id, e
 _IDEMPOTENCY_TTL = 86400  # 24 hours
 
 
+def _parse_bool(value: str | None) -> bool:
+    """Parse a string as bool for form fields."""
+    if value is None:
+        return False
+    return value.lower() in ("true", "1", "yes")
+
+
 @router.post("/broadcast", response_model=Broadcast)
-async def create_broadcast(input_data: CreateBroadcastInput, request: Request):
+async def create_broadcast(
+    request: Request,
+    # Form fields (for multipart upload with image)
+    account_id: str | None = Form(None),
+    message: str | None = Form(None),
+    recipients: str | None = Form(None),  # JSON string
+    scheduled_at: str | None = Form(None),
+    recurring_interval_minutes: int | None = Form(None),
+    delivery_mode: str | None = Form(None),
+    delay_seconds: int | None = Form(None),
+    reply_to_message_id: int | None = Form(None),
+    inline_buttons: str | None = Form(None),  # JSON string
+    image: UploadFile | None = File(None),
+):
+    """Create a new broadcast, optionally with an image/video attachment.
+
+    Accepts both:
+    - JSON body (standard CreateBroadcastInput) for broadcasts without media
+    - multipart/form-data for broadcasts with image/video upload
+    """
     manager = RuntimeManager.get_instance()
+
+    # ── Parse input ───────────────────────────────────────────────
+    # Detect if the request is JSON or multipart by checking content-type
+    content_type = request.headers.get("content-type", "").lower()
+
+    if "multipart/form-data" in content_type:
+        # Form data with optional file
+        if account_id is None:
+            raise HTTPException(status_code=400, detail="account_id is required")
+        parsed_recipients: list[str] = json.loads(recipients) if recipients else []
+        parsed_inline_buttons: list[dict[str, str]] = json.loads(inline_buttons) if inline_buttons else []
+
+        media_path = None
+        if image and image.filename:
+            media_path = await _save_upload(image)
+
+        input_data = CreateBroadcastInput(
+            account_id=account_id,
+            message=message or "",
+            recipients=parsed_recipients,
+            scheduled_at=scheduled_at,
+            recurring_interval_minutes=recurring_interval_minutes,
+            delivery_mode=delivery_mode,
+            delay_seconds=delay_seconds,
+            reply_to_message_id=reply_to_message_id,
+            image=media_path,
+        )
+        if parsed_inline_buttons:
+            from ..models import InlineButton
+            input_data.inline_buttons = [
+                InlineButton(label=b.get("label", ""), url=b.get("url", ""))
+                for b in parsed_inline_buttons
+            ]
+    else:
+        # JSON body
+        body = await request.json()
+        input_data = CreateBroadcastInput(**body)
 
     # Idempotency-Key check — prevents duplicate broadcasts on network retry
     idempotency_key = request.headers.get("Idempotency-Key")
