@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
+  AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
   CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
@@ -45,6 +45,7 @@ import {
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { Modal } from "@/components/ui/Modal";
+import { downloadLogsCsv } from "@/lib/exportCsv";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -180,6 +181,8 @@ function HistoryRow({
   onReuse,
   onClone,
   onPauseResume,
+  selected,
+  onToggleSelect,
 }: {
   h: Broadcast;
   cancelling: string | null;
@@ -189,6 +192,8 @@ function HistoryRow({
   onReuse: (b: Broadcast) => void;
   onClone: (b: Broadcast) => void;
   onPauseResume?: (b: Broadcast) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const meta = STATUS_META[h.status];
   const Icon = meta.icon;
@@ -208,12 +213,22 @@ function HistoryRow({
     <div
       className={cn(
         "group flex items-stretch gap-2 rounded-xl border px-3 py-2.5 text-sm transition-all",
+        selected && "border-app-primary/40 bg-app-primary/5",
         isFailed && "border-app-danger/20 bg-app-danger-muted/20",
         recurringCancelled && "border-app-warning/20 bg-app-warning-muted/20",
         isSending && "border-app-info/20 bg-app-info-muted/10",
         !isFailed && !recurringCancelled && !isSending && "border-app-border bg-app-bg/60 hover:border-app-border-strong",
       )}
     >
+      {/* Selection checkbox */}
+      {onToggleSelect && (
+        <div className="flex items-center pt-1">
+          <input type="checkbox" checked={!!selected}
+            onChange={() => onToggleSelect(h.id)}
+            className="h-4 w-4 rounded border-app-border text-app-primary focus:ring-app-primary/30 cursor-pointer"
+          />
+        </div>
+      )}
       {/* Status indicator bar */}
       <div className={cn(
         "mt-1 w-1 shrink-0 rounded-full",
@@ -527,6 +542,7 @@ export function SendTab() {
   const [recentSets, setRecentSets] = useState<string[][]>([]);
   const [estimatePreview, setEstimatePreview] = useState<{ estimated_seconds: number; estimated_minutes: number; readable: string } | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
 
   const [batchRetrying, setBatchRetrying] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
@@ -1152,6 +1168,20 @@ export function SendTab() {
         setSubmitError(err instanceof Error ? err.message : "발송 요청에 실패했습니다.");
       }
     } finally { setSubmitting(false); }
+  }
+
+  async function handleBatchRetry() {
+    if (batchRetrying || selectedHistoryIds.size === 0) return;
+    setBatchRetrying(true);
+    try {
+      const result = await api.batchRetryBroadcasts(Array.from(selectedHistoryIds));
+      const successCount = result.results.filter((r) => r.status === "queued").length;
+      setSubmitNotice(`${successCount}개 발송이 재시도 큐에 추가되었습니다.`);
+      setSelectedHistoryIds(new Set());
+      if (selectedAccountId) await loadHistory(selectedAccountId);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "일괄 재발송에 실패했습니다.");
+    } finally { setBatchRetrying(false); }
   }
 
   async function handleRetry(failed: Broadcast) {
@@ -2055,11 +2085,27 @@ export function SendTab() {
         }
         description={`${history.length}건${statusSummary.length > 0 ? ` · ${statusSummary.map((s) => `${s.label} ${s.count}`).join(" / ")}` : ""}`}
         action={
-          <button onClick={handleManualRefresh} disabled={historyLoading || historyRefreshing}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors disabled:opacity-50">
-            <RefreshCw className={`h-3.5 w-3.5 ${historyLoading || historyRefreshing ? "animate-spin" : ""}`} />
-            새로고침
-          </button>
+          <div className="flex items-center gap-1.5">
+            {selectedHistoryIds.size > 0 && (
+              <button onClick={handleBatchRetry} disabled={batchRetrying}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-danger hover:bg-app-danger-muted transition-colors disabled:opacity-50">
+                <RefreshCw className={`h-3.5 w-3.5 ${batchRetrying ? "animate-spin" : ""}`} />
+                {selectedHistoryIds.size}개 재발송
+              </button>
+            )}
+            {history.length > 0 && (
+              <button onClick={() => downloadLogsCsv(filteredHistory)}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors">
+                <Download className="h-3.5 w-3.5" />
+                CSV
+              </button>
+            )}
+            <button onClick={handleManualRefresh} disabled={historyLoading || historyRefreshing}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors disabled:opacity-50">
+              <RefreshCw className={`h-3.5 w-3.5 ${historyLoading || historyRefreshing ? "animate-spin" : ""}`} />
+              새로고침
+            </button>
+          </div>
         }
       >
         {/* History search & date filter */}
@@ -2140,13 +2186,15 @@ export function SendTab() {
                 </div>
                 <div className="space-y-1.5">
                   {g.items.map((h) => (
-                    <HistoryRow
-                      key={h.id} h={h}
-                      cancelling={cancelling} retrying={retrying}
-                      onCancelClick={handleCancelClick} onRetry={handleRetry}
-                      onReuse={handleReuse}
-                      onClone={handleClone}
-                    />
+              <HistoryRow
+                key={h.id} h={h}
+                cancelling={cancelling} retrying={retrying}
+                onCancelClick={handleCancelClick} onRetry={handleRetry}
+                onReuse={handleReuse}
+                onClone={handleClone}
+                onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
+                selected={selectedHistoryIds.has(h.id)}
+              />
                   ))}
                 </div>
               </div>
@@ -2158,14 +2206,16 @@ export function SendTab() {
         {!historyLoading && groupedHistory === null && filteredHistory.length > 0 && (
           <div className="space-y-1.5">
             {filteredHistory.map((h) => (
-              <HistoryRow
-                key={h.id} h={h}
-                cancelling={cancelling} retrying={retrying}
-                onCancelClick={handleCancelClick} onRetry={handleRetry}
-                onReuse={handleReuse}
-                onClone={handleClone}
-                onPauseResume={(b) => b.isRecurringPaused ? handleUnpauseRecurring(b) : handlePauseRecurring(b)}
-              />
+          <HistoryRow
+            key={h.id} h={h}
+            cancelling={cancelling} retrying={retrying}
+            onCancelClick={handleCancelClick} onRetry={handleRetry}
+            onReuse={handleReuse}
+            onClone={handleClone}
+            onPauseResume={(b) => b.isRecurringPaused ? handleUnpauseRecurring(b) : handlePauseRecurring(b)}
+            onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
+            selected={selectedHistoryIds.has(h.id)}
+          />
             ))}
           </div>
         )}

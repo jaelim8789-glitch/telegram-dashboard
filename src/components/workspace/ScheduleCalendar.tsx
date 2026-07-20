@@ -39,6 +39,30 @@ export function ScheduleCalendar({ broadcasts, onCancel }: ScheduleCalendarProps
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const scheduledCount = useMemo(() => {
+    return broadcasts.filter((b) => b.scheduledAt).length;
+  }, [broadcasts]);
+
+  // Auto-collapse when there are no scheduled broadcasts
+  if (scheduledCount === 0) {
+    return (
+      <div className="space-y-2">
+        <button onClick={() => setCollapsed(!collapsed)}
+          className="flex w-full items-center justify-between rounded-lg border border-app-border bg-app-card/50 px-3 py-2 text-xs text-app-text-muted hover:text-app-text transition-colors">
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-app-text-subtle" />
+            예약된 발송 없음
+          </span>
+          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${collapsed ? "" : "rotate-90"}`} />
+        </button>
+        {!collapsed && (
+          <p className="text-[11px] text-app-text-muted text-center py-2 italic">달력을 표시하려면 발송을 예약하세요.</p>
+        )}
+      </div>
+    );
+  }
 
   const days = useMemo(() => getMonthDays(viewYear, viewMonth), [viewYear, viewMonth]);
 
