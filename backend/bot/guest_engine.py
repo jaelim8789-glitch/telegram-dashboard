@@ -221,7 +221,11 @@ class GuestEngine:
     ) -> str:
         """명령어에 맞는 핸들러를 찾아 실행."""
         handler = self._commands.get(command.lower(), self._handle_fallback)
-        return await handler(args, user_id, chat_id)
+        result = await handler(args, user_id, chat_id)
+        # Pass the original command to fallback for a correct error message
+        if handler is self._handle_fallback:
+            result = await self._handle_fallback(args, user_id, chat_id, original_command=command)
+        return result
 
     # ── Individual command handlers ────────────────────────────────
 
@@ -316,12 +320,13 @@ class GuestEngine:
         )
 
     async def _handle_fallback(
-        self, args: str, user_id: str, chat_id: int | None
+        self, args: str, user_id: str, chat_id: int | None,
+        original_command: str = "",
     ) -> str:
         """등록되지 않은 명령어에 대한 fallback."""
-        first_word = args.split()[0] if args else ""
+        bad = original_command or (args.split()[0] if args else "알 수 없는")
         return (
-            f"🤔 죄송합니다. {first_word!r} 명령어를 이해하지 못했어요.\n\n"
+            f"🤔 죄송합니다. '{bad}' 명령어를 이해하지 못했어요.\n\n"
             f"사용 가능한 명령어:\n"
             f"• `@TeleMonBot 번역 [텍스트]`\n"
             f"• `@TeleMonBot 요약 [텍스트]`\n"
