@@ -22,11 +22,13 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth_middleware import get_current_user
+from ..runtime_manager import RuntimeManager
+from ..models import CreateBroadcastInput
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/drafts", tags=["drafts"])
 
-DB_PATH = "data/drafts.db"
+DB_PATH = os.environ.get("ADMIN_DB_PATH", "data/admin.db")
 
 # ── DB 초기화 ──────────────────────────────────────────────────────
 
@@ -255,10 +257,33 @@ async def approve_draft(
             draft_id, user["id"], new_status,
         )
 
+        # 승인된 draft → Broadcast 자동 생성 (account_id가 있는 경우)
+        broadcast_id = None
+        if draft.get("account_id") and draft.get("content"):
+            try:
+                manager = RuntimeManager.get_instance()
+                broadcast_input = CreateBroadcastInput(
+                    account_id=draft["account_id"],
+                    message=draft["content"],
+                    recipients=[],  # 빈 recipients는 추후 채워짐
+                    scheduled_at=scheduled_at,
+                )
+                broadcast = await manager.create_broadcast(broadcast_input)
+                broadcast_id = broadcast.id
+                logger.info(
+                    "[draft] broadcast auto-created: draft=%s broadcast=%s",
+                    draft_id, broadcast_id,
+                )
+            except Exception as e:
+                logger.exception(
+                    "[draft] failed to auto-create broadcast: %s", e,
+                )
+
         return {
             "id": draft_id,
             "status": new_status,
             "scheduled_at": scheduled_at,
+            "broadcast_id": broadcast_id,
         }
     finally:
         conn.close()
