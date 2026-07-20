@@ -184,6 +184,8 @@ function UsersContent() {
   const [error, setError] = useState<string | null>(null);
   const [confirmUser, setConfirmUser] = useState<DashboardUser | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<DashboardUser | null>(null);
+  const [deletePhone, setDeletePhone] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -273,7 +275,7 @@ function UsersContent() {
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Button variant="ghost" size="sm" className="text-xs" onClick={() => handleReissue(u)}>
-                  <KeyRound className="h-3 w-3" /> 키 재발급
+                  <KeyRound className="h-3 w-3" />
                 </Button>
                 <Button
                   variant={u.isActive ? "danger" : "secondary"}
@@ -281,6 +283,15 @@ function UsersContent() {
                   onClick={() => setToggleConfirm(u)}
                 >
                   {u.isActive ? "비활성화" : "활성화"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
+                  className="text-app-danger hover:bg-app-danger-muted/20"
+                  title="사용자 삭제"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -296,6 +307,26 @@ function UsersContent() {
         confirmLabel="재발급"
         onConfirm={handleConfirmReissue}
         onCancel={() => setConfirmUser(null)}
+      />
+      <ConfirmDialog
+        open={deleteConfirmOpen && !!deletePhone}
+        title="사용자 삭제"
+        description={`"${deletePhone}" — 이 사용자와 연결된 Tenant, 세션을 영구 삭제합니다.`}
+        variant="danger"
+        confirmLabel="영구 삭제"
+        onConfirm={async () => {
+          const phone = deletePhone;
+          setDeleteConfirmOpen(false);
+          setDeletePhone(null);
+          if (!phone) return;
+          try {
+            await api.adminDeleteUserByPhone(phone);
+            await load();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "삭제 실패");
+          }
+        }}
+        onCancel={() => { setDeleteConfirmOpen(false); setDeletePhone(null); }}
       />
       <ConfirmDialog
         open={!!toggleConfirm}
