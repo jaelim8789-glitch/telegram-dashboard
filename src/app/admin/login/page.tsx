@@ -10,7 +10,7 @@ import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import { setToken, setSessionToken, getSessionToken, getToken, clearToken, clearSessionToken } from "@/lib/auth";
 
-type AuthMethod = "apikey";
+type AuthMethod = "admin" | "apikey";
 
 // ─── Telegram Login Widget ──────────────────────────────────────────
 
@@ -71,6 +71,46 @@ function TelegramLoginButton({ onSuccess }: { onSuccess: (result: api.TelegramLo
   );
 }
 
+function AdminLoginForm() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!username.trim() || !password.trim() || submitting) return;
+    setSubmitting(true); setError(null);
+    try {
+      const token = await api.adminLogin(username.trim(), password);
+      clearSessionToken();
+      setToken(token);
+      router.replace("/admin/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "로그인 실패");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Field label="아이디">
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="관리자 아이디" required />
+      </Field>
+      <Field label="비밀번호">
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호" required />
+      </Field>
+      {error && <InlineError>{error}</InlineError>}
+      <Button type="submit" disabled={submitting} className="flex w-full h-11">
+        {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+        {submitting ? "확인 중..." : "관리자 로그인"}
+      </Button>
+    </form>
+  );
+}
+
 function ApiKeyLoginForm() {
   const router = useRouter();
   const [apiKey, setApiKey] = useState("");
@@ -124,12 +164,13 @@ function ApiKeyLoginForm() {
 }
 
 const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: string }[] = [
+  { id: "admin", label: "관리자", icon: <KeyRound className="h-4 w-4" />, desc: "아이디/비밀번호로 로그인" },
   { id: "apikey", label: "API 키", icon: <KeyRound className="h-4 w-4" />, desc: "발급받은 키로 바로 로그인" },
 ];
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [method, setMethod] = useState<AuthMethod>("apikey");
+  const [method, setMethod] = useState<AuthMethod>("admin");
   const [tgSuccess, setTgSuccess] = useState(false);
   const [hasSavedSession, setHasSavedSession] = useState(false);
   useEffect(() => {
@@ -213,7 +254,7 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <div className="mb-5 grid grid-cols-1 gap-1 rounded-xl bg-app-surface p-1 border border-app-border">
+        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-app-surface p-1 border border-app-border">
           {METHODS.map((m) => (
             <button
               key={m.id}
@@ -233,9 +274,10 @@ export default function AdminLoginPage() {
 
         <div className="rounded-2xl border border-app-border bg-app-card p-6 animate-scale-in">
           <div className="mb-5">
-            <h2 className="text-base font-semibold text-app-text">API 키 로그인</h2>
-            <p className="text-xs text-app-text-muted mt-0.5">발급받은 키로 바로 로그인</p>
+            <h2 className="text-base font-semibold text-app-text">{method === "admin" ? "관리자 로그인" : "API 키 로그인"}</h2>
+            <p className="text-xs text-app-text-muted mt-0.5">{method === "admin" ? "관리자 계정으로 로그인" : "발급받은 키로 바로 로그인"}</p>
           </div>
+          {method === "admin" && <AdminLoginForm />}
           {method === "apikey" && <ApiKeyLoginForm />}
         </div>
 
