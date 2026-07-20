@@ -1,16 +1,10 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { KeyRound, Loader2, Send } from "lucide-react";
-import { Field, Input } from "@/components/ui/Field";
-import { Button } from "@/components/ui/Button";
-import { InlineError } from "@/components/ui/InlineError";
+import { Loader2, Send, ShieldCheck } from "lucide-react";
 import * as api from "@/lib/api";
 import { setToken, setSessionToken, getSessionToken, getToken, clearToken, clearSessionToken } from "@/lib/auth";
-
-type AuthMethod = "apikey";
 
 // ─── Telegram Login Widget ──────────────────────────────────────────
 
@@ -59,79 +53,92 @@ function TelegramLoginButton({ onSuccess }: { onSuccess: (result: api.TelegramLo
 
   return (
     <div className="space-y-3">
-      <div ref={widgetRef} className="flex justify-center min-h-[48px]" />
-      {error && <InlineError>{error}</InlineError>}
+      <div ref={widgetRef} className="flex justify-center min-h-[60px]" />
+      {error && <p className="text-sm text-red-400 text-center">{error}</p>}
       {loading && (
         <div className="flex items-center justify-center gap-2 text-sm text-app-text-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Telegram 로그인 확인 중...
+          로그인 확인 중...
         </div>
       )}
     </div>
   );
 }
 
-function ApiKeyLoginForm() {
+// ── 관리자 로그인 폼 ──────────────────────────────────────────────
+
+function AdminLoginForm({ onBack }: { onBack: () => void }) {
   const router = useRouter();
-  const [apiKey, setApiKey] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const saved = getSessionToken();
-    if (saved) {
-      setSubmitting(true);
-      api.fetchAuthMe().then((me) => {
-        if (me.role === "user" || me.role === "api_key") {
-          router.replace("/app");
-        } else {
-          clearSessionToken();
-          setSubmitting(false);
-        }
-      }).catch(() => {
-        clearSessionToken();
-        setSubmitting(false);
-      });
-    }
-  }, [router]);
-
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!apiKey.trim() || submitting) return;
+    if (!username.trim() || !password.trim() || submitting) return;
     setSubmitting(true); setError(null);
     try {
-      const token = await api.loginWithApiKey(apiKey.trim());
+      const token = await api.adminLogin(username.trim(), password);
       clearSessionToken();
       setToken(token);
-      router.replace("/app");
+      router.replace("/admin/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "로그인 실패");
+    } finally {
+      setSubmitting(false);
     }
-    catch (err) { setError(err instanceof Error ? err.message : "로그인 실패"); }
-    finally { setSubmitting(false); }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="API 키">
-        <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className="font-mono" required />
-      </Field>
-      {error && <InlineError>{error}</InlineError>}
-      <Button type="submit" disabled={submitting} className="flex w-full h-11">
-        {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {submitting ? "확인 중..." : "로그인"}
-      </Button>
-    </form>
+    <div className="rounded-2xl border border-app-border/60 bg-app-card p-6 animate-scale-in">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-app-text flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-app-primary" />
+          관리자 로그인
+        </h2>
+        <button onClick={onBack} className="text-xs text-app-text-muted hover:text-app-primary underline underline-offset-2">
+          ← 돌아가기
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="관리자 아이디"
+          required
+          className="w-full rounded-xl px-4 py-2.5 text-sm bg-app-surface border border-app-border text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="비밀번호"
+          required
+          className="w-full rounded-xl px-4 py-2.5 text-sm bg-app-surface border border-app-border text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary"
+        />
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-xl py-2.5 text-sm font-semibold bg-app-primary text-white hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {submitting ? "확인 중..." : "로그인"}
+        </button>
+      </form>
+    </div>
   );
 }
 
-const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: "apikey", label: "API 키", icon: <KeyRound className="h-4 w-4" />, desc: "발급받은 키로 바로 로그인" },
-];
+// ── 메인 페이지 ────────────────────────────────────────────────────
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [method, setMethod] = useState<AuthMethod>("apikey");
   const [tgSuccess, setTgSuccess] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [hasSavedSession, setHasSavedSession] = useState(false);
+
   useEffect(() => {
     setHasSavedSession(Boolean(getToken() || getSessionToken()));
   }, []);
@@ -163,11 +170,12 @@ export default function AdminLoginPage() {
   return (
     <div className="relative min-h-screen bg-app-bg flex items-center justify-center px-4 py-10">
       <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-app-primary to-orange-600 text-xl font-bold text-white shadow-lg shadow-app-primary/20 mb-4">
+        {/* 로고 */}
+        <div className="text-center mb-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-app-primary to-orange-600 text-2xl font-bold text-white shadow-lg shadow-app-primary/20 mb-4">
             TM
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             <span className="text-app-text">Tele</span>
             <span className="text-app-primary">Mon</span>
           </h1>
@@ -178,20 +186,21 @@ export default function AdminLoginPage() {
               onClick={handleForceLogout}
               className="mt-2 text-xs text-app-text-muted underline underline-offset-2 hover:text-app-primary"
             >
-              로그인 정보가 꼬였나요? 여기를 눌러 초기화 후 다시 로그인하세요
+              로그인 정보 초기화
             </button>
           )}
         </div>
 
-        {TELEGRAM_BOT_USERNAME && (
+        {/* Telegram 로그인 - 메인 */}
+        {TELEGRAM_BOT_USERNAME && !showAdmin && (
           <div className="mb-6">
-            <div className="rounded-2xl border border-app-border/60 bg-app-card p-5 animate-scale-in">
-              <div className="text-center mb-3">
-                <div className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-app-text mb-0.5">
-                  <Send className="h-4 w-4 text-blue-500" />
-                  Telegram으로 1초 로그인
+            <div className="rounded-2xl border border-app-border/60 bg-app-card p-8 animate-scale-in text-center">
+              <div className="mb-4">
+                <div className="inline-flex items-center justify-center gap-1.5 text-base font-semibold text-app-text mb-1">
+                  <Send className="h-5 w-5 text-blue-500" />
+                  Telegram으로 시작하기
                 </div>
-                <p className="text-xs text-app-text-muted">텔레그램 계정만 있으면 바로 시작할 수 있습니다</p>
+                <p className="text-xs text-app-text-muted">텔레그램 계정만 있으면 바로 대시보드를 사용할 수 있습니다</p>
               </div>
               {tgSuccess ? (
                 <div className="flex items-center justify-center gap-2 text-sm text-app-success">
@@ -205,44 +214,20 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        {TELEGRAM_BOT_USERNAME && (
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-app-border" />
-            <span className="text-xs text-app-text-muted font-medium">또는</span>
-            <div className="flex-1 h-px bg-app-border" />
-          </div>
-        )}
+        {/* 관리자 로그인 폼 */}
+        {showAdmin && <AdminLoginForm onBack={() => setShowAdmin(false)} />}
 
-        <div className="mb-5 grid grid-cols-1 gap-1 rounded-xl bg-app-surface p-1 border border-app-border">
-          {METHODS.map((m) => (
+        {/* 관리자 로그인 링크 (화면 하단 구석) */}
+        {!showAdmin && (
+          <p className="mt-8 text-center">
             <button
-              key={m.id}
-              type="button"
-              onClick={() => setMethod(m.id)}
-              className={`flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-xs transition-all ${
-                method === m.id
-                  ? "bg-app-card text-app-text shadow-sm"
-                  : "text-app-text-muted hover:text-app-text-secondary"
-              }`}
+              onClick={() => setShowAdmin(true)}
+              className="text-xs text-app-text-muted hover:text-app-primary underline underline-offset-2 transition-colors"
             >
-              {m.icon}
-              <span className="font-medium">{m.label}</span>
+              관리자 로그인
             </button>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-app-border bg-app-card p-6 animate-scale-in">
-          <div className="mb-5">
-            <h2 className="text-base font-semibold text-app-text">API 키 로그인</h2>
-            <p className="text-xs text-app-text-muted mt-0.5">발급받은 키로 바로 로그인</p>
-          </div>
-          {method === "apikey" && <ApiKeyLoginForm />}
-        </div>
-
-        <p className="mt-5 text-center text-xs text-app-text-muted">
-          아직 API 키가 없으신가요?{" "}
-          <Link href="/get-api-key" className="text-app-primary hover:text-app-primary-hover transition-colors">USDT로 발급받기</Link>
-        </p>
+          </p>
+        )}
       </div>
     </div>
   );

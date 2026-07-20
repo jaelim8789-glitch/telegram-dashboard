@@ -21,6 +21,8 @@ import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCar
 import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
 import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { RuntimeManager } from "@/lib/runtimeManager";
+import ApiKeyGuard from "@/components/ApiKeyGuard";
+import { useApiKeyGuard } from "@/lib/useApiKeyGuard";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import * as folderApi from "@/lib/folderApi";
@@ -113,6 +115,7 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
 
 
 export function SendTab() {
+  const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
@@ -2104,11 +2107,17 @@ export function SendTab() {
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="sticky bottom-4 ml-auto flex w-fit"
       >
-        <Button type="submit" form="send-form" variant="primary"
-          className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30" disabled={!canSubmit}>
-          <SendIcon className="h-4 w-4" />
-          {submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
-        </Button>
+        <ApiKeyGuard
+          description="발송 기능을 사용하려면 API 키가 필요합니다. 봇 메뉴에서 '🔑 내 API 키'를 통해 발급받으세요."
+          hasApiKey={hasApiKey}
+          onKeySet={onKeySet}
+        >
+          <Button type="submit" form="send-form" variant="primary"
+            className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30" disabled={!canSubmit}>
+            <SendIcon className="h-4 w-4" />
+            {submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
+          </Button>
+        </ApiKeyGuard>
       </motion.div>
     </div>
   );
