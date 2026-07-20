@@ -50,12 +50,20 @@ class TelegramBotClient:
         text: str,
         reply_markup: dict[str, Any] | None = None,
         parse_mode: str | None = None,
+        receiver_user_id: int | None = None,
     ) -> dict[str, Any]:
+        """Send a message, optionally ephemeral (visible only to receiver_user_id).
+
+        When *receiver_user_id* is set, the message is an Ephemeral Message
+        (Bot API 10.2+, July 2026) — only the target user and the bot see it.
+        """
         payload: dict[str, Any] = {"chat_id": chat_id, "text": text}
         if reply_markup is not None:
             payload["reply_markup"] = reply_markup
         if parse_mode:
             payload["parse_mode"] = parse_mode
+        if receiver_user_id is not None:
+            payload["receiver_user_id"] = receiver_user_id
         return await self._call("sendMessage", payload)
 
     async def answer_callback_query(
@@ -69,8 +77,77 @@ class TelegramBotClient:
     async def get_chat_member(self, chat_id: int | str, user_id: int) -> dict[str, Any]:
         return await self._call("getChatMember", {"chat_id": chat_id, "user_id": user_id})
 
-    async def set_webhook(self, url: str, secret_token: str | None = None) -> dict[str, Any]:
-        payload: dict[str, Any] = {"url": url, "allowed_updates": ["message", "callback_query"]}
+    # ── Guest Mode (Bot API 10.0+, May 2026) ─────────────────────────
+
+    async def answer_guest_query(
+        self,
+        guest_query_id: str,
+        text: str,
+        parse_mode: str | None = None,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Respond to a guest query (@mention in a group where the bot is not a member).
+
+        The response is ephemeral — only the user who @mentioned the bot sees it.
+        """
+        payload: dict[str, Any] = {
+            "guest_query_id": guest_query_id,
+            "text": text,
+        }
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
+        return await self._call("answerGuestQuery", payload)
+
+    # ── Ephemeral Message Management (Bot API 10.2+, July 2026) ───────
+
+    async def edit_ephemeral_message_text(
+        self,
+        chat_id: int | str,
+        ephemeral_message_id: int,
+        text: str,
+        parse_mode: str | None = None,
+    ) -> dict[str, Any]:
+        """Edit an ephemeral message's text."""
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "ephemeral_message_id": ephemeral_message_id,
+            "text": text,
+        }
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        return await self._call("editEphemeralMessageText", payload)
+
+    async def delete_ephemeral_message(
+        self,
+        chat_id: int | str,
+        ephemeral_message_id: int,
+    ) -> dict[str, Any]:
+        """Delete an ephemeral message."""
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "ephemeral_message_id": ephemeral_message_id,
+        }
+        return await self._call("deleteEphemeralMessage", payload)
+
+    # ── Webhook Management ────────────────────────────────────────────
+
+    async def set_webhook(
+        self,
+        url: str,
+        secret_token: str | None = None,
+        allowed_updates: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Set webhook with configurable allowed_updates.
+
+        Default (when *allowed_updates* is None): legacy-compatible
+        ["message", "callback_query"]. Pass an explicit list to include
+        "guest_message" or "ephemeral_message" after enabling them via @BotFather.
+        """
+        if allowed_updates is None:
+            allowed_updates = ["message", "callback_query"]
+        payload: dict[str, Any] = {"url": url, "allowed_updates": allowed_updates}
         if secret_token:
             payload["secret_token"] = secret_token
         return await self._call("setWebhook", payload)
