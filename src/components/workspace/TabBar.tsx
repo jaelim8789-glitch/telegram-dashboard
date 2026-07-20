@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
   Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe, Folder, Target,
-  HeartPulse, UserCog, MessageCircle, FileText, Workflow, Star,
+  HeartPulse, UserCog, MessageCircle, Workflow, Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS, type TabDef } from "@/types";

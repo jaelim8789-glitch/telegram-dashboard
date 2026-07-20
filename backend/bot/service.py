@@ -10,9 +10,11 @@ so the request/response contract the frontend already depends on
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
+from ..admin_platform import AdminPlatform, AuditAction
 from ..production_config import get_config
 from ..routers import free_api_key as fak
 from . import db as bot_db
@@ -124,8 +126,95 @@ async def _handle_verify_callback(client: TelegramBotClient, callback_query: dic
     await notify_admins(f"[TeleMon] 신규 채널 인증 완료: @{username} (token={token[:8]}...)", event_type="verified")
 
 
+# ── Stars Payment Helpers ────────────────────────────────────────────
+
+_STAR_PRODUCTS: dict[str, dict[str, Any]] = {
+    "pro_monthly": {"title": "Pro 월간 구독", "star_amount": 1500, "plan": "pro", "period_days": 30, "label": "Pro", "ai_calls": None},
+    "pro_yearly": {"title": "Pro 연간 구독 (20% 할인)", "star_amount": 12000, "plan": "pro", "period_days": 365, "label": "Pro 연간", "ai_calls": None},
+    "team_monthly": {"title": "Team 월간 구독", "star_amount": 4500, "plan": "team", "period_days": 30, "label": "Team", "ai_calls": None},
+    "ai_boost_1000": {"title": "AI Boost — 1,000회", "star_amount": 300, "plan": None, "period_days": None, "label": "AI Boost", "ai_calls": 1000},
+    "ai_boost_5000": {"title": "AI Boost — 5,000회 (20% 할인)", "star_amount": 1200, "plan": None, "period_days": None, "label": "AI Boost+", "ai_calls": 5000},
+}
+
+
+async def _handle_pre_checkout_query(client: TelegramBotClient, query: dict[str, Any]) -> None:
+    """Handle pre_checkout_query from Telegram Stars payment."""
+    query_id = query.get("id")
+    payload_str = query.get("invoice_payload", "{}")
+    try:
+        payload = json.loads(payload_str)
+        product_id = payload.get("pid")
+        if product_id not in _STAR_PRODUCTS:
+            logger.warning("[stars] invalid product in payload: %s", product_id)
+            await client.answer_pre_checkout_query(query_id, ok=False, error_message="Invalid product.")
+            return
+        await client.answer_pre_checkout_query(query_id, ok=True)
+        logger.info("[stars] pre_checkout_query approved: %s", product_id)
+    except Exception as e:
+        logger.error("[stars] pre_checkout_query error: %s", e)
+        try:
+            await client.answer_pre_checkout_query(query_id, ok=False, error_message="Processing error.")
+        except Exception:
+            pass
+
+
+async def _handle_successful_payment(client: TelegramBotClient, message: dict[str, Any]) -> None:
+    """Handle successful_payment from Telegram Stars."""
+    payment = message.get("successful_payment", {})
+    payload_str = payment.get("invoice_payload", "{}")
+    telegram_charge_id = payment.get("telegram_payment_charge_id", "")
+    stars_amount = payment.get("total_amount", 0)
+
+    try:
+        payload = json.loads(payload_str)
+        product_id = payload.get("pid")
+        user_id = payload.get("uid")
+        if not product_id or not user_id:
+            logger.warning("[stars] incomplete payment payload: %s", payload_str)
+            return
+
+        product = _STAR_PRODUCTS.get(product_id)
+        if not product:
+            logger.warning("[stars] unknown product: %s", product_id)
+            return
+
+        admin = AdminPlatform.get_instance()
+
+        if product.get("plan") and product.get("period_days"):
+            admin.change_plan(user_id, product["plan"])
+            admin.create_subscription(user_id=user_id, plan=product["plan"])
+            admin._audit(
+                user_id, "stars_payment", AuditAction.PAYMENT_SUCCEEDED,
+                "subscription", user_id,
+                {"product": product_id, "plan": product["plan"], "stars": stars_amount, "charge_id": telegram_charge_id},
+            )
+            logger.info("[stars] payment: user=%s → %s (%d Stars)", user_id, product["plan"], stars_amount)
+        elif product.get("ai_calls"):
+            admin.record_usage(user_id=user_id, api_calls=0)
+            admin._audit(
+                user_id, "stars_payment", AuditAction.PAYMENT_SUCCEEDED,
+                "ai_boost", user_id,
+                {"product": product_id, "ai_calls": product["ai_calls"], "stars": stars_amount},
+            )
+            logger.info("[stars] ai_boost: user=%s +%d calls", user_id, product["ai_calls"])
+
+        admin.create_invoice(user_id=user_id, amount_cents=stars_amount * 100, stripe_invoice_id=telegram_charge_id)
+    except Exception as e:
+        logger.error("[stars] successful_payment error: %s", e)
+
+
+# ── Main Update Handler ───────────────────────────────────────────────
+
+
 async def handle_update(update: dict[str, Any]) -> None:
-    """Entry point called by the webhook route for every incoming Update."""
+    """Entry point called by the webhook route for every incoming Update.
+
+    Handles:
+    - /start command → free API key flow
+    - callback_query (verify) → channel membership verification
+    - pre_checkout_query → Stars payment pre-checkout
+    - message.successful_payment → Stars payment completion
+    """
     client = _client()
     if not client:
         logger.warning("Telegram bot update received but TELEGRAM_BOT_TOKEN is not configured")
@@ -136,6 +225,12 @@ async def handle_update(update: dict[str, Any]) -> None:
             message = update["message"]
             chat_id = message.get("chat", {}).get("id")
             text = message.get("text", "")
+
+            # successful_payment 처리 (message 객체 안에 있음)
+            if "successful_payment" in message:
+                await _handle_successful_payment(client, message)
+                return
+
             if chat_id is None:
                 return
             if text.startswith("/start"):
@@ -146,5 +241,7 @@ async def handle_update(update: dict[str, Any]) -> None:
             callback_query = update["callback_query"]
             if callback_query.get("data", "").startswith("verify:"):
                 await _handle_verify_callback(client, callback_query)
+        elif "pre_checkout_query" in update:
+            await _handle_pre_checkout_query(client, update["pre_checkout_query"])
     except Exception:
         logger.exception("Error while handling Telegram update")

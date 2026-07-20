@@ -38,6 +38,10 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   aioperations: DashboardInspector,
   aiopscenter: DashboardInspector,
   aiusage: DashboardInspector,
+  guestbot: DashboardInspector,
+  drafts: DashboardInspector,
+  triggers: DashboardInspector,
+  stars: DashboardInspector,
 };
 
 export function Inspector() {

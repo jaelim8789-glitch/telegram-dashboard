@@ -29,12 +29,12 @@ const TIME_SLOTS: { time: string; label: string }[] = [
 ];
 
 const CONTENT_TYPE_ORDER: ContentType[] = [
-  "promotional",
-  "announcement",
-  "engagement",
-  "informational",
-  "testimonial",
-  "event",
+  "morning_greeting",
+  "quote",
+  "market_briefing",
+  "news_summary",
+  "investor_quote",
+  "promotion",
 ];
 
 function getEmoji(type: ContentType): string {

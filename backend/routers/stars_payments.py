@@ -19,10 +19,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
-from ..admin_platform import AdminPlatform, Plan, AuditAction
-from ..auth_middleware import get_current_user, require_admin_user
+from ..admin_platform import AdminPlatform, Plan
+from ..auth_middleware import get_current_user
 from ..bot.telegram_api import TelegramBotClient
 from ..production_config import get_config
 
@@ -181,143 +181,9 @@ async def create_invoice(
         raise HTTPException(status_code=500, detail=f"Failed to create invoice: {e}")
 
 
-@router.post("/webhook")
-async def stars_webhook(
-    request: Request,
-    x_telegram_bot_api_secret_token: str | None = Header(default=None),
-):
-    """Telegram Bot API Webhook — pre_checkout_query + successful_payment 처리.
-
-    Bot API가 결제 관련 업데이트를 이 엔드포인트로 전송합니다.
-    x_telegram_bot_api_secret_token 헤더로 요청을 검증합니다.
-    """
-    # Webhook secret 검증 (telegram_bot.py와 동일한 패턴)
-    cfg = get_config().telegram_bot
-    if not cfg.webhook_secret:
-        logger.warning("[stars] webhook secret not configured, skipping auth")
-    elif x_telegram_bot_api_secret_token != cfg.webhook_secret:
-        logger.warning("[stars] invalid webhook secret")
-        raise HTTPException(status_code=401, detail="Invalid webhook secret")
-    update = await request.json()
-    logger.debug("[stars] webhook update: %s", list(update.keys()))
-
-    # ── pre_checkout_query 처리 ─────────────────────────────────────
-    if "pre_checkout_query" in update:
-        query = update["pre_checkout_query"]
-        query_id = query.get("id")
-        payload_str = query.get("invoice_payload", "{}")
-
-        try:
-            payload = json.loads(payload_str)
-            product_id = payload.get("pid")
-            user_id = payload.get("uid")
-
-            # 상품 유효성 검증
-            if product_id not in STAR_PRODUCTS:
-                logger.warning("[stars] invalid product in payload: %s", product_id)
-                client = _get_bot_client()
-                if client:
-                    await client.answer_pre_checkout_query(
-                        pre_checkout_query_id=query_id,
-                        ok=False,
-                        error_message="Invalid product. Please try again.",
-                    )
-                return {"ok": False}
-
-            # 승인
-            client = _get_bot_client()
-            if client:
-                await client.answer_pre_checkout_query(
-                    pre_checkout_query_id=query_id,
-                    ok=True,
-                )
-
-            logger.info("[stars] pre_checkout_query approved: user=%s product=%s", user_id, product_id)
-
-        except Exception as e:
-            logger.error("[stars] pre_checkout_query error: %s", e)
-
-    # ── successful_payment 처리 ─────────────────────────────────────
-    if "message" in update and "successful_payment" in update.get("message", {}):
-        msg = update["message"]
-        payment = msg["successful_payment"]
-        payload_str = payment.get("invoice_payload", "{}")
-        telegram_charge_id = payment.get("telegram_payment_charge_id", "")
-        stars_amount = payment.get("total_amount", 0)
-
-        try:
-            payload = json.loads(payload_str)
-            product_id = payload.get("pid")
-            user_id = payload.get("uid")
-            invoice_id = payload.get("iid")
-
-            if not product_id or not user_id:
-                logger.warning("[stars] incomplete payment payload: %s", payload_str)
-                return {"ok": False}
-
-            product = STAR_PRODUCTS.get(product_id)
-            if not product:
-                logger.warning("[stars] unknown product in payment: %s", product_id)
-                return {"ok": False}
-
-            # 사용자 플랜 업그레이드
-            admin = AdminPlatform.get_instance()
-
-            if product.get("plan") and product.get("period_days"):
-                # 구독형 상품 — 플랜 변경
-                admin.change_plan(user_id, product["plan"])
-                admin.create_subscription(
-                    user_id=user_id,
-                    plan=product["plan"],
-                )
-                admin._audit(
-                    user_id, "stars_payment",
-                    AuditAction.PAYMENT_SUCCEEDED,
-                    "subscription", user_id,
-                    {
-                        "product": product_id,
-                        "plan": product["plan"],
-                        "stars": stars_amount,
-                        "charge_id": telegram_charge_id,
-                    },
-                )
-                logger.info(
-                    "[stars] payment completed: user=%s → %s (%d Stars)",
-                    user_id, product["plan"], stars_amount,
-                )
-
-            elif product.get("ai_calls"):
-                # AI Boost — 사용량 크레딧 추가
-                admin.record_usage(
-                    user_id=user_id,
-                    api_calls=0,  # 별도 크레딧 테이블 필요시 기록
-                )
-                admin._audit(
-                    user_id, "stars_payment",
-                    AuditAction.PAYMENT_SUCCEEDED,
-                    "ai_boost", user_id,
-                    {
-                        "product": product_id,
-                        "ai_calls": product["ai_calls"],
-                        "stars": stars_amount,
-                    },
-                )
-                logger.info(
-                    "[stars] ai_boost: user=%s +%d calls (%d Stars)",
-                    user_id, product["ai_calls"], stars_amount,
-                )
-
-            # 인보이스 기록
-            admin.create_invoice(
-                user_id=user_id,
-                amount_cents=stars_amount * 100,  # Stars → cent 변환 (근사치)
-                stripe_invoice_id=telegram_charge_id,
-            )
-
-        except Exception as e:
-            logger.error("[stars] successful_payment error: %s", e)
-
-    return {"ok": True}
+# Webhook is now handled in bot/service.py handle_update()
+# Payment updates (pre_checkout_query + successful_payment) arrive
+# at the single POST /bot/webhook endpoint alongside regular bot updates.
 
 
 # ── Helpers ─────────────────────────────────────────────────────────
