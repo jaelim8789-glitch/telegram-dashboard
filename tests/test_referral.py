@@ -391,3 +391,55 @@ async def test_stats_endpoint():
         assert "total_referred" in data
         assert "daily" in data
         assert len(data["daily"]) == 30
+
+
+@pytest.mark.asyncio
+async def test_csv_download_no_auth(client: AsyncClient):
+    """GET /api/referrals/stats/csv should require auth."""
+    res = await client.get("/api/referrals/stats/csv")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_commissions_csv_no_auth(client: AsyncClient):
+    """GET /api/referrals/admin/commissions/csv should require admin."""
+    res = await client.get("/api/referrals/admin/commissions/csv")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_change_code_no_auth(client: AsyncClient):
+    """POST /api/referrals/change-code should require auth."""
+    res = await client.post("/api/referrals/change-code", json={"new_code": "NEWCODE"})
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_qr_endpoint_no_auth(client: AsyncClient):
+    """GET /api/referrals/my-qr should require auth."""
+    res = await client.get("/api/referrals/my-qr")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_duplicate_commission_prevention():
+    """Verify duplicate commission is prevented."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821099999991", plan="pro")
+        db.add(referrer)
+        await db.flush()
+
+        ref_code = ReferralCode(code="DUPREF01", owner_id=referrer.id)
+        db.add(ref_code)
+        await db.flush()
+
+        referred = Tenant(phone="+821099999992", plan="free", referred_by=ref_code.id)
+        db.add(referred)
+        await db.flush()
+
+        from app.services.referral import create_commission
+        c1 = await create_commission(db, referred.id, "dup-payment", "stars", 5000)
+        assert c1 is not None
+
+        c2 = await create_commission(db, referred.id, "dup-payment", "stars", 5000)
+        assert c2 is None

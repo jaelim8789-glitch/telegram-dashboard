@@ -1,3 +1,5 @@
+import csv
+import io
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, func, and_, cast, Date
@@ -58,6 +60,17 @@ async def create_commission(
 
     referrer_id = ref_code.owner_id
     if referrer_id == referred_tenant_id:
+        return None
+
+    existing = await db.execute(
+        select(ReferralCommission).where(
+            ReferralCommission.referrer_id == referrer_id,
+            ReferralCommission.referred_user_id == referred_tenant_id,
+            ReferralCommission.source_payment_id == source_payment_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        logger.info("commission_duplicate_skipped", referrer_id=referrer_id, source_payment_id=source_payment_id)
         return None
 
     rate, _ = await get_referrer_tier(db, referrer_id)
@@ -314,6 +327,38 @@ async def get_stats(db: AsyncSession, days: int = 30) -> dict:
         "total_commission_amount_paid": paid_amount.scalar_one_or_none() or 0,
         "daily": daily,
     }
+
+
+def generate_commissions_csv(commissions: list[dict]) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "추천인ID", "추천인전화번호", "추천인전화번호", "결제유형", "결제금액", "수수료율", "수수료금액", "상태", "생성일"])
+    for c in commissions:
+        writer.writerow([c["id"], c["referrer_id"], c["referrer_phone"], c["referred_user_phone"], c["source_type"], c["amount"], c["commission_rate"], c["commission_amount"], c["status"], str(c["created_at"])])
+    return output.getvalue()
+
+
+def generate_stats_csv(stats: dict) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["지표", "값"])
+    writer.writerow(["전체 추천인 수", stats["total_referrers"]])
+    writer.writerow(["전체 추천 수", stats["total_referred"]])
+    writer.writerow(["대기중 커미션 건수", stats["total_commissions_pending"]])
+    writer.writerow(["지급완료 커미션 건수", stats["total_commissions_paid"]])
+    writer.writerow(["대기중 커미션 금액", stats["total_commission_amount_pending"]])
+    writer.writerow(["지급완료 커미션 금액", stats["total_commission_amount_paid"]])
+    writer.writerow([])
+    writer.writerow(["일자", "가입자수", "커미션금액"])
+    for d in stats["daily"]:
+        writer.writerow([d["date"], d["signups"], d["commissions"]])
+    return output.getvalue()
+
+
+async def run_auto_payouts() -> tuple[int, int]:
+    from app.database import async_session_maker as _session_maker
+    async with _session_maker() as db:
+        return await process_payouts(db)
 
 
 async def _send_telegram_notification(chat_id: str, text: str) -> None:
