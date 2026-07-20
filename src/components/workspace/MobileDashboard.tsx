@@ -33,7 +33,7 @@ export function MobileDashboard() {
       const healthy = summary?.healthy ?? 0;
       const rate = total > 0 ? Math.round((healthy / total) * 100) : 0;
       setStats({
-        todaySent: summary?.total_today_sent ?? 0,
+        todaySent: summary?.runtimes.reduce((sum, r) => sum + r.today_sent, 0) ?? 0,
         successRate: rate,
         tokenBalance: 1000, // TODO: 실제 토큰 API
         queueCount: scheduler?.due_broadcasts_count ?? 0,
