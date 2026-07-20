@@ -66,6 +66,7 @@ class Tenant(Base):
     referred_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     referral_code: Mapped[str] = mapped_column(String(20), unique=True, default=lambda: str(uuid.uuid4())[:8])
     referral_earnings: Mapped[int] = mapped_column(Integer, default=0)
+    wallet_address: Mapped[str | None] = mapped_column(String(100), nullable=True)
     
     # Telegram notification
     telegram_chat_id: Mapped[str | None] = mapped_column(String(50), nullable=True)

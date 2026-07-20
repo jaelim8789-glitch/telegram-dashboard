@@ -3,7 +3,7 @@ import json
 import random
 import string
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,34 +11,47 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import Identity, get_current_identity, get_current_tenant, require_admin
 from app.config import settings
 from app.core.logging import get_logger
+from app.core.rate_limiter import check_rate_limit, get_client_ip
 from app.database import get_db
-from app.models.referral import ReferralCode, ReferralCommission, ReferralPayout
+from app.models.referral import ReferralCode, ReferralCommission, ReferralConfig, ReferralPayout
 from app.models.tenant import Tenant
 from app.schemas.referral import (
+    AdminCodeStatsItem,
+    AdminCodeStatsResponse,
     AdminPendingCommissionItem,
     AdminPendingCommissionResponse,
+    AdminSettingItem,
+    AdminSettingsResponse,
     ChangeCodeRequest,
+    CommissionItem,
     DailyStatsItem,
     GenerateReferralCodeResponse,
     LeaderboardEntry,
     LeaderboardResponse,
+    MyCommissionsResponse,
     PayoutRecord,
     ProcessPayoutResponse,
     ReferralDashboardResponse,
     ReferralReferredUser,
     ReferralStatsResponse,
     SetChatIdRequest,
+    SetWalletRequest,
+    UpdateSettingsRequest,
 )
 from app.services.referral import (
     approve_payout,
     cancel_commission,
     generate_commissions_csv,
     generate_stats_csv,
+    get_admin_code_stats,
     get_leaderboard,
+    get_my_commissions,
     get_pending_payouts,
     get_referrer_tier,
     get_stats,
     process_payouts,
+    set_config,
+    set_wallet_address,
 )
 
 router = APIRouter(prefix="/api/referrals", tags=["referrals"])
@@ -83,9 +96,14 @@ async def _get_or_create_referral_code(db: AsyncSession, tenant_id: str) -> Refe
 
 @router.post("/generate", response_model=GenerateReferralCodeResponse)
 async def generate_referral_code(
+    request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
+    client_ip = get_client_ip(request)
+    if not check_rate_limit(client_ip, "referral_generate", max_attempts=5, window_seconds=60):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="너무 많은 요청입니다. 잠시 후 다시 시도해주세요.")
+
     ref_code = await _get_or_create_referral_code(db, tenant.id)
     return GenerateReferralCodeResponse(code=ref_code.code, referral_code_id=ref_code.id)
 
@@ -123,6 +141,27 @@ async def get_my_referral_link(
         )
     link = f"https://t.me/{settings.telegram_bot_username}?start=ref_{ref_code.code}"
     return {"link": link, "code": ref_code.code}
+
+
+@router.get("/my-commissions", response_model=MyCommissionsResponse)
+async def get_my_commissions_endpoint(
+    page: int = 1,
+    page_size: int = 20,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    items, total_count = await get_my_commissions(db, tenant.id, page=page, page_size=page_size)
+    return MyCommissionsResponse(items=[CommissionItem(**i) for i in items], total_count=total_count)
+
+
+@router.post("/set-wallet")
+async def set_my_wallet_address(
+    payload: SetWalletRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    await set_wallet_address(db, tenant.id, payload.wallet_address)
+    return {"success": True, "message": "지갑 주소가 저장되었습니다."}
 
 
 @router.get("/dashboard", response_model=ReferralDashboardResponse)
@@ -214,6 +253,7 @@ async def get_admin_pending_commissions(
 async def mark_commission_paid(
     commission_id: str,
     db: AsyncSession = Depends(get_db),
+    identity: Identity = Depends(get_current_identity),
     _admin: None = Depends(require_admin),
 ):
     commission = await db.get(ReferralCommission, commission_id)
@@ -229,6 +269,9 @@ async def mark_commission_paid(
         )
     commission.status = "paid"
     await db.commit()
+
+    from app.services.referral import log_audit
+    await log_audit(db, "commission.mark_paid", actor_id=identity.tenant_id, target_id=commission_id, details=f"Commission {commission_id} marked paid manually")
     return {"success": True, "message": "커미션이 지급 완료 처리되었습니다."}
 
 
@@ -271,9 +314,10 @@ async def get_admin_pending_payouts(
 async def admin_approve_payout(
     payout_id: str,
     db: AsyncSession = Depends(get_db),
+    identity: Identity = Depends(get_current_identity),
     _admin: None = Depends(require_admin),
 ):
-    success = await approve_payout(db, payout_id)
+    success = await approve_payout(db, payout_id, actor_id=identity.tenant_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -339,9 +383,10 @@ async def set_telegram_chat_id(
 async def admin_cancel_commission(
     commission_id: str,
     db: AsyncSession = Depends(get_db),
+    identity: Identity = Depends(get_current_identity),
     _admin: None = Depends(require_admin),
 ):
-    success = await cancel_commission(db, commission_id)
+    success = await cancel_commission(db, commission_id, actor_id=identity.tenant_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -399,10 +444,15 @@ async def get_admin_commissions_csv(
 
 @router.post("/change-code")
 async def change_referral_code(
+    request: Request,
     payload: ChangeCodeRequest,
     tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
+    client_ip = get_client_ip(request)
+    if not check_rate_limit(client_ip, "referral_change_code", max_attempts=3, window_seconds=300):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="너무 많은 요청입니다. 잠시 후 다시 시도해주세요.")
+
     result = await db.execute(
         select(ReferralCode).where(ReferralCode.owner_id == tenant.id)
     )
@@ -419,8 +469,13 @@ async def change_referral_code(
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 사용 중인 코드입니다.")
 
+    old_code = ref_code.code
     ref_code.code = payload.new_code
     await db.commit()
+
+    from app.services.referral import log_audit
+    await log_audit(db, "code.change", actor_id=tenant.id, target_id=ref_code.id, details=f"Code changed: {old_code} -> {payload.new_code}")
+
     return {"success": True, "code": payload.new_code, "message": "코드가 변경되었습니다."}
 
 
@@ -452,3 +507,44 @@ async def get_referral_leaderboard(
 ):
     entries = await get_leaderboard(db)
     return LeaderboardResponse(items=[LeaderboardEntry(**e) for e in entries])
+
+
+@router.get("/admin/settings", response_model=AdminSettingsResponse)
+async def get_admin_settings(
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    from app.services.referral import get_config
+
+    tiers_raw = await get_config(db, "tiers")
+    min_payout = await get_config(db, "min_payout", "100")
+    settings_list = []
+    if tiers_raw:
+        settings_list.append(AdminSettingItem(key="tiers", value=tiers_raw))
+    settings_list.append(AdminSettingItem(key="min_payout", value=min_payout))
+    return AdminSettingsResponse(settings=settings_list)
+
+
+@router.put("/admin/settings")
+async def update_admin_settings(
+    payload: UpdateSettingsRequest,
+    db: AsyncSession = Depends(get_db),
+    identity: Identity = Depends(get_current_identity),
+    _admin: None = Depends(require_admin),
+):
+    for s in payload.settings:
+        await set_config(db, s.key, s.value)
+
+    from app.services.referral import log_audit
+    await log_audit(db, "settings.update", actor_id=identity.tenant_id, details=f"Settings updated: {[s.key for s in payload.settings]}")
+
+    return {"success": True, "message": "설정이 저장되었습니다."}
+
+
+@router.get("/admin/codes", response_model=AdminCodeStatsResponse)
+async def get_admin_codes(
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    items = await get_admin_code_stats(db)
+    return AdminCodeStatsResponse(items=[AdminCodeStatsItem(**i) for i in items])

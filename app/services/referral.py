@@ -7,23 +7,68 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.logging import get_logger
-from app.models.referral import ReferralCode, ReferralCommission, ReferralPayout
+from app.models.referral import ReferralAuditLog, ReferralCode, ReferralCommission, ReferralConfig, ReferralPayout
 from app.models.tenant import Tenant
 
 logger = get_logger(__name__)
 
-COMMISSION_RATE = 0.10
-TIERS: list[tuple[int, float, str]] = [
-    (0, 0.10, "기본"),
-    (5, 0.15, "Pro"),
-    (10, 0.20, "VIP"),
+DEFAULT_TIERS: list[tuple[int, str, str]] = [
+    ("0", "0.10", "기본"),
+    ("5", "0.15", "Pro"),
+    ("10", "0.20", "VIP"),
 ]
+DEFAULT_MIN_PAYOUT = "100"
 
 
-def _get_tier(referral_count: int) -> tuple[float, str]:
-    rate = COMMISSION_RATE
+async def get_config(db: AsyncSession, key: str, default: str = "") -> str:
+    result = await db.execute(
+        select(ReferralConfig).where(ReferralConfig.key == key)
+    )
+    row = result.scalar_one_or_none()
+    return row.value if row else default
+
+
+async def set_config(db: AsyncSession, key: str, value: str) -> None:
+    result = await db.execute(
+        select(ReferralConfig).where(ReferralConfig.key == key)
+    )
+    row = result.scalar_one_or_none()
+    if row:
+        row.value = value
+    else:
+        row = ReferralConfig(key=key, value=value)
+        db.add(row)
+    await db.commit()
+
+
+async def _load_tiers(db: AsyncSession) -> list[tuple[int, float, str]]:
+    raw = await get_config(db, "tiers")
+    if not raw:
+        return default_tiers()
+    try:
+        import json
+        parsed = json.loads(raw)
+        return [(int(t["min_refs"]), float(t["rate"]), t["label"]) for t in parsed]
+    except Exception:
+        return default_tiers()
+
+
+def default_tiers() -> list[tuple[int, float, str]]:
+    return [(int(t[0]), float(t[1]), t[2]) for t in DEFAULT_TIERS]
+
+
+async def get_min_payout(db: AsyncSession) -> int:
+    raw = await get_config(db, "min_payout", DEFAULT_MIN_PAYOUT)
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return 100
+
+
+def _get_tier(referral_count: int, tiers: list[tuple[int, float, str]]) -> tuple[float, str]:
+    rate = 0.10
     label = "기본"
-    for min_refs, tier_rate, tier_label in TIERS:
+    for min_refs, tier_rate, tier_label in tiers:
         if referral_count >= min_refs and tier_rate > rate:
             rate = tier_rate
             label = tier_label
@@ -39,7 +84,8 @@ async def get_referrer_tier(db: AsyncSession, referrer_id: str) -> tuple[float, 
         )
     )
     count = result.scalar_one_or_none() or 0
-    return _get_tier(count)
+    tiers = await _load_tiers(db)
+    return _get_tier(count, tiers)
 
 
 async def create_commission(
@@ -114,8 +160,11 @@ async def create_commission(
 
 async def process_payouts(
     db: AsyncSession,
-    min_amount: int = 100,
+    min_amount: int | None = None,
 ) -> tuple[int, int]:
+    if min_amount is None:
+        min_amount = await get_min_payout(db)
+
     result = await db.execute(
         select(
             ReferralCommission.referrer_id,
@@ -149,7 +198,23 @@ async def process_payouts(
     return payouts_created, total_amount
 
 
-async def approve_payout(db: AsyncSession, payout_id: str) -> bool:
+async def log_audit(
+    db: AsyncSession,
+    action: str,
+    actor_id: str | None = None,
+    target_id: str | None = None,
+    details: str = "",
+) -> None:
+    db.add(ReferralAuditLog(
+        action=action,
+        actor_id=actor_id,
+        target_id=target_id,
+        details=details,
+    ))
+    await db.commit()
+
+
+async def approve_payout(db: AsyncSession, payout_id: str, actor_id: str | None = None) -> bool:
     payout = await db.get(ReferralPayout, payout_id)
     if not payout or payout.status != "pending":
         return False
@@ -167,6 +232,13 @@ async def approve_payout(db: AsyncSession, payout_id: str) -> bool:
     )
     await db.commit()
 
+    await log_audit(
+        db, "payout.approve",
+        actor_id=actor_id,
+        target_id=payout_id,
+        details=f"Payout {payout_id} approved, amount={payout.amount}",
+    )
+
     referrer = await db.get(Tenant, payout.referrer_id)
     if referrer and referrer.telegram_chat_id:
         await _send_telegram_notification(
@@ -177,13 +249,20 @@ async def approve_payout(db: AsyncSession, payout_id: str) -> bool:
     return True
 
 
-async def cancel_commission(db: AsyncSession, commission_id: str) -> bool:
+async def cancel_commission(db: AsyncSession, commission_id: str, actor_id: str | None = None) -> bool:
     commission = await db.get(ReferralCommission, commission_id)
     if not commission or commission.status == "cancelled":
         return False
 
     commission.status = "cancelled"
     await db.commit()
+
+    await log_audit(
+        db, "commission.cancel",
+        actor_id=actor_id,
+        target_id=commission_id,
+        details=f"Commission {commission_id} cancelled, amount={commission.commission_amount}",
+    )
 
     referrer = await db.get(Tenant, commission.referrer_id)
     if referrer and referrer.telegram_chat_id:
@@ -195,7 +274,7 @@ async def cancel_commission(db: AsyncSession, commission_id: str) -> bool:
     return True
 
 
-async def cancel_commissions_by_payment(db: AsyncSession, source_payment_id: str) -> int:
+async def cancel_commissions_by_payment(db: AsyncSession, source_payment_id: str, actor_id: str | None = None) -> int:
     result = await db.execute(
         select(ReferralCommission).where(
             ReferralCommission.source_payment_id == source_payment_id,
@@ -208,6 +287,12 @@ async def cancel_commissions_by_payment(db: AsyncSession, source_payment_id: str
     for c in commissions:
         c.status = "cancelled"
         cancelled += 1
+        await log_audit(
+            db, "commission.cancel",
+            actor_id=actor_id,
+            target_id=c.id,
+            details=f"Auto-cancel by payment {source_payment_id}, amount={c.commission_amount}",
+        )
 
     if cancelled > 0:
         await db.commit()
@@ -225,6 +310,8 @@ async def get_pending_payouts(db: AsyncSession) -> list[ReferralPayout]:
 
 
 async def get_leaderboard(db: AsyncSession, limit: int = 20) -> list[dict]:
+    tiers = await _load_tiers(db)
+
     result = await db.execute(
         select(
             ReferralCommission.referrer_id,
@@ -242,7 +329,7 @@ async def get_leaderboard(db: AsyncSession, limit: int = 20) -> list[dict]:
     for rank, row in enumerate(rows, 1):
         tenant = await db.get(Tenant, row.referrer_id)
         count = row.ref_count
-        rate, tier_label = _get_tier(count)
+        rate, tier_label = _get_tier(count, tiers)
         entries.append({
             "rank": rank,
             "referrer_id": row.referrer_id,
@@ -329,6 +416,85 @@ async def get_stats(db: AsyncSession, days: int = 30) -> dict:
     }
 
 
+async def get_my_commissions(
+    db: AsyncSession,
+    referrer_id: str,
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[dict], int]:
+    total = await db.execute(
+        select(func.count(ReferralCommission.id))
+        .where(ReferralCommission.referrer_id == referrer_id)
+    )
+    total_count = total.scalar_one_or_none() or 0
+
+    result = await db.execute(
+        select(ReferralCommission)
+        .where(ReferralCommission.referrer_id == referrer_id)
+        .order_by(ReferralCommission.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    commissions = list(result.scalars().all())
+
+    items = []
+    for c in commissions:
+        referred = await db.get(Tenant, c.referred_user_id)
+        items.append({
+            "id": c.id,
+            "referred_user_phone": referred.phone if referred else "unknown",
+            "source_type": c.source_type,
+            "amount": c.amount,
+            "commission_rate": c.commission_rate,
+            "commission_amount": c.commission_amount,
+            "status": c.status,
+            "created_at": c.created_at,
+        })
+    return items, total_count
+
+
+async def set_wallet_address(db: AsyncSession, tenant_id: str, wallet_address: str) -> Tenant | None:
+    tenant = await db.get(Tenant, tenant_id)
+    if not tenant:
+        return None
+    tenant.wallet_address = wallet_address
+    await db.commit()
+    await db.refresh(tenant)
+    return tenant
+
+
+async def get_admin_code_stats(db: AsyncSession) -> list[dict]:
+    result = await db.execute(
+        select(
+            ReferralCode.code,
+            ReferralCode.owner_id,
+            ReferralCode.expires_at,
+            ReferralCode.created_at,
+        )
+        .order_by(ReferralCode.created_at.desc())
+    )
+    codes = result.all()
+
+    items = []
+    for code_row in codes:
+        owner = await db.get(Tenant, code_row.owner_id)
+        ref_count = await db.execute(
+            select(func.count(ReferralCommission.id))
+            .where(
+                ReferralCommission.referrer_id == code_row.owner_id,
+                ReferralCommission.status.in_(["pending", "paid"]),
+            )
+        )
+        items.append({
+            "code": code_row.code,
+            "owner_phone": owner.phone if owner else "unknown",
+            "used_count": ref_count.scalar_one_or_none() or 0,
+            "expires_at": code_row.expires_at,
+            "created_at": code_row.created_at,
+        })
+    return items
+
+
 def generate_commissions_csv(commissions: list[dict]) -> str:
     output = io.StringIO()
     writer = csv.writer(output)
@@ -358,7 +524,8 @@ def generate_stats_csv(stats: dict) -> str:
 async def run_auto_payouts() -> tuple[int, int]:
     from app.database import async_session_maker as _session_maker
     async with _session_maker() as db:
-        return await process_payouts(db)
+        min_amount = await get_min_payout(db)
+        return await process_payouts(db, min_amount)
 
 
 async def _send_telegram_notification(chat_id: str, text: str) -> None:

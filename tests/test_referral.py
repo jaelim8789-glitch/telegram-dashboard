@@ -207,25 +207,27 @@ async def test_referral_link_endpoint(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_tier_calculation():
     """Verify tier-based commission rate calculation."""
-    from app.services.referral import _get_tier
+    from app.services.referral import _get_tier, default_tiers
 
-    rate0, label0 = _get_tier(0)
+    tiers = default_tiers()
+
+    rate0, label0 = _get_tier(0, tiers)
     assert rate0 == 0.10
     assert label0 == "기본"
 
-    rate1, label1 = _get_tier(3)
+    rate1, label1 = _get_tier(3, tiers)
     assert rate1 == 0.10
     assert label1 == "기본"
 
-    rate2, label2 = _get_tier(5)
+    rate2, label2 = _get_tier(5, tiers)
     assert rate2 == 0.15
     assert label2 == "Pro"
 
-    rate3, label3 = _get_tier(10)
+    rate3, label3 = _get_tier(10, tiers)
     assert rate3 == 0.20
     assert label3 == "VIP"
 
-    rate4, label4 = _get_tier(20)
+    rate4, label4 = _get_tier(20, tiers)
     assert rate4 == 0.20
     assert label4 == "VIP"
 
@@ -443,3 +445,141 @@ async def test_duplicate_commission_prevention():
 
         c2 = await create_commission(db, referred.id, "dup-payment", "stars", 5000)
         assert c2 is None
+
+
+@pytest.mark.asyncio
+async def test_my_commissions_endpoint(client: AsyncClient):
+    """GET /api/referrals/my-commissions should return commission list for authenticated user."""
+    res = await client.get("/api/referrals/my-commissions")
+    assert res.status_code == 401
+
+    from app.core.security import create_user_access_token
+    from app.models.user import User
+
+    async with async_session_maker() as db:
+        user = User(phone="+821099999995")
+        db.add(user)
+        referrer = Tenant(phone="+821099999995", plan="pro")
+        db.add(referrer)
+        referred = Tenant(phone="+821099999996", plan="free")
+        db.add(referred)
+        await db.commit()
+        await db.refresh(user)
+        await db.refresh(referrer)
+        await db.refresh(referred)
+
+        user_jwt = create_user_access_token(user.id)
+
+        ref_code = ReferralCode(code="MYCOMM01", owner_id=referrer.id)
+        db.add(ref_code)
+        await db.flush()
+        referred.referred_by = ref_code.id
+        await db.flush()
+
+        from app.services.referral import create_commission
+        await create_commission(db, referred.id, "mc-pay-1", "stars", 10000)
+        await create_commission(db, referred.id, "mc-pay-2", "usdt", 20000)
+
+    from app.core.rate_limiter import reset_rate_limits
+    reset_rate_limits()
+    res = await client.get("/api/referrals/my-commissions",
+                           headers={"Authorization": f"Bearer {user_jwt}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_count"] >= 2
+
+
+@pytest.mark.asyncio
+async def test_set_wallet_endpoint(client: AsyncClient):
+    """POST /api/referrals/set-wallet should store wallet address."""
+    res = await client.post("/api/referrals/set-wallet", json={"wallet_address": "0x1234567890abcdef"})
+    assert res.status_code == 401
+
+    from app.core.security import create_user_access_token
+    from app.models.user import User
+
+    async with async_session_maker() as db:
+        user = User(phone="+821099999997")
+        db.add(user)
+        tenant = Tenant(phone="+821099999997", plan="free")
+        db.add(tenant)
+        await db.commit()
+        await db.refresh(user)
+        user_jwt = create_user_access_token(user.id)
+
+    from app.core.rate_limiter import reset_rate_limits
+    reset_rate_limits()
+    res = await client.post("/api/referrals/set-wallet",
+                            json={"wallet_address": "TXYZ123456789"},
+                            headers={"Authorization": f"Bearer {user_jwt}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_admin_settings_endpoint(client: AsyncClient, admin_token: str):
+    """GET/PUT /api/referrals/admin/settings should work for admin only."""
+    from app.core.rate_limiter import reset_rate_limits
+    reset_rate_limits()
+
+    # no auth
+    res = await client.get("/api/referrals/admin/settings")
+    assert res.status_code == 401
+
+    # admin auth
+    res = await client.get("/api/referrals/admin/settings", headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "settings" in data
+
+    # update settings
+    res = await client.put("/api/referrals/admin/settings",
+                           json={"settings": [{"key": "min_payout", "value": "50"}]},
+                           headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 200
+
+    # verify
+    res = await client.get("/api/referrals/admin/settings", headers={"Authorization": f"Bearer {admin_token}"})
+    data = res.json()
+    min_payout = next((s for s in data["settings"] if s["key"] == "min_payout"), None)
+    assert min_payout is not None
+    assert min_payout["value"] == "50"
+
+
+@pytest.mark.asyncio
+async def test_admin_codes_endpoint(client: AsyncClient, admin_token: str):
+    """GET /api/referrals/admin/codes should return code stats for admin only."""
+    res = await client.get("/api/referrals/admin/codes")
+    assert res.status_code == 401
+
+    res = await client.get("/api/referrals/admin/codes", headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "items" in data
+
+
+@pytest.mark.asyncio
+async def test_referral_rate_limit(client: AsyncClient):
+    """Rate limit should trigger after too many generate requests."""
+    from app.core.security import create_user_access_token
+    from app.models.user import User
+
+    async with async_session_maker() as db:
+        user = User(phone="+821099999998")
+        db.add(user)
+        tenant = Tenant(phone="+821099999998", plan="free")
+        db.add(tenant)
+        await db.commit()
+        await db.refresh(user)
+        user_jwt = create_user_access_token(user.id)
+
+    from app.core.rate_limiter import reset_rate_limits
+    reset_rate_limits()
+
+    for _ in range(5):
+        res = await client.post("/api/referrals/generate", headers={"Authorization": f"Bearer {user_jwt}"})
+        assert res.status_code == 200
+
+    res = await client.post("/api/referrals/generate", headers={"Authorization": f"Bearer {user_jwt}"})
+    assert res.status_code == 429
