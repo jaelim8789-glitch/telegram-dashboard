@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 /**
  * PWA 설치 프롬프트 — beforeinstallprompt 이벤트를 캐치하여
  * "앱 설치하기" 버튼을 표시합니다. 사용자가 거절하면 7일간 다시 안 보입니다.
  */
 export default function PwaInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const DISMISS_KEY = "pwa_install_dismissed_at";
 
@@ -26,7 +31,7 @@ export default function PwaInstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShow(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
