@@ -67,6 +67,9 @@ class Tenant(Base):
     referral_code: Mapped[str] = mapped_column(String(20), unique=True, default=lambda: str(uuid.uuid4())[:8])
     referral_earnings: Mapped[int] = mapped_column(Integer, default=0)
     
+    # Telegram notification
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -302,3 +302,92 @@ async def test_admin_approve_payout_no_auth(client: AsyncClient):
     """POST /api/referrals/admin/payouts/{id}/approve should require admin."""
     res = await client.post("/api/referrals/admin/payouts/fake-id/approve")
     assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_referral_stats_no_auth(client: AsyncClient):
+    """GET /api/referrals/stats should require auth."""
+    res = await client.get("/api/referrals/stats")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_set_chat_id_no_auth(client: AsyncClient):
+    """POST /api/referrals/set-chat-id should require auth."""
+    res = await client.post("/api/referrals/set-chat-id", json={"chat_id": "12345"})
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_cancel_commission_no_auth(client: AsyncClient):
+    """POST /api/referrals/admin/commissions/{id}/cancel should require admin."""
+    res = await client.post("/api/referrals/admin/commissions/fake-id/cancel")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_cancel_commission():
+    """Verify cancel_commission sets status to cancelled and sends notification."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821011111112", plan="pro", telegram_chat_id="99999")
+        db.add(referrer)
+        await db.flush()
+
+        referred = Tenant(phone="+821011111113", plan="free")
+        db.add(referred)
+        await db.flush()
+
+        comm = ReferralCommission(
+            referrer_id=referrer.id, referred_user_id=referred.id,
+            source_payment_id="cancel-test", source_type="stars",
+            amount=5000, commission_rate=0.10,
+            commission_amount=500, status="pending",
+        )
+        db.add(comm)
+        await db.commit()
+
+        from app.services.referral import cancel_commission
+        ok = await cancel_commission(db, comm.id)
+        assert ok is True
+
+        result = await db.get(ReferralCommission, comm.id)
+        assert result.status == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_cancel_commissions_by_payment():
+    """Verify cancelling by payment_id cancels all matching pending commissions."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821011111114", plan="pro")
+        db.add(referrer)
+        await db.flush()
+
+        referred = Tenant(phone="+821011111115", plan="free")
+        db.add(referred)
+        await db.flush()
+
+        for i in range(3):
+            c = ReferralCommission(
+                referrer_id=referrer.id, referred_user_id=referred.id,
+                source_payment_id="payment-refund-1", source_type="stars",
+                amount=3000, commission_rate=0.10,
+                commission_amount=300, status="pending",
+            )
+            db.add(c)
+        await db.commit()
+
+        from app.services.referral import cancel_commissions_by_payment
+        cancelled = await cancel_commissions_by_payment(db, "payment-refund-1")
+        assert cancelled == 3
+
+
+@pytest.mark.asyncio
+async def test_stats_endpoint():
+    """Verify stats endpoint returns expected structure."""
+    async with async_session_maker() as db:
+        from app.services.referral import get_stats
+        data = await get_stats(db)
+        assert "total_referrers" in data
+        assert "total_referred" in data
+        assert "daily" in data
+        assert len(data["daily"]) == 30

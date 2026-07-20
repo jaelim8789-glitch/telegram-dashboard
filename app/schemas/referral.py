@@ -70,3 +70,23 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     items: list[LeaderboardEntry] = []
+
+
+class DailyStatsItem(BaseModel):
+    date: str
+    signups: int = 0
+    commissions: int = 0
+
+
+class ReferralStatsResponse(BaseModel):
+    total_referrers: int = 0
+    total_referred: int = 0
+    total_commissions_pending: int = 0
+    total_commissions_paid: int = 0
+    total_commission_amount_pending: int = 0
+    total_commission_amount_paid: int = 0
+    daily: list[DailyStatsItem] = []
+
+
+class SetChatIdRequest(BaseModel):
+    chat_id: str
