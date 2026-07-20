@@ -29,6 +29,7 @@ import {
   RECURRING_INTERVALS, NORMAL_DELAY_OPTIONS,
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
   type Broadcast, type BroadcastStatus, type Group, type GroupType, type GroupFolder,
+  type DistributionSibling,
 } from "@/types";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
@@ -518,6 +519,11 @@ export function SendTab() {
   const historyPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const HISTORY_FILTER_KEY = "telemon-history-filter";
 
+  // 계정별 분산 발송 현황 — 발송이 여러 계정으로 쪼개졌을 때만 채워짐 (distributionBatchId 있는 경우)
+  const [distributionBatchId, setDistributionBatchId] = useState<string | null>(null);
+  const [distributionSiblings, setDistributionSiblings] = useState<DistributionSibling[]>([]);
+  const distributionPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>(() => {
     try {
       const saved = localStorage.getItem(HISTORY_FILTER_KEY);
@@ -761,6 +767,21 @@ export function SendTab() {
     return () => { if (historyPollTimer.current) clearTimeout(historyPollTimer.current); };
   }, [bgPollTick, selectedAccountId, loadHistory]);
 
+  async function loadDistributionStatus(batchId: string) {
+    try {
+      const siblings = await api.fetchDistributionStatus(batchId);
+      setDistributionSiblings(siblings);
+    } catch { /* silent — keep showing the last known state */ }
+  }
+
+  // 분산 발송의 계정별 진행 상태를 실시간 폴링 (하나라도 in-flight면 계속)
+  useEffect(() => {
+    if (distributionPollTimer.current) { clearTimeout(distributionPollTimer.current); distributionPollTimer.current = null; }
+    if (!distributionBatchId || !distributionSiblings.some((s) => isBroadcastInFlight(s.broadcast))) return;
+    distributionPollTimer.current = setTimeout(() => { loadDistributionStatus(distributionBatchId); }, POLL_INTERVAL_MS);
+    return () => { if (distributionPollTimer.current) clearTimeout(distributionPollTimer.current); };
+  }, [distributionBatchId, distributionSiblings]);
+
   async function handleManualRefresh() {
     if (!selectedAccountId || historyRefreshing) return;
     setHistoryRefreshing(true);
@@ -1002,7 +1023,7 @@ export function SendTab() {
       // 답장 모드가 활성화되면 delivery_mode를 "reply"로 설정
       const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim() ? "reply" : deliveryMode;
       // Use send-to-group API when sending to groups (no manual recipients)
-      await api.createBroadcast({
+      const created = await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
         recipients: selectedRecipientIds,
@@ -1022,12 +1043,20 @@ export function SendTab() {
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
       const modeLabel = deliveryMode === "cycle" ? "사이클 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
-      if (isRecurring) {
-        const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
-        setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
+      if (created.distributionBatchId) {
+        setDistributionBatchId(created.distributionBatchId);
+        void loadDistributionStatus(created.distributionBatchId);
+        setSubmitNotice(`${modeLabel} 대상이 많아 여러 계정에 나눠서 보냅니다. 아래 "계정별 분산 발송 현황"에서 진행 상태를 확인하세요.`);
+      } else {
+        setDistributionBatchId(null);
+        setDistributionSiblings([]);
+        if (isRecurring) {
+          const intervalLabel = RECURRING_INTERVALS.find((i) => i.value === recurringInterval)?.label ?? `${recurringInterval}분`;
+          setSubmitNotice(`✅ 반복 설정 완료 (${intervalLabel} 간격)\n방금 첫 발송이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
+        }
+        else if (scheduledAtIso) setSubmitNotice(`${modeLabel}이 예약되었습니다. 아래 발송 이력에서 확인하세요.`);
+        else setSubmitNotice(`${modeLabel} 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
       }
-      else if (scheduledAtIso) setSubmitNotice(`${modeLabel}이 예약되었습니다. 아래 발송 이력에서 확인하세요.`);
-      else setSubmitNotice(`${modeLabel} 작업이 시작되었습니다. 아래 발송 이력에서 진행 상태를 확인하세요.`);
 
       clearSendDraft();
       clearPersistedDraft();
@@ -1824,6 +1853,52 @@ export function SendTab() {
           )}
         </form>
       </Panel>
+
+      {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
+      {distributionBatchId && distributionSiblings.length > 0 && (
+        <Panel
+          title={
+            <div className="flex items-center gap-2">
+              <Users2 className="h-4 w-4 text-app-primary" />
+              계정별 분산 발송 현황
+            </div>
+          }
+          description={`대상이 많아 계정 ${distributionSiblings.length}개에 나눠서 보냈습니다`}
+          action={
+            <button
+              onClick={() => loadDistributionStatus(distributionBatchId)}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              새로고침
+            </button>
+          }
+        >
+          <div className="space-y-2">
+            {distributionSiblings.map((sib) => {
+              const meta = STATUS_META[sib.broadcast.status];
+              const groupCount = sib.broadcast.recipients.length;
+              return (
+                <div
+                  key={sib.broadcast.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-app-border/60 bg-app-bg/30 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-app-text truncate">
+                      {sib.accountName || sib.accountPhone}
+                    </div>
+                    <div className="text-[11px] text-app-text-muted">{groupCount}개 그룹 배정</div>
+                  </div>
+                  <Badge tone={meta.tone} className="shrink-0 gap-1">
+                    <meta.icon className="h-3 w-3" />
+                    {meta.label}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
 
       {/* ── History Panel ── */}
       <Panel

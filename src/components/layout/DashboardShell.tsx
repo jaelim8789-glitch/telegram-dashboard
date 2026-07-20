@@ -82,9 +82,9 @@ export function DashboardShell() {
           aria-label={sidebarOpen ? "계정 사이드바 닫기" : "계정 사이드바 열기"}
           aria-expanded={sidebarOpen}
           aria-controls="dashboard-sidebar"
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+          className="flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
         >
-          <Menu className="h-3.5 w-3.5" /> 계정
+          <Menu className="h-4 w-4" /> 계정
         </button>
         <CommandPaletteTrigger />
         <button
@@ -93,9 +93,9 @@ export function DashboardShell() {
           aria-label={inspectorOpen ? "인스펙터 패널 닫기" : "인스펙터 패널 열기"}
           aria-expanded={inspectorOpen}
           aria-controls="dashboard-inspector"
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all ml-auto"
+          className="flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all ml-auto"
         >
-          인스펙터 <X className="h-3.5 w-3.5" />
+          인스펙터 <X className="h-4 w-4" />
         </button>
       </div>
       <div className="relative flex min-h-0 flex-1">

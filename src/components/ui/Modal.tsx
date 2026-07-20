@@ -134,6 +134,7 @@ export function Modal({
             className={cn(
               "relative flex max-h-[85dvh] w-full flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl",
               "scrollbar-thin",
+              "mx-auto max-w-[calc(100vw-2rem)] sm:max-w-none",
               SIZE_STYLE[size],
               className
             )}

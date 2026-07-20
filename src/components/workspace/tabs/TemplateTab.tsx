@@ -389,13 +389,13 @@ export function TemplateTab() {
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditor(false)} aria-hidden="true">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowEditor(false)} aria-hidden="true">
           <div
             ref={editorRef}
             role="dialog"
             aria-modal="true"
             aria-label={editingTemplate ? "템플릿 수정" : "새 템플릿"}
-            className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl"
+            className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl mx-auto max-h-[85dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
