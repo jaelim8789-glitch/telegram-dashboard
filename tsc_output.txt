@@ -1,8 +1,0 @@
-src/app/admin/dashboard/page.tsx(371,11): error TS2322: Type '"purple"' is not assignable to type '"indigo" | "emerald" | "amber" | "rose" | "cyan" | "violet" | undefined'.
-src/app/admin/style-profiles/page.tsx(268,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(276,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(284,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(292,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(300,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(310,23): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/app/admin/style-profiles/page.tsx(317,23): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
