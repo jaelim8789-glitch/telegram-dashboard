@@ -1191,7 +1191,7 @@ export async function analyzeStyleProfile(input: { name: string; source_type: st
 }
 
 export async function fetchStyleProfiles(): Promise<StyleProfile[]> {
-  return request<StyleProfile[]>("/api/admin/style-profiles");
+  return request<StyleProfile[]>("/api/style-profiles");
 }
 
 export async function fetchStyleProfile(id: string): Promise<StyleProfile> {
