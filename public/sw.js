@@ -1,7 +1,17 @@
-// TeleMon PWA Service Worker — v1
+// TeleMon PWA Service Worker
 // Cache-first for static assets, network-first for API calls.
+//
+// IMPORTANT: CACHE_NAME must change on any deploy that should invalidate
+// old clients' caches. It was hardcoded as "telemon-v1" forever, so the
+// activate handler's cleanup (which deletes any cache key != CACHE_NAME)
+// never actually fired — old caches (including the pre-cached "/" shell)
+// stuck around indefinitely and kept serving stale UI to already-visited
+// browsers no matter how many times the site was redeployed or how hard
+// the user refreshed (a service worker sits in front of the HTTP cache
+// entirely). Bump this string whenever a deploy needs to force a clean
+// cache for returning users.
 
-const CACHE_NAME = "telemon-v1";
+const CACHE_NAME = "telemon-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
