@@ -182,6 +182,7 @@ export function HealthTab() {
             <div className="mt-1 text-lg font-bold tabular-nums text-app-danger">{summary.unhealthy_count}</div>
             <div className="text-[10px] text-app-text-subtle">
               {statusCounts["banned"] ? `${statusCounts["banned"]}개 차단` : ""}
+              {statusCounts["restricted"] ? ` ${statusCounts["restricted"]}개 제재의심` : ""}
               {statusCounts["unauthorized"] ? ` ${statusCounts["unauthorized"]}개 인증필요` : ""}
             </div>
           </div>

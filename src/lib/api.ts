@@ -1182,6 +1182,7 @@ export interface HealthSummary {
   total_failure: number;
   average_health_score: number;
   health_scores: { account_id: string; score: number }[];
+  restricted: number;
 }
 
 export interface HealthTrendPoint {
