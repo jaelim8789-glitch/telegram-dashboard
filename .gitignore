@@ -69,6 +69,7 @@ audit_*.cjs
 build_output.txt
 dev_*.txt
 resp.txt
+test_server.ps1
 
 # nested backend repo checked out locally (separate git repo, not a submodule) + stray log dump
 /telegram-dashboard-backend/
