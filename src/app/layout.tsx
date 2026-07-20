@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
+import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <RuntimeInitializer />
+        <CommandPaletteProvider />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
