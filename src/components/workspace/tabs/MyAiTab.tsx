@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, ExternalLink, Loader2, ChevronRight, Users } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, ExternalLink, Loader2, ChevronRight, Users, Flame, Gift, Award, Zap } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/cn";
+import { getTokenBalance, checkIn, getStreak, getQuests, updateQuestProgress, canAffordAiCall, getAiCallCost } from "@/lib/token-system";
 import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
 import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
 import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
@@ -26,9 +28,110 @@ const SUB_TABS = [
 
 export function MyAiTab() {
   const [activeSub, setActiveSub] = useState("chat");
+  const [streak, setStreak] = useState(0);
+  const [streakReward, setStreakReward] = useState(0);
+  const [showReward, setShowReward] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [quests, setQuests] = useState(getQuests());
+  const [showQuests, setShowQuests] = useState(false);
+  const [showTokenInfo, setShowTokenInfo] = useState(false);
+
+  const refreshToken = useCallback(() => {
+    setBalance(getTokenBalance());
+    setQuests(getQuests());
+  }, []);
+
+  useEffect(() => {
+    refreshToken();
+    const s = getStreak();
+    setStreak(s.current);
+  }, [refreshToken]);
+
+  function handleCheckIn() {
+    const result = checkIn();
+    if (result.reward > 0) {
+      setStreakReward(result.reward);
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 3000);
+    }
+    setStreak(result.streak);
+    refreshToken();
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const alreadyCheckedIn = getStreak().last_checkin === todayStr;
 
   return (
     <div className="flex flex-col gap-4">
+      {/* ── 토큰/출석/퀘스트 배너 ── */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-gradient-to-r from-app-card to-app-bg p-3">
+        {/* 토큰 게이지 */}
+        <button onClick={() => setShowTokenInfo(!showTokenInfo)} className="flex items-center gap-2 rounded-lg px-3 py-1.5 bg-app-card-hover hover:bg-app-border transition-colors">
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span className="text-sm font-bold tabular-nums text-app-text">{balance.toLocaleString()}</span>
+          <span className="text-[10px] text-app-text-muted">토큰</span>
+        </button>
+
+        {/* 출석 체크인 */}
+        <button
+          onClick={handleCheckIn}
+          disabled={alreadyCheckedIn}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+            alreadyCheckedIn
+              ? "bg-app-success-muted/30 text-app-success cursor-default"
+              : "bg-app-primary/10 text-app-primary hover:bg-app-primary/20"
+          )}
+        >
+          <Flame className={cn("h-3.5 w-3.5", streak >= 7 && "text-orange-500")} />
+          {alreadyCheckedIn ? `${streak}일째 ✅` : `출석 ${streak + 1}일`}
+        </button>
+
+        {/* 퀘스트 토글 */}
+        <button onClick={() => setShowQuests(!showQuests)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-app-card-hover hover:bg-app-border transition-colors text-app-text-muted">
+          <Award className="h-3.5 w-3.5 text-purple-500" />
+          퀘스트 {quests.filter(q => q.completed).length}/{quests.length}
+        </button>
+      </div>
+
+      {/* 토큰 정보 */}
+      {showTokenInfo && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs space-y-1.5">
+          <p className="font-medium text-app-text flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-amber-500" /> AI 기능별 토큰 소모</p>
+          <div className="grid grid-cols-2 gap-1 text-app-text-muted">
+            <span>AI 채팅/답장: 50토큰</span>
+            <span>AI 발송/분석: 100토큰</span>
+            <span>콘텐츠 스튜디오: 200토큰</span>
+            <span>출석 7일: +100토큰</span>
+          </div>
+          <p className="text-app-text-muted mt-1">토큰을 얻는 방법: 매일 출석 · 퀘스트 완료 · 새 그룹 발견</p>
+        </div>
+      )}
+
+      {/* 출석 리워드 팝업 */}
+      {showReward && (
+        <div className="rounded-xl border border-app-success/30 bg-gradient-to-r from-app-success-muted/30 to-app-bg p-3 text-center animate-pulse">
+          <Gift className="h-5 w-5 mx-auto text-app-success mb-1" />
+          <p className="text-sm font-bold text-app-success">🎉 +{streakReward}토큰!</p>
+          <p className="text-xs text-app-text-muted">출석 {streak}일째 보상</p>
+        </div>
+      )}
+
+      {/* 퀘스트 목록 */}
+      {showQuests && (
+        <div className="rounded-xl border border-app-border bg-app-card p-3 space-y-2">
+          <p className="text-xs font-semibold text-app-text flex items-center gap-1"><Award className="h-3.5 w-3.5 text-purple-500" /> 이번 주 퀘스트</p>
+          {quests.map(q => (
+            <div key={q.id} className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs", q.completed ? "bg-app-success-muted/20" : "bg-app-bg")}>
+              <span className={cn("h-2 w-2 rounded-full", q.completed ? "bg-app-success" : "bg-app-text-subtle/30")} />
+              <span className={cn("flex-1", q.completed ? "text-app-text-muted line-through" : "text-app-text")}>{q.label}</span>
+              <span className="text-app-text-muted">{q.progress}/{q.target}</span>
+              <span className="font-medium text-amber-500">+{q.reward}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* 서브탭 네비게이션 */}
       <div className="flex flex-wrap gap-1.5">
         {SUB_TABS.map(tab => (
