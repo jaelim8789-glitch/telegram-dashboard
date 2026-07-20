@@ -7,7 +7,7 @@ import {
   Activity, HeadphonesIcon, KeyRound, LogOut, RefreshCw,
   Shield, Users, XCircle, AlertTriangle, HeartPulse,
   Ban, Clock, WifiOff, Plug, HelpCircle, Layers,
-  CheckCircle2, ChevronRight,
+  CheckCircle2, ChevronRight, Sparkles,
 } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
@@ -338,7 +338,7 @@ function AdminDashboardContent() {
       </Panel>
 
       {/* Quick actions + system info */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Panel
           accent="indigo"
           title={<div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-indigo-400" />API 키 관리</div>}
@@ -363,6 +363,20 @@ function AdminDashboardContent() {
             <p>전화번호 인증으로 가입한 일반 사용자의 활성화 상태를 관리합니다.</p>
             <Link href="/admin/users">
               <Button variant="primary" className="w-full">사용자 관리</Button>
+            </Link>
+          </div>
+        </Panel>
+
+        <Panel
+          accent="purple"
+          title={<div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-purple-400" />AI 말투 학습</div>}
+          description="스타일 프로필 생성·관리"
+          action={<span className="inline-flex items-center rounded-full bg-purple-500/10 px-2 py-0.5 text-[11px] font-medium text-purple-400">신규</span>}
+        >
+          <div className="space-y-2 text-xs text-app-text-muted">
+            <p>채널 글/텍스트를 분석하여 AI 콘텐츠 생성에 활용할 말투 프로필을 만듭니다.</p>
+            <Link href="/admin/style-profiles">
+              <Button variant="primary" className="w-full">말투 학습 바로가기</Button>
             </Link>
           </div>
         </Panel>
