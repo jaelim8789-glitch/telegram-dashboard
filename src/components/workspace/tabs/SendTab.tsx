@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
-  CalendarDays, Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
+  CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
@@ -179,6 +179,7 @@ function HistoryRow({
   onRetry,
   onReuse,
   onClone,
+  onPauseResume,
 }: {
   h: Broadcast;
   cancelling: string | null;
@@ -187,6 +188,7 @@ function HistoryRow({
   onRetry: (b: Broadcast) => void;
   onReuse: (b: Broadcast) => void;
   onClone: (b: Broadcast) => void;
+  onPauseResume?: (b: Broadcast) => void;
 }) {
   const meta = STATUS_META[h.status];
   const Icon = meta.icon;
@@ -352,6 +354,29 @@ function HistoryRow({
           </button>
         )}
 
+        {recurring && !recurringCancelled && (
+          <>
+            {h.isRecurringPaused ? (
+              <button
+                type="button"
+                onClick={() => onPauseResume?.(h)}
+                title="반복 재개"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-app-success transition-colors hover:bg-app-success-muted"
+              >
+                <Play className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onPauseResume?.(h)}
+                title="반복 일시정지"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted"
+              >
+                <Pause className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </>
+        )}
         {canStop && (
           <button
             type="button"
@@ -502,6 +527,7 @@ export function SendTab() {
   const [recentSets, setRecentSets] = useState<string[][]>([]);
   const [estimatePreview, setEstimatePreview] = useState<{ estimated_seconds: number; estimated_minutes: number; readable: string } | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
+
   const [batchRetrying, setBatchRetrying] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
@@ -531,6 +557,9 @@ export function SendTab() {
   const [distributionSiblings, setDistributionSiblings] = useState<DistributionSibling[]>([]);
   const distributionPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateFrom, setHistoryDateFrom] = useState("");
+  const [historyDateTo, setHistoryDateTo] = useState("");
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>(() => {
     try {
       const saved = localStorage.getItem(HISTORY_FILTER_KEY);
@@ -551,6 +580,28 @@ export function SendTab() {
     [groups, selectedIds],
   );
   const selectedRecipientIds = useMemo(() => selectedRecipients.map((g) => g.id), [selectedRecipients]);
+
+  // Auto-fetch send time estimate when message or recipients change
+  useEffect(() => {
+    if (!selectedAccountId || selectedRecipientIds.length === 0 || !message.trim()) {
+      setEstimatePreview(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setEstimateLoading(true);
+      try {
+        const est = await api.fetchBroadcastEstimate({
+          accountId: selectedAccountId,
+          recipientCount: selectedRecipientIds.length,
+          deliveryMode: deliveryMode === "reply" ? "normal" : deliveryMode,
+          delaySeconds: normalDelaySeconds,
+        });
+        setEstimatePreview(est);
+      } catch { setEstimatePreview(null); }
+      finally { setEstimateLoading(false); }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [selectedAccountId, selectedRecipientIds.length, message.trim(), deliveryMode, normalDelaySeconds]);
 
   const { toast } = useToast();
 
@@ -893,9 +944,26 @@ export function SendTab() {
 
   /** History summary stats when not filtered by "all" */
   const filteredHistory = useMemo(() => {
-    if (historyFilter === "all") return history;
-    return history.filter((h) => h.status === historyFilter);
-  }, [history, historyFilter]);
+    let result = history;
+    if (historyFilter !== "all") {
+      result = result.filter((h) => h.status === historyFilter);
+    }
+    if (historySearch.trim()) {
+      const q = historySearch.trim().toLowerCase();
+      result = result.filter((h) =>
+        h.message.toLowerCase().includes(q) ||
+        h.recipients.some((r) => r.toLowerCase().includes(q)) ||
+        (h.errorMessage && h.errorMessage.toLowerCase().includes(q))
+      );
+    }
+    if (historyDateFrom) {
+      result = result.filter((h) => (h.scheduledAt || h.createdAt) >= historyDateFrom);
+    }
+    if (historyDateTo) {
+      result = result.filter((h) => (h.scheduledAt || h.createdAt) <= historyDateTo + "T23:59:59");
+    }
+    return result;
+  }, [history, historyFilter, historySearch, historyDateFrom, historyDateTo]);
 
   const statusCounts = useMemo((): Record<string, number> => {
     const counts: Record<string, number> = { all: history.length };
@@ -1113,6 +1181,22 @@ export function SendTab() {
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "발송 중단에 실패했습니다.");
     } finally { setCancelling(null); }
+  }
+
+  async function handlePauseRecurring(broadcast: Broadcast) {
+    if (!selectedAccountId) return;
+    try {
+      await api.pauseRecurringBroadcast(broadcast.id);
+      await loadHistory(selectedAccountId);
+    } catch { /* silent */ }
+  }
+
+  async function handleUnpauseRecurring(broadcast: Broadcast) {
+    if (!selectedAccountId) return;
+    try {
+      await api.unpauseRecurringBroadcast(broadcast.id);
+      await loadHistory(selectedAccountId);
+    } catch { /* silent */ }
   }
 
   function handleCancelClick(b: Broadcast) {
@@ -2050,6 +2134,7 @@ export function SendTab() {
                 onCancelClick={handleCancelClick} onRetry={handleRetry}
                 onReuse={handleReuse}
                 onClone={handleClone}
+                onPauseResume={(b) => b.isRecurringPaused ? handleUnpauseRecurring(b) : handlePauseRecurring(b)}
               />
             ))}
           </div>
