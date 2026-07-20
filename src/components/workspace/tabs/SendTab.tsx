@@ -57,6 +57,33 @@ const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
 type HistoryFilter = BroadcastStatus | "all" | "recurring";
 
+// 답장매크로 "중복 제거" — 계정+답장 대상 메시지 ID 조합으로 이미 답장한 수신자를 브라우저에 기억해뒀다가 다음 발송에서 제외한다.
+function replyDedupeKey(accountId: string, replyToMessageId: string) {
+  return `telemon-reply-dedupe:${accountId}:${replyToMessageId}`;
+}
+function loadReplyDedupeSet(accountId: string, replyToMessageId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(replyDedupeKey(accountId, replyToMessageId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+function addToReplyDedupeSet(accountId: string, replyToMessageId: string, recipientIds: string[]) {
+  try {
+    const key = replyDedupeKey(accountId, replyToMessageId);
+    const existing = loadReplyDedupeSet(accountId, replyToMessageId);
+    recipientIds.forEach((id) => existing.add(id));
+    localStorage.setItem(key, JSON.stringify([...existing]));
+  } catch { /* ignore */ }
+}
+function shuffled<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 // Mirrors GroupTab's type taxonomy so a group/channel filters identically in both places.
 const TYPE_LABEL: Record<GroupType, string> = {
   group: "그룹",
@@ -188,6 +215,7 @@ export function SendTab() {
   const [batchSize, setBatchSize] = useState<number>(1);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
+  const [dedupeReply, setDedupeReply] = useState(false);
   const [autoRetry, setAutoRetry] = useState(false);
   const [autoRetryCount, setAutoRetryCount] = useState(3);
   const [autoRetryInterval, setAutoRetryInterval] = useState(5);
@@ -217,6 +245,7 @@ export function SendTab() {
   const handleReuse = useCallback((b: Broadcast) => {
     reuseBroadcast(b);
     setInlineButtons(b.inlineButtons?.filter((btn) => btn.label && btn.url) ?? []);
+    setDedupeReply(false);
     if (b.replyToMessageId != null) {
       setReplyMacroEnabled(true);
       setReplyToMessageId(String(b.replyToMessageId));
@@ -587,7 +616,7 @@ export function SendTab() {
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal");
-      setReplyMacroEnabled(false); setReplyToMessageId("");
+      setReplyMacroEnabled(false); setReplyToMessageId(""); setDedupeReply(false);
       setSearch("");
     }
     setSubmitError(null);
@@ -819,6 +848,18 @@ export function SendTab() {
     if (isScheduled && !scheduledAtLocal) return;
     if (isRecurring && !recurringInterval) return;
 
+    // 답장매크로 + 중복 제거: 이미 이 메시지에 답장한 대상을 제외하고 남은 대상 중 랜덤 순서로 발송
+    let effectiveRecipients = selectedRecipientIds;
+    if (replyMacroEnabled && dedupeReply && replyToMessageId.trim()) {
+      const alreadyReplied = loadReplyDedupeSet(selectedAccountId ?? "", replyToMessageId.trim());
+      const remaining = selectedRecipientIds.filter((id) => !alreadyReplied.has(id));
+      if (remaining.length === 0) {
+        setSubmitError("선택한 대상은 이미 모두 이 메시지에 답장을 받았습니다. 다른 대상을 선택하거나 중복 제거를 꺼주세요.");
+        return;
+      }
+      effectiveRecipients = shuffled(remaining);
+    }
+
     setSubmitting(true);
     setSubmitError(null);
     setSubmitNotice(null);
@@ -830,7 +871,7 @@ export function SendTab() {
       const created = await api.createBroadcast({
         accountId: selectedAccountId,
         message: message.trim(),
-        recipients: selectedRecipientIds,
+        recipients: effectiveRecipients,
         autoRetry: autoRetry ? { maxRetries: autoRetryCount, intervalMinutes: autoRetryInterval } : undefined,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
@@ -847,6 +888,9 @@ export function SendTab() {
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
+      if (replyMacroEnabled && dedupeReply && replyToMessageId.trim() && selectedAccountId) {
+        addToReplyDedupeSet(selectedAccountId, replyToMessageId.trim(), effectiveRecipients);
+      }
       const modeLabel = deliveryMode === "cycle" ? "사이클 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
       if (created.distributionBatchId) {
         setDistributionBatchId(created.distributionBatchId);
@@ -868,7 +912,7 @@ export function SendTab() {
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal"); setNormalDelaySeconds(60);
-      setReplyMacroEnabled(false); setReplyToMessageId("");
+      setReplyMacroEnabled(false); setReplyToMessageId(""); setDedupeReply(false);
       setAutoRetry(false); setAutoRetryCount(3); setAutoRetryInterval(5);
       setInlineButtons([]);
       setSearch("");
@@ -1536,14 +1580,17 @@ export function SendTab() {
               ))}
             </div>
 
-            {/* Image / Video */}
+            {/* Image / Video — 답장매크로 모드에서는 숨김 (단순 텍스트 답장 전용) */}
+            {!replyMacroEnabled && (
             <Field label="이미지 또는 영상 (선택)">
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
             </Field>
+            )}
 
             {/* Auto-retry on failure */}
+            {!replyMacroEnabled && (
             <div className="flex items-center gap-2 rounded-xl border border-app-border/60 bg-app-card/30 px-3 py-2">
               <label className="flex cursor-pointer items-center gap-2">
                 <input type="checkbox" checked={autoRetry}
@@ -1566,8 +1613,10 @@ export function SendTab() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Timing & Delivery mode options */}
+            {/* Timing & Delivery mode options — 답장매크로 모드에서는 숨김 */}
+            {!replyMacroEnabled && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
                 <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
@@ -1610,16 +1659,18 @@ export function SendTab() {
                 )}
               </div>
             </div>
+            )}
 
             </div>
 
-            {(isScheduled || isRecurring) && (
+            {!replyMacroEnabled && (isScheduled || isRecurring) && (
               <p className="text-[11px] text-app-text-subtle italic -mt-1">
                 예약 발송과 반복 발송은 동시에 선택할 수 없습니다.
               </p>
             )}
 
-            {/* Delivery Mode Selector */}
+            {/* Delivery Mode Selector — 답장매크로 모드에서는 숨김 (항상 "일반 발송" 방식으로 순차 처리) */}
+            {!replyMacroEnabled && (
             <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
                   <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
@@ -1701,16 +1752,42 @@ export function SendTab() {
                   </label>
                 </div>
               </div>
+            )}
 
-            {/* "답장으로 보내기" toggle */}
-            <div className="flex items-center gap-2">
+            {/* "답장매크로" (답장으로 보내기) toggle + 중복 제거 */}
+            <div className="flex items-center gap-3 flex-wrap">
               <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
                 <input type="checkbox" checked={replyMacroEnabled}
-                  onChange={(e) => { setReplyMacroEnabled(e.target.checked); if (!e.target.checked) setReplyToMessageId(""); }} />
+                  onChange={(e) => {
+                    setReplyMacroEnabled(e.target.checked);
+                    if (!e.target.checked) { setReplyToMessageId(""); setDedupeReply(false); }
+                  }} />
                 <MessageCircle className="h-3.5 w-3.5 text-app-text-muted" />
-                답장으로 보내기
+                답장매크로
               </label>
+              {replyMacroEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setDedupeReply((v) => !v)}
+                  aria-pressed={dedupeReply}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+                    dedupeReply
+                      ? "border-app-primary bg-app-primary text-white"
+                      : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
+                  )}
+                  title="켜면 이미 이 메시지에 답장한 대상을 제외하고 랜덤 순서로 발송합니다"
+                >
+                  <Filter className="h-3 w-3" />
+                  중복 제거
+                </button>
+              )}
             </div>
+            {replyMacroEnabled && dedupeReply && (
+              <p className="text-[11px] text-app-text-subtle italic">
+                선택한 대상 중 이 메시지에 이미 답장한 사람은 제외하고, 남은 대상에게 랜덤 순서로 발송합니다.
+              </p>
+            )}
 
           {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
           {submitNotice && (
