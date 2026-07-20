@@ -661,7 +661,7 @@ export function LogTab() {
         </div>
       )}
 
-      {/* Status filter pills */}
+      {/* Status filter pills + hide inactive toggle */}
       {!loading && logs.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           {FILTER_ORDER.map((f) => {
@@ -682,6 +682,41 @@ export function LogTab() {
           })}
         </div>
       )}
+
+      {/* ── Hide inactive toggle ── */}
+      <div className="mb-3 flex items-center gap-2 pb-1 border-b border-app-border/50">
+        <button
+          type="button"
+          onClick={() => setStatusPillFilter("all")}
+          className={cn("text-xs font-medium transition-colors", statusPillFilter === "all" ? "text-app-primary" : "text-app-text-muted hover:text-app-text")}
+        >
+          전체 보기
+        </button>
+        <span className="text-app-text-subtle text-[10px]">|</span>
+        <button
+          type="button"
+          onClick={() => setStatusPillFilter("failed")}
+          className={cn("text-xs font-medium transition-colors", statusPillFilter === "failed" ? "text-app-danger" : "text-app-text-muted hover:text-app-danger")}
+        >
+          🔴 실패만
+        </button>
+        <span className="text-app-text-subtle text-[10px]">|</span>
+        <button
+          type="button"
+          onClick={() => setStatusPillFilter("sent")}
+          className={cn("text-xs font-medium transition-colors", statusPillFilter === "sent" ? "text-app-success" : "text-app-text-muted hover:text-app-success")}
+        >
+          ✅ 완료만
+        </button>
+        <span className="text-app-text-subtle text-[10px]">|</span>
+        <button
+          type="button"
+          onClick={() => setStatusPillFilter("pending")}
+          className={cn("text-xs font-medium transition-colors", statusPillFilter === "pending" ? "text-app-info" : "text-app-text-muted hover:text-app-info")}
+        >
+          ⏳ 대기/진행
+        </button>
+      </div>
 
       {/* Loading */}
       {loading && filteredLogs.length === 0 && (
