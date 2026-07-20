@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers";
 
 // Navigation/IA grouping only — does not change routing, storage, or any
 // backend contract. "operate" = the loop an operator runs through daily
@@ -39,6 +39,8 @@ export const TABS: TabDef[] = [
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
   { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "manage" },
+  { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "operate" },
+  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "manage" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";

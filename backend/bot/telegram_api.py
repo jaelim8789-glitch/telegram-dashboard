@@ -100,6 +100,52 @@ class TelegramBotClient:
             payload["reply_markup"] = reply_markup
         return await self._call("answerGuestQuery", payload)
 
+    # ── Telegram Stars Payments ───────────────────────────────────────
+
+    async def send_invoice(
+        self,
+        chat_id: int | str,
+        title: str,
+        description: str,
+        payload: str,
+        currency: str,
+        prices: list[dict[str, Any]],
+        provider_token: str = "",
+        max_tip_amount: int | None = None,
+    ) -> dict[str, Any]:
+        """Send a Telegram Stars invoice to a user.
+
+        For digital goods, provider_token must be empty string.
+        currency must be "XTR" for Telegram Stars.
+        """
+        api_payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "title": title,
+            "description": description,
+            "payload": payload,
+            "provider_token": provider_token,
+            "currency": currency,
+            "prices": prices,
+        }
+        if max_tip_amount is not None:
+            api_payload["max_tip_amount"] = max_tip_amount
+        return await self._call("sendInvoice", api_payload)
+
+    async def answer_pre_checkout_query(
+        self,
+        pre_checkout_query_id: str,
+        ok: bool,
+        error_message: str | None = None,
+    ) -> dict[str, Any]:
+        """Respond to a pre_checkout_query."""
+        api_payload: dict[str, Any] = {
+            "pre_checkout_query_id": pre_checkout_query_id,
+            "ok": ok,
+        }
+        if error_message:
+            api_payload["error_message"] = error_message
+        return await self._call("answerPreCheckoutQuery", api_payload)
+
     # ── Ephemeral Message Management (Bot API 10.2+, July 2026) ───────
 
     async def edit_ephemeral_message_text(
@@ -142,8 +188,8 @@ class TelegramBotClient:
         """Set webhook with configurable allowed_updates.
 
         Default (when *allowed_updates* is None): legacy-compatible
-        ["message", "callback_query"]. Pass an explicit list to include
-        "guest_message" or "ephemeral_message" after enabling them via @BotFather.
+        [\"message\", \"callback_query\"]. Pass an explicit list to include
+        \"guest_message\" or \"ephemeral_message\" after enabling them via @BotFather.
         """
         if allowed_updates is None:
             allowed_updates = ["message", "callback_query"]
