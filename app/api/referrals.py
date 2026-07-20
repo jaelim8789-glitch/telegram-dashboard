@@ -1,8 +1,10 @@
+import io
 import json
 import random
 import string
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +17,8 @@ from app.models.tenant import Tenant
 from app.schemas.referral import (
     AdminPendingCommissionItem,
     AdminPendingCommissionResponse,
+    ChangeCodeRequest,
+    DailyStatsItem,
     GenerateReferralCodeResponse,
     LeaderboardEntry,
     LeaderboardResponse,
@@ -23,12 +27,13 @@ from app.schemas.referral import (
     ReferralDashboardResponse,
     ReferralReferredUser,
     ReferralStatsResponse,
-    DailyStatsItem,
     SetChatIdRequest,
 )
 from app.services.referral import (
     approve_payout,
     cancel_commission,
+    generate_commissions_csv,
+    generate_stats_csv,
     get_leaderboard,
     get_pending_payouts,
     get_referrer_tier,
@@ -343,6 +348,102 @@ async def admin_cancel_commission(
             detail="해당 커미션을 찾을 수 없거나 이미 취소되었습니다.",
         )
     return {"success": True, "message": "커미션이 취소되었습니다."}
+
+
+@router.get("/stats/csv")
+async def get_referral_stats_csv(
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await get_stats(db)
+    csv_content = generate_stats_csv(data)
+    return StreamingResponse(
+        io.StringIO(csv_content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=referral_stats.csv"},
+    )
+
+
+@router.get("/admin/commissions/csv")
+async def get_admin_commissions_csv(
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    result = await db.execute(
+        select(ReferralCommission).order_by(ReferralCommission.created_at.desc())
+    )
+    commissions = list(result.scalars().all())
+    items = []
+    for c in commissions:
+        referrer = await db.get(Tenant, c.referrer_id)
+        referred = await db.get(Tenant, c.referred_user_id)
+        items.append({
+            "id": c.id,
+            "referrer_id": c.referrer_id,
+            "referrer_phone": referrer.phone if referrer else "",
+            "referred_user_phone": referred.phone if referred else "",
+            "source_type": c.source_type,
+            "amount": c.amount,
+            "commission_rate": c.commission_rate,
+            "commission_amount": c.commission_amount,
+            "status": c.status,
+            "created_at": c.created_at,
+        })
+    csv_content = generate_commissions_csv(items)
+    return StreamingResponse(
+        io.StringIO(csv_content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=referral_commissions.csv"},
+    )
+
+
+@router.post("/change-code")
+async def change_referral_code(
+    payload: ChangeCodeRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ReferralCode).where(ReferralCode.owner_id == tenant.id)
+    )
+    ref_code = result.scalar_one_or_none()
+    if not ref_code:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="추천인 코드가 없습니다.")
+
+    existing = await db.execute(
+        select(ReferralCode).where(
+            ReferralCode.code == payload.new_code,
+            ReferralCode.owner_id != tenant.id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 사용 중인 코드입니다.")
+
+    ref_code.code = payload.new_code
+    await db.commit()
+    return {"success": True, "code": payload.new_code, "message": "코드가 변경되었습니다."}
+
+
+@router.get("/my-qr")
+async def get_referral_qr(
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    import qrcode
+
+    result = await db.execute(
+        select(ReferralCode).where(ReferralCode.owner_id == tenant.id)
+    )
+    ref_code = result.scalar_one_or_none()
+    if not ref_code:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="추천인 코드가 없습니다.")
+
+    link = f"https://t.me/{settings.telegram_bot_username}?start=ref_{ref_code.code}"
+    img = qrcode.make(link)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={"Content-Disposition": "inline; filename=referral_qr.png"})
 
 
 @public_router.get("/leaderboard", response_model=LeaderboardResponse)

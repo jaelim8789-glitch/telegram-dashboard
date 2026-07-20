@@ -1,4 +1,5 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.core.logging import get_logger
@@ -47,8 +48,26 @@ def start_scheduler() -> None:
         id="dispatch_due_broadcasts",
         replace_existing=True,
     )
+
+    scheduler.add_job(
+        _run_daily_auto_payouts,
+        CronTrigger(hour=0, minute=0),
+        id="daily_auto_payouts",
+        replace_existing=True,
+    )
+
     scheduler.start()
     logger.info("scheduler_started", interval_seconds=DISPATCH_INTERVAL_SECONDS)
+
+
+async def _run_daily_auto_payouts() -> None:
+    try:
+        from app.services.referral import run_auto_payouts
+        created, total = await run_auto_payouts()
+        if created > 0:
+            logger.info("daily_auto_payouts_completed", payouts_created=created, total_amount=total)
+    except Exception as exc:
+        logger.error("daily_auto_payouts_failed", error=str(exc))
 
 
 def shutdown_scheduler() -> None:

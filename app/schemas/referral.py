@@ -90,3 +90,7 @@ class ReferralStatsResponse(BaseModel):
 
 class SetChatIdRequest(BaseModel):
     chat_id: str
+
+
+class ChangeCodeRequest(BaseModel):
+    new_code: str = Field(min_length=3, max_length=20, pattern=r"^[A-Za-z0-9가-힣]+$")
