@@ -10,13 +10,18 @@ answerGuestQuery 대신 sendMessage로 수행합니다.
     → AiEmployee._execute_for_group() ← sendMessage 실행
 
 style_profile_id 를 지원하여 그룹별 응답 스타일을 적용할 수 있습니다.
+DB 기반 설정 (ai_group_style_profiles)과 예약 발송
+(ai_scheduled_messages)을 지원합니다.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
+from . import db as bot_db
 from .guest_engine import Decision, GuestEngine, RequestContext, _BOT_MENTION_PREFIXES
 
 if TYPE_CHECKING:
@@ -42,6 +47,22 @@ class AiEmployee:
     def __init__(self, client: TelegramBotClient, guest_engine: GuestEngine) -> None:
         self._client = client
         self._guest = guest_engine
+        self._bg_task: asyncio.Task[None] | None = None
+
+    def start_background_scheduler(self) -> None:
+        """Start the background scheduler for pending scheduled messages."""
+        if self._bg_task is None or self._bg_task.done():
+            self._bg_task = asyncio.create_task(
+                self._scheduler_loop(), name="ai_employee_scheduler"
+            )
+            logger.info("[ai_employee] background scheduler started")
+
+    def stop_background_scheduler(self) -> None:
+        """Stop the background scheduler."""
+        if self._bg_task and not self._bg_task.done():
+            self._bg_task.cancel()
+            self._bg_task = None
+            logger.info("[ai_employee] background scheduler stopped")
 
     # ── Public API ─────────────────────────────────────────────────
 
@@ -68,7 +89,7 @@ class AiEmployee:
         if not clean_text:
             clean_text = "도움말"
 
-        # 3. 컨텍스트 생성 (style_profile_id 포함)
+        # 3. 컨텍스트 생성 (DB 기반 style_profile_id 포함)
         context = RequestContext(
             text=clean_text,
             chat_id=chat_id,
@@ -88,6 +109,72 @@ class AiEmployee:
             chat_id, user_id, decision.action,
         )
 
+    # ── 예약 발송 ────────────────────────────────────────────────────
+
+    async def schedule_message(
+        self,
+        chat_id: int,
+        text: str,
+        delay_seconds: int,
+        parse_mode: str = "Markdown",
+    ) -> str:
+        """메시지를 예약 발송합니다.
+
+        지정된 delay_seconds 후에 메시지를 전송합니다.
+        DB에 저장되므로 서버 재시작 후에도 발송됩니다.
+
+        Returns:
+            예약 메시지 ID.
+        """
+        # 실제 전송 시간 계산
+        actual_send_at = (datetime.now(timezone.utc) + timedelta(seconds=delay_seconds)).isoformat()
+
+        msg_id = bot_db.insert_scheduled_message(
+            chat_id=chat_id,
+            text=text,
+            send_at=actual_send_at,
+            parse_mode=parse_mode,
+        )
+
+        logger.info(
+            "[ai_employee] message %s scheduled for chat %s in %ds",
+            msg_id, chat_id, delay_seconds,
+        )
+        return msg_id
+
+    async def _scheduler_loop(self) -> None:
+        """백그라운드 스케줄러 루프.
+
+        주기적으로 DB에서 발송 대기 중인 메시지를 확인하고 전송합니다.
+        """
+        while True:
+            try:
+                pending = bot_db.get_pending_scheduled_messages()
+                for msg in pending:
+                    try:
+                        await self._client.send_message(
+                            msg["chat_id"],
+                            msg["text"],
+                            parse_mode=msg.get("parse_mode", "Markdown"),
+                        )
+                        bot_db.mark_scheduled_message_sent(msg["id"])
+                        logger.info(
+                            "[ai_employee] scheduled msg %s sent to chat %s",
+                            msg["id"], msg["chat_id"],
+                        )
+                    except Exception as e:
+                        bot_db.mark_scheduled_message_failed(msg["id"], str(e))
+                        logger.error(
+                            "[ai_employee] scheduled msg %s failed: %s",
+                            msg["id"], e,
+                        )
+                await asyncio.sleep(10)  # 10초마다 확인
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.exception("[ai_employee] scheduler loop error")
+                await asyncio.sleep(30)
+
     # ── 봇 멘션 감지 / 제거 ─────────────────────────────────────────
 
     @staticmethod
@@ -106,21 +193,34 @@ class AiEmployee:
                 return text[len(prefix):].strip()
         return text
 
-    # ── 그룹 설정 조회 (확장 포인트) ────────────────────────────────
+    # ── 그룹 설정 조회 (DB 기반) ────────────────────────────────────
 
     def _get_style_profile(self, chat_id: int) -> str | None:
-        """그룹의 활성 StyleProfile을 조회.
+        """그룹의 활성 StyleProfile을 DB에서 조회.
 
-        TODO: DB에서 해당 그룹의 style_profile_id 조회 구현.
-        현재는 None을 반환 (Guest 모드와 동일).
+        ai_group_style_profiles 테이블에서 해당 그룹의 설정을 읽습니다.
+        설정이 없으면 None 반환 (Guest 모드와 동일).
         """
+        try:
+            profile = bot_db.get_group_style_profile(chat_id)
+            if profile:
+                return profile.get("style_profile_id") or None
+        except Exception:
+            logger.debug("[ai_employee] failed to load style profile for %s", chat_id)
         return None
 
     def _get_available_actions(self, chat_id: int) -> list[str]:
-        """그룹에서 사용 가능한 액션 목록 반환.
+        """그룹에서 사용 가능한 액션 목록을 DB에서 조회.
 
-        TODO: 그룹별 설정/권한에 따라 필터링 구현.
+        ai_group_style_profiles 테이블에 설정된 액션 목록을 사용합니다.
+        설정이 없으면 기본 액션 목록을 반환합니다.
         """
+        try:
+            profile = bot_db.get_group_style_profile(chat_id)
+            if profile and profile.get("available_actions"):
+                return profile["available_actions"]
+        except Exception:
+            logger.debug("[ai_employee] failed to load available actions for %s", chat_id)
         return [
             "번역", "translate",
             "요약", "summarize",

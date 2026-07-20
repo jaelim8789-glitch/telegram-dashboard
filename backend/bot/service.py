@@ -220,13 +220,16 @@ def _get_guest_engine(client: TelegramBotClient) -> GuestEngine | None:
 
 
 def _get_ai_employee(client: TelegramBotClient) -> AiEmployee | None:
-    """Lazy-init AiEmployee singleton."""
+    """Lazy-init AiEmployee singleton + start background scheduler."""
     global _ai_employee_instance
     if _ai_employee_instance is None:
         engine = _get_guest_engine(client)
         if engine is None:
             return None
+        bot_db.init_ai_tables()
         _ai_employee_instance = AiEmployee(client, engine)
+        _ai_employee_instance.start_background_scheduler()
+        logger.info("[ai_employee] singleton created with background scheduler")
     return _ai_employee_instance
 
 
@@ -278,11 +281,13 @@ async def handle_update(update: dict[str, Any]) -> None:
                 return
 
             # 그룹 @멘션 → AiEmployee
-            if chat_type in ("group", "supergroup") and AiEmployee._is_bot_mentioned(text):
-                employee = _get_ai_employee(client)
-                if employee:
-                    await employee.process_group_message(update)
-                    return
+            if chat_type in ("group", "supergroup"):
+                if AiEmployee._is_bot_mentioned(text):
+                    employee = _get_ai_employee(client)
+                    if employee:
+                        await employee.process_group_message(update)
+                # @멘션이 없는 그룹 메시지는 무시
+                return
 
             # 알 수 없는 메시지 (1:1 채팅)
             await client.send_message(chat_id, "웹사이트의 '무료 체험' 버튼을 통해 다시 시작해주세요.")
