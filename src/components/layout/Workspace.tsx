@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
+import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { MyAiTab } from "@/components/workspace/tabs/MyAiTab";
 import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
 import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
@@ -71,7 +72,8 @@ export function Workspace() {
   return (
     <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <TabBar />
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
+        <ScrollToTop />
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
