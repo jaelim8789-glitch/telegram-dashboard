@@ -576,6 +576,7 @@ export function useSendForm() {
     handleStop, handlePauseRecurring, handleUnpauseRecurring,
     handleCancelClick, handleManualRefresh, handleReuse, handleClone,
     loadHistory, loadDistributionStatus,
+    cachedGroups, cachedBroadcasts, runtimeActions,
   };
 }
 
