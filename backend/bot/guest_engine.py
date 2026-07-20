@@ -237,11 +237,27 @@ class GuestEngine:
             "도움말": self._handle_help,
             "시작": self._handle_start,
             "start": self._handle_start,
+            "등록": self._handle_register_command,
+            "register": self._handle_register_command,
+            "register_command": self._handle_register_command,
         }
 
         # ————————
 
     # ── Public API ─────────────────────────────────────────────────
+
+    def add_command(self, name: str, handler: GuestHandler) -> None:
+        """Register a new command handler at runtime.
+
+        AiEmployee가 이 메서드를 호출하여 동적으로 새 명령어를 등록할 수 있습니다.
+        등록된 명령어는 기존 명령어와 동일하게 _parse_command → _commands에서 찾습니다.
+
+        Args:
+            name: 명령어 이름 (예: "맞춤법", "코드리뷰").
+            handler: RequestContext를 받아 응답 텍스트를 반환하는 async 함수.
+        """
+        self._commands[name.lower()] = handler
+        logger.info("[guest] custom command registered: '%s'", name)
 
     @property
     def daily_limit(self) -> int:
@@ -550,6 +566,42 @@ class GuestEngine:
         safe_news = news_info.replace("`", "'")
 
         return f"📰 **{topic} 뉴스 요약**\n\n{safe_news}"
+
+    async def _handle_register_command(self, context: RequestContext) -> str:
+        """Register a new custom command at runtime.
+
+        Usage: 등록 [명령어이름] [프롬프트]
+        Example: @TeleMonBot 등록 맞춤법 한국어 맞춤법을 검사하고 수정해줘
+        """
+        if not context.text:
+            return (
+                "📝 **명령어 등록 사용법**\n\n"
+                f"`@TeleMonBot 등록 [명령어이름] [프롬프트]`\n\n"
+                f"예시: `@TeleMonBot 등록 맞춤법 한국어 맞춤법을 검사하고 수정해줘`"
+            )
+
+        parts = context.text.split(maxsplit=1)
+        cmd_name = parts[0].strip()
+        cmd_prompt = parts[1].strip() if len(parts) > 1 else ""
+
+        if not cmd_name:
+            return "명령어 이름을 입력해주세요."
+        if not cmd_prompt:
+            return f"'{cmd_name}' 명령어의 프롬프트를 입력해주세요."
+
+        system_prompt = cmd_prompt
+
+        async def custom_handler(ctx: RequestContext) -> str:
+            prompt = ctx.text or "실행해줘"
+            result = await _call_ai(prompt, ctx, system_prompt=system_prompt)
+            return result.replace("`", "'")
+
+        self.add_command(cmd_name, custom_handler)
+
+        return (
+            f"✅ **'{cmd_name}' 명령어가 등록되었습니다!**\n\n"
+            f"이제 `@TeleMonBot {cmd_name} [내용]` 으로 사용할 수 있습니다."
+        )
 
     async def _handle_help(self, context: RequestContext) -> str:
         return GUEST_HELP_TEXT
