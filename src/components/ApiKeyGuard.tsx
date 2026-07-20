@@ -128,7 +128,7 @@ export default function ApiKeyGuard({ description, children, hasApiKey: hasApiKe
                 </form>
 
                 <p className="mt-4 text-center text-xs text-app-text-muted">
-                  API 키가 없으신가요? 봇 메뉴에서 "🔑 내 API 키"를 통해 발급받으세요.
+                  API 키가 없으신가요? 봇 메뉴에서 &quot;🔑 내 API 키&quot;를 통해 발급받으세요.
                 </p>
               </>
             )}
