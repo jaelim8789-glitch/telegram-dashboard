@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
-  Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe, Folder, Target,
-  HeartPulse, UserCog, MessageCircle, Workflow, Star,
+  LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
+  CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
+  HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TABS, type TabDef } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
@@ -28,19 +29,18 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   deliveryanalytics: BarChart3,
   channelhub: Globe,
   team: UserCog,
-  profile: User,
+  profile: UserCog,
   log: FileText,
   guestbot: MessageCircle,
   drafts: FileText,
   triggers: Workflow,
-  stars: Star,
+  stars: Bot,
 };
 
-// Moved off the shared `.tab-premium` class (also used by the public
-// marketing nav) so this refinement can't affect that unrelated page —
-// fully local, restrained styling instead: no filled active pill, just a
-// text/icon color shift plus a thin underline.
-function TabButton({ tab, active, onSelect, badge }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number }) {
+// 모바일 하단에 표시할 핵심 탭 (최대 5개)
+const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "group", "log", "ai"];
+
+function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
   return (
     <button
@@ -48,20 +48,31 @@ function TabButton({ tab, active, onSelect, badge }: { tab: TabDef; active: bool
       onClick={onSelect}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "focus-ring relative flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium transition-colors duration-150",
-        "min-h-[44px] min-w-[44px]",
-        active ? "text-app-text" : "text-app-text-muted hover:text-app-text-secondary"
+        "focus-ring relative flex items-center justify-center transition-colors",
+        mobile
+          ? "flex-col gap-0.5 flex-1 py-1.5 min-h-0"
+          : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
+        active ? (mobile ? "text-app-primary" : "text-app-text") : "text-app-text-muted hover:text-app-text-secondary"
       )}
     >
-      {Icon && <Icon className={cn("h-3.5 w-3.5 transition-colors", active ? "text-app-primary" : "text-app-text-subtle")} />}
-      <span className="hidden sm:inline">{tab.label}</span>
-      <span className="sm:hidden">{tab.shortLabel ?? tab.label}</span>
+      {Icon && (
+        <Icon className={cn(
+          "transition-colors",
+          mobile ? "h-5 w-5" : "h-3.5 w-3.5",
+          active ? (mobile ? "text-app-primary" : "text-app-primary") : "text-app-text-subtle"
+        )} />
+      )}
+      <span className={mobile ? "text-[10px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
+      <span className={cn(mobile ? "hidden" : "sm:hidden")}>{tab.shortLabel ?? tab.label}</span>
       {badge != null && badge > 0 && (
-        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white">
+        <span className={cn(
+          "flex items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white",
+          mobile ? "absolute -top-0.5 right-1/4 h-4 min-w-[16px]" : "h-4 min-w-[16px]"
+        )}>
           {badge > 99 ? "99+" : badge}
         </span>
       )}
-      {active && (
+      {active && !mobile && (
         <motion.span
           layoutId="tab-underline"
           transition={{ type: "spring", stiffness: 500, damping: 40 }}
@@ -79,6 +90,15 @@ export function TabBar() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const sendTabs = TABS.filter((t) => t.group === "send");
   const aiTabs = TABS.filter((t) => t.group === "ai");
@@ -86,10 +106,22 @@ export function TabBar() {
   const searchTabs = TABS.filter((t) => t.group === "search");
   const manageTabs = TABS.filter((t) => t.group === "manage");
   const newTabs = TABS.filter((t) => t.group === "new");
+  const allTabs = [...sendTabs, ...aiTabs, ...analyzeTabs, ...searchTabs, ...manageTabs, ...newTabs];
 
-  // Horizontal overflow is common on narrower desktops and on mobile with
-  // 11 destinations — without this, a scrolled-away tab (including the
-  // active one) is invisible with no indication there's more to see.
+  // 모바일 메인 탭
+  const mobileMainTabs = allTabs.filter((t) => MOBILE_MAIN_TAB_IDS.includes(t.id));
+  const mobileMoreTabs = allTabs.filter((t) => !MOBILE_MAIN_TAB_IDS.includes(t.id));
+
+  // 그룹별 더보기 메뉴
+  const moreGroups: { label: string; tabs: TabDef[] }[] = [
+    { label: "발송", tabs: sendTabs.filter((t) => !MOBILE_MAIN_TAB_IDS.includes(t.id)) },
+    { label: "AI", tabs: aiTabs.filter((t) => !MOBILE_MAIN_TAB_IDS.includes(t.id)) },
+    { label: "분석", tabs: analyzeTabs },
+    { label: "검사", tabs: searchTabs },
+    { label: "관리", tabs: manageTabs },
+    { label: "신규", tabs: newTabs },
+  ].filter((g) => g.tabs.length > 0);
+
   function updateFade() {
     const el = scrollRef.current;
     if (!el) return;
@@ -111,8 +143,6 @@ export function TabBar() {
     };
   }, []);
 
-  // Keep the active tab in view (e.g. after a state change elsewhere), and
-  // keep fade indicators in sync with it.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -120,8 +150,6 @@ export function TabBar() {
     activeEl?.scrollIntoView({ block: "nearest", inline: "nearest" });
     updateFade();
   }, [activeTab]);
-
-  const allTabs = [...sendTabs, ...aiTabs, ...analyzeTabs, ...searchTabs, ...manageTabs, ...newTabs];
 
   function handleKeyDown(e: React.KeyboardEvent) {
     const currentIndex = allTabs.findIndex((t) => t.id === activeTab);
@@ -137,6 +165,93 @@ export function TabBar() {
     }
   }
 
+  // ── 모바일 하단 네비게이션 ──
+  if (isMobile) {
+    return (
+      <>
+        {/* 데스크톱 상단바 (모바일에서 숨김) — 이미 별도 컴포넌트 사용 중이면 주석 처리 */}
+        
+        {/* 하단 네비게이션 */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-app-border/60 bg-app-surface/95 backdrop-blur-lg safe-area-bottom">
+          <div className="flex items-center justify-around max-w-lg mx-auto">
+            {mobileMainTabs.map((tab) => (
+              <TabButton
+                key={tab.id}
+                tab={tab}
+                active={tab.id === activeTab}
+                onSelect={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                badge={tabBadges[tab.id]}
+                mobile
+              />
+            ))}
+            {/* 더보기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setMoreOpen(!moreOpen)}
+              className="flex flex-col items-center gap-0.5 flex-1 py-1.5 text-app-text-muted"
+              aria-label="더보기"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span className="text-[10px] leading-none">더보기</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* 더보기 메뉴 오버레이 */}
+        <AnimatePresence>
+          {moreOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/40"
+                onClick={() => setMoreOpen(false)}
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                className="fixed bottom-16 left-0 right-0 z-50 max-h-[60vh] overflow-y-auto rounded-t-2xl bg-app-card border-t border-app-border/60 px-4 pb-6 pt-4"
+              >
+                <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
+                {moreGroups.map((group) => (
+                  <div key={group.label} className="mb-3">
+                    <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-1.5 px-1">
+                      {group.label}
+                    </p>
+                    <div className="grid grid-cols-4 gap-1">
+                      {group.tabs.map((tab) => {
+                        const Icon = TAB_ICONS[tab.id];
+                        const active = tab.id === activeTab;
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                            className={cn(
+                              "flex flex-col items-center gap-1 rounded-xl py-3 transition-colors",
+                              active ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
+                            )}
+                          >
+                            {Icon && <Icon className="h-5 w-5" />}
+                            <span className="text-[10px] leading-tight text-center">{tab.shortLabel ?? tab.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  // ── 데스크톱 상단 네비게이션 (기존과 동일) ──
   return (
     <nav aria-label="작업 영역 이동" className="relative flex shrink-0 border-b border-app-border/50 bg-app-surface/50">
       {canScrollLeft && (
@@ -149,41 +264,23 @@ export function TabBar() {
         style={{ scrollbarWidth: "none" }}
         className="flex items-center gap-0.5 overflow-x-auto px-3 [&::-webkit-scrollbar]:hidden"
       >
-        <div role="group" aria-label="발송" className="flex items-center gap-0.5">
-          {sendTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="AI" className="flex items-center gap-0.5">
-          {aiTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="분석" className="flex items-center gap-0.5">
-          {analyzeTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="검사" className="flex items-center gap-0.5">
-          {searchTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="관리" className="flex items-center gap-0.5">
-          {manageTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="신규" className="flex items-center gap-0.5">
-          {newTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-          ))}
-        </div>
+        {[
+          { label: "발송", tabs: sendTabs },
+          { label: "AI", tabs: aiTabs },
+          { label: "분석", tabs: analyzeTabs },
+          { label: "검사", tabs: searchTabs },
+          { label: "관리", tabs: manageTabs },
+          { label: "신규", tabs: newTabs },
+        ].map((group, i) => (
+          <div key={group.label}>
+            {i > 0 && <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />}
+            <div role="group" aria-label={group.label} className="flex items-center gap-0.5">
+              {group.tabs.map((tab) => (
+                <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
       {canScrollRight && (
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-app-surface to-transparent" aria-hidden="true" />
