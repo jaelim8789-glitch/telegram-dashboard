@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle, Zap } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select } from "@/components/ui/Field";
@@ -178,6 +178,57 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
   );
 }
 
+function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
+  const [phoneInput, setPhoneInput] = useState("");
+  const [amount, setAmount] = useState(1000);
+  const [toppingUp, setToppingUp] = useState(false);
+  const [done, setDone] = useState(false);
+  const { toast } = useToast();
+
+  async function handleTopUp() {
+    if (!phoneInput.trim() || toppingUp) return;
+    setToppingUp(true);
+    // Optimistically update localStorage (server sync via backend API later)
+    try {
+      const key = "telemon_tokens_admin_topup";
+      const log: { phone: string; amount: number; time: string }[] = JSON.parse(localStorage.getItem(key) || "[]");
+      log.push({ phone: phoneInput, amount, time: new Date().toISOString() });
+      localStorage.setItem(key, JSON.stringify(log));
+      setDone(true);
+      setPhoneInput("");
+      toast("success", `${phoneInput}에 ${amount.toLocaleString()}토큰 충전 완료`);
+      onTopUp();
+    } catch { toast("error", "충전 실패"); }
+    finally { setToppingUp(false); }
+  }
+
+  return (
+    <Panel
+      accent="amber"
+      title={<div className="flex items-center gap-2"><Zap className="h-4 w-4 text-amber-400" /> 토큰 수동 충전</div>}
+      description="사용자에게 토큰을 직접 지급합니다. (로컬: 로그 기록, 서버: API 필요)"
+    >
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[180px]">
+          <Input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="전화번호" className="font-mono" />
+        </div>
+        <select value={amount} onChange={(e) => setAmount(Number(e.target.value))}
+          className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-xs text-app-text outline-none">
+          <option value={100}>100</option>
+          <option value={500}>500</option>
+          <option value={1000}>1,000</option>
+          <option value={5000}>5,000</option>
+          <option value={10000}>10,000</option>
+        </select>
+        <Button variant="primary" onClick={handleTopUp} disabled={!phoneInput.trim() || toppingUp} loading={toppingUp}>
+          <Zap className="h-3.5 w-3.5" /> 충전
+        </Button>
+      </div>
+      {done && <p className="mt-2 text-xs text-app-success">✅ 충전 내역이 기록되었습니다. 서버 API 연동 시 실제 적용됩니다.</p>}
+    </Panel>
+  );
+}
+
 function UsersContent() {
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,6 +278,7 @@ function UsersContent() {
         </Link>
       </div>
 
+      <TokenTopUpSection onTopUp={() => {}} />
       <DeleteUserByPhoneSection onDeleted={load} />
       <ManualIssueSection onIssued={load} />
 
