@@ -123,6 +123,13 @@ def init_ai_tables() -> None:
             )
         """)
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS ai_custom_commands (
+                name TEXT PRIMARY KEY,
+                system_prompt TEXT NOT NULL,
+                created_at TEXT DEFAULT ''
+            )
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS ai_scheduled_messages (
                 id TEXT PRIMARY KEY,
                 chat_id INTEGER NOT NULL,
@@ -298,6 +305,65 @@ def get_scheduled_messages(
                 (limit,),
             ).fetchall()
         return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+# ── Custom Commands CRUD ─────────────────────────────────────────────
+
+
+def save_custom_command(name: str, system_prompt: str) -> None:
+    """Save a custom command to the database (upsert)."""
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        conn.execute(
+            """INSERT INTO ai_custom_commands (name, system_prompt, created_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(name) DO UPDATE SET
+                 system_prompt = excluded.system_prompt,
+                 created_at = excluded.created_at""",
+            (name.lower(), system_prompt, now),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def load_custom_commands() -> list[dict[str, Any]]:
+    """Load all custom commands from the database."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT * FROM ai_custom_commands ORDER BY created_at ASC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def delete_custom_command(name: str) -> bool:
+    """Delete a custom command. Returns True if deleted."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        cur = conn.execute(
+            "DELETE FROM ai_custom_commands WHERE name = ?", (name.lower(),),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_custom_command_names() -> list[str]:
+    """Get all registered custom command names."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        rows = conn.execute(
+            "SELECT name FROM ai_custom_commands ORDER BY name ASC"
+        ).fetchall()
+        return [r[0] for r in rows]
     finally:
         conn.close()
 

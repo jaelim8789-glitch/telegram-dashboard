@@ -286,6 +286,68 @@ def test_user_limit_override(engine: GuestEngine) -> None:
     assert engine._user_limits["u1"] == 3
 
 
+# ── Custom command registration ──────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_handle_register_command_without_args(engine: GuestEngine) -> None:
+    """인자 없이 등록 명령어를 호출하면 사용법을 반환."""
+    ctx = RequestContext(text="등록", chat_id=123, user_id="u1")
+    decision = await engine.decide_action(ctx)
+    assert decision.action == "reply"
+    assert "명령어 등록 사용법" in decision.text
+
+
+@pytest.mark.asyncio
+async def test_handle_register_command_with_name_only(engine: GuestEngine) -> None:
+    """명령어 이름만 있고 프롬프트가 없으면 안내 메시지."""
+    ctx = RequestContext(text="등록 mycmd", chat_id=123, user_id="u1")
+    decision = await engine.decide_action(ctx)
+    assert decision.action == "reply"
+    assert "프롬프트를 입력" in decision.text
+
+
+@pytest.mark.asyncio
+async def test_handle_register_command_success(engine: GuestEngine) -> None:
+    """정상적인 등록 명령어가 성공 메시지를 반환하고 명령어를 등록."""
+    ctx = RequestContext(
+        text="등록 mycmd You are a helpful assistant that does X",
+        chat_id=123, user_id="u1",
+    )
+    decision = await engine.decide_action(ctx)
+    assert decision.action == "reply"
+    assert "mycmd" in decision.text
+    assert "등록되었습니다" in decision.text
+    # 실제로 _commands에 등록되었는지 확인
+    assert "mycmd" in engine._commands
+    # 커스텀 명령어 이름 목록에 추가되었는지 확인
+    assert "mycmd" in engine._custom_command_names
+
+
+@pytest.mark.asyncio
+async def test_register_command_then_execute(engine: GuestEngine) -> None:
+    """등록된 커스텀 명령어를 실행할 수 있는지 확인."""
+    # 1. 등록
+    ctx_reg = RequestContext(
+        text="등록 spellcheck Check spelling and fix errors",
+        chat_id=123, user_id="u1",
+    )
+    await engine.decide_action(ctx_reg)
+    assert "spellcheck" in engine._commands
+
+    # 2. 실행 (실제 AI 호출 없이, handler가 _commands에 등록되었는지만 확인)
+    handler = engine._commands["spellcheck"]
+    assert handler is not None
+    ctx_exec = RequestContext(
+        text="hello", chat_id=123, user_id="u1",
+        command="spellcheck",
+    )
+    # handler를 직접 호출해서 최소한 에러가 나지 않는지 확인
+    result = await handler(ctx_exec)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
 # ── _call_ai ──────────────────────────────────────────────────────────
 
 
