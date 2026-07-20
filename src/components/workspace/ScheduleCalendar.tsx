@@ -45,7 +45,25 @@ export function ScheduleCalendar({ broadcasts, onCancel }: ScheduleCalendarProps
     return broadcasts.filter((b) => b.scheduledAt).length;
   }, [broadcasts]);
 
-  // Auto-collapse when there are no scheduled broadcasts
+  const days = useMemo(() => getMonthDays(viewYear, viewMonth), [viewYear, viewMonth]);
+
+  // Group scheduled broadcasts by date
+  const scheduledByDate = useMemo(() => {
+    const map = new Map<string, Broadcast[]>();
+    for (const b of broadcasts) {
+      if (b.scheduledAt) {
+        const dateKey = b.scheduledAt.slice(0, 10);
+        if (!map.has(dateKey)) map.set(dateKey, []);
+        map.get(dateKey)!.push(b);
+      }
+    }
+    return map;
+  }, [broadcasts]);
+
+  const selectedBroadcasts = selectedDate ? scheduledByDate.get(selectedDate) ?? [] : [];
+
+  // Auto-collapse when there are no scheduled broadcasts — all hooks above this
+  // point must run unconditionally, so this early return stays below them.
   if (scheduledCount === 0) {
     return (
       <div className="space-y-2">
@@ -63,23 +81,6 @@ export function ScheduleCalendar({ broadcasts, onCancel }: ScheduleCalendarProps
       </div>
     );
   }
-
-  const days = useMemo(() => getMonthDays(viewYear, viewMonth), [viewYear, viewMonth]);
-
-  // Group scheduled broadcasts by date
-  const scheduledByDate = useMemo(() => {
-    const map = new Map<string, Broadcast[]>();
-    for (const b of broadcasts) {
-      if (b.scheduledAt) {
-        const dateKey = b.scheduledAt.slice(0, 10);
-        if (!map.has(dateKey)) map.set(dateKey, []);
-        map.get(dateKey)!.push(b);
-      }
-    }
-    return map;
-  }, [broadcasts]);
-
-  const selectedBroadcasts = selectedDate ? scheduledByDate.get(selectedDate) ?? [] : [];
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(viewYear - 1); setViewMonth(11); }
