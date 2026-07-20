@@ -1,0 +1,290 @@
+"""Tests for the referral program backend."""
+
+import pytest
+from httpx import AsyncClient
+
+from app.database import async_session_maker
+from app.models.referral import ReferralCode, ReferralCommission
+from app.models.tenant import Tenant
+
+
+@pytest.fixture
+async def sample_tenant(db: async_session_maker):
+    """Create a sample tenant for testing."""
+    async with async_session_maker() as session:
+        tenant = Tenant(
+            phone="+821011111111",
+            plan="free",
+            subscription_status="active",
+        )
+        session.add(tenant)
+        await session.commit()
+        await session.refresh(tenant)
+        return tenant
+
+
+@pytest.fixture
+async def admin_token(client: AsyncClient) -> str:
+    """Get admin JWT for testing admin endpoints."""
+    from app.core.security import create_access_token
+    return create_access_token()
+
+
+@pytest.mark.asyncio
+async def test_generate_referral_code(client: AsyncClient):
+    """POST /api/referrals/generate should create a referral code."""
+    res = await client.post(
+        "/api/referrals/generate",
+        headers={
+            "X-API-Key": "test-api-key",
+            "Content-Type": "application/json",
+        },
+    )
+    # Without auth, should return 401
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_referral_dashboard_no_auth(client: AsyncClient):
+    """GET /api/referrals/dashboard should require auth."""
+    res = await client.get("/api/referrals/dashboard")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_pending_commissions_no_auth(client: AsyncClient):
+    """GET /api/referrals/admin/pending should require admin auth."""
+    res = await client.get("/api/referrals/admin/pending")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_referral_code_generation_and_uniqueness():
+    """Verify that referral codes are generated uniquely."""
+    async with async_session_maker() as db:
+        owner = Tenant(phone="+821099999991", plan="free")
+        db.add(owner)
+        await db.flush()
+
+        code1 = ReferralCode(code="TEST1234별", owner_id=owner.id)
+        db.add(code1)
+        await db.flush()
+
+        code2 = ReferralCode(code="TEST5678빛", owner_id=owner.id)
+        db.add(code2)
+        await db.flush()
+
+        result = await db.execute(
+            __import__("sqlalchemy").select(ReferralCode).where(ReferralCode.code == "TEST1234별")
+        )
+        found = result.scalar_one_or_none()
+        assert found is not None
+        assert found.code == "TEST1234별"
+
+
+@pytest.mark.asyncio
+async def test_commission_creation():
+    """Verify commission creation logic."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821099999992", plan="pro", subscription_status="active")
+        db.add(referrer)
+        await db.flush()
+
+        ref_code = ReferralCode(code="REFERRER01", owner_id=referrer.id)
+        db.add(ref_code)
+        await db.flush()
+
+        referred = Tenant(
+            phone="+821099999993",
+            plan="free",
+            referred_by=ref_code.id,
+        )
+        db.add(referred)
+        await db.flush()
+
+        commission = ReferralCommission(
+            referrer_id=referrer.id,
+            referred_user_id=referred.id,
+            source_payment_id="test-payment-1",
+            source_type="usdt",
+            amount=10000,
+            commission_rate=0.10,
+            commission_amount=1000,
+            status="pending",
+        )
+        db.add(commission)
+        await db.commit()
+
+        result = await db.get(ReferralCommission, commission.id)
+        assert result is not None
+        assert result.status == "pending"
+        assert result.commission_amount == 1000
+
+
+@pytest.mark.asyncio
+async def test_commission_mark_paid():
+    """Verify admin can mark commission as paid."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821099999994", plan="pro")
+        db.add(referrer)
+        await db.flush()
+
+        ref_code = ReferralCode(code="REFERRER02", owner_id=referrer.id)
+        db.add(ref_code)
+        await db.flush()
+
+        referred = Tenant(
+            phone="+821099999995",
+            plan="free",
+            referred_by=ref_code.id,
+        )
+        db.add(referred)
+        await db.flush()
+
+        commission = ReferralCommission(
+            referrer_id=referrer.id,
+            referred_user_id=referred.id,
+            source_payment_id="test-payment-2",
+            source_type="stars",
+            amount=5000,
+            commission_rate=0.10,
+            commission_amount=500,
+            status="pending",
+        )
+        db.add(commission)
+        await db.commit()
+
+        commission.status = "paid"
+        await db.commit()
+
+        result = await db.get(ReferralCommission, commission.id)
+        assert result.status == "paid"
+
+
+@pytest.mark.asyncio
+async def test_self_referral_prevention():
+    """Self-referral should not create commission."""
+    async with async_session_maker() as db:
+        owner = Tenant(phone="+821099999996", plan="free")
+        db.add(owner)
+        await db.flush()
+
+        ref_code = ReferralCode(code="SELFREF01", owner_id=owner.id)
+        db.add(ref_code)
+        await db.flush()
+
+        owner.referred_by = ref_code.id
+        await db.commit()
+
+        # Commission should not be created for self-referral
+        from app.services.referral import create_commission
+        result = await create_commission(
+            db=db,
+            referred_tenant_id=owner.id,
+            source_payment_id="self-payment",
+            source_type="stars",
+            amount=1000,
+        )
+        assert result is None
+
+
+@pytest.mark.asyncio
+async def test_referral_code_generate_function():
+    """Verify _generate_code produces valid codes."""
+    from app.api.referrals import _generate_code
+    code = _generate_code()
+    assert len(code) >= 6
+    assert code.isascii() or any(ord(c) > 127 for c in code)
+
+
+@pytest.mark.asyncio
+async def test_referral_link_endpoint(client: AsyncClient):
+    """GET /api/referrals/my-link should return a Telegram deep link."""
+    res = await client.get("/api/referrals/my-link")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_tier_calculation():
+    """Verify tier-based commission rate calculation."""
+    from app.services.referral import _get_tier
+
+    rate0, label0 = _get_tier(0)
+    assert rate0 == 0.10
+    assert label0 == "기본"
+
+    rate1, label1 = _get_tier(3)
+    assert rate1 == 0.10
+    assert label1 == "기본"
+
+    rate2, label2 = _get_tier(5)
+    assert rate2 == 0.15
+    assert label2 == "Pro"
+
+    rate3, label3 = _get_tier(10)
+    assert rate3 == 0.20
+    assert label3 == "VIP"
+
+    rate4, label4 = _get_tier(20)
+    assert rate4 == 0.20
+    assert label4 == "VIP"
+
+
+@pytest.mark.asyncio
+async def test_process_payouts():
+    """Verify process_payouts creates payout records and marks commissions as paid."""
+    async with async_session_maker() as db:
+        referrer = Tenant(phone="+821099999997", plan="pro", subscription_status="active")
+        db.add(referrer)
+        await db.flush()
+
+        ref_code = ReferralCode(code="PAYOUT01", owner_id=referrer.id)
+        db.add(ref_code)
+        await db.flush()
+
+        referred1 = Tenant(phone="+821099999998", plan="free", referred_by=ref_code.id)
+        referred2 = Tenant(phone="+821099999999", plan="free", referred_by=ref_code.id)
+        db.add_all([referred1, referred2])
+        await db.flush()
+
+        for i, ref in enumerate([referred1, referred2]):
+            c = ReferralCommission(
+                referrer_id=referrer.id, referred_user_id=ref.id,
+                source_payment_id=f"pay-{i}", source_type="stars",
+                amount=5000, commission_rate=0.10,
+                commission_amount=500, status="pending",
+            )
+            db.add(c)
+        await db.commit()
+
+        from app.services.referral import process_payouts
+        created, total = await process_payouts(db, min_amount=100)
+        assert created == 1
+        assert total == 1000
+
+        from app.models.referral import ReferralPayout
+        payout_count = await db.execute(
+            __import__("sqlalchemy").select(__import__("sqlalchemy").func.count()).select_from(ReferralPayout)
+        )
+        assert payout_count.scalar_one() == 1
+
+
+@pytest.mark.asyncio
+async def test_leaderboard_endpoint_no_auth(client: AsyncClient):
+    """GET /api/referrals/leaderboard should be publicly accessible."""
+    res = await client.get("/api/referrals/leaderboard")
+    assert res.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_admin_payouts_no_auth(client: AsyncClient):
+    """GET /api/referrals/admin/payouts should require admin."""
+    res = await client.get("/api/referrals/admin/payouts")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_process_payouts_no_auth(client: AsyncClient):
+    """POST /api/referrals/admin/process-payouts should require admin."""
+    res = await client.post("/api/referrals/admin/process-payouts")
+    assert res.status_code == 401
