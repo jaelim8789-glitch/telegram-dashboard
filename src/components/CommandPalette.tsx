@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Search as SearchIcon, SearchX, LayoutDashboard, UserPlus, Send, Users,
+  Search, SearchX, LayoutDashboard, UserPlus, Send, Users,
   Link, User, FileText, MessageCircle, Reply, BarChart3, Calendar,
   Radio, FolderOpen, FileSymlink, Bot, Heart, Users2, Zap,
   Activity, Layers, MessageSquare, Star, X,
@@ -29,7 +29,7 @@ const TAB_ACTIONS: { tab: TabId; label: string; icon: React.ReactNode; keywords?
   { tab: "register", label: "계정 등록", icon: <UserPlus className="h-4 w-4" />, keywords: ["account", "add"] },
   { tab: "send", label: "메시지 발송", icon: <Send className="h-4 w-4" />, keywords: ["broadcast", "message"] },
   { tab: "group", label: "그룹 관리", icon: <Users className="h-4 w-4" />, keywords: ["channel"] },
-  { tab: "groupsearch", label: "그룹 검색", icon: <SearchIcon className="h-4 w-4" /> },
+  { tab: "groupsearch", label: "그룹 검색", icon: <Search className="h-4 w-4" /> },
   { tab: "linkinspector", label: "링크 검사", icon: <Link className="h-4 w-4" /> },
   { tab: "profile", label: "프로필", icon: <User className="h-4 w-4" /> },
   { tab: "log", label: "발송 로그", icon: <FileText className="h-4 w-4" /> },
@@ -174,7 +174,7 @@ export function CommandPalette() {
       >
         {/* Search input */}
         <div className="flex items-center gap-2 border-b border-app-border px-4 py-3">
-          <SearchIcon className="h-4 w-4 shrink-0 text-app-text-muted" />
+          <Search className="h-4 w-4 shrink-0 text-app-text-muted" />
           <input
             ref={inputRef}
             type="text"
