@@ -1184,7 +1184,7 @@ export interface StyleProfile {
 }
 
 export async function analyzeStyleProfile(input: { name: string; source_type: string; source_text: string }): Promise<StyleProfile> {
-  return request<StyleProfile>("/api/admin/style-profiles/analyze", {
+  return request<StyleProfile>("/api/style-profiles/analyze", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1195,18 +1195,18 @@ export async function fetchStyleProfiles(): Promise<StyleProfile[]> {
 }
 
 export async function fetchStyleProfile(id: string): Promise<StyleProfile> {
-  return request<StyleProfile>(`/api/admin/style-profiles/${id}`);
+  return request<StyleProfile>(`/api/style-profiles/${id}`);
 }
 
 export async function updateStyleProfile(id: string, input: { name: string }): Promise<StyleProfile> {
-  return request<StyleProfile>(`/api/admin/style-profiles/${id}`, {
+  return request<StyleProfile>(`/api/style-profiles/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });
 }
 
 export async function deleteStyleProfile(id: string): Promise<void> {
-  await request<void>(`/api/admin/style-profiles/${id}`, { method: "DELETE" });
+  await request<void>(`/api/style-profiles/${id}`, { method: "DELETE" });
 }
 
 // === Account Health ===
