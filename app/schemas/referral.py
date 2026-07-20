@@ -92,5 +92,50 @@ class SetChatIdRequest(BaseModel):
     chat_id: str
 
 
+class SetWalletRequest(BaseModel):
+    wallet_address: str = Field(min_length=10, max_length=100)
+
+
 class ChangeCodeRequest(BaseModel):
     new_code: str = Field(min_length=3, max_length=20, pattern=r"^[A-Za-z0-9가-힣]+$")
+
+
+class CommissionItem(BaseModel):
+    id: str
+    referred_user_phone: str
+    source_type: str
+    amount: int
+    commission_rate: float
+    commission_amount: int
+    status: str
+    created_at: datetime
+
+
+class MyCommissionsResponse(BaseModel):
+    items: list[CommissionItem] = []
+    total_count: int = 0
+
+
+class AdminSettingItem(BaseModel):
+    key: str
+    value: str
+
+
+class AdminSettingsResponse(BaseModel):
+    settings: list[AdminSettingItem] = []
+
+
+class UpdateSettingsRequest(BaseModel):
+    settings: list[AdminSettingItem]
+
+
+class AdminCodeStatsItem(BaseModel):
+    code: str
+    owner_phone: str
+    used_count: int
+    expires_at: datetime | None = None
+    created_at: datetime
+
+
+class AdminCodeStatsResponse(BaseModel):
+    items: list[AdminCodeStatsItem] = []
