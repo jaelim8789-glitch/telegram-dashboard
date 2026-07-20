@@ -3,14 +3,16 @@
 import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { KeyRound, Loader2, Send } from "lucide-react";
+import { KeyRound, ShieldCheck, Loader2, ExternalLink, CheckCircle2, Copy, UserCheck, AlertCircle, Send } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
+import * as freeApiKey from "@/lib/api_free_api_key";
 import { setToken, setSessionToken, getSessionToken, getToken, clearToken, clearSessionToken } from "@/lib/auth";
+import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
 
-type AuthMethod = "admin" | "apikey";
+type AuthMethod = "admin" | "trial" | "apikey";
 
 // ─── Telegram Login Widget ──────────────────────────────────────────
 
@@ -80,34 +82,249 @@ function AdminLoginForm() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!username.trim() || !password.trim() || submitting) return;
+    if (submitting) return;
     setSubmitting(true); setError(null);
     try {
-      const token = await api.adminLogin(username.trim(), password);
+      const token = await api.adminLogin(username, password);
+      // Clear any leftover session_token from a previous Telegram/trial login —
+      // the backend checks X-Session-Token before Authorization, so a stale
+      // valid session would otherwise silently outrank this fresh admin login.
       clearSessionToken();
       setToken(token);
-      router.replace("/admin/dashboard");
+      router.replace("/app");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인 실패");
-    } finally {
-      setSubmitting(false);
-    }
+      const message = err instanceof Error ? err.message : "로그인 실패";
+      setError(message.includes("Invalid credentials") ? "아이디 또는 비밀번호가 올바르지 않습니다." : message);
+    } finally { setSubmitting(false); }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Field label="아이디">
-        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="관리자 아이디" required />
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
       </Field>
       <Field label="비밀번호">
-        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호" required />
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       </Field>
       {error && <InlineError>{error}</InlineError>}
-      <Button type="submit" disabled={submitting} className="flex w-full h-11">
+      <Button type="submit" disabled={submitting} className="w-full h-11">
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {submitting ? "확인 중..." : "관리자 로그인"}
+        {submitting ? "로그인 중..." : "로그인"}
       </Button>
     </form>
+  );
+}
+
+function FreeTrialForm({ onGoToApiKey }: { onGoToApiKey: () => void }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [botDeepLink, setBotDeepLink] = useState<string | null>(null);
+  const [channelUrl, setChannelUrl] = useState<string | null>(null);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyCheckStatus | "idle">("idle");
+  const [verifyReason, setVerifyReason] = useState<string | null>(null);
+  const [issuing, setIssuing] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [alreadyIssued, setAlreadyIssued] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tokenRef = useRef<string | null>(null);
+
+  async function handleStart() {
+    if (starting) return;
+    setStarting(true); setError(null); setAlreadyIssued(false);
+    try {
+      const start = await freeApiKey.startFreeApiKeyVerification();
+      setToken(start.token);
+      tokenRef.current = start.token;
+      try { sessionStorage.setItem("ft_token", start.token); sessionStorage.setItem("ft_deeplink", start.botDeepLink); sessionStorage.setItem("ft_channel", start.channelUrl); } catch {}
+      setBotDeepLink(start.botDeepLink);
+      setChannelUrl(start.channelUrl);
+      setVerifyStatus("idle");
+      setVerifyReason(null);
+    } catch (err) { setError(err instanceof Error ? err.message : "인증 시작에 실패했습니다."); }
+    finally { setStarting(false); }
+  }
+
+  async function handleCopy() {
+    if (apiKey) {
+      try { await navigator.clipboard.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      catch {}
+    }
+  }
+
+  async function handleClaimApiKey() {
+    if (!token || issuing || apiKey) return;
+    setIssuing(true); setError(null); setAlreadyIssued(false);
+    try {
+      const result = await freeApiKey.issueFreeApiKey(token);
+      if (result.apiKey) {
+        setApiKey(result.apiKey);
+        try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); } catch {}
+      } else if (result.alreadyIssued) {
+        setAlreadyIssued(true);
+      } else {
+        setError(result.detail || "API 키 발급에 실패했습니다. 관리자에게 문의해주세요.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "API 키 발급에 실패했습니다. 관리자에게 문의해주세요.");
+    }
+    finally { setIssuing(false); }
+  }
+
+  const botStarted = verifyStatus === "unverified" || verifyStatus === "verified";
+  const channelJoined = verifyStatus === "verified";
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("ft_token");
+      if (saved && !tokenRef.current) {
+        setToken(saved);
+        tokenRef.current = saved;
+        setBotDeepLink(sessionStorage.getItem("ft_deeplink"));
+        setChannelUrl(sessionStorage.getItem("ft_channel"));
+        setVerifyStatus("idle");
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!tokenRef.current || verifyStatus === "verified") return;
+    let cancelled = false;
+    const tick = async () => {
+      const t = tokenRef.current;
+      if (!t) return;
+      try {
+        const result = await freeApiKey.checkTelegramVerification(t);
+        if (cancelled) return;
+        setVerifyStatus(result.status);
+        setVerifyReason(result.reason);
+        setError(null);
+        if (result.status === "verified" && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        setError(err instanceof Error ? err.message : "인증 확인에 실패했습니다. 다시 시도해주세요.");
+      }
+    };
+    pollingRef.current = setInterval(tick, 4000);
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [verifyStatus]);
+
+  if (apiKey) return (
+    <div className="text-center space-y-4">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-app-success-muted">
+        <CheckCircle2 className="h-7 w-7 text-app-success" />
+      </div>
+      <p className="text-sm text-app-text-secondary">무료 API 키가 발급되었습니다</p>
+      <p className="text-xs text-app-text-muted">3일 동안 유효합니다. 아래 키를 복사하여 로그인해주세요.</p>
+      <div className="rounded-xl bg-app-surface border border-app-border p-3 relative">
+        <code className="break-all text-xs text-app-text font-mono">{apiKey}</code>
+      </div>
+      <button onClick={handleCopy}
+        className="btn-secondary w-full h-10 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <Copy className="h-4 w-4" />{copied ? "복사됨" : "API 키 복사"}
+      </button>
+      <button onClick={onGoToApiKey}
+        className="btn-primary w-full h-10 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <KeyRound className="h-4 w-4" /> API 키로 로그인
+      </button>
+    </div>
+  );
+
+  if (!token) return (
+    <div className="space-y-4">
+      <p className="text-xs text-app-text-muted leading-relaxed">
+        ⏱ 약 1분이면 완료됩니다
+      </p>
+      <ol className="text-xs text-app-text-muted list-decimal list-inside space-y-1">
+        <li>텔레그램 채널 <strong className="text-app-text">@TeleMon_2</strong> 가입</li>
+        <li>봇 인증 완료</li>
+        <li>무료 API 키 즉시 발급</li>
+      </ol>
+      <p className="text-xs text-app-text-muted leading-relaxed">
+        🔑 3일 동안 모든 기능을 제한 없이 사용할 수 있습니다.<br />
+        결제 정보가 필요하지 않습니다.
+      </p>
+      {error && <InlineError>{error}</InlineError>}
+      <Button onClick={handleStart} disabled={starting} className="flex w-full h-11">
+        {starting && <Loader2 className="h-4 w-4 animate-spin" />}
+        {starting ? "시작하는 중..." : "1분 인증 시작 · 3일 무료"}
+      </Button>
+    </div>
+  );
+
+  const canClaim = channelJoined;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          {botStarted ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={botStarted ? "text-app-text-secondary" : "text-app-text font-medium"}>텔레그램 봇 시작 확인</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          {channelJoined ? <CheckCircle2 className="h-4 w-4 text-app-success shrink-0" /> : <Loader2 className="h-4 w-4 animate-spin text-app-primary shrink-0" />}
+          <span className={channelJoined ? "text-app-text-secondary" : "text-app-text font-medium"}>채널 가입 확인</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {botDeepLink && !channelJoined && (
+          <a href={botDeepLink} target="_blank" rel="noopener noreferrer"
+            className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+            <UserCheck className="h-4 w-4" /> 텔레그램 봇 열기
+          </a>
+        )}
+        {channelUrl && !channelJoined && (
+          <a href={channelUrl} target="_blank" rel="noopener noreferrer"
+            className="btn-secondary flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold gap-1.5">
+            <ExternalLink className="h-4 w-4" /> 채널 가입하기
+          </a>
+        )}
+      </div>
+
+      {channelJoined && (
+        <p className="text-xs text-app-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> 채널 가입이 확인되었습니다.</p>
+      )}
+
+      <div className="pt-1">
+        <Button onClick={handleClaimApiKey} disabled={!canClaim || issuing || !!apiKey} loading={issuing} className="flex w-full h-11">
+          🔑 API 키 수동 발급
+        </Button>
+        {!canClaim && (
+          <p className="text-xs text-app-text-muted mt-1.5 text-center">
+            위 단계를 완료하면 버튼이 활성화됩니다
+          </p>
+        )}
+      </div>
+
+      {alreadyIssued && (
+        <InlineError className="mb-0">
+          <AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />
+          이미 발급된 계정입니다. {" "}
+          <button type="button" onClick={onGoToApiKey} className="underline text-app-primary hover:text-app-primary-hover">API 키로 로그인</button>
+          하거나 관리자에게 문의해주세요.
+        </InlineError>
+      )}
+
+      {!channelJoined && verifyStatus === "unverified" && verifyReason === "not_a_member" && (
+        <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />채널 가입이 확인되지 않았습니다. 채널에 가입한 후 다시 시도해주세요.</InlineError>
+      )}
+      {!channelJoined && verifyStatus === "unverified" && verifyReason === "membership_check_unavailable" && (
+        <InlineError><AlertCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 inline" />지금은 확인할 수 없습니다. 잠시 후 다시 시도해주세요.</InlineError>
+      )}
+      {error && !alreadyIssued && <InlineError>{error}</InlineError>}
+    </div>
   );
 }
 
@@ -141,6 +358,8 @@ function ApiKeyLoginForm() {
     setSubmitting(true); setError(null);
     try {
       const token = await api.loginWithApiKey(apiKey.trim());
+      // Same as admin login — an old session_token would otherwise silently
+      // outrank this fresh API-key login (backend checks X-Session-Token first).
       clearSessionToken();
       setToken(token);
       router.replace("/app");
@@ -164,14 +383,20 @@ function ApiKeyLoginForm() {
 }
 
 const METHODS: { id: AuthMethod; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: "admin", label: "관리자", icon: <KeyRound className="h-4 w-4" />, desc: "아이디/비밀번호로 로그인" },
+  { id: "trial", label: "무료체험", icon: <CheckCircle2 className="h-4 w-4" />, desc: "채널 가입하고 무료 API 키 받기" },
   { id: "apikey", label: "API 키", icon: <KeyRound className="h-4 w-4" />, desc: "발급받은 키로 바로 로그인" },
+  { id: "admin", label: "관리자", icon: <ShieldCheck className="h-4 w-4" />, desc: "아이디와 비밀번호로 로그인" },
 ];
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [method, setMethod] = useState<AuthMethod>("admin");
   const [tgSuccess, setTgSuccess] = useState(false);
+  // If a saved token exists, some flows below auto-redirect to /app the
+  // instant it validates — with no visible feedback and no way back to a
+  // fresh login if that session turns out to be stale/wrong (reported
+  // symptom: "it says I'm already logged in and nothing works"). Surface an
+  // explicit way out instead of forcing a manual localStorage clear.
   const [hasSavedSession, setHasSavedSession] = useState(false);
   useEffect(() => {
     setHasSavedSession(Boolean(getToken() || getSessionToken()));
@@ -183,22 +408,16 @@ export default function AdminLoginPage() {
     window.location.reload();
   }
 
-  const handleTelegramSuccess = useCallback(async (result: api.TelegramLoginResult) => {
+  const handleTelegramSuccess = useCallback((result: api.TelegramLoginResult) => {
+    // Telegram login sets both slots fresh, so there's no stale leftover from
+    // this flow itself — clearing first anyway keeps the invariant explicit
+    // and consistent with the other login methods (see AdminLoginForm/ApiKeyLoginForm).
     clearToken();
     clearSessionToken();
     setToken(result.access_token);
     setSessionToken(result.session_token);
     setTgSuccess(true);
-    try {
-      const me = await api.fetchAuthMe();
-      if (me.role === "admin") {
-        router.replace("/admin/dashboard");
-      } else {
-        router.replace("/app");
-      }
-    } catch {
-      router.replace("/app");
-    }
+    setTimeout(() => router.replace("/app"), 600);
   }, [router]);
 
   return (
@@ -254,7 +473,7 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-app-surface p-1 border border-app-border">
+        <div className="mb-5 grid grid-cols-3 gap-1 rounded-xl bg-app-surface p-1 border border-app-border">
           {METHODS.map((m) => (
             <button
               key={m.id}
@@ -274,10 +493,15 @@ export default function AdminLoginPage() {
 
         <div className="rounded-2xl border border-app-border bg-app-card p-6 animate-scale-in">
           <div className="mb-5">
-            <h2 className="text-base font-semibold text-app-text">{method === "admin" ? "관리자 로그인" : "API 키 로그인"}</h2>
-            <p className="text-xs text-app-text-muted mt-0.5">{method === "admin" ? "관리자 계정으로 로그인" : "발급받은 키로 바로 로그인"}</p>
+            <h2 className="text-base font-semibold text-app-text">
+              {method === "admin" ? "관리자 로그인" : method === "trial" ? "무료체험" : "API 키 로그인"}
+            </h2>
+            <p className="text-xs text-app-text-muted mt-0.5">
+              {METHODS.find((m) => m.id === method)?.desc}
+            </p>
           </div>
           {method === "admin" && <AdminLoginForm />}
+          {method === "trial" && <FreeTrialForm onGoToApiKey={() => setMethod("apikey")} />}
           {method === "apikey" && <ApiKeyLoginForm />}
         </div>
 
