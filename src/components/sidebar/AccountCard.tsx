@@ -10,7 +10,7 @@ const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = 
   active: { dot: "bg-app-success", label: "활성" },
   inactive: { dot: "bg-app-text-subtle", label: "비활성" },
   banned: { dot: "bg-app-danger", label: "차단됨" },
-  suspended: { dot: "bg-app-danger", label: "정지됨" },
+  suspended: { dot: "bg-app-warning", label: "정지됨" },
 };
 
 const HEALTH_ICON: Record<AccountHealthState, { icon: typeof AlertTriangle; color: string; title: string }> = {
@@ -35,14 +35,16 @@ interface AccountCardProps {
   onDelete: (id: string) => Promise<void>;
   onToggleFavorite?: (id: string) => void;
   onClearError?: (id: string) => Promise<void>;
+  onResume?: (id: string) => Promise<void>;
 }
 
-export function AccountCard({ account, selected, health, lastError, isFavorite, groupFilter, onSelect, onDelete, onToggleFavorite, onClearError }: AccountCardProps) {
+export function AccountCard({ account, selected, health, lastError, isFavorite, groupFilter, onSelect, onDelete, onToggleFavorite, onClearError, onResume }: AccountCardProps) {
   const status = STATUS_STYLE[account.status];
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [clearingError, setClearingError] = useState(false);
+  const [resuming, setResuming] = useState(false);
 
   async function handleClearError(e: React.MouseEvent) {
     e.stopPropagation();
@@ -50,6 +52,14 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
     setClearingError(true);
     try { await onClearError(account.id); }
     finally { setClearingError(false); }
+  }
+
+  async function handleResume(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!onResume || resuming) return;
+    setResuming(true);
+    try { await onResume(account.id); }
+    finally { setResuming(false); }
   }
 
   useEffect(() => {
@@ -114,10 +124,10 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
             <button
               type="button"
               onClick={handleEditLabel}
-              className="shrink-0 flex h-5 w-5 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-primary hover:bg-app-card-hover transition-all"
+              className="shrink-0 flex min-h-11 min-w-11 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-primary hover:bg-app-card-hover transition-all sm:min-h-5 sm:min-w-5"
               title="별칭 편집"
             >
-              <Edit3 className="h-3 w-3" />
+              <Edit3 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
             </button>
           </div>
           <div className="truncate text-xs text-app-text-muted">
@@ -158,12 +168,12 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
             title="그룹 관리"
             onClick={(e) => { e.stopPropagation(); setGroupPickerOpen(!groupPickerOpen); }}
             className={cn(
-              "flex min-h-[28px] min-w-[28px] items-center justify-center rounded-md transition-all hover:bg-app-card-hover",
+              "flex min-h-11 min-w-11 items-center justify-center rounded-md transition-all hover:bg-app-card-hover sm:min-h-[28px] sm:min-w-[28px]",
               belongingGroups.length > 0 ? "text-app-primary" : "text-app-text-subtle",
               selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
           >
-            <Layers className="h-3.5 w-3.5" />
+            <Layers className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
           {groupPickerOpen && (
             <>
@@ -204,19 +214,33 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
             type="button"
             title={isFavorite ? "즐겨찾기 제거" : "즐겨찾기 추가"}
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(account.id); }}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all hover:bg-app-card-hover"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-md transition-all hover:bg-app-card-hover sm:min-h-6 sm:min-w-6"
           >
-            <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-400 text-yellow-400" : "text-app-text-subtle")} />
+            <Star className={cn("h-4 w-4 sm:h-3.5 sm:w-3.5", isFavorite ? "fill-yellow-400 text-yellow-400" : "text-app-text-subtle")} />
+          </button>
+        )}
+        {account.status === "suspended" && onResume && (
+          <button
+            type="button"
+            title="재개 (suspended → active)"
+            onClick={handleResume}
+            disabled={resuming}
+            className={cn(
+              "shrink-0 flex min-h-11 min-w-11 items-center justify-center rounded-md text-app-warning transition-all hover:bg-app-warning-muted disabled:opacity-50 sm:min-h-6 sm:min-w-6",
+              selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+          >
+            <RefreshCw className={cn("h-4 w-4 sm:h-3.5 sm:w-3.5", resuming && "animate-spin")} />
           </button>
         )}
         <button
           type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} disabled={deleting}
           className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-app-danger-muted hover:text-app-danger disabled:opacity-50",
+            "flex min-h-11 min-w-11 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-app-danger-muted hover:text-app-danger disabled:opacity-50 sm:min-h-6 sm:min-w-6",
             selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           )}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
         </button>
       </div>
       <ConfirmDialog

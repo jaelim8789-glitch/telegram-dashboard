@@ -11,6 +11,7 @@
   Broadcast,
   BroadcastChild,
   BroadcastStatus,
+  DistributionSibling,
   Group,
   ReplyMacro,
   ReplyMacroLog,
@@ -291,6 +292,10 @@ export async function clearAccountError(id: string): Promise<Account> {
   return request<Account>(`/api/accounts/${id}/clear-error`, { method: "POST" });
 }
 
+export async function resumeAccount(id: string): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}/resume`, { method: "POST" });
+}
+
 /**
  * Update an account's status (active/inactive/banned).
  * PUT /api/accounts/{accountId}
@@ -520,6 +525,7 @@ interface ApiBroadcast {
   failure_info: { category: string; retryable: string; recovery_action: string; summary: string } | null;
   reply_to_message_id: number | null;
   inline_buttons: { label: string; url: string }[] | null;
+  distribution_batch_id: string | null;
 }
 
 function toBroadcast(api: ApiBroadcast): Broadcast {
@@ -541,6 +547,7 @@ function toBroadcast(api: ApiBroadcast): Broadcast {
     failureInfo: api.failure_info as Broadcast["failureInfo"] | null ?? null,
     replyToMessageId: api.reply_to_message_id ?? null,
     inlineButtons: api.inline_buttons as Broadcast["inlineButtons"] | null ?? null,
+    distributionBatchId: api.distribution_batch_id ?? null,
   };
 }
 
@@ -745,6 +752,24 @@ export async function fetchRecurringChildren(
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
     deliveryMode: api.delivery_mode,
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
+  }));
+}
+
+export async function fetchDistributionStatus(batchId: string): Promise<DistributionSibling[]> {
+  const result = await request<{
+    batch_id: string;
+    siblings: {
+      broadcast: ApiBroadcast;
+      account_id: string;
+      account_phone: string;
+      account_name: string | null;
+    }[];
+  }>(`/api/broadcast/distribution/${batchId}`);
+  return result.siblings.map((s) => ({
+    broadcast: toBroadcast(s.broadcast),
+    accountId: s.account_id,
+    accountPhone: s.account_phone,
+    accountName: s.account_name,
   }));
 }
 

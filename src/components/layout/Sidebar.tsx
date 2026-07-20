@@ -189,6 +189,11 @@ export function Sidebar() {
     catch { /* icon just stays until next successful refresh */ }
   }
 
+  async function handleResume(id: string) {
+    try { await api.resumeAccount(id); toast("success", "계정이 재개되었습니다."); await fetchAccounts(); }
+    catch (err) { toast("error", err instanceof Error ? err.message : "재개에 실패했습니다."); }
+  }
+
   return (
     <aside className="dashboard-sidebar flex w-64 shrink-0 flex-col">
       <div className="flex items-center justify-between border-b border-app-border px-4 py-3.5">
@@ -200,32 +205,32 @@ export function Sidebar() {
             type="button"
             onClick={() => setBatchMode(!batchMode)}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-lg transition-all",
+              "flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-all",
               batchMode
                 ? "bg-app-primary text-white"
                 : "text-app-text-muted hover:text-app-text hover:bg-app-card"
             )}
             title={batchMode ? "일괄 선택 종료" : "일괄 선택 모드"}
           >
-            <CheckSquare className="h-3.5 w-3.5" />
+            <CheckSquare className="h-4 w-4" />
           </button>
           {groups.length > 0 && (
             <button
               type="button"
               onClick={() => setGroupMgmtOpen(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
               title="그룹 관리"
             >
-              <Layers className="h-3.5 w-3.5" />
+              <Layers className="h-4 w-4" />
             </button>
           )}
           <button
             type="button"
             onClick={() => { fetchAccounts(); loadHealth(); }}
             aria-label="계정 새로고침"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${accountsLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -427,6 +432,7 @@ export function Sidebar() {
                   onDelete={handleDelete}
                   onClearError={handleClearError}
                   onToggleFavorite={toggleFavorite}
+                  onResume={handleResume}
                 />
               </div>
             </div>
