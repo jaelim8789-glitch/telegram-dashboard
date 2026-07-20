@@ -11,7 +11,7 @@ import type {
 import { RECURRING_INTERVALS, isBroadcastInFlight } from "@/types";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
-import { loadTemplates, TEMPLATE_VARIABLES, type MessageTemplate as LocalTemplate } from "@/lib/messageTemplates";
+import { loadTemplates, type MessageTemplate as LocalTemplate } from "@/lib/messageTemplates";
 
 type HistoryFilter = Broadcast["status"] | "all" | "recurring";
 const POLL_INTERVAL_MS = 3000;

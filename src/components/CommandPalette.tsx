@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Search, SearchX, LayoutDashboard, UserPlus, Send, Users,
+  Search as SearchIcon, SearchX, LayoutDashboard, UserPlus, Send, Users,
   Link, User, FileText, MessageCircle, Reply, BarChart3, Calendar,
   Radio, FolderOpen, FileSymlink, Bot, Heart, Users2, Zap,
   Activity, Layers, MessageSquare, Star, X,
@@ -174,7 +174,7 @@ export function CommandPalette() {
       >
         {/* Search input */}
         <div className="flex items-center gap-2 border-b border-app-border px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-app-text-muted" />
+          <SearchIcon className="h-4 w-4 shrink-0 text-app-text-muted" />
           <input
             ref={inputRef}
             type="text"
