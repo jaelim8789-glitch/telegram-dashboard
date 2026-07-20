@@ -584,6 +584,9 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.inlineButtons && input.inlineButtons.length > 0) {
     form.append("inline_buttons", JSON.stringify(input.inlineButtons));
   }
+  if (input.batchSize != null) {
+    form.append("batch_size", String(input.batchSize));
+  }
   if (input.autoRetry) {
     form.append("auto_retry", JSON.stringify(input.autoRetry));
   }

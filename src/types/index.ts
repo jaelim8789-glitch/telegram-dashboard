@@ -1,14 +1,13 @@
 ﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars";
 
-// Navigation/IA grouping only — does not change routing, storage, or any
-// backend contract. "operate" = the loop an operator runs through daily
-// (check status, send, monitor recurring sends, review what happened,
-// review performance). "manage" = account setup and automation
-// configuration, touched far less often once established. TabBar renders
-// these as two visually distinct clusters; every other TABS consumer
-// (Inspector's .find()-by-id, Workspace's TAB_CONTENT record) is
-// order/grouping-agnostic.
-export type TabGroup = "operate" | "manage";
+// Navigation/IA grouping — organizes tabs into visual categories in TabBar.
+// "send"    = message delivery
+// "ai"      = everything AI (single MyAi tab)
+// "analyze" = logs, analytics, health
+// "search"  = group search + link inspector
+// "manage"  = account setup, automation, team, etc.
+// "new"     = experimental / Kiro-integrated features
+export type TabGroup = "send" | "ai" | "analyze" | "search" | "manage" | "new";
 
 export interface TabDef {
   id: TabId;
@@ -19,29 +18,40 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
-  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "operate" },
-  { id: "send", label: "발송", group: "operate" },
-  { id: "scheduler", label: "스케줄러", group: "operate" },
-  { id: "log", label: "로그", group: "operate" },
-  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "operate" },
+  // ── 발송 ──
+  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "send" },
+  { id: "send", label: "발송", group: "send" },
+  { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "send" },
+  { id: "scheduler", label: "스케줄러", group: "send" },
+  { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "send" },
+
+  // ── AI (나만의 AI 하나로 통합) ──
+  { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "ai" },
+
+  // ── 분석 ──
+  { id: "log", label: "로그", group: "analyze" },
+  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "analyze" },
+  { id: "health", label: "계정 건강", shortLabel: "건강", group: "analyze" },
+
+  // ── 검사 (통합) ──
+  { id: "groupsearch", label: "검사", shortLabel: "검사", group: "search" },
+  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "search" },
+
+  // ── 관리 ──
   { id: "register", label: "계정 등록", shortLabel: "등록", group: "manage" },
   { id: "group", label: "그룹", group: "manage" },
-  { id: "groupsearch", label: "그룹 검색", shortLabel: "검색", group: "manage" },
-  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "manage" },
   { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "manage" },
-  { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "manage" },
+  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "campaigns", label: "캠페인", shortLabel: "캠페인", group: "manage" },
   { id: "folders", label: "폴더", group: "manage" },
   { id: "templates", label: "템플릿", group: "manage" },
-  { id: "health", label: "계정 건강", shortLabel: "건강", group: "operate" },
-  { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "operate" },
-  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
-  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "manage" },
-  { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "operate" },
-  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "manage" },
-  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "manage" },
+
+  // ── 신규 (Kiro 이식 완료) ──
+  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "new" },
+  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "new" },
+  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "new" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";

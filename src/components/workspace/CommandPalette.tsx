@@ -71,7 +71,7 @@ function buildCommands(
     ...TABS.map((tab) => ({
       id: `nav:${tab.id}`,
       label: tab.label,
-      keywords: [tab.label, tab.id, tab.group === "operate" ? "운영" : "관리"],
+      keywords: [tab.label, tab.id, tab.group === "send" ? "발송" : tab.group === "ai" ? "AI" : tab.group === "analyze" ? "분석" : tab.group === "search" ? "검사" : tab.group === "manage" ? "관리" : "신규"],
       icon: NAV_ICONS[tab.id] ?? ArrowRight,
       tabId: tab.id,
     })),
@@ -325,7 +325,7 @@ export function CommandPalette() {
                     <span className="flex-1 truncate">{command.label}</span>
                     {command.tabId && !selected && (
                       <span className="shrink-0 text-[10px] text-app-text-subtle">
-                        {TABS.find((tab) => tab.id === command.tabId)?.group === "operate" ? "운영" : "관리"}
+                        {TABS.find((tab) => tab.id === command.tabId)?.group === "send" ? "발송" : TABS.find((tab) => tab.id === command.tabId)?.group === "ai" ? "AI" : TABS.find((tab) => tab.id === command.tabId)?.group === "analyze" ? "분석" : TABS.find((tab) => tab.id === command.tabId)?.group === "search" ? "검사" : TABS.find((tab) => tab.id === command.tabId)?.group === "manage" ? "관리" : "신규"}
                       </span>
                     )}
                   </button>

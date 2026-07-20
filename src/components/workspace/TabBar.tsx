@@ -80,8 +80,12 @@ export function TabBar() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const operateTabs = TABS.filter((t) => t.group === "operate");
+  const sendTabs = TABS.filter((t) => t.group === "send");
+  const aiTabs = TABS.filter((t) => t.group === "ai");
+  const analyzeTabs = TABS.filter((t) => t.group === "analyze");
+  const searchTabs = TABS.filter((t) => t.group === "search");
   const manageTabs = TABS.filter((t) => t.group === "manage");
+  const newTabs = TABS.filter((t) => t.group === "new");
 
   // Horizontal overflow is common on narrower desktops and on mobile with
   // 11 destinations — without this, a scrolled-away tab (including the
@@ -117,7 +121,7 @@ export function TabBar() {
     updateFade();
   }, [activeTab]);
 
-  const allTabs = [...operateTabs, ...manageTabs];
+  const allTabs = [...sendTabs, ...aiTabs, ...analyzeTabs, ...searchTabs, ...manageTabs, ...newTabs];
 
   function handleKeyDown(e: React.KeyboardEvent) {
     const currentIndex = allTabs.findIndex((t) => t.id === activeTab);
@@ -145,14 +149,38 @@ export function TabBar() {
         style={{ scrollbarWidth: "none" }}
         className="flex items-center gap-0.5 overflow-x-auto px-3 [&::-webkit-scrollbar]:hidden"
       >
-        <div role="group" aria-label="일상 운영" className="flex items-center gap-0.5">
-          {operateTabs.map((tab) => (
+        <div role="group" aria-label="발송" className="flex items-center gap-0.5">
+          {sendTabs.map((tab) => (
             <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
           ))}
         </div>
         <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
-        <div role="group" aria-label="계정 및 자동화 관리" className="flex items-center gap-0.5">
+        <div role="group" aria-label="AI" className="flex items-center gap-0.5">
+          {aiTabs.map((tab) => (
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
+          ))}
+        </div>
+        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
+        <div role="group" aria-label="분석" className="flex items-center gap-0.5">
+          {analyzeTabs.map((tab) => (
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
+          ))}
+        </div>
+        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
+        <div role="group" aria-label="검사" className="flex items-center gap-0.5">
+          {searchTabs.map((tab) => (
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
+          ))}
+        </div>
+        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
+        <div role="group" aria-label="관리" className="flex items-center gap-0.5">
           {manageTabs.map((tab) => (
+            <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
+          ))}
+        </div>
+        <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />
+        <div role="group" aria-label="신규" className="flex items-center gap-0.5">
+          {newTabs.map((tab) => (
             <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
           ))}
         </div>
