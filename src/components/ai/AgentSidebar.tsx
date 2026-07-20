@@ -1,8 +1,10 @@
 "use client";
 
-import { Plus, MessageSquare, Trash2, Bot, Settings, ChevronDown, X, Loader2, Zap } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Bot, ChevronDown, X, Loader2, Zap, Store } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
+import { useState } from "react";
+import { AgentMarketplace } from "@/components/ai/AgentMarketplace";
 import type { Agent, AgentChat } from "@/lib/agent-api";
 
 interface AgentSidebarProps {
@@ -100,6 +102,8 @@ export function AgentSidebar({
   mobileOpen,
   onMobileClose,
 }: AgentSidebarProps) {
+  const [marketOpen, setMarketOpen] = useState(false);
+
   if (collapsed) {
     return (
       <div className="flex w-12 shrink-0 flex-col items-center gap-2 border-r border-app-border bg-app-card py-3 min-h-0">
@@ -297,13 +301,28 @@ export function AgentSidebar({
         </div>
       </div>
 
-      {/* Bottom settings */}
-      <div className="border-t border-app-border px-3 py-2">
-        <button className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text min-h-[36px]">
-          <Settings className="h-3.5 w-3.5 shrink-0" />
-          템플릿 마켓
-        </button>
-      </div>
+      {/* Template market overlay */}
+      {marketOpen && (
+        <div className="absolute inset-0 z-20 bg-app-card flex flex-col">
+          <AgentMarketplace
+            onAgentCreated={() => setMarketOpen(false)}
+            onClose={() => setMarketOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Bottom actions */}
+      {!marketOpen && (
+        <div className="border-t border-app-border px-3 py-2 shrink-0">
+          <button
+            onClick={() => setMarketOpen(true)}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+          >
+            <Store className="h-3.5 w-3.5 shrink-0 text-purple-500" />
+            템플릿 마켓
+          </button>
+        </div>
+      )}
     </div>
   );
 }

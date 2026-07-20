@@ -29,25 +29,100 @@ const HEALTH_LABELS: Record<string, { label: string; tone: "success" | "warning"
   unknown: { label: "알 수 없음", tone: "neutral", icon: Activity },
 };
 
-function MiniTrendChart({ trend }: { trend: HealthTrendPoint[] }) {
+function TrendLineChart({ trend }: { trend: HealthTrendPoint[] }) {
   if (trend.length === 0) return null;
+
+  const w = trend.length * 40;
+  const h = 160;
+  const pad = { top: 16, right: 8, bottom: 20, left: 32 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+
   const maxVal = Math.max(...trend.map((t) => t.total), 1);
+  const maxSuccess = Math.max(...trend.map((t) => t.success_rate), 50);
+
+  const xScale = (i: number) => pad.left + (i / (trend.length - 1 || 1)) * chartW;
+  const yScale = (v: number) => pad.top + chartH - (v / maxSuccess) * chartH;
+
+  const linePath = trend
+    .map((t, i) => `${i === 0 ? "M" : "L"}${xScale(i)},${yScale(t.success_rate)}`)
+    .join(" ");
+
+  const areaPath = `${linePath} L${xScale(trend.length - 1)},${pad.top + chartH} L${xScale(0)},${pad.top + chartH} Z`;
+
+  const barW = Math.max(4, Math.min(12, chartW / trend.length - 2));
+
   return (
-    <div className="flex items-end gap-0.5 h-20" role="img" aria-label="건강 트렌드 차트">
-      {trend.map((t, i) => {
-        const h = Math.max((t.total / maxVal) * 64, 2);
-        const color = t.success_rate >= 90 ? "bg-app-success" : t.success_rate >= 70 ? "bg-app-warning" : "bg-app-danger";
-        return (
-          <div key={i} className="group relative flex-1 flex flex-col items-center">
-            <div className="w-full rounded-t" style={{ height: h, backgroundColor: t.total > 0 ? undefined : undefined }}>
-              <div className={cn("w-full rounded-t transition-all", color)} style={{ height: `${Math.max(t.success_rate, 2)}%` }} />
-            </div>
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-app-card border border-app-border rounded-lg px-2 py-1 text-[9px] whitespace-nowrap shadow-lg z-10">
-              {t.date.slice(5)}: {t.successful}/{t.total} ({t.success_rate}%)
-            </div>
-          </div>
-        );
-      })}
+    <div className="relative" role="img" aria-label="건강 트렌드 라인 차트">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: h }}>
+        {/* Grid lines */}
+        {[0, 25, 50, 75, 100].map((v) => (
+          <g key={v}>
+            <line x1={pad.left} y1={yScale(v)} x2={w - pad.right} y2={yScale(v)}
+              stroke="currentColor" className="text-app-border/50" strokeWidth="0.5" />
+            <text x={pad.left - 4} y={yScale(v) + 3} textAnchor="end"
+              className="fill-app-text-muted" fontSize="8">{v}%</text>
+          </g>
+        ))}
+
+        {/* Area fill */}
+        <path d={areaPath} className="fill-app-primary/10" />
+
+        {/* Line */}
+        <path d={linePath} className="stroke-app-primary" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Dots + tooltips */}
+        {trend.map((t, i) => {
+          const cx = xScale(i);
+          const cy = yScale(t.success_rate);
+          return (
+            <g key={i} className="group cursor-pointer">
+              <circle cx={cx} cy={cy} r="3" className="fill-app-card stroke-app-primary" strokeWidth="2" />
+              {/* Bar for total volume */}
+              <rect
+                x={cx - barW / 2}
+                y={pad.top + chartH - (t.total / maxVal) * chartH * 0.5}
+                width={barW}
+                height={(t.total / maxVal) * chartH * 0.5}
+                rx="2"
+                className="fill-app-text-muted/20"
+              />
+              {/* Tooltip */}
+              <g className="hidden group-hover:block">
+                <rect
+                  x={cx - 36}
+                  y={cy - 38}
+                  width={72}
+                  height={28}
+                  rx="6"
+                  className="fill-app-card stroke-app-border"
+                  strokeWidth="1"
+                />
+                <text x={cx} y={cy - 24} textAnchor="middle" className="fill-app-text" fontSize="8" fontWeight="bold">
+                  {t.date.slice(5)}: {t.success_rate}%
+                </text>
+                <text x={cx} y={cy - 14} textAnchor="middle" className="fill-app-text-muted" fontSize="7">
+                  {t.successful}/{t.total}건 성공
+                </text>
+              </g>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-1 flex items-center justify-center gap-4 text-[9px] text-app-text-muted">
+        <span className="flex items-center gap-1">
+          <svg width="12" height="3" viewBox="0 0 12 3">
+            <line x1="0" y1="1.5" x2="12" y2="1.5" stroke="currentColor" className="stroke-app-primary" strokeWidth="2" />
+          </svg>
+          성공률
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-sm bg-app-text-muted/20" />
+          발송량
+        </span>
+      </div>
     </div>
   );
 }
@@ -207,7 +282,7 @@ export function HealthTab() {
               <option value={30}>30일</option>
             </select>
           </div>
-          <MiniTrendChart trend={trend} />
+          <TrendLineChart trend={trend} />
           <div className="mt-2 flex items-center justify-between text-[10px] text-app-text-muted">
             <span>{trend[0]?.date ?? ""}</span>
             <span>{trend[trend.length - 1]?.date ?? ""}</span>
