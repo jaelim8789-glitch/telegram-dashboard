@@ -2062,6 +2062,36 @@ export function SendTab() {
           </button>
         }
       >
+        {/* History search & date filter */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+            <input type="text" value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              placeholder="메시지/수신자/오류 검색"
+              className="w-full rounded-lg border border-app-border bg-app-card py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+            />
+          </div>
+          <input type="date" value={historyDateFrom}
+            onChange={(e) => setHistoryDateFrom(e.target.value)}
+            className="w-36 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-xs text-app-text outline-none transition-colors focus:border-app-primary/60"
+            title="시작 날짜"
+          />
+          <span className="text-[11px] text-app-text-subtle">~</span>
+          <input type="date" value={historyDateTo}
+            onChange={(e) => setHistoryDateTo(e.target.value)}
+            className="w-36 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-xs text-app-text outline-none transition-colors focus:border-app-primary/60"
+            title="종료 날짜"
+          />
+          {(historySearch || historyDateFrom || historyDateTo) && (
+            <button type="button" onClick={() => { setHistorySearch(""); setHistoryDateFrom(""); setHistoryDateTo(""); }}
+              className="flex items-center gap-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
+              title="필터 초기화"
+            >
+              <X className="h-3 w-3" /> 초기화
+            </button>
+          )}
+        </div>
         {/* Status filter pills */}
         {!historyLoading && history.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1.5">
@@ -2214,6 +2244,19 @@ export function SendTab() {
         </div>
       </Modal>
 
+      {/* Send time estimate */}
+      {estimatePreview && canSubmit && (
+        <div className="flex items-center justify-end gap-2 text-xs text-app-text-muted mb-2">
+          <Hourglass className="h-3.5 w-3.5" />
+          <span>예상 소요 시간: <strong className="text-app-text">{estimatePreview.readable}</strong></span>
+        </div>
+      )}
+      {estimateLoading && !estimatePreview && canSubmit && (
+        <div className="flex items-center justify-end gap-2 text-xs text-app-text-muted mb-2">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          <span>예상 시간 계산 중...</span>
+        </div>
+      )}
       {/* Floating submit button */}
       <motion.div
         initial={false}
