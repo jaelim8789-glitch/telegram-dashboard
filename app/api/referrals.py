@@ -22,8 +22,19 @@ from app.schemas.referral import (
     ProcessPayoutResponse,
     ReferralDashboardResponse,
     ReferralReferredUser,
+    ReferralStatsResponse,
+    DailyStatsItem,
+    SetChatIdRequest,
 )
-from app.services.referral import get_leaderboard, get_referrer_tier, process_payouts
+from app.services.referral import (
+    approve_payout,
+    cancel_commission,
+    get_leaderboard,
+    get_pending_payouts,
+    get_referrer_tier,
+    get_stats,
+    process_payouts,
+)
 
 router = APIRouter(prefix="/api/referrals", tags=["referrals"])
 public_router = APIRouter(prefix="/api/referrals", tags=["referrals-public"])
@@ -289,6 +300,49 @@ async def get_admin_payouts(
             created_at=p.created_at,
         ))
     return {"items": items, "total_count": len(items)}
+
+
+@router.get("/stats", response_model=ReferralStatsResponse)
+async def get_referral_stats(
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await get_stats(db)
+    return ReferralStatsResponse(
+        total_referrers=data["total_referrers"],
+        total_referred=data["total_referred"],
+        total_commissions_pending=data["total_commissions_pending"],
+        total_commissions_paid=data["total_commissions_paid"],
+        total_commission_amount_pending=data["total_commission_amount_pending"],
+        total_commission_amount_paid=data["total_commission_amount_paid"],
+        daily=[DailyStatsItem(**d) for d in data["daily"]],
+    )
+
+
+@router.post("/set-chat-id")
+async def set_telegram_chat_id(
+    payload: SetChatIdRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant.telegram_chat_id = payload.chat_id
+    await db.commit()
+    return {"success": True, "message": "텔레그램 알림이 설정되었습니다."}
+
+
+@router.post("/admin/commissions/{commission_id}/cancel")
+async def admin_cancel_commission(
+    commission_id: str,
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    success = await cancel_commission(db, commission_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="해당 커미션을 찾을 수 없거나 이미 취소되었습니다.",
+        )
+    return {"success": True, "message": "커미션이 취소되었습니다."}
 
 
 @public_router.get("/leaderboard", response_model=LeaderboardResponse)

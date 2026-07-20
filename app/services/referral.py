@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.logging import get_logger
 from app.models.referral import ReferralCode, ReferralCommission, ReferralPayout
 from app.models.tenant import Tenant
@@ -75,13 +76,7 @@ async def create_commission(
     db.add(commission)
     await db.commit()
     await db.refresh(commission)
-    logger.info(
-        "referral_commission_created",
-        referrer_id=referrer_id,
-        referred_user_id=referred_tenant_id,
-        amount=commission_amount,
-        rate=rate,
-    )
+    logger.info("referral_commission_created", referrer_id=referrer_id, referred_user_id=referred_tenant_id, amount=commission_amount, rate=rate)
 
     if webhook_urls:
         await _send_webhook(webhook_urls, "commission.created", {
@@ -91,13 +86,22 @@ async def create_commission(
             "rate": rate,
         })
 
+    referrer = await db.get(Tenant, referrer_id)
+    if referrer and referrer.telegram_chat_id:
+        await _send_telegram_notification(
+            referrer.telegram_chat_id,
+            f"🎉 새로운 추천인 커미션이 발생했습니다!\n\n"
+            f"금액: {commission_amount}원\n"
+            f"수수료율: {int(rate * 100)}%\n"
+            f"상태: 지급 대기 중",
+        )
+
     return commission
 
 
 async def process_payouts(
     db: AsyncSession,
     min_amount: int = 100,
-    webhook_urls_map: dict[str, list[str]] | None = None,
 ) -> tuple[int, int]:
     result = await db.execute(
         select(
@@ -120,28 +124,9 @@ async def process_payouts(
         payout = ReferralPayout(
             referrer_id=referrer_id,
             amount=amount,
-            status="completed",
-            paid_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            status="pending",
         )
         db.add(payout)
-
-        await db.execute(
-            ReferralCommission.__table__.update()
-            .where(
-                ReferralCommission.referrer_id == referrer_id,
-                ReferralCommission.status == "pending",
-            )
-            .values(status="paid")
-        )
-
-        referrer_webhooks = (webhook_urls_map or {}).get(referrer_id, [])
-        if referrer_webhooks:
-            await _send_webhook(referrer_webhooks, "payout.completed", {
-                "referrer_id": referrer_id,
-                "amount": amount,
-                "payout_id": payout.id,
-            })
-
         payouts_created += 1
         total_amount += amount
 
@@ -149,6 +134,81 @@ async def process_payouts(
         await db.commit()
 
     return payouts_created, total_amount
+
+
+async def approve_payout(db: AsyncSession, payout_id: str) -> bool:
+    payout = await db.get(ReferralPayout, payout_id)
+    if not payout or payout.status != "pending":
+        return False
+
+    payout.status = "completed"
+    payout.paid_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    await db.execute(
+        ReferralCommission.__table__.update()
+        .where(
+            ReferralCommission.referrer_id == payout.referrer_id,
+            ReferralCommission.status == "pending",
+        )
+        .values(status="paid")
+    )
+    await db.commit()
+
+    referrer = await db.get(Tenant, payout.referrer_id)
+    if referrer and referrer.telegram_chat_id:
+        await _send_telegram_notification(
+            referrer.telegram_chat_id,
+            f"✅ {payout.amount}원이 정산 완료되었습니다!\n\n감사합니다.",
+        )
+
+    return True
+
+
+async def cancel_commission(db: AsyncSession, commission_id: str) -> bool:
+    commission = await db.get(ReferralCommission, commission_id)
+    if not commission or commission.status == "cancelled":
+        return False
+
+    commission.status = "cancelled"
+    await db.commit()
+
+    referrer = await db.get(Tenant, commission.referrer_id)
+    if referrer and referrer.telegram_chat_id:
+        await _send_telegram_notification(
+            referrer.telegram_chat_id,
+            f"⚠️ 커미션이 취소되었습니다.\n금액: {commission.commission_amount}원\n사유: 결제 취소/환불",
+        )
+
+    return True
+
+
+async def cancel_commissions_by_payment(db: AsyncSession, source_payment_id: str) -> int:
+    result = await db.execute(
+        select(ReferralCommission).where(
+            ReferralCommission.source_payment_id == source_payment_id,
+            ReferralCommission.status == "pending",
+        )
+    )
+    commissions = list(result.scalars().all())
+
+    cancelled = 0
+    for c in commissions:
+        c.status = "cancelled"
+        cancelled += 1
+
+    if cancelled > 0:
+        await db.commit()
+
+    return cancelled
+
+
+async def get_pending_payouts(db: AsyncSession) -> list[ReferralPayout]:
+    result = await db.execute(
+        select(ReferralPayout)
+        .where(ReferralPayout.status == "pending")
+        .order_by(ReferralPayout.created_at.desc())
+    )
+    return list(result.scalars().all())
 
 
 async def get_leaderboard(db: AsyncSession, limit: int = 20) -> list[dict]:
@@ -179,6 +239,93 @@ async def get_leaderboard(db: AsyncSession, limit: int = 20) -> list[dict]:
             "tier": tier_label,
         })
     return entries
+
+
+async def get_stats(db: AsyncSession, days: int = 30) -> dict:
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+
+    result = await db.execute(
+        select(
+            cast(Tenant.created_at, Date).label("date"),
+            func.count(Tenant.id).label("signups"),
+        )
+        .where(Tenant.created_at >= cutoff)
+        .group_by(cast(Tenant.created_at, Date))
+        .order_by(cast(Tenant.created_at, Date))
+    )
+    signup_rows = result.all()
+    signup_map = {str(r.date): r.signups for r in signup_rows}
+
+    result = await db.execute(
+        select(
+            cast(ReferralCommission.created_at, Date).label("date"),
+            func.coalesce(func.sum(ReferralCommission.commission_amount), 0).label("total"),
+        )
+        .where(ReferralCommission.created_at >= cutoff)
+        .group_by(cast(ReferralCommission.created_at, Date))
+        .order_by(cast(ReferralCommission.created_at, Date))
+    )
+    commission_rows = result.all()
+    commission_map = {str(r.date): r.total for r in commission_rows}
+
+    daily = []
+    for i in range(days - 1, -1, -1):
+        d = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=i)).strftime("%Y-%m-%d")
+        daily.append({
+            "date": d,
+            "signups": signup_map.get(d, 0),
+            "commissions": commission_map.get(d, 0),
+        })
+
+    total_referrers = await db.execute(
+        select(func.count(func.distinct(ReferralCommission.referrer_id)))
+    )
+
+    total_referred = await db.execute(
+        select(func.count(ReferralCommission.id))
+    )
+
+    pending_count = await db.execute(
+        select(func.count(ReferralCommission.id))
+        .where(ReferralCommission.status == "pending")
+    )
+
+    paid_count = await db.execute(
+        select(func.count(ReferralCommission.id))
+        .where(ReferralCommission.status == "paid")
+    )
+
+    pending_amount = await db.execute(
+        select(func.coalesce(func.sum(ReferralCommission.commission_amount), 0))
+        .where(ReferralCommission.status == "pending")
+    )
+
+    paid_amount = await db.execute(
+        select(func.coalesce(func.sum(ReferralCommission.commission_amount), 0))
+        .where(ReferralCommission.status == "paid")
+    )
+
+    return {
+        "total_referrers": total_referrers.scalar_one_or_none() or 0,
+        "total_referred": total_referred.scalar_one_or_none() or 0,
+        "total_commissions_pending": pending_count.scalar_one_or_none() or 0,
+        "total_commissions_paid": paid_count.scalar_one_or_none() or 0,
+        "total_commission_amount_pending": pending_amount.scalar_one_or_none() or 0,
+        "total_commission_amount_paid": paid_amount.scalar_one_or_none() or 0,
+        "daily": daily,
+    }
+
+
+async def _send_telegram_notification(chat_id: str, text: str) -> None:
+    if not settings.telegram_bot_token:
+        return
+
+    try:
+        from telegram import Bot
+        bot = Bot(token=settings.telegram_bot_token)
+        await bot.send_message(chat_id=chat_id, text=text)
+    except Exception as exc:
+        logger.warning("telegram_notification_failed", chat_id=chat_id, error=str(exc))
 
 
 async def _send_webhook(urls: list[str], event: str, payload: dict) -> None:
