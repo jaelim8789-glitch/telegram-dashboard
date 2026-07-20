@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
 import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import { PwaRegister } from "@/components/PwaRegister";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import "./globals.css";
-
-const PwaInstallPrompt = dynamic(() => import("@/components/PwaInstallPrompt"), { ssr: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://telemon.online"),
