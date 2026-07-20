@@ -30,6 +30,7 @@ import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
 import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
 import { GuestBotTab } from "@/components/workspace/tabs/GuestBotTab";
 import { DraftsTab } from "@/components/workspace/tabs/DraftsTab";
+import StarsTab from "@/components/workspace/tabs/StarsTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -60,6 +61,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   guestbot: GuestBotTab,
   drafts: DraftsTab,
   triggers: React.lazy(() => import("@/components/workspace/tabs/TriggersTab").then(m => ({ default: m.TriggersTab }))),
+  stars: StarsTab,
 };
 
 export function Workspace() {

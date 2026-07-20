@@ -35,9 +35,16 @@ export async function fetchStarProducts(): Promise<StarProduct[]> {
 }
 
 /** Stars 인보이스 생성 및 전송 */
-export async function createStarInvoice(productId: string): Promise<InvoiceResponse> {
+export async function createStarInvoice(
+  productId: string,
+  telegramChatId?: string
+): Promise<InvoiceResponse> {
+  const body: Record<string, string> = { product_id: productId };
+  if (telegramChatId) {
+    body.telegram_chat_id = telegramChatId;
+  }
   return request<InvoiceResponse>(`/api/stars/create-invoice`, {
     method: "POST",
-    body: JSON.stringify({ product_id: productId }),
+    body: JSON.stringify(body),
   });
 }

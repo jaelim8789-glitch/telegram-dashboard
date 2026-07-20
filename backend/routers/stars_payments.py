@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..admin_platform import AdminPlatform, Plan, AuditAction
 from ..auth_middleware import get_current_user, require_admin_user
@@ -106,14 +106,17 @@ async def list_products():
 
 @router.post("/create-invoice")
 async def create_invoice(
-    product_id: str,
+    body: dict,
     user: dict = Depends(get_current_user),
 ):
     """사용자의 Telegram 계정으로 Stars Invoice 전송.
 
-    프론트에서 호출 → 텔레그램 Bot API sendInvoice 실행
-    → 사용자에게 Telegram 결제 UI 표시
+    body.product_id — 상품 ID
+    body.telegram_chat_id — (선택) 사용자의 Telegram Chat ID. 없으면 bot_sessions에서 조회.
     """
+    product_id = body.get("product_id", "")
+    telegram_chat_id_input = body.get("telegram_chat_id")
+
     product = STAR_PRODUCTS.get(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -122,12 +125,16 @@ async def create_invoice(
     if not client:
         raise HTTPException(status_code=503, detail="Telegram bot not configured")
 
-    # 사용자의 Telegram Chat ID가 필요 — Free API Key 세션에서 조회
-    telegram_chat_id = await _resolve_telegram_chat(user)
+    # Telegram Chat ID: 1) 프론트에서 직접 전달 2) bot_sessions에서 조회
+    if telegram_chat_id_input:
+        telegram_chat_id = int(telegram_chat_id_input)
+    else:
+        telegram_chat_id = await _resolve_telegram_chat(user)
+
     if not telegram_chat_id:
         raise HTTPException(
             status_code=400,
-            detail="Telegram chat ID not found. Connect your Telegram account first.",
+            detail="Telegram chat ID not found. Set telegram_chat_id in request body or connect your Telegram account first.",
         )
 
     # 고유 invoice payload 생성 (결제 완료 시 이 payload로 상품 식별)
@@ -139,19 +146,17 @@ async def create_invoice(
     })
 
     try:
-        result = await client._call("sendInvoice", {
-            "chat_id": telegram_chat_id,
-            "title": product["title"],
-            "description": product["description"],
-            "payload": invoice_payload,
-            "provider_token": "",  # 빈 문자열 = Telegram Stars
-            "currency": "XTR",     # Telegram Stars
-            "prices": [{
+        result = await client.send_invoice(
+            chat_id=telegram_chat_id,
+            title=product["title"],
+            description=product["description"],
+            payload=invoice_payload,
+            currency="XTR",
+            prices=[{
                 "label": product.get("label", product_id),
                 "amount": product["star_amount"],
             }],
-            # 구독형 상품은 max_tip_amount 없이 일반 결제
-        })
+        )
 
         logger.info(
             "[stars] invoice sent: user=%s product=%s stars=%d",
@@ -171,12 +176,22 @@ async def create_invoice(
 
 
 @router.post("/webhook")
-async def stars_webhook(request: Request):
+async def stars_webhook(
+    request: Request,
+    x_telegram_bot_api_secret_token: str | None = Header(default=None),
+):
     """Telegram Bot API Webhook — pre_checkout_query + successful_payment 처리.
 
     Bot API가 결제 관련 업데이트를 이 엔드포인트로 전송합니다.
-    (기존 webhook과 동일한 경로로 들어오지만, 여기서는 결제만 처리)
+    x_telegram_bot_api_secret_token 헤더로 요청을 검증합니다.
     """
+    # Webhook secret 검증 (telegram_bot.py와 동일한 패턴)
+    cfg = get_config().telegram_bot
+    if not cfg.webhook_secret:
+        logger.warning("[stars] webhook secret not configured, skipping auth")
+    elif x_telegram_bot_api_secret_token != cfg.webhook_secret:
+        logger.warning("[stars] invalid webhook secret")
+        raise HTTPException(status_code=401, detail="Invalid webhook secret")
     update = await request.json()
     logger.debug("[stars] webhook update: %s", list(update.keys()))
 
@@ -196,20 +211,20 @@ async def stars_webhook(request: Request):
                 logger.warning("[stars] invalid product in payload: %s", product_id)
                 client = _get_bot_client()
                 if client:
-                    await client._call("answerPreCheckoutQuery", {
-                        "pre_checkout_query_id": query_id,
-                        "ok": False,
-                        "error_message": "Invalid product. Please try again.",
-                    })
+                    await client.answer_pre_checkout_query(
+                        pre_checkout_query_id=query_id,
+                        ok=False,
+                        error_message="Invalid product. Please try again.",
+                    )
                 return {"ok": False}
 
             # 승인
             client = _get_bot_client()
             if client:
-                await client._call("answerPreCheckoutQuery", {
-                    "pre_checkout_query_id": query_id,
-                    "ok": True,
-                })
+                await client.answer_pre_checkout_query(
+                    pre_checkout_query_id=query_id,
+                    ok=True,
+                )
 
             logger.info("[stars] pre_checkout_query approved: user=%s product=%s", user_id, product_id)
 
@@ -303,10 +318,14 @@ async def stars_webhook(request: Request):
 
 
 async def _resolve_telegram_chat(user: dict) -> int | None:
-    """사용자의 Telegram Chat ID를 Bot 세션에서 조회."""
+    """사용자의 Telegram Chat ID를 Bot 세션에서 조회.
+
+    bot_sessions 테이블에 platform user_id가 없으므로
+    가장 최근 세션의 chat_id를 반환합니다.
+    프론트에서 telegram_chat_id를 직접 전달하는 것이 더 정확합니다.
+    """
     from ..bot import db as bot_db
     bot_db.init_bot_tables()
-    # 사용자 ID로 Telegram 세션 찾기
     conn = None
     try:
         import sqlite3
