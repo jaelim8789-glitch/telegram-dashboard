@@ -43,7 +43,6 @@ import {
   type MessageTemplate,
 } from "@/lib/messageTemplates";
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
-import { MessagePreviewModal } from "@/components/workspace/MessagePreviewModal";
 import { Modal } from "@/components/ui/Modal";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
@@ -486,7 +485,6 @@ export function SendTab() {
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
@@ -1499,14 +1497,6 @@ export function SendTab() {
               >
                 <Plus className="h-3 w-3" /> 현재 메시지 저장
               </button>
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                disabled={!message.trim()}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Eye className="h-3 w-3" /> 미리보기
-              </button>
               <span className="mx-1 h-3 w-px bg-app-border" />
               {TEMPLATE_VARIABLES.map((v) => (
                 <button
@@ -2030,14 +2020,7 @@ export function SendTab() {
       />
 
       {/* Message preview modal */}
-      <MessagePreviewModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        message={message}
-        recipientCount={selectedRecipientIds.length}
-        accountPhone={account?.phone}
-        groupName={selectedRecipients.length > 0 ? selectedRecipients[0].title : undefined}
-      />
+
 
       {/* Save template dialog */}
       <Modal
