@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock,
   Bot, Zap, User, FileText, BarChart3, ScanSearch, Globe, Folder, Target,
-  HeartPulse, UserCog,
+  HeartPulse, UserCog, MessageCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TABS, type TabDef } from "@/types";
@@ -30,6 +30,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   team: UserCog,
   profile: User,
   log: FileText,
+  guestbot: MessageCircle,
 };
 
 // Moved off the shared `.tab-premium` class (also used by the public
