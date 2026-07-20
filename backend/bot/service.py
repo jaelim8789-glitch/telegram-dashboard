@@ -18,6 +18,8 @@ from ..admin_platform import AdminPlatform, AuditAction
 from ..production_config import get_config
 from ..routers import free_api_key as fak
 from . import db as bot_db
+from .ai_employee import AiEmployee
+from .guest_engine import GuestEngine
 from .telegram_api import TelegramAPIError, TelegramBotClient, is_channel_member_status
 
 logger = logging.getLogger(__name__)
@@ -203,6 +205,31 @@ async def _handle_successful_payment(client: TelegramBotClient, message: dict[st
         logger.error("[stars] successful_payment error: %s", e)
 
 
+# ── 게스트 엔진 / AI Employee 싱글톤 ──────────────────────────────────
+
+_guest_engine_instance: GuestEngine | None = None
+_ai_employee_instance: AiEmployee | None = None
+
+
+def _get_guest_engine(client: TelegramBotClient) -> GuestEngine | None:
+    """Lazy-init GuestEngine singleton. Used by guest_routes.py as well."""
+    global _guest_engine_instance
+    if _guest_engine_instance is None:
+        _guest_engine_instance = GuestEngine(client)
+    return _guest_engine_instance
+
+
+def _get_ai_employee(client: TelegramBotClient) -> AiEmployee | None:
+    """Lazy-init AiEmployee singleton."""
+    global _ai_employee_instance
+    if _ai_employee_instance is None:
+        engine = _get_guest_engine(client)
+        if engine is None:
+            return None
+        _ai_employee_instance = AiEmployee(client, engine)
+    return _ai_employee_instance
+
+
 # ── Main Update Handler ───────────────────────────────────────────────
 
 
@@ -210,7 +237,9 @@ async def handle_update(update: dict[str, Any]) -> None:
     """Entry point called by the webhook route for every incoming Update.
 
     Handles:
+    - guest_message → GuestEngine (Guest Mode @mention)
     - /start command → free API key flow
+    - message with @bot mention in group → AiEmployee
     - callback_query (verify) → channel membership verification
     - pre_checkout_query → Stars payment pre-checkout
     - message.successful_payment → Stars payment completion
@@ -221,10 +250,19 @@ async def handle_update(update: dict[str, Any]) -> None:
         return
 
     try:
+        # ── Guest Message (Bot API 10.0+ — @mention without bot in group) ──
+        if "guest_message" in update:
+            engine = _get_guest_engine(client)
+            if engine:
+                await engine.handle_guest_message(update)
+            return
+
+        # ── Regular Message ──────────────────────────────────────────────────
         if "message" in update:
             message = update["message"]
             chat_id = message.get("chat", {}).get("id")
             text = message.get("text", "")
+            chat_type = message.get("chat", {}).get("type", "")
 
             # successful_payment 처리 (message 객체 안에 있음)
             if "successful_payment" in message:
@@ -233,15 +271,34 @@ async def handle_update(update: dict[str, Any]) -> None:
 
             if chat_id is None:
                 return
+
+            # /start 명령어 → free API key flow
             if text.startswith("/start"):
                 await _handle_start(client, chat_id, message)
-            else:
-                await client.send_message(chat_id, "웹사이트의 '무료 체험' 버튼을 통해 다시 시작해주세요.")
-        elif "callback_query" in update:
+                return
+
+            # 그룹 @멘션 → AiEmployee
+            if chat_type in ("group", "supergroup") and AiEmployee._is_bot_mentioned(text):
+                employee = _get_ai_employee(client)
+                if employee:
+                    await employee.process_group_message(update)
+                    return
+
+            # 알 수 없는 메시지 (1:1 채팅)
+            await client.send_message(chat_id, "웹사이트의 '무료 체험' 버튼을 통해 다시 시작해주세요.")
+            return
+
+        # ── Callback Query ───────────────────────────────────────────────────
+        if "callback_query" in update:
             callback_query = update["callback_query"]
             if callback_query.get("data", "").startswith("verify:"):
                 await _handle_verify_callback(client, callback_query)
-        elif "pre_checkout_query" in update:
+            return
+
+        # ── Pre-checkout Query (Stars Payment) ───────────────────────────────
+        if "pre_checkout_query" in update:
             await _handle_pre_checkout_query(client, update["pre_checkout_query"])
+            return
+
     except Exception:
         logger.exception("Error while handling Telegram update")
