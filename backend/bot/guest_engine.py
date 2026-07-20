@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 # ── AI 설정 ──────────────────────────────────────────────────────────
 
 _DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+
+# ── 봇 멘션 접두사 (ai_employee.py와 공유) ────────────────────────────
+
+_BOT_MENTION_PREFIXES = ["@TeleMonBot", "@telemonbot", "@telemon_bot", "@TeleMon_Bot"]
 _DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 _DEEPSEEK_MODEL = "deepseek-chat"
 
@@ -100,7 +104,11 @@ class Decision:
 # ── AI 호출 단일 진입점 ──────────────────────────────────────────────
 
 
-async def _call_ai(prompt: str, context: RequestContext | None = None) -> str:
+async def _call_ai(
+    prompt: str,
+    context: RequestContext | None = None,
+    system_prompt: str | None = None,
+) -> str:
     """DeepSeek (또는 다른 LLM)을 호출하고 응답 텍스트를 반환.
 
     이 함수가 이 모듈의 유일한 AI 호출 지점입니다.
@@ -108,15 +116,21 @@ async def _call_ai(prompt: str, context: RequestContext | None = None) -> str:
 
     현재 구현: DEEPSEEK_API_KEY 환경변수가 설정되어 있으면 실제 API 호출,
     없으면 안내 메시지를 반환합니다.
+
+    Args:
+        prompt: 사용자 측 프롬프트 (번역할 텍스트, 요약할 텍스트 등).
+        context: 요청 컨텍스트 (로깅용, 선택).
+        system_prompt: 시스템 메시지 오버라이드. None이면 기본 프롬프트 사용.
     """
     if not _DEEPSEEK_API_KEY:
         return "⏳ AI 연동 준비 중입니다. 곧 사용할 수 있어요!"
 
-    system_prompt = (
-        "You are TeleMon AI, a helpful Telegram assistant. "
-        "Respond in Korean unless the user wrote in another language. "
-        "Keep responses concise and friendly."
-    )
+    if system_prompt is None:
+        system_prompt = (
+            "You are TeleMon AI, a helpful Telegram assistant. "
+            "Respond in Korean unless the user wrote in another language. "
+            "Keep responses concise and friendly."
+        )
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -391,7 +405,7 @@ class GuestEngine:
         text = raw_text.strip()
 
         # @멘션 접두사 제거 (대소문자 무시)
-        for prefix in ["@TeleMonBot", "@telemonbot", "@telemon_bot", "@TeleMon_Bot"]:
+        for prefix in _BOT_MENTION_PREFIXES:
             if text.lower().startswith(prefix.lower()):
                 text = text[len(prefix):].strip()
                 break
@@ -414,11 +428,42 @@ class GuestEngine:
                 f"예시: `@TeleMonBot 번역 Hello World`\n"
                 f"예시: `@TeleMonBot translate 안녕하세요`"
             )
-        # TODO: AI 번역 연동
+
+        prompt = (
+            f"Translate the following text.\n"
+            f"- If it's Korean, translate to English.\n"
+            f"- If it's English, translate to Korean.\n"
+            f"- If it's another language, translate to Korean.\n"
+            f"Return ONLY the translated text — no explanations, no quotes, no formatting.\n\n"
+            f"Text: {context.text}"
+        )
+        system_prompt = (
+            "You are a professional translator. "
+            "Your job is to translate text accurately and naturally. "
+            "Never add explanations, notes, or formatting — return only the translation."
+        )
+
+        translated = await _call_ai(prompt, context, system_prompt=system_prompt)
+
+        # 백틱이 섞여 들어오면 마크다운 코드블록이 깨지므로 안전하게 치환
+        safe_translated = translated.replace("`", "'")
+
+        # 표시용 원본 텍스트도 길이 제한
+        display_original = context.text[:3000] + "…" if len(context.text) > 3000 else context.text
+
+        # Telegram 메시지 길이 한도(~4096) — 전체 길이를 동적으로 계산
+        # 오버헤드 = "🌐 **번역 결과**\n\n```\n"(18) + "\n```\n➡️ ```\n"(13) + "\n```\n\n💡..."(38)
+        overhead = 18 + 13 + 38
+        budget = 4096 - overhead - len(display_original) - 1  # 1 = 여유
+        if budget < 100:
+            budget = 100  # 최소 100자 보장
+            display_original = display_original[:500]
+        safe_translated = safe_translated[:budget] + "…" if len(safe_translated) > budget else safe_translated
+
         return (
             f"🌐 **번역 결과**\n\n"
-            f"```\n{context.text}\n```\n\n"
-            f"⏳ AI 번역 엔진 연동 예정입니다.\n"
+            f"```\n{display_original}\n```\n"
+            f"➡️ ```\n{safe_translated}\n```\n\n"
             f"💡 TeleMon에서 더 많은 AI 기능을 이용하세요!"
         )
 
@@ -432,12 +477,31 @@ class GuestEngine:
         if len(context.text) < 20:
             return "📋 요약할 텍스트가 너무 짧습니다. 더 긴 텍스트를 입력해주세요."
 
-        preview = context.text[:100] + "..." if len(context.text) > 100 else context.text
+        prompt = (
+            f"Summarize the following text concisely in Korean.\n"
+            f"- Extract the key points only.\n"
+            f"- Keep the summary under 500 characters.\n"
+            f"- Use bullet points for clarity if there are multiple main ideas.\n"
+            f"- Do not add opinions or commentary — just summarize.\n\n"
+            f"Text: {context.text}"
+        )
+        system_prompt = (
+            "You are a professional summarizer. "
+            "Your job is to distill long texts into concise, accurate summaries. "
+            "Always respond in Korean. Never add your own opinions."
+        )
+
+        summary = await _call_ai(prompt, context, system_prompt=system_prompt)
+
+        # Telegram 메시지 길이 한도(~4096)에 대비 + 마크다운 안전
+        safe_summary = summary.replace("`", "'")
+        if len(safe_summary) > 3500:
+            safe_summary = safe_summary[:3500] + "…"
+
         return (
             f"📋 **요약 결과**\n\n"
-            f"{preview}\n\n"
-            f"📊 원문 길이: {len(context.text)}자\n\n"
-            f"⏳ AI 요약 엔진 연동 예정입니다."
+            f"{safe_summary}\n\n"
+            f"📊 원문 길이: {len(context.text)}자"
         )
 
     async def _handle_weather(self, context: RequestContext) -> str:
@@ -448,24 +512,44 @@ class GuestEngine:
                 f"예시: `@TeleMonBot 날씨 서울`\n"
                 f"예시: `@TeleMonBot weather London`"
             )
-        # TODO: OpenWeatherMap / WeatherAPI 연동
-        return (
-            f"🌤️ **{context.text} 날씨**\n\n"
-            f"현재: ⛅ 구름 조금\n"
-            f"온도: 22°C (체감 20°C)\n"
-            f"습도: 65%\n"
-            f"풍속: 3.2m/s\n\n"
-            f"⏳ 날씨 API 연동 예정입니다."
+
+        prompt = (
+            f"Provide current weather information for {context.text}.\n"
+            f"Include: current temperature, weather conditions (sunny/cloudy/rainy), "
+            f"humidity, and wind speed.\n"
+            f"If you don't have real-time data, provide general climate information "
+            f"for that location.\n"
+            f"Format the response nicely with emojis. Respond in Korean."
         )
+        system_prompt = (
+            "You are a weather assistant. Provide accurate, concise weather info. "
+            "Use emojis to make it engaging. Always respond in Korean."
+        )
+
+        weather_info = await _call_ai(prompt, context, system_prompt=system_prompt)
+        safe_weather = weather_info.replace("`", "'")
+
+        return f"🌤️ **{context.text} 날씨 정보**\n\n{safe_weather}"
 
     async def _handle_news(self, context: RequestContext) -> str:
         topic = context.text or "종합"
-        # TODO: 뉴스 API 연동
-        return (
-            f"📰 **{topic} 뉴스**\n\n"
-            f"⏳ 뉴스 API 연동 예정입니다.\n\n"
-            f"💡 telemon.online 에서 더 많은 뉴스를 확인하세요!"
+
+        prompt = (
+            f"Provide a brief news summary about '{topic}'.\n"
+            f"Include 3-5 key headlines with 1-line descriptions each.\n"
+            f"If you don't have very recent news, provide the most notable "
+            f"developments you know about.\n"
+            f"Format with emojis and bullet points. Respond in Korean."
         )
+        system_prompt = (
+            "You are a news assistant. Provide concise, factual news summaries. "
+            "Use emojis and bullet points. Always respond in Korean."
+        )
+
+        news_info = await _call_ai(prompt, context, system_prompt=system_prompt)
+        safe_news = news_info.replace("`", "'")
+
+        return f"📰 **{topic} 뉴스 요약**\n\n{safe_news}"
 
     async def _handle_help(self, context: RequestContext) -> str:
         return GUEST_HELP_TEXT
