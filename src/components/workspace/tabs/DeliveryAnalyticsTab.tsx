@@ -449,12 +449,16 @@ export function DeliveryAnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const accounts = useDashboardStore((s) => s.accounts);
+  const selectedAccount = selectedAccountId ? accounts.find((a) => a.id === selectedAccountId) : null;
+
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    try { setOverview(await api.fetchDeliveryOverview(undefined, days)); }
+    try { setOverview(await api.fetchDeliveryOverview(selectedAccountId ?? undefined, days)); }
     catch (err) { setError(err instanceof Error ? err.message : "전달 분석 데이터를 불러오지 못했습니다."); }
     finally { setLoading(false); }
-  }, [days]);
+  }, [days, selectedAccountId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -518,7 +522,10 @@ export function DeliveryAnalyticsTab() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-app-text">전달 분석</h2>
-          <p className="text-xs text-app-text-muted">최근 {days}일간의 전달 현황 및 성능</p>
+          <p className="text-xs text-app-text-muted">
+            {selectedAccount ? `${selectedAccount.name ?? selectedAccount.phone} · ` : ""}
+            최근 {days}일간의 전달 현황 및 성능
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor="analytics-time-range">기간 선택</label>
