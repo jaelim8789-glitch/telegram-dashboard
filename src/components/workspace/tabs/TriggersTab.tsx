@@ -48,6 +48,7 @@ function RuleEditorModal({
   onClose: () => void;
 }) {
   const isEditing = !!rule?.id;
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState(rule?.name ?? "");
   const [description, setDescription] = useState(rule?.description ?? "");
   const [triggerType, setTriggerType] = useState(rule?.trigger_type ?? "");

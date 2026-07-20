@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, ExternalLink, Loader2, ChevronRight } from "lucide-react";
+import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, ExternalLink, Loader2, ChevronRight, Users } from "lucide-react";
 import Link from "next/link";
 import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
 import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
@@ -9,6 +9,8 @@ import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsR
 import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
 import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
 import { AiContentStudioTab } from "@/components/workspace/tabs/AiContentStudioTab";
+import { AiEmployeeTab } from "@/components/workspace/tabs/AiEmployeeTab";
+import { InlineAiChat } from "@/components/ai/InlineAiChat";
 import * as agentApi from "@/lib/agent-api";
 
 const SUB_TABS = [
@@ -19,6 +21,7 @@ const SUB_TABS = [
   { id: "operations", label: "AI 리포트", icon: BarChart3, desc: "운영 리포트 및 인사이트" },
   { id: "opscenter", label: "AI 운영 센터", icon: Gauge, desc: "통합 운영 현황" },
   { id: "usage", label: "AI 사용량", icon: Cpu, desc: "AI 기능 사용 통계" },
+  { id: "employee", label: "Employee Mode", icon: Users, desc: "그룹 AI 설정 및 예약 메시지" },
 ];
 
 export function MyAiTab() {
@@ -52,7 +55,7 @@ export function MyAiTab() {
 function ActiveContent({ sub }: { sub: string }) {
   switch (sub) {
     case "chat":
-      return <AiChatRedirect />;
+      return <InlineAiChat />;
     case "reply":
       return <AiReplyAssistantTab />;
     case "broadcast":
@@ -65,6 +68,8 @@ function ActiveContent({ sub }: { sub: string }) {
       return <AiOperationsCenterTab />;
     case "usage":
       return <AiUsageTab />;
+    case "employee":
+      return <AiEmployeeTab />;
     default:
       return <AiChatRedirect />;
   }

@@ -8,7 +8,7 @@ interface PanelProps {
   children: ReactNode;
   className?: string;
   /** Gradient accent bar at top. Leave empty for no accent. */
-  accent?: "indigo" | "emerald" | "amber" | "rose" | "cyan" | "violet";
+  accent?: "indigo" | "emerald" | "amber" | "rose" | "cyan" | "violet" | "purple";
   /** Compact internal padding */
   compact?: boolean;
 }
@@ -20,6 +20,7 @@ const ACCENT_BAR: Record<string, string> = {
   rose: "bg-gradient-to-r from-rose-500 to-pink-500",
   cyan: "bg-gradient-to-r from-cyan-500 to-blue-500",
   violet: "bg-gradient-to-r from-violet-500 to-indigo-500",
+  purple: "bg-gradient-to-r from-purple-500 to-pink-500",
 };
 
 export function Panel({ title, description, action, children, className, accent, compact }: PanelProps) {
