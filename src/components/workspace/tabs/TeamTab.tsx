@@ -394,13 +394,13 @@ export function TeamTab() {
 
       {/* Invite Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" aria-hidden="true">
           <div
             ref={inviteRef}
             role="dialog"
             aria-modal="true"
             aria-label="멤버 초대"
-            className="w-full max-w-md rounded-xl bg-app-surface p-6 shadow-2xl"
+            className="w-full max-w-md rounded-xl bg-app-surface p-6 shadow-2xl mx-auto max-h-[85dvh] overflow-y-auto"
           >
             <h3 className="mb-4 text-base font-semibold text-app-text">멤버 초대</h3>
             <div className="space-y-4">

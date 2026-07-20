@@ -137,18 +137,18 @@ function AiChatRedirect() {
       ) : (
         <>
           {/* 통계 */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border border-app-border bg-app-card px-3 py-2 text-center">
-              <div className="text-lg font-bold text-app-text">{agents.length}</div>
-              <div className="text-[10px] text-app-text-muted">Agent</div>
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            <div className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-center sm:px-3">
+              <div className="text-base sm:text-lg font-bold text-app-text">{agents.length}</div>
+              <div className="text-[9px] sm:text-[10px] text-app-text-muted">Agent</div>
             </div>
-            <div className="rounded-lg border border-app-border bg-app-card px-3 py-2 text-center">
-              <div className="text-lg font-bold text-app-primary">{totalLevel}</div>
-              <div className="text-[10px] text-app-text-muted">총 레벨</div>
+            <div className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-center sm:px-3">
+              <div className="text-base sm:text-lg font-bold text-app-primary">{totalLevel}</div>
+              <div className="text-[9px] sm:text-[10px] text-app-text-muted">총 레벨</div>
             </div>
-            <div className="rounded-lg border border-app-border bg-app-card px-3 py-2 text-center">
-              <div className="text-lg font-bold text-app-text">{totalMessages}</div>
-              <div className="text-[10px] text-app-text-muted">총 메시지</div>
+            <div className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-center sm:px-3">
+              <div className="text-base sm:text-lg font-bold text-app-text">{totalMessages}</div>
+              <div className="text-[9px] sm:text-[10px] text-app-text-muted">총 메시지</div>
             </div>
           </div>
 

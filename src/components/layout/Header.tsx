@@ -92,7 +92,7 @@ export function Header() {
         {role === "admin" && (
           <Link
             href="/admin/dashboard"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all sm:min-h-8 sm:min-w-8"
           >
             <Settings className="h-4 w-4" />
           </Link>
@@ -101,7 +101,7 @@ export function Header() {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-danger hover:bg-app-danger-muted transition-all"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-danger hover:bg-app-danger-muted transition-all sm:min-h-8 sm:min-w-8"
           title="로그아웃"
         >
           <LogOut className="h-4 w-4" />

@@ -368,7 +368,7 @@ export function CommandPaletteTrigger() {
       type="button"
       onClick={toggle}
       aria-label="명령 팔레트 열기"
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text sm:h-8 sm:w-8"
+      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text sm:min-h-8 sm:min-w-8"
       title="명령 팔레트 (⌘K)"
     >
       <Command className="h-4 w-4" aria-hidden="true" />

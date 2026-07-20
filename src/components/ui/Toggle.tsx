@@ -43,13 +43,15 @@ export function Toggle({ label, description, defaultOn = false, checked, onChang
         onClick={toggle}
         className={cn(
           "focus-ring relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+          "min-h-11 min-w-11 sm:min-h-5 sm:min-w-9",
+          "flex items-center justify-center",
           on ? "bg-app-primary" : "bg-app-border-strong"
         )}
       >
         <motion.span
           layout
           transition={{ type: "spring", stiffness: 500, damping: 32 }}
-          className="absolute top-0.5 h-4 w-4 rounded-full bg-white"
+          className="absolute h-4 w-4 rounded-full bg-white"
           style={{ left: on ? 18 : 2 }}
         />
       </button>

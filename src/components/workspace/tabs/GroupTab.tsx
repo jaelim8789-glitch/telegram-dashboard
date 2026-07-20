@@ -351,17 +351,17 @@ export function GroupTab() {
                     </div>
                     <button type="button" title={saved ? "발송그룹 제거" : "발송그룹 추가"}
                       onClick={() => toggleSavedSendGroup(g.id)}
-                      className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150",
+                      className={cn("flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-all duration-150 sm:min-h-7 sm:min-w-7",
                         saved ? "text-app-danger bg-app-danger-muted/30" : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger hover:bg-app-danger-muted/20"
                       )}>
-                      <Send className="h-3.5 w-3.5" />
+                      <Send className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                     </button>
                     <button type="button" title={favorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                       onClick={() => toggleFavorite(g.id)}
-                      className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150",
+                      className={cn("flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-all duration-150 sm:min-h-7 sm:min-w-7",
                         favorite ? "text-app-warning bg-app-warning-muted/30" : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning hover:bg-app-warning-muted/20"
                       )}>
-                      <Star className={cn("h-3.5 w-3.5", favorite && "fill-current")} />
+                      <Star className={cn("h-4 w-4 sm:h-3.5 sm:w-3.5", favorite && "fill-current")} />
                     </button>
                   </div>
                   <Badge tone="neutral" className={cn("self-start", TYPE_LABEL[g.type])}>{TYPE_LABEL[g.type]}</Badge>
