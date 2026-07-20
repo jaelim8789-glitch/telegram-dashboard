@@ -46,6 +46,7 @@ import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview"
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { Modal } from "@/components/ui/Modal";
 import { downloadLogsCsv } from "@/lib/exportCsv";
+import { useRouter } from "next/navigation";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
   pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
@@ -591,7 +592,42 @@ export function SendTab() {
   }, []);
   const [bgPollTick, setBgPollTick] = useState(0);
 
+  // ── URL search params sync for history filter ──
+  const router = useRouter();
+  const urlSyncedRef = useRef(false);
+
+  // On mount, read URL params and apply (overrides localStorage)
+  useEffect(() => {
+    if (urlSyncedRef.current) return;
+    const sp = new URLSearchParams(window.location.search);
+    const filterParam = sp.get("filter");
+    const qParam = sp.get("q");
+    const fromParam = sp.get("from");
+    const toParam = sp.get("to");
+    if (filterParam && FILTER_ORDER.includes(filterParam as HistoryFilter)) {
+      setHistoryFilter(filterParam as HistoryFilter);
+      try { localStorage.setItem(HISTORY_FILTER_KEY, filterParam); } catch {}
+    }
+    if (qParam) setHistorySearch(qParam);
+    if (fromParam) setHistoryDateFrom(fromParam);
+    if (toParam) setHistoryDateTo(toParam);
+    urlSyncedRef.current = true;
+  }, []);
+
+  // When filter/search/date changes, update URL params
+  useEffect(() => {
+    if (!urlSyncedRef.current) return;
+    const params = new URLSearchParams();
+    if (historyFilter !== "all") params.set("filter", historyFilter);
+    if (historySearch.trim()) params.set("q", historySearch.trim());
+    if (historyDateFrom) params.set("from", historyDateFrom);
+    if (historyDateTo) params.set("to", historyDateTo);
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }, [historyFilter, historySearch, historyDateFrom, historyDateTo, router]);
+
   const selectedRecipients = useMemo(
+  
     () => normalizeSelectedRecipients(groups, selectedIds),
     [groups, selectedIds],
   );
