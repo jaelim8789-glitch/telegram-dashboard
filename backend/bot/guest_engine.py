@@ -30,6 +30,8 @@ import httpx
 if TYPE_CHECKING:
     from .telegram_api import TelegramBotClient
 
+from . import db as bot_db
+
 logger = logging.getLogger(__name__)
 
 # ── AI 설정 ──────────────────────────────────────────────────────────
@@ -66,8 +68,7 @@ class RequestContext:
     chat_id: int | None
     user_id: str
     style_profile_id: str | None = None
-    available_actions: list[str] | None = None
-    # ── 내부 라우팅용 ────────────────────────────────────────────────
+    available_actions: list[str] | None = None        # ── 내부 라우팅용 ────────────────────────────────────────────────
     command: str = ""
 
     def __post_init__(self) -> None:
@@ -241,6 +242,10 @@ class GuestEngine:
             "register": self._handle_register_command,
             "register_command": self._handle_register_command,
         }
+        # DB에서 저장된 커스텀 명령어 로드 (서버 재시저 후 복원)
+        self._custom_command_names: set[str] = set()
+        self._custom_db_prompts: dict[str, str] = {}  # name -> system_prompt
+        self._load_custom_commands_from_db()
 
         # ————————
 
@@ -591,12 +596,22 @@ class GuestEngine:
 
         system_prompt = cmd_prompt
 
+        # 메모리 등록
         async def custom_handler(ctx: RequestContext) -> str:
             prompt = ctx.text or "실행해줘"
             result = await _call_ai(prompt, ctx, system_prompt=system_prompt)
             return result.replace("`", "'")
 
         self.add_command(cmd_name, custom_handler)
+
+        # 메모리에는 항상 등록 (DB 실패와 무관)
+        self._custom_command_names.add(cmd_name)
+
+        # DB 저장 (서버 재시저 후에도 유지, 실패해도 메모리 등록은 유지)
+        try:
+            bot_db.save_custom_command(cmd_name, system_prompt)
+        except Exception:
+            logger.warning("[guest] failed to save custom command '%s' to DB (in-memory only)", cmd_name)
 
         return (
             f"✅ **'{cmd_name}' 명령어가 등록되었습니다!**\n\n"
@@ -622,16 +637,73 @@ class GuestEngine:
     async def _handle_fallback(self, context: RequestContext) -> str:
         """등록되지 않은 명령어에 대한 fallback."""
         bad = context.command or (context.text.split()[0] if context.text else "알 수 없는")
+
+        # 기본 명령어 목록 (중복 제거, 한글 우선)
+        builtin_lines = [
+            "• `@TeleMonBot 번역 [텍스트]`",
+            "• `@TeleMonBot 요약 [텍스트]`",
+            "• `@TeleMonBot 날씨 [도시]`",
+            "• `@TeleMonBot 뉴스 [주제]`",
+            "• `@TeleMonBot 등록 [이름] [프롬프트]`",
+            "• `@TeleMonBot 도움말`",
+        ]
+
+        # Python 3.11 호환: f-string 내에서 backslash 사용 불가 → 변수로 분리
+        builtin_section = "\n".join(builtin_lines)
+
+        # 등록된 커스텀 명령어가 있으면 추가
+        custom_lines = []
+        if self._custom_command_names:
+            for name in sorted(self._custom_command_names):
+                custom_lines.append(f"• `@TeleMonBot {name} [내용]`")
+
+        custom_section = (
+            "\n📌 **커스텀 명령어:**\n" + "\n".join(custom_lines) + "\n"
+            if custom_lines else ""
+        )
+
         return (
             f"🤔 죄송합니다. '{bad}' 명령어를 이해하지 못했어요.\n\n"
-            f"사용 가능한 명령어:\n"
-            f"• `@TeleMonBot 번역 [텍스트]`\n"
-            f"• `@TeleMonBot 요약 [텍스트]`\n"
-            f"• `@TeleMonBot 날씨 [도시]`\n"
-            f"• `@TeleMonBot 뉴스 [주제]`\n"
-            f"• `@TeleMonBot 도움말`\n\n"
-            f"💡 telemon.online 에서 더 많은 기능을!"
+            f"**사용 가능한 명령어:**\n"
+            f"{builtin_section}\n"
+            f"{custom_section}"
+            f"\n💡 `@TeleMonBot 등록 [이름] [프롬프트]` 로 새 명령어를 등록할 수 있어요!"
         )
+
+    # ── Custom commands DB persistence ───────────────────────────────
+
+    def _load_custom_commands_from_db(self) -> None:
+        """DB에서 저장된 커스텀 명령어를 _commands에 등록.
+
+        모든 DB 커스텀 명령어는 동일한 _handle_custom_db_command 핸들러를
+        사용하며, 핸들러 내부에서 ctx.command로 system_prompt를 조회합니다.
+        """
+        try:
+            commands = bot_db.load_custom_commands()
+            for cmd in commands:
+                name = cmd["name"]
+                self._custom_db_prompts[name] = cmd["system_prompt"]
+                self._custom_command_names.add(name)
+                self._commands[name] = self._handle_custom_db_command
+
+            if commands:
+                logger.info("[guest] loaded %d custom commands from DB", len(commands))
+        except Exception:
+            logger.debug("[guest] no custom commands table yet (first run)")
+
+    async def _handle_custom_db_command(self, context: RequestContext) -> str:
+        """DB에서 로드된 커스텀 명령어를 실행하는 공유 핸들러.
+
+        context.command로 시스템 프롬프트를 조회하여 _call_ai()를 호출합니다.
+        모든 DB 커스텀 명령어가 이 핸들러를 공유합니다.
+        """
+        name = context.command
+        system_prompt = self._custom_db_prompts.get(name, "")
+        if not system_prompt:
+            return f"⚠️ '{name}' 명령어의 설정을 찾을 수 없습니다."
+        prompt = context.text or "실행해줘"
+        result = await _call_ai(prompt, context, system_prompt=system_prompt)
+        return result.replace("`", "'")
 
     # ── Daily usage rotation ───────────────────────────────────────
 
