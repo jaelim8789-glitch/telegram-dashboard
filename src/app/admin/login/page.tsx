@@ -86,6 +86,10 @@ function AdminLoginForm() {
     setSubmitting(true); setError(null);
     try {
       const token = await api.adminLogin(username, password);
+      // Clear any leftover session_token from a previous Telegram/trial login —
+      // the backend checks X-Session-Token before Authorization, so a stale
+      // valid session would otherwise silently outrank this fresh admin login.
+      clearSessionToken();
       setToken(token);
       router.replace("/app");
     } catch (err) {
@@ -352,7 +356,14 @@ function ApiKeyLoginForm() {
     e.preventDefault();
     if (!apiKey.trim() || submitting) return;
     setSubmitting(true); setError(null);
-    try { const token = await api.loginWithApiKey(apiKey.trim()); setToken(token); router.replace("/app"); }
+    try {
+      const token = await api.loginWithApiKey(apiKey.trim());
+      // Same as admin login — an old session_token would otherwise silently
+      // outrank this fresh API-key login (backend checks X-Session-Token first).
+      clearSessionToken();
+      setToken(token);
+      router.replace("/app");
+    }
     catch (err) { setError(err instanceof Error ? err.message : "로그인 실패"); }
     finally { setSubmitting(false); }
   }
@@ -398,6 +409,11 @@ export default function AdminLoginPage() {
   }
 
   const handleTelegramSuccess = useCallback((result: api.TelegramLoginResult) => {
+    // Telegram login sets both slots fresh, so there's no stale leftover from
+    // this flow itself — clearing first anyway keeps the invariant explicit
+    // and consistent with the other login methods (see AdminLoginForm/ApiKeyLoginForm).
+    clearToken();
+    clearSessionToken();
     setToken(result.access_token);
     setSessionToken(result.session_token);
     setTgSuccess(true);
