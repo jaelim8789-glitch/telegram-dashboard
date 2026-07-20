@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   Sparkles, Copy, Check, Loader2, CalendarDays, SendHorizontal,
-  Bot, FileText, AlertCircle, ChevronDown, ChevronUp, X,
+  Bot, FileText, AlertCircle, ChevronDown, ChevronUp, ExternalLink,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
@@ -21,7 +21,7 @@ import {
 import { fetchStyleProfiles, createBroadcast, type StyleProfile } from "@/lib/api";
 import { createDraft } from "@/lib/draft-api";
 import { useToast } from "@/components/ui/Toast";
-import { ExternalLink } from "lucide-react";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 const DAILY_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 
@@ -34,6 +34,8 @@ const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
 
 export function AiContentStudioTab() {
   const { toast } = useToast();
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const accounts = useDashboardStore((s) => s.accounts);
 
   // ── Content type selection ──────────────────────────────────────────
   const [selectedType, setSelectedType] = useState<ContentType | null>(null);
@@ -115,12 +117,10 @@ export function AiContentStudioTab() {
         });
         setSavedDraftId(draftResult.id);
       } catch {
-        // Draft 저장 실패는 생성 실패보다 덜 중요 — toast로만 알림
         toast("error", "Draft 저장에 실패했습니다. 생성된 콘텐츠는 복사해서 사용하세요.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "콘텐츠 생성에 실패했습니다";
-      // Backend may throw ValueError with Korean messages — show them as-is
       setError(msg);
     } finally {
       setGenerating(false);
@@ -171,7 +171,10 @@ export function AiContentStudioTab() {
     setError("");
 
     try {
-      // Schedule each slot as a separate broadcast
+      if (!selectedAccountId) {
+        throw new Error("발송할 계정을 먼저 선택해주세요. 사이드바에서 계정을 선택하세요.");
+      }
+
       const slots = calendarSlots.length > 0 ? calendarSlots
         : selectedTypes.map((ct, i) => {
             const info = CONTENT_TYPES.find((c) => c.id === ct)!;
@@ -184,7 +187,6 @@ export function AiContentStudioTab() {
 
       let scheduled = 0;
       for (const slot of slots) {
-        // Generate content for each slot
         const content = await generateContent({
           content_type: slot.content_type,
           tone,
@@ -193,12 +195,11 @@ export function AiContentStudioTab() {
           style_profile_id: styleProfileId || undefined,
         });
 
-        // Schedule via broadcast API with content_studio reference
         await createBroadcast({
-          accountId: "", // Will be selected by user in SendTab
+          accountId: selectedAccountId,
           message: content.generated_content,
           recipients: [],
-          scheduledAt: new Date().toISOString(), // Placeholder — real scheduling TBD
+          scheduledAt: new Date().toISOString(),
           deliveryMode: "normal",
         });
         scheduled++;
@@ -212,7 +213,7 @@ export function AiContentStudioTab() {
     } finally {
       setScheduling(false);
     }
-  }, [scheduling, selectedTypes, calendarSlots, tone, topic, context, styleProfileId, toast]);
+  }, [scheduling, selectedTypes, calendarSlots, tone, topic, context, styleProfileId, selectedAccountId, toast]);
 
   return (
     <AiSubTabLayout
@@ -374,11 +375,8 @@ export function AiContentStudioTab() {
                     <a
                       onClick={(e) => {
                         e.preventDefault();
-                        // Try to find DraftsTab by navigating to the tab
                         const draftsTab = document.querySelector('[data-tab-id="drafts"]');
-                        if (draftsTab instanceof HTMLElement) {
-                          draftsTab.click();
-                        }
+                        if (draftsTab instanceof HTMLElement) draftsTab.click();
                       }}
                       className="flex items-center gap-1.5 rounded-lg border border-app-primary/30 bg-app-primary/5 px-3 py-1.5 text-xs font-medium text-app-primary hover:bg-app-primary/10 transition-colors"
                     >
