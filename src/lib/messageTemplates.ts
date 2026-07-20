@@ -130,6 +130,10 @@ export const TEMPLATE_VARIABLES: { key: string; label: string; description: stri
   { key: "{{name}}", label: "받는 사람 이름", description: "그룹/채널 이름으로 치환됩니다." },
   { key: "{{phone}}", label: "발신자 전화번호", description: "선택한 계정의 전화번호로 치환됩니다." },
   { key: "{{count}}", label: "수신자 수", description: "선택한 수신자 총 개수로 치환됩니다." },
+  { key: "{{date}}", label: "오늘 날짜", description: "발송일자 (예: 2025-07-20)로 치환됩니다." },
+  { key: "{{time}}", label: "현재 시간", description: "발송시간 (예: 14:30)으로 치환됩니다." },
+  { key: "{{sender}}", label: "발신자 이름", description: "선택한 계정의 이름으로 치환됩니다." },
+  { key: "{{group_title}}", label: "그룹 제목", description: "{{name}}과 동일, 그룹 제목으로 치환됩니다." },
 ];
 
 /**
@@ -137,10 +141,15 @@ export const TEMPLATE_VARIABLES: { key: string; label: string; description: stri
  */
 export function previewTemplate(
   content: string,
-  vars: { name?: string; phone?: string; count?: number },
+  vars: { name?: string; phone?: string; count?: number; date?: string; time?: string; sender?: string; groupTitle?: string },
 ): string {
+  const now = new Date();
   return content
     .replace(/\{\{name\}\}/g, vars.name ?? "[이름]")
     .replace(/\{\{phone\}\}/g, vars.phone ?? "[전화번호]")
-    .replace(/\{\{count\}\}/g, vars.count != null ? String(vars.count) : "[수]");
+    .replace(/\{\{count\}\}/g, vars.count != null ? String(vars.count) : "[수]")
+    .replace(/\{\{date\}\}/g, vars.date ?? now.toISOString().slice(0, 10))
+    .replace(/\{\{time\}\}/g, vars.time ?? now.toTimeString().slice(0, 5))
+    .replace(/\{\{sender\}\}/g, vars.sender ?? "[발신자]")
+    .replace(/\{\{group_title\}\}/g, vars.groupTitle ?? vars.name ?? "[그룹명]");
 }

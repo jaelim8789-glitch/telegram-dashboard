@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, FileWarning, Eye,
-  Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
+  CalendarDays, Hourglass, MessageSquare, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
 } from "lucide-react";
@@ -43,6 +43,7 @@ import {
   type MessageTemplate,
 } from "@/lib/messageTemplates";
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
+import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { Modal } from "@/components/ui/Modal";
 
 const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
@@ -482,6 +483,9 @@ export function SendTab() {
   const [batchSize, setBatchSize] = useState<number>(1);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
+  const [autoRetry, setAutoRetry] = useState(false);
+  const [autoRetryCount, setAutoRetryCount] = useState(3);
+  const [autoRetryInterval, setAutoRetryInterval] = useState(5);
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -1030,6 +1034,7 @@ export function SendTab() {
         accountId: selectedAccountId,
         message: message.trim(),
         recipients: selectedRecipientIds,
+        autoRetry: autoRetry ? { maxRetries: autoRetryCount, intervalMinutes: autoRetryInterval } : undefined,
         image: imageFile ?? undefined,
         scheduledAt: scheduledAtIso,
         recurringIntervalMinutes: isRecurring ? recurringInterval : undefined,
@@ -1067,6 +1072,7 @@ export function SendTab() {
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal"); setNormalDelaySeconds(60);
       setReplyMacroEnabled(false); setReplyToMessageId("");
+      setAutoRetry(false); setAutoRetryCount(3); setAutoRetryInterval(5);
       setInlineButtons([]);
       setSearch("");
       await loadHistory(selectedAccountId);
@@ -1433,6 +1439,22 @@ export function SendTab() {
               />
             )}
 
+            {/* Variable quick-insert chips */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-app-text-muted">변수:</span>
+              {TEMPLATE_VARIABLES.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => handleInsertVariable(v.key)}
+                  title={v.description}
+                  className="rounded-md border border-app-border/60 bg-app-card-hover px-1.5 py-0.5 text-[10px] text-app-text-muted transition-colors hover:border-app-primary/40 hover:text-app-primary hover:bg-app-primary/5"
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
             {/* Message */}
             <Field label="메시지 내용">
               <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
@@ -1455,11 +1477,15 @@ export function SendTab() {
                     변수 치환 정보
                   </div>
                   <div className="whitespace-pre-wrap break-words rounded-lg border border-app-border/50 bg-app-card/50 px-3 py-2 text-sm leading-relaxed text-app-text">
-                    {previewTemplate(message, {
-                      name: selectedRecipients[0]?.title ?? "샘플 그룹",
-                      phone: account?.phone ?? "010-0000-0000",
-                      count: selectedRecipientIds.length || 10,
-                    })}
+                  {previewTemplate(message, {
+                    name: selectedRecipients[0]?.title ?? "샘플 그룹",
+                    phone: account?.phone ?? "010-0000-0000",
+                    count: selectedRecipientIds.length || 10,
+                    date: new Date().toISOString().slice(0, 10),
+                    time: new Date().toTimeString().slice(0, 5),
+                    sender: account?.name || account?.phone || "[발신자]",
+                    groupTitle: selectedRecipients[0]?.title ?? "샘플 그룹",
+                  })}
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
                     {TEMPLATE_VARIABLES.filter((v) => message.includes(v.key)).map((v) => {
@@ -1690,6 +1716,30 @@ export function SendTab() {
                 className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
             </Field>
 
+            {/* Auto-retry on failure */}
+            <div className="flex items-center gap-2 rounded-xl border border-app-border/60 bg-app-card/30 px-3 py-2">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" checked={autoRetry}
+                  onChange={(e) => setAutoRetry(e.target.checked)}
+                  className="rounded border-app-border text-app-primary focus-ring" />
+                <span className="text-xs text-app-text">실패 시 자동 재시도</span>
+              </label>
+              {autoRetry && (
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-[10px] text-app-text-muted">최대</span>
+                  <select value={autoRetryCount} onChange={(e) => setAutoRetryCount(Number(e.target.value))}
+                    className="w-16 rounded border border-app-border bg-app-bg px-1 py-0.5 text-[10px] text-app-text outline-none focus-ring">
+                    {[1, 2, 3, 5, 10].map((n) => <option key={n} value={n}>{n}회</option>)}
+                  </select>
+                  <span className="text-[10px] text-app-text-muted">간격</span>
+                  <select value={autoRetryInterval} onChange={(e) => setAutoRetryInterval(Number(e.target.value))}
+                    className="w-20 rounded border border-app-border bg-app-bg px-1 py-0.5 text-[10px] text-app-text outline-none focus-ring">
+                    {[1, 3, 5, 10, 30, 60].map((m) => <option key={m} value={m}>{m}분</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
             {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
@@ -1904,6 +1954,12 @@ export function SendTab() {
           </div>
         </Panel>
       )}
+
+      {/* ── Schedule Calendar ── */}
+      <Panel title={<div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-app-primary" /> 발송 일정</div>}
+        description="예약된 발송을 달력에서 확인하세요">
+        <ScheduleCalendar broadcasts={history} onCancel={(b) => handleCancelClick(b)} />
+      </Panel>
 
       {/* ── History Panel ── */}
       <Panel
