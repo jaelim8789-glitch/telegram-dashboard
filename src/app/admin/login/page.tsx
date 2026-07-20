@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import * as api from "@/lib/api";
 import * as freeApiKey from "@/lib/api_free_api_key";
-import { setToken, setSessionToken, getSessionToken, clearSessionToken } from "@/lib/auth";
+import { setToken, setSessionToken, getSessionToken, getToken, clearToken, clearSessionToken } from "@/lib/auth";
 import type { VerifyCheckStatus } from "@/lib/api_free_api_key";
 
 type AuthMethod = "admin" | "trial" | "apikey";
@@ -381,6 +381,21 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [method, setMethod] = useState<AuthMethod>("admin");
   const [tgSuccess, setTgSuccess] = useState(false);
+  // If a saved token exists, some flows below auto-redirect to /app the
+  // instant it validates — with no visible feedback and no way back to a
+  // fresh login if that session turns out to be stale/wrong (reported
+  // symptom: "it says I'm already logged in and nothing works"). Surface an
+  // explicit way out instead of forcing a manual localStorage clear.
+  const [hasSavedSession, setHasSavedSession] = useState(false);
+  useEffect(() => {
+    setHasSavedSession(Boolean(getToken() || getSessionToken()));
+  }, []);
+
+  function handleForceLogout() {
+    clearToken();
+    clearSessionToken();
+    window.location.reload();
+  }
 
   const handleTelegramSuccess = useCallback((result: api.TelegramLoginResult) => {
     setToken(result.access_token);
@@ -401,6 +416,15 @@ export default function AdminLoginPage() {
             <span className="text-app-primary">Mon</span>
           </h1>
           <p className="text-sm text-app-text-muted mt-1">텔레그램 자동화 대시보드</p>
+          {hasSavedSession && (
+            <button
+              type="button"
+              onClick={handleForceLogout}
+              className="mt-2 text-xs text-app-text-muted underline underline-offset-2 hover:text-app-primary"
+            >
+              로그인 정보가 꼬였나요? 여기를 눌러 초기화 후 다시 로그인하세요
+            </button>
+          )}
         </div>
 
         {TELEGRAM_BOT_USERNAME && (
