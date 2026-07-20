@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, ShieldAlert, Star, Trash2, WifiOff, Layers, X } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, RefreshCw, ShieldAlert, Star, Trash2, WifiOff, Layers, X } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
