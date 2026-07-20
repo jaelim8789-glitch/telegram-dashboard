@@ -221,11 +221,9 @@ class GuestEngine:
     ) -> str:
         """명령어에 맞는 핸들러를 찾아 실행."""
         handler = self._commands.get(command.lower(), self._handle_fallback)
-        result = await handler(args, user_id, chat_id)
-        # Pass the original command to fallback for a correct error message
         if handler is self._handle_fallback:
-            result = await self._handle_fallback(args, user_id, chat_id, original_command=command)
-        return result
+            return await self._handle_fallback(args, user_id, chat_id, original_command=command)
+        return await handler(args, user_id, chat_id)
 
     # ── Individual command handlers ────────────────────────────────
 
