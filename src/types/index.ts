@@ -38,10 +38,11 @@ export const TABS: TabDef[] = [
   { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
   { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
   { id: "profile", label: "프로필", group: "manage" },
-  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "manage" },
-  { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "operate" },
-  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "manage" },
-  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "manage" },
+  // Temporarily hidden from nav — not ready for production users yet.
+  // { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "manage" },
+  // { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "operate" },
+  // { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "manage" },
+  // { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "manage" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
