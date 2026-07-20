@@ -43,15 +43,9 @@ import {
 } from "@/lib/messageTemplates";
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
 import { HistoryRow } from "@/components/workspace/tabs/send/HistoryRow";
+import { RecipientReviewPanel } from "@/components/workspace/tabs/send/RecipientReviewPanel";
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
-
-const STATUS_META: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string; icon: typeof Clock }> = {
-  pending: { tone: "neutral", label: "대기 중", icon: Hourglass },
-  sending: { tone: "info", label: "발송 중", icon: RefreshCw },
-  sent: { tone: "success", label: "완료", icon: CheckCircle2 },
-  failed: { tone: "danger", label: "실패", icon: AlertTriangle },
-  cancelled: { tone: "warning", label: "취소됨", icon: XCircle },
-};
+import { STATUS_META } from "@/lib/statusMeta";
 import { Modal } from "@/components/ui/Modal";
 import { downloadLogsCsv } from "@/lib/exportCsv";
 import { useRouter } from "next/navigation";
@@ -88,72 +82,6 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
 };
 
 
-
-
-
-function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
-  const groupById = new Map(groups.map((group) => [group.id, group]));
-  const seen = new Set<string>();
-  const next: Group[] = [];
-  for (const id of selectedIds) {
-    if (seen.has(id)) continue;
-    const group = groupById.get(id);
-    if (!group) continue;
-    seen.add(id);
-    next.push(group);
-  }
-  return next;
-}
-
-function RecipientReviewPanel({
-  recipients,
-  onRemove,
-  onClearAll,
-}: {
-  recipients: Group[];
-  onRemove: (id: string) => void;
-  onClearAll: () => void;
-}) {
-  if (recipients.length === 0) return null;
-  return (
-    <div className="rounded-xl border border-app-border bg-app-card/70 p-3 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-app-text-muted">수신자 검토</div>
-          <div className="text-sm font-semibold text-app-text">
-            {recipients.length}명 선택됨
-          </div>
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onClearAll} className="shrink-0">
-          전체 해제
-        </Button>
-      </div>
-
-      <div className="mt-3 max-h-40 space-y-1 overflow-y-auto pr-1">
-        {recipients.map((recipient) => (
-          <div
-            key={recipient.id}
-            className="flex items-start gap-2 rounded-lg border border-app-border/70 bg-app-bg/40 px-3 py-2"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-app-text">{recipient.title}</div>
-              <div className="truncate font-mono text-[11px] text-app-text-subtle">{recipient.id}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onRemove(recipient.id)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-app-text-subtle transition-colors hover:bg-app-card-hover hover:text-app-text"
-              aria-label={`${recipient.title} 제거`}
-              title="제거"
-            >
-              <XCircle className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -363,10 +291,23 @@ export function SendTab() {
   }, [historyFilter, historySearch, historyDateFrom, historyDateTo, router]);
 
   const selectedRecipients = useMemo(
-  
     () => normalizeSelectedRecipients(groups, selectedIds),
     [groups, selectedIds],
   );
+
+  function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
+    const groupById = new Map(groups.map((group) => [group.id, group]));
+    const seen = new Set<string>();
+    const next: Group[] = [];
+    for (const id of selectedIds) {
+      if (seen.has(id)) continue;
+      const group = groupById.get(id);
+      if (!group) continue;
+      seen.add(id);
+      next.push(group);
+    }
+    return next;
+  }
   const selectedRecipientIds = useMemo(() => selectedRecipients.map((g) => g.id), [selectedRecipients]);
 
   // Auto-fetch send time estimate when message or recipients change
