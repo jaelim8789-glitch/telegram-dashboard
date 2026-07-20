@@ -104,3 +104,27 @@ export async function deleteDraft(id: string): Promise<void> {
 export async function fetchDraftSummary(): Promise<DraftSummary> {
   return request<DraftSummary>("/api/drafts/stats/summary");
 }
+
+/** Draft 일괄 승인 */
+export async function batchApproveDrafts(draftIds: string[]): Promise<{ approved: number; total: number }> {
+  return request("/api/drafts/batch/approve", {
+    method: "POST",
+    body: JSON.stringify({ draft_ids: draftIds }),
+  });
+}
+
+/** Draft 일괄 거절 */
+export async function batchRejectDrafts(draftIds: string[]): Promise<{ rejected: number; total: number }> {
+  return request("/api/drafts/batch/reject", {
+    method: "POST",
+    body: JSON.stringify({ draft_ids: draftIds }),
+  });
+}
+
+/** Draft 일괄 삭제 */
+export async function batchDeleteDrafts(draftIds: string[]): Promise<{ deleted: number }> {
+  return request("/api/drafts/batch/delete", {
+    method: "POST",
+    body: JSON.stringify({ draft_ids: draftIds }),
+  });
+}

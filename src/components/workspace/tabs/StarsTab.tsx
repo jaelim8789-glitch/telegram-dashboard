@@ -10,6 +10,11 @@ import {
   Users,
   Zap,
   Loader2,
+  ShieldCheck,
+  AlertTriangle,
+  CalendarDays,
+  CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
@@ -18,6 +23,7 @@ import {
   createStarInvoice,
   type StarProduct,
 } from "@/lib/stars-payment-api";
+import { fetchAuthMe } from "@/lib/api";
 
 interface ApiError {
   detail?: string;
@@ -131,6 +137,13 @@ export default function StarsTab() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [telegramChatId, setTelegramChatId] = useState("");
   const [showChatInput, setShowChatInput] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    plan: string | null;
+    status: string | null;
+    trial_expires_at: string | null;
+    stars_balance?: number;
+  } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -141,6 +154,19 @@ export default function StarsTab() {
         toast("error", "상품 목록을 불러오지 못했습니다.");
       })
       .finally(() => setLoading(false));
+
+    // Fetch subscription status from auth/me
+    fetchAuthMe()
+      .then((me) => {
+        setSubscriptionStatus({
+          plan: me.plan,
+          status: me.subscription_status,
+          trial_expires_at: me.trial_expires_at,
+          stars_balance: me.stars_balance,
+        });
+      })
+      .catch(() => {})
+      .finally(() => setAuthLoading(false));
   }, [toast]);
 
   const handlePurchase = useCallback(
@@ -185,8 +211,155 @@ export default function StarsTab() {
     [telegramChatId, toast]
   );
 
+  // ── 구독 상태 새로고침 ───────────────────────────────────────────────
+
+  const refreshSubscription = useCallback(async () => {
+    setAuthLoading(true);
+    try {
+      const me = await fetchAuthMe();
+      setSubscriptionStatus({
+        plan: me.plan,
+        status: me.subscription_status,
+        trial_expires_at: me.trial_expires_at,
+        stars_balance: me.stars_balance,
+      });
+    } catch { /* ignore */ }
+    setAuthLoading(false);
+  }, []);
+
+  // ── Subscription Status Panel ────────────────────────────────────────
+
+  const PLAN_LABELS: Record<string, string> = {
+    free: "Free",
+    pro: "Pro",
+    premium: "Premium",
+    team: "Team",
+    enterprise: "Enterprise",
+  };
+
+  function formatExpiry(dateStr: string | null): string {
+    if (!dateStr) return "-";
+    try {
+      return new Date(dateStr).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  function renderSubscriptionPanel() {
+    if (authLoading) {
+      return (
+        <div className="rounded-2xl border border-app-border bg-app-card p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-app-primary" />
+              <span className="text-sm text-app-text-muted">구독 정보 로딩 중...</span>
+            </div>
+            <button onClick={refreshSubscription} className="p-1 rounded-lg hover:bg-app-card-hover text-app-text-muted">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (!subscriptionStatus) return null;
+
+    const { plan, status, trial_expires_at, stars_balance } = subscriptionStatus;
+    const isActive = status === "active" || status === "trial";
+    const isTrial = status === "trial" || (status === "active" && !!trial_expires_at);
+    const planLabel = PLAN_LABELS[plan?.toLowerCase() ?? ""] || plan || "Free";
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        key={JSON.stringify(subscriptionStatus)}
+        className={`rounded-2xl border p-5 ${
+          isActive
+            ? "border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent"
+            : "border-app-border bg-app-card"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-app-bg text-app-text-muted"
+              }`}
+            >
+              {isActive ? <ShieldCheck className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-app-text">내 구독</h3>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    isActive
+                      ? "bg-emerald-500/10 text-emerald-600"
+                      : "bg-amber-500/10 text-amber-600"
+                  }`}
+                >
+                  {isActive ? (isTrial ? "체험 중" : "활성") : "비활성"}
+                </span>
+              </div>
+              <p className="text-xs text-app-text-muted mt-0.5">
+                {planLabel}
+                {stars_balance != null && ` · ⭐ ${stars_balance.toLocaleString()} Stars`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={refreshSubscription}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover transition-colors"
+            title="구독 상태 새로고침"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl bg-app-bg p-3">
+            <p className="text-[10px] text-app-text-muted font-medium uppercase tracking-wide">플랜</p>
+            <p className="mt-1 text-sm font-bold text-app-text">{planLabel}</p>
+          </div>
+          <div className="rounded-xl bg-app-bg p-3">
+            <p className="text-[10px] text-app-text-muted font-medium uppercase tracking-wide">상태</p>
+            <p className={`mt-1 text-sm font-bold ${isActive ? "text-emerald-500" : "text-amber-500"}`}>
+              {isActive ? "✅ 활성" : "❌ 비활성"}
+            </p>
+          </div>
+          <div className="rounded-xl bg-app-bg p-3">
+            <p className="text-[10px] text-app-text-muted font-medium uppercase tracking-wide">체험 종료</p>
+            <p className="mt-1 text-sm font-bold text-app-text">
+              {/* 비활성 사용자에게는 체험 종료일 숨김 */}
+              {isActive ? formatExpiry(trial_expires_at) : "-"}
+            </p>
+          </div>
+          <div className="rounded-xl bg-app-bg p-3">
+            <p className="text-[10px] text-app-text-muted font-medium uppercase tracking-wide">Stars 잔액</p>
+            <p className="mt-1 text-sm font-bold text-amber-500">
+              {stars_balance != null ? `${stars_balance.toLocaleString()} ⭐` : "-"}
+            </p>
+          </div>
+        </div>
+
+        {!isActive && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            현재 활성화된 구독이 없습니다. 아래에서 상품을 선택해 결제해주세요.
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   // ── Loading ──
-  if (loading) {
+  if (loading && products.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -237,6 +410,9 @@ export default function StarsTab() {
           </div>
         </div>
       </div>
+
+      {/* Subscription Status */}
+      {renderSubscriptionPanel()}
 
       {/* How It Works */}
       <div className="rounded-2xl border border-app-border bg-app-card p-5">

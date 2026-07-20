@@ -83,6 +83,33 @@ async def set_daily_limit(
     return {"daily_limit": limit, "updated": True}
 
 
+@router.post("/user-limit")
+async def set_user_limit(
+    body: dict,
+    _user: dict = Depends(require_admin_user),
+):
+    """사용자별 일일 한도 설정. body.user_id: str, body.limit: int (1 이상)
+
+    특정 사용자의 한도를 글로벌 daily_limit과 다르게 설정합니다.
+    limit을 0으로 설정하면 사용자별 한도를 제거하고 글로벌 설정을 따릅니다.
+    """
+    user_id = body.get("user_id", "")
+    limit = body.get("limit", 0)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+
+    engine = _require_engine()
+    if limit < 1:
+        # Remove per-user override
+        engine._user_limits.pop(user_id, None)
+        logger.info("[guest] user limit removed for %s (falls back to global %d)", user_id, engine.daily_limit)
+        return {"user_id": user_id, "limit": None, "effective_limit": engine.daily_limit}
+    else:
+        engine._user_limits[user_id] = limit
+        logger.info("[guest] user limit set: %s -> %d", user_id, limit)
+        return {"user_id": user_id, "limit": limit, "effective_limit": limit}
+
+
 @router.post("/webhook-refresh")
 async def refresh_webhook(_user: dict = Depends(require_admin_user)):
     """Webhook allowed_updates 를 갱신하여 guest_message 업데이트를 활성화.
