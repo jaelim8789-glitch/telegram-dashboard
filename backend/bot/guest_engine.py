@@ -64,6 +64,8 @@ class GuestEngine:
 
         # user_id -> today_count (in-memory, 서버 재시작 시 리셋)
         self._daily_usage: dict[str, int] = {}
+        # user_id -> per-user limit override (None = use global daily_limit)
+        self._user_limits: dict[str, int] = {}
         # 오늘 날짜 캐시 (자정에 자동 리셋)
         self._today = datetime.now(timezone.utc).date()
 
@@ -132,13 +134,14 @@ class GuestEngine:
         # 날짜 변경 시 usage 리셋
         self._rotate_date()
 
-        # 1. 일일 한도 체크 — 한도를 넘으면 업그레이드 유도 메시지
+        # 1. 일일 한도 체크 — 사용자별 override 있으면 적용
         current_usage = self._daily_usage.get(user_id_str, 0)
-        if current_usage >= self._daily_limit:
-            logger.info("[guest] user %s hit daily limit (%d)", user_id_str, self._daily_limit)
+        effective_limit = self._user_limits.get(user_id_str, self._daily_limit)
+        if current_usage >= effective_limit:
+            logger.info("[guest] user %s hit daily limit (%d)", user_id_str, effective_limit)
             await self._client.answer_guest_query(
                 guest_query_id,
-                f"⚠️ 오늘의 무료 사용 한도({self._daily_limit}회)를 모두 사용했습니다.\n\n"
+                f"⚠️ 오늘의 무료 사용 한도({effective_limit}회)를 모두 사용했습니다.\n\n"
                 f"🚀 **TeleMon 프리미엄**으로 업그레이드하면 무제한으로 이용할 수 있어요!\n"
                 f"👉 telemon.online",
                 parse_mode="Markdown",

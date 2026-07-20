@@ -64,6 +64,16 @@ export async function refreshGuestWebhook(): Promise<WebhookRefreshResponse> {
 }
 
 /**
+ * 사용자별 일일 한도 설정 (관리자 전용)
+ */
+export async function setGuestUserLimit(userId: string, limit: number): Promise<{ user_id: string; limit: number | null; effective_limit: number }> {
+  return request("/api/bot/guest/user-limit", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, limit }),
+  });
+}
+
+/**
  * 현재 Webhook 설정 상태 조회
  */
 export async function fetchWebhookInfo(): Promise<WebhookInfo> {

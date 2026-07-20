@@ -17,9 +17,95 @@ import {
   AlertCircle,
 } from "lucide-react";
 import * as guestApi from "@/lib/guest-bot-api";
-import { useToast } from "@/components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";  // ── Per-User Usage Table ────────────────────────────────────────
 
-const GUEST_COMMANDS = [
+function UsageTable({
+  dailyUsage,
+  globalLimit,
+}: {
+  dailyUsage: Record<string, number>;
+  globalLimit: number;
+  onLimitChange?: (userId: string, limit: number) => void;
+}) {
+  const [userLimits, setUserLimits] = useState<Record<string, number>>({});
+  const [savingUser, setSavingUser] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const entries = Object.entries(dailyUsage).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-app-border bg-app-card/50 p-4">
+        <div className="flex items-center gap-2 text-sm text-app-text-muted">
+          <BarChart3 className="h-4 w-4 opacity-50" />
+          오늘 사용한 게스트 사용자가 없습니다.
+        </div>
+      </div>
+    );
+  }
+
+  async function handleSetLimit(userId: string) {
+    const limit = userLimits[userId];
+    if (limit == null || limit < 1) return;
+    setSavingUser(userId);
+    try {
+      await guestApi.setGuestUserLimit(userId, limit);
+      toast("success", `${userId}님의 한도가 ${limit}회로 설정되었습니다.`);
+    } catch {
+      toast("error", "사용자별 한도 설정에 실패했습니다.");
+    }
+    setSavingUser(null);
+  }
+
+  return (
+    <div className="rounded-xl border border-app-border bg-app-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-app-text flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-app-primary" />
+          사용자별 사용량 (오늘)
+        </h3>
+        <span className="text-[10px] text-app-text-muted">글로벌 한도: {globalLimit}회</span>
+      </div>
+      <div className="max-h-64 overflow-y-auto space-y-1">
+        {entries.map(([userId, count]) => (
+          <div
+            key={userId}
+            className="flex items-center justify-between rounded-lg bg-app-bg px-3 py-2 text-xs gap-2"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="font-mono text-app-text truncate max-w-[120px]">{userId}</span>
+              <div className="h-1.5 w-20 flex-1 max-w-[100px] rounded-full bg-app-border overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-app-primary transition-all"
+                  style={{ width: `${Math.min(100, (count / (entries[0]?.[1] || 1)) * 100)}%` }}
+                />
+              </div>
+              <span className="font-semibold text-app-text w-6 text-right">{count}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <input
+                type="number"
+                value={userLimits[userId] ?? globalLimit}
+                onChange={(e) => setUserLimits((prev) => ({ ...prev, [userId]: Math.max(1, Math.min(1000, Number(e.target.value))) }))}
+                className="w-14 rounded-md border border-app-border bg-app-card px-1.5 py-1 text-[10px] text-center outline-none focus:border-app-primary"
+                min={1}
+                max={1000}
+              />
+              <button
+                onClick={() => handleSetLimit(userId)}
+                disabled={savingUser === userId}
+                className="rounded-md bg-app-primary/10 px-1.5 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/20 disabled:opacity-50 transition-colors"
+              >
+                {savingUser === userId ? <Loader2 className="h-3 w-3 animate-spin" /> : "설정"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+  const GUEST_COMMANDS = [
   { cmd: "@TeleMonBot 번역 [텍스트]", desc: "영어↔한국어 번역" },
   { cmd: "@TeleMonBot 요약 [텍스트]", desc: "긴 글 요약" },
   { cmd: "@TeleMonBot 날씨 [도시]", desc: "날씨 정보" },
@@ -217,6 +303,12 @@ export function GuestBotTab() {
           </button>
         </div>
       </div>
+
+      {/* 사용자별 사용량 */}
+      <UsageTable
+        dailyUsage={stats?.daily_usage ?? {}}
+        globalLimit={stats?.daily_limit ?? 20}
+      />
 
       {/* 지원 명령어 */}
       <div className="rounded-xl border border-app-border bg-app-card p-4">

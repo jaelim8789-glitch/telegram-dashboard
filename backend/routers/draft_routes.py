@@ -348,6 +348,131 @@ async def delete_draft(
         conn.close()
 
 
+@router.post("/batch/approve")
+async def batch_approve_drafts(
+    body: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Draft 일괄 승인. body.draft_ids: list[str]
+
+    개별 approve와 동일하게 status 변경 + Broadcast 자동 생성.
+    """
+    draft_ids = body.get("draft_ids", [])
+    if not draft_ids:
+        raise HTTPException(status_code=400, detail="draft_ids required")
+    if len(draft_ids) > 50:
+        raise HTTPException(status_code=400, detail="Max 50 drafts per batch")
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn = _get_conn()
+    try:
+        placeholders = ",".join(["?"] * len(draft_ids))
+        # Only approve drafts that belong to user AND are in 'draft' status
+        rows = conn.execute(
+            f"SELECT id, status, content, account_id FROM drafts WHERE id IN ({placeholders}) AND user_id = ?",
+            [*draft_ids, user["id"]],
+        ).fetchall()
+
+        approved = 0
+        broadcast_count = 0
+        for r in rows:
+            if r["status"] == "draft":
+                conn.execute(
+                    "UPDATE drafts SET status='approved', updated_at=? WHERE id=?",
+                    (now, r["id"]),
+                )
+                approved += 1
+        conn.commit()
+
+        # 승인된 draft → Broadcast 자동 생성 (개별 approve와 동일한 로직)
+        manager = RuntimeManager.get_instance()
+        for r in rows:
+            if r["status"] == "draft" and r["account_id"] and r["content"]:
+                try:
+                    broadcast_input = CreateBroadcastInput(
+                        account_id=r["account_id"],
+                        message=r["content"],
+                        recipients=[],
+                        scheduled_at=None,
+                    )
+                    await manager.create_broadcast(broadcast_input)
+                    broadcast_count += 1
+                except Exception as e:
+                    logger.exception("[draft] batch approve broadcast failed for %s: %s", r["id"], e)
+
+        logger.info(
+            "[draft] batch approve: user=%s requested=%d approved=%d broadcasts=%d",
+            user["id"], len(draft_ids), approved, broadcast_count,
+        )
+        return {"approved": approved, "broadcasts_created": broadcast_count, "total": len(draft_ids)}
+    finally:
+        conn.close()
+
+
+@router.post("/batch/reject")
+async def batch_reject_drafts(
+    body: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Draft 일괄 거절. body.draft_ids: list[str]"""
+    draft_ids = body.get("draft_ids", [])
+    if not draft_ids:
+        raise HTTPException(status_code=400, detail="draft_ids required")
+    if len(draft_ids) > 50:
+        raise HTTPException(status_code=400, detail="Max 50 drafts per batch")
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn = _get_conn()
+    try:
+        placeholders = ",".join(["?"] * len(draft_ids))
+        rows = conn.execute(
+            f"SELECT id, status FROM drafts WHERE id IN ({placeholders}) AND user_id = ?",
+            [*draft_ids, user["id"]],
+        ).fetchall()
+
+        rejected = 0
+        for r in rows:
+            if r["status"] == "draft":
+                conn.execute(
+                    "UPDATE drafts SET status='rejected', updated_at=? WHERE id=?",
+                    (now, r["id"]),
+                )
+                rejected += 1
+        conn.commit()
+
+        logger.info("[draft] batch reject: user=%s requested=%d rejected=%d", user["id"], len(draft_ids), rejected)
+        return {"rejected": rejected, "total": len(draft_ids)}
+    finally:
+        conn.close()
+
+
+@router.post("/batch/delete")
+async def batch_delete_drafts(
+    body: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Draft 일괄 삭제. body.draft_ids: list[str]"""
+    draft_ids = body.get("draft_ids", [])
+    if not draft_ids:
+        raise HTTPException(status_code=400, detail="draft_ids required")
+    if len(draft_ids) > 50:
+        raise HTTPException(status_code=400, detail="Max 50 drafts per batch")
+
+    conn = _get_conn()
+    try:
+        placeholders = ",".join(["?"] * len(draft_ids))
+        conn.execute(
+            f"DELETE FROM drafts WHERE id IN ({placeholders}) AND user_id = ?",
+            [*draft_ids, user["id"]],
+        )
+        conn.commit()
+
+        logger.info("[draft] batch delete: user=%s count=%d", user["id"], len(draft_ids))
+        return {"deleted": len(draft_ids)}
+    finally:
+        conn.close()
+
+
 @router.get("/stats/summary")
 async def draft_summary(user: dict = Depends(get_current_user)):
     """Draft 통계 요약."""

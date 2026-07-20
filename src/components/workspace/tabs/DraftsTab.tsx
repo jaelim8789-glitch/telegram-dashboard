@@ -228,11 +228,15 @@ function ApproveModal({
 
 function DraftCard({
   draft,
+  selected,
+  onToggleSelect,
   onApprove,
   onReject,
   onDelete,
 }: {
   draft: draftApi.Draft;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onApprove: (d: draftApi.Draft) => void;
   onReject: (id: string) => void;
   onDelete: (id: string) => void;
@@ -251,12 +255,25 @@ function DraftCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group rounded-xl border border-app-border bg-app-card p-4 transition-all duration-150 hover:border-app-primary/20 hover:shadow-sm"
+      className={`group rounded-xl border p-4 transition-all duration-150 hover:shadow-sm ${
+        selected
+          ? "border-app-primary/40 bg-app-primary/[0.04]"
+          : "border-app-border bg-app-card hover:border-app-primary/20"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
+        {/* Checkbox */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(draft.id)}
+            className="h-4 w-4 rounded border-app-border text-app-primary focus:ring-app-primary"
+          />
+        </div>
         <div className="min-w-0 flex-1">
           {/* Badge row */}
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2 ml-1">
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColors[draft.status] || "bg-gray-500/10 text-gray-600"}`}>
               {draft.status}
             </span>
@@ -277,7 +294,6 @@ function DraftCard({
             {draft.title || "제목 없음"}
           </h4>
 
-          {/* Content preview */}
           <p className="mb-2 text-xs text-app-text-secondary line-clamp-2 whitespace-pre-wrap">
             {draft.content}
           </p>
@@ -307,31 +323,22 @@ function DraftCard({
 
         {/* Actions */}
         <div className="flex shrink-0 gap-1">
-          {draft.status === "draft" && (
-            <>
-              <button
-                onClick={() => onApprove(draft)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-500 opacity-0 transition-all duration-150 hover:bg-emerald-500/10 group-hover:opacity-100"
-                title="승인"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => onReject(draft.id)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 opacity-0 transition-all duration-150 hover:bg-red-500/10 group-hover:opacity-100"
-                title="거절"
-              >
-                <XCircle className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          {draft.status === "rejected" && (
+          {(draft.status === "draft" || draft.status === "rejected") && (
             <button
               onClick={() => onApprove(draft)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-500 hover:bg-emerald-500/10"
-              title="재승인"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-500 opacity-0 transition-all duration-150 hover:bg-emerald-500/10 group-hover:opacity-100"
+              title="승인"
             >
-              <RefreshCw className="h-4 w-4" />
+              <CheckCircle2 className="h-4 w-4" />
+            </button>
+          )}
+          {draft.status === "draft" && (
+            <button
+              onClick={() => onReject(draft.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 opacity-0 transition-all duration-150 hover:bg-red-500/10 group-hover:opacity-100"
+              title="거절"
+            >
+              <XCircle className="h-4 w-4" />
             </button>
           )}
           <button
@@ -356,6 +363,26 @@ export function DraftsTab() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<draftApi.DraftSummary | null>(null);
   const [approvingDraft, setApprovingDraft] = useState<draftApi.Draft | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  // Toggle single selection
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Select all / deselect all
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === drafts.length) return new Set();
+      return new Set(drafts.map((d) => d.id));
+    });
+  }, [drafts]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -387,13 +414,6 @@ export function DraftsTab() {
     load();
   }
 
-  async function handleFastApprove(id: string) {
-    try {
-      await draftApi.approveDraft(id);
-      load();
-    } catch { /* ignore */ }
-  }
-
   async function handleReject(id: string) {
     try {
       await draftApi.rejectDraft(id);
@@ -406,6 +426,41 @@ export function DraftsTab() {
       await draftApi.deleteDraft(id);
       load();
     } catch { /* ignore */ }
+  }
+
+  // ── Bulk operations ────────────────────────────────────────────────
+
+  async function handleBulkApprove() {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      await draftApi.batchApproveDrafts(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      load();
+    } catch { /* ignore */ }
+    setBulkActionLoading(false);
+  }
+
+  async function handleBulkReject() {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      await draftApi.batchRejectDrafts(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      load();
+    } catch { /* ignore */ }
+    setBulkActionLoading(false);
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      await draftApi.batchDeleteDrafts(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      load();
+    } catch { /* ignore */ }
+    setBulkActionLoading(false);
   }
 
   // ── Summary badges ──
@@ -446,8 +501,21 @@ export function DraftsTab() {
         ))}
       </div>
 
-      {/* Status filter */}
-      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
+      {/* Select-all + Status filter */}
+      <div className="mb-4 flex items-center gap-1.5 overflow-x-auto pb-1">
+        <button
+          onClick={toggleSelectAll}
+          className={`flex items-center gap-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+            selectedIds.size > 0
+              ? "bg-app-primary/10 text-app-primary border border-app-primary/30"
+              : "border border-app-border bg-app-card text-app-text-muted hover:bg-app-card-hover"
+          }`}
+          title={selectedIds.size === drafts.length ? "전체 해제" : "전체 선택"}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {selectedIds.size > 0 ? `${selectedIds.size}개 선택` : "전체선택"}
+        </button>
+        <div className="h-5 w-px bg-app-border" />
         {STATUS_OPTIONS.map((o) => {
           const Icon = o.icon;
           return (
@@ -464,8 +532,8 @@ export function DraftsTab() {
               {o.label}
             </button>
           );
-        })}
-      </div>
+        }          )}
+        </div>
 
       {/* Draft list */}
       {loading ? (
@@ -484,19 +552,73 @@ export function DraftsTab() {
           <p className="text-xs">AI 콘텐츠 스튜디오에서 생성하거나 직접 작성하세요.</p>
         </div>
       ) : (
-        <AnimatePresence mode="popLayout">
-          <div className="space-y-2">
-            {drafts.map((d) => (
-              <DraftCard
-                key={d.id}
-                draft={d}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        </AnimatePresence>
+        <>
+          <AnimatePresence mode="popLayout">
+            <div className="space-y-2">
+              {drafts.map((d) => (
+                <DraftCard
+                  key={d.id}
+                  draft={d}
+                  selected={selectedIds.has(d.id)}
+                  onToggleSelect={toggleSelect}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          </AnimatePresence>
+
+          {/* Bulk action bar */}
+          <AnimatePresence>
+            {selectedIds.size > 0 && (
+              <motion.div
+                initial={{ y: 60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 60, opacity: 0 }}
+                className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2"
+              >
+                <div className="flex items-center gap-2 rounded-2xl border border-app-border bg-app-card px-4 py-3 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                  <span className="mr-1 text-sm font-medium text-app-text">
+                    {selectedIds.size}개 선택됨
+                  </span>
+                  <div className="h-5 w-px bg-app-border" />
+                  <button
+                    onClick={handleBulkApprove}
+                    disabled={bulkActionLoading}
+                    className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                  >
+                    {bulkActionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    승인
+                  </button>
+                  <button
+                    onClick={handleBulkReject}
+                    disabled={bulkActionLoading}
+                    className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  >
+                    {bulkActionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                    거절
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkActionLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-app-border px-3 py-1.5 text-xs font-medium text-app-text-secondary hover:bg-app-card-hover disabled:opacity-50 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    삭제
+                  </button>
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-app-text-muted hover:text-app-text"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    취소
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
       )}
 
       {/* Approve modal */}

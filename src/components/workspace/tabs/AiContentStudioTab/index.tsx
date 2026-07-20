@@ -19,7 +19,9 @@ import {
   type CalendarSlot,
 } from "@/lib/content-studio-api";
 import { fetchStyleProfiles, createBroadcast, type StyleProfile } from "@/lib/api";
+import { createDraft } from "@/lib/draft-api";
 import { useToast } from "@/components/ui/Toast";
+import { ExternalLink } from "lucide-react";
 
 const DAILY_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 
@@ -49,6 +51,9 @@ export function AiContentStudioTab() {
   const [generated, setGenerated] = useState<GenerateContentResponse | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // ── Draft 저장 상태 ────────────────────────────────────────────────
+  const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
 
   // ── Calendar / scheduling ───────────────────────────────────────────
   const [dailyCount, setDailyCount] = useState(2);
@@ -86,6 +91,7 @@ export function AiContentStudioTab() {
     setGenerating(true);
     setError("");
     setGenerated(null);
+    setSavedDraftId(null);
 
     try {
       const result = await generateContent({
@@ -96,6 +102,22 @@ export function AiContentStudioTab() {
         style_profile_id: styleProfileId || undefined,
       });
       setGenerated(result);
+
+      // 생성 결과를 Draft로 자동 저장
+      try {
+        const draftResult = await createDraft({
+          title: CONTENT_TYPES.find((ct) => ct.id === selectedType)?.label ?? selectedType,
+          content: result.generated_content,
+          content_type: selectedType,
+          source: "content_studio",
+          ai_model: "telemon-ai",
+          tokens_used: result.tokens_used,
+        });
+        setSavedDraftId(draftResult.id);
+      } catch {
+        // Draft 저장 실패는 생성 실패보다 덜 중요 — toast로만 알림
+        toast("error", "Draft 저장에 실패했습니다. 생성된 콘텐츠는 복사해서 사용하세요.");
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "콘텐츠 생성에 실패했습니다";
       // Backend may throw ValueError with Korean messages — show them as-is
@@ -103,7 +125,7 @@ export function AiContentStudioTab() {
     } finally {
       setGenerating(false);
     }
-  }, [selectedType, tone, topic, context, styleProfileId, generating]);
+  }, [selectedType, tone, topic, context, styleProfileId, generating, toast]);
 
   const handleCopy = useCallback(async (text: string) => {
     try {
@@ -342,6 +364,33 @@ export function AiContentStudioTab() {
                   <CalendarDays className="h-3.5 w-3.5" />
                   예약 발송
                 </button>
+                {/* Draft 저장 상태 + DraftsTab 이동 */}
+                {savedDraftId ? (
+                  <>
+                    <span className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-1.5 text-xs font-medium text-emerald-600">
+                      <Check className="h-3.5 w-3.5" />
+                      Draft 저장됨
+                    </span>
+                    <a
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Try to find DraftsTab by navigating to the tab
+                        const draftsTab = document.querySelector('[data-tab-id="drafts"]');
+                        if (draftsTab instanceof HTMLElement) {
+                          draftsTab.click();
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-app-primary/30 bg-app-primary/5 px-3 py-1.5 text-xs font-medium text-app-primary hover:bg-app-primary/10 transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      DraftsTab에서 검토
+                    </a>
+                  </>
+                ) : generated && !savedDraftId && (
+                  <span className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] text-app-text-muted">
+                    Draft 미저장
+                  </span>
+                )}
               </div>
             </div>
           </Panel>
