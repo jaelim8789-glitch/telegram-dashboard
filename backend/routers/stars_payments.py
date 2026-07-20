@@ -127,7 +127,13 @@ async def create_invoice(
 
     # Telegram Chat ID: 1) 프론트에서 직접 전달 2) bot_sessions에서 조회
     if telegram_chat_id_input:
-        telegram_chat_id = int(telegram_chat_id_input)
+        try:
+            telegram_chat_id = int(telegram_chat_id_input)
+        except (ValueError, TypeError):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid telegram_chat_id. Must be a numeric chat ID.",
+            )
     else:
         telegram_chat_id = await _resolve_telegram_chat(user)
 
