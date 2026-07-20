@@ -28,6 +28,7 @@ import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsR
 import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
 import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
 import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
+import { GuestBotTab } from "@/components/workspace/tabs/GuestBotTab";
 import type { TabId } from "@/types";
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
@@ -55,6 +56,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   profile: ProfileTab,
   log: LogTab,
   deliveryanalytics: DeliveryAnalyticsTab,
+  guestbot: GuestBotTab,
 };
 
 export function Workspace() {
