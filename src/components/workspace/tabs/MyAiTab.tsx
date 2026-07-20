@@ -8,12 +8,14 @@ import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcast
 import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
 import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
 import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
+import { AiContentStudioTab } from "@/components/workspace/tabs/AiContentStudioTab";
 import * as agentApi from "@/lib/agent-api";
 
 const SUB_TABS = [
   { id: "chat", label: "AI 대화", icon: MessageSquare, desc: "AI 운영 비서와 자유롭게 대화" },
   { id: "reply", label: "AI 답장", icon: MessageCircle, desc: "스마트 답장 추천" },
   { id: "broadcast", label: "AI 발송", icon: Megaphone, desc: "AI가 작성한 발송 메시지" },
+  { id: "contentstudio", label: "콘텐츠 스튜디오", icon: Sparkles, desc: "AI 콘텐츠 생성 & 예약 발송" },
   { id: "operations", label: "AI 리포트", icon: BarChart3, desc: "운영 리포트 및 인사이트" },
   { id: "opscenter", label: "AI 운영 센터", icon: Gauge, desc: "통합 운영 현황" },
   { id: "usage", label: "AI 사용량", icon: Cpu, desc: "AI 기능 사용 통계" },
@@ -55,6 +57,8 @@ function ActiveContent({ sub }: { sub: string }) {
       return <AiReplyAssistantTab />;
     case "broadcast":
       return <AiBroadcastAssistantTab />;
+    case "contentstudio":
+      return <AiContentStudioTab />;
     case "operations":
       return <AiOperationsReportTab />;
     case "opscenter":
