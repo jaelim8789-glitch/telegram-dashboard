@@ -226,8 +226,44 @@ async def admin_process_payouts(
         success=True,
         payouts_created=payouts_created,
         total_amount=total_amount,
-        message=f"{payouts_created}명의 추천인에게 {total_amount}원이 지급되었습니다." if payouts_created else "지급할 커미션이 없습니다.",
+        message=f"{payouts_created}명의 추천인에 대한 지급대상이 생성되었습니다. 승인 후 실제 지급됩니다." if payouts_created else "지급할 커미션이 없습니다.",
     )
+
+
+@router.get("/admin/payouts/pending")
+async def get_admin_pending_payouts(
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    payouts = await get_pending_payouts(db)
+    items = []
+    for p in payouts:
+        referrer = await db.get(Tenant, p.referrer_id)
+        items.append(PayoutRecord(
+            id=p.id,
+            referrer_id=p.referrer_id,
+            referrer_phone=referrer.phone if referrer else "unknown",
+            amount=p.amount,
+            status=p.status,
+            paid_at=p.paid_at,
+            created_at=p.created_at,
+        ))
+    return {"items": items, "total_count": len(items)}
+
+
+@router.post("/admin/payouts/{payout_id}/approve")
+async def admin_approve_payout(
+    payout_id: str,
+    db: AsyncSession = Depends(get_db),
+    _admin: None = Depends(require_admin),
+):
+    success = await approve_payout(db, payout_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="해당 지급대상을 찾을 수 없거나 이미 처리되었습니다.",
+        )
+    return {"success": True, "message": "지급이 승인되었습니다. 관련 커미션이 지급 완료 처리되었습니다."}
 
 
 @router.get("/admin/payouts")

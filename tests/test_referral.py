@@ -288,3 +288,17 @@ async def test_admin_process_payouts_no_auth(client: AsyncClient):
     """POST /api/referrals/admin/process-payouts should require admin."""
     res = await client.post("/api/referrals/admin/process-payouts")
     assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_pending_payouts_no_auth(client: AsyncClient):
+    """GET /api/referrals/admin/payouts/pending should require admin."""
+    res = await client.get("/api/referrals/admin/payouts/pending")
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_approve_payout_no_auth(client: AsyncClient):
+    """POST /api/referrals/admin/payouts/{id}/approve should require admin."""
+    res = await client.post("/api/referrals/admin/payouts/fake-id/approve")
+    assert res.status_code == 401
