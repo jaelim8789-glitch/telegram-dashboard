@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Sparkles, Copy, Check, Loader2, CalendarDays, SendHorizontal,
-  Bot, FileText, AlertCircle, ChevronDown, ChevronUp,
+  Bot, FileText, AlertCircle, ChevronDown, ChevronUp, X,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
@@ -12,38 +12,68 @@ import { CalendarPreview } from "./CalendarPreview";
 import {
   CONTENT_TYPES,
   generateContent,
+  previewCalendar,
   type ContentType,
   type ContentTone,
-  type GeneratedContentItem,
+  type GenerateContentResponse,
+  type CalendarSlot,
 } from "@/lib/content-studio-api";
+import { fetchStyleProfiles, createBroadcast, type StyleProfile } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const DAILY_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
-  { value: "short", label: "짧게" },
-  { value: "emotional", label: "감성" },
-  { value: "intense", label: "강렬" },
+  { value: "professional", label: "전문적인" },
+  { value: "friendly", label: "친근한" },
+  { value: "warm", label: "따뜻한" },
+  { value: "casual", label: "격식 없는" },
 ];
 
 export function AiContentStudioTab() {
+  const { toast } = useToast();
+
+  // ── Content type selection ──────────────────────────────────────────
   const [selectedType, setSelectedType] = useState<ContentType | null>(null);
-  const [tone, setTone] = useState<ContentTone>("short");
+
+  // ── Generation options ──────────────────────────────────────────────
+  const [tone, setTone] = useState<ContentTone>("professional");
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
-  const [styleProfileId, setStyleProfileId] = useState<string | undefined>(undefined);
+  const [styleProfileId, setStyleProfileId] = useState<string>("");
+  const [styleProfiles, setStyleProfiles] = useState<StyleProfile[]>([]);
+  const [styleProfilesLoading, setStyleProfilesLoading] = useState(false);
 
+  // ── Generation state ────────────────────────────────────────────────
   const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState<GeneratedContentItem | null>(null);
+  const [generated, setGenerated] = useState<GenerateContentResponse | null>(null);
   const [error, setError] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
+  // ── Calendar / scheduling ───────────────────────────────────────────
   const [dailyCount, setDailyCount] = useState(2);
   const [selectedTypes, setSelectedTypes] = useState<ContentType[]>([
-    "promotional",
-    "announcement",
-    "engagement",
+    "morning_greeting",
+    "quote",
+    "market_briefing",
   ]);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarSlots, setCalendarSlots] = useState<CalendarSlot[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+
+  // ── Load style profiles on mount ────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setStyleProfilesLoading(true);
+    fetchStyleProfiles()
+      .then((list) => { if (!cancelled) setStyleProfiles(list); })
+      .catch(() => { /* silently fail — dropdown just won't show */ })
+      .finally(() => { if (!cancelled) setStyleProfilesLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Handlers ────────────────────────────────────────────────────────
 
   const handleTypeSelect = useCallback((id: ContentType) => {
     setSelectedType(id);
@@ -67,17 +97,19 @@ export function AiContentStudioTab() {
       });
       setGenerated(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "콘텐츠 생성에 실패했습니다");
+      const msg = err instanceof Error ? err.message : "콘텐츠 생성에 실패했습니다";
+      // Backend may throw ValueError with Korean messages — show them as-is
+      setError(msg);
     } finally {
       setGenerating(false);
     }
   }, [selectedType, tone, topic, context, styleProfileId, generating]);
 
-  const handleCopy = useCallback(async (text: string, id: string) => {
+  const handleCopy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       // silently fail
     }
@@ -88,6 +120,77 @@ export function AiContentStudioTab() {
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   }, []);
+
+  // ── Calendar preview ────────────────────────────────────────────────
+  const handleCalendarToggle = useCallback(async () => {
+    const next = !showCalendar;
+    setShowCalendar(next);
+    if (next && selectedTypes.length > 0) {
+      setCalendarLoading(true);
+      try {
+        const result = await previewCalendar({
+          daily_count: dailyCount,
+          content_types: selectedTypes,
+        });
+        setCalendarSlots(result.slots);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "캘린더 미리보기를 불러오지 못했습니다";
+        setError(msg);
+      } finally {
+        setCalendarLoading(false);
+      }
+    }
+  }, [showCalendar, dailyCount, selectedTypes]);
+
+  // ── Schedule broadcast ──────────────────────────────────────────────
+  const handleSchedule = useCallback(async () => {
+    if (scheduling || selectedTypes.length === 0) return;
+    setScheduling(true);
+    setError("");
+
+    try {
+      // Schedule each slot as a separate broadcast
+      const slots = calendarSlots.length > 0 ? calendarSlots
+        : selectedTypes.map((ct, i) => {
+            const info = CONTENT_TYPES.find((c) => c.id === ct)!;
+            return {
+              time: `${8 + i}:00`.padStart(5, "0"),
+              content_type: ct,
+              label: info.label,
+            };
+          });
+
+      let scheduled = 0;
+      for (const slot of slots) {
+        // Generate content for each slot
+        const content = await generateContent({
+          content_type: slot.content_type,
+          tone,
+          topic: topic || undefined,
+          context: context || undefined,
+          style_profile_id: styleProfileId || undefined,
+        });
+
+        // Schedule via broadcast API with content_studio reference
+        await createBroadcast({
+          accountId: "", // Will be selected by user in SendTab
+          message: content.generated_content,
+          recipients: [],
+          scheduledAt: new Date().toISOString(), // Placeholder — real scheduling TBD
+          deliveryMode: "normal",
+        });
+        scheduled++;
+      }
+
+      toast("success", `${scheduled}개 콘텐츠가 예약되었습니다`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "예약 발송에 실패했습니다";
+      setError(msg);
+      toast("error", msg);
+    } finally {
+      setScheduling(false);
+    }
+  }, [scheduling, selectedTypes, calendarSlots, tone, topic, context, styleProfileId, toast]);
 
   return (
     <AiSubTabLayout
@@ -109,7 +212,7 @@ export function AiContentStudioTab() {
       <div className="space-y-4">
         {/* ── Step 1: Content Type Selection ──────────────────────────── */}
         <Panel title="1. 콘텐츠 타입 선택" description="생성할 콘텐츠의 종류를 선택하세요">
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
             {CONTENT_TYPES.map((ct) => (
               <ContentTypeCard
                 key={ct.id}
@@ -156,15 +259,27 @@ export function AiContentStudioTab() {
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary resize-none"
               />
             </div>
+            {/* Style Profile dropdown — OpenCode 말투학습 연동 */}
             <div className="sm:col-span-2">
-              <label className="text-[11px] font-medium text-app-text-muted">스타일 프로필 ID (선택)</label>
-              <input
-                type="text"
+              <label className="text-[11px] font-medium text-app-text-muted">
+                말투 스타일 (선택)
+                {styleProfilesLoading && <Loader2 className="ml-1 inline h-3 w-3 animate-spin" />}
+              </label>
+              <select
                 value={styleProfileId}
-                onChange={(e) => setStyleProfileId(e.target.value || undefined)}
-                placeholder="예: style-123"
-                className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary"
-              />
+                onChange={(e) => setStyleProfileId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text focus:outline-none focus:border-app-primary"
+              >
+                <option value="">스타일 미적용 (기본)</option>
+                {styleProfiles.map((sp) => (
+                  <option key={sp.id} value={sp.id}>{sp.name}</option>
+                ))}
+              </select>
+              {styleProfiles.length === 0 && !styleProfilesLoading && (
+                <p className="mt-1 text-[10px] text-app-text-muted">
+                  관리자 {'>'} AI 말투 학습에서 스타일 프로필을 먼저 생성하세요
+                </p>
+              )}
             </div>
           </div>
 
@@ -195,23 +310,33 @@ export function AiContentStudioTab() {
                 <p className="text-xs text-app-text whitespace-pre-wrap leading-relaxed">
                   {generated.generated_content}
                 </p>
+                {generated.style_profile_id && (
+                  <p className="mt-2 text-[10px] text-app-text-muted">
+                    말투 스타일 적용됨 (ID: {generated.style_profile_id})
+                  </p>
+                )}
+                {generated.tokens_used > 0 && (
+                  <p className="mt-1 text-[10px] text-app-text-muted">
+                    사용 토큰: {generated.tokens_used.toLocaleString()}
+                  </p>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleCopy(generated.generated_content, generated.generated_content.slice(0, 8))}
+                  onClick={() => handleCopy(generated.generated_content)}
                   className="flex items-center gap-1.5 rounded-lg border border-app-border px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
                 >
-                  {copiedId === generated.generated_content.slice(0, 8) ? (
+                  {copied ? (
                     <Check className="h-3.5 w-3.5 text-app-success" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
-                  {copiedId === generated.generated_content.slice(0, 8) ? "복사됨" : "복사"}
+                  {copied ? "복사됨" : "복사"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCalendar(true)}
+                  onClick={handleCalendarToggle}
                   className="flex items-center gap-1.5 rounded-lg border border-app-primary/30 bg-app-primary/5 px-3 py-1.5 text-xs font-medium text-app-primary hover:bg-app-primary/10 transition-colors"
                 >
                   <CalendarDays className="h-3.5 w-3.5" />
@@ -230,7 +355,7 @@ export function AiContentStudioTab() {
           action={
             <button
               type="button"
-              onClick={() => setShowCalendar(!showCalendar)}
+              onClick={handleCalendarToggle}
               className="flex items-center gap-1 text-xs text-app-text-muted hover:text-app-text transition-colors"
             >
               {showCalendar ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -276,7 +401,7 @@ export function AiContentStudioTab() {
                     }`}
                   >
                     <span className="text-sm leading-none">{ct.emoji}</span>
-                    {ct.label}
+                    <span className="hidden sm:inline">{ct.label}</span>
                   </button>
                 );
               })}
@@ -286,18 +411,38 @@ export function AiContentStudioTab() {
           {/* Calendar preview */}
           {showCalendar && (
             <div className="rounded-xl border border-app-border bg-app-bg/40 p-3">
-              <CalendarPreview dailyCount={dailyCount} selectedTypes={selectedTypes} />
+              {calendarLoading ? (
+                <div className="flex items-center justify-center py-6 text-app-text-muted">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-xs">캘린더 로딩 중...</span>
+                </div>
+              ) : (
+                <CalendarPreview dailyCount={dailyCount} selectedTypes={selectedTypes} />
+              )}
+            </div>
+          )}
+
+          {/* Error display */}
+          {error && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-app-danger/30 bg-app-danger-muted/10 p-3">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-app-danger" />
+              <p className="text-xs text-app-danger whitespace-pre-wrap">{error}</p>
             </div>
           )}
 
           {/* Schedule button */}
           <button
             type="button"
-            disabled={selectedTypes.length === 0}
+            onClick={handleSchedule}
+            disabled={selectedTypes.length === 0 || scheduling}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-app-primary px-4 py-2.5 text-xs font-medium text-white hover:bg-app-primary-hover disabled:opacity-50 transition-colors"
           >
-            <SendHorizontal className="h-3.5 w-3.5" />
-            예약 발송 시작
+            {scheduling ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <SendHorizontal className="h-3.5 w-3.5" />
+            )}
+            {scheduling ? "예약 중..." : "예약 발송 시작"}
           </button>
         </Panel>
       </div>

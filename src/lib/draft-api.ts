@@ -62,11 +62,28 @@ export async function updateDraft(id: string, body: Partial<Pick<Draft, "title" 
   await request(`/api/drafts/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 }
 
-/** Draft 승인 (선택적 예약 발송) */
-export async function approveDraft(id: string, scheduledAt?: string, feedback?: string): Promise<{ status: string }> {
+export interface ApproveDraftOptions {
+  scheduledAt?: string;
+  feedback?: string;
+  /** 발송 대상 그룹 ID 목록 */
+  recipients?: string[];
+  /** 발송 계정 ID (draft에 없을 경우) */
+  accountId?: string;
+}
+
+/** Draft 승인 (선택적 예약 발송 + recipients) */
+export async function approveDraft(
+  id: string,
+  opts: ApproveDraftOptions = {}
+): Promise<{ status: string; broadcast_id?: string; recipients_count?: number }> {
+  const body: Record<string, unknown> = {};
+  if (opts.scheduledAt) body.scheduled_at = opts.scheduledAt;
+  if (opts.feedback) body.feedback = opts.feedback;
+  if (opts.recipients && opts.recipients.length > 0) body.recipients = opts.recipients;
+  if (opts.accountId) body.account_id = opts.accountId;
   return request(`/api/drafts/${id}/approve`, {
     method: "POST",
-    body: JSON.stringify({ scheduled_at: scheduledAt, feedback }),
+    body: JSON.stringify(body),
   });
 }
 

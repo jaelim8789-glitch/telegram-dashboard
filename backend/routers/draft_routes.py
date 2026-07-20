@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -34,7 +35,6 @@ DB_PATH = os.environ.get("ADMIN_DB_PATH", "data/admin.db")
 
 
 def _init_db() -> None:
-    import os
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=10)
     try:
@@ -212,9 +212,17 @@ async def approve_draft(
     body: dict | None = None,
     user: dict = Depends(get_current_user),
 ):
-    """Draft 승인 → 즉시 발송 또는 예약."""
+    """Draft 승인 → 즉시 발송 또는 예약.
+
+    body.recipients — 발송 대상 그룹 ID 목록 (선택)
+    body.account_id — 발송 계정 ID (선택, draft에 없을 경우)
+    body.scheduled_at — 예약 발송 시간 (선택)
+    body.feedback — 피드백 (선택)
+    """
     now = datetime.now(timezone.utc).isoformat()
     scheduled_at = body.get("scheduled_at") if body else None
+    recipients = body.get("recipients") if body else None
+    override_account_id = body.get("account_id") if body else None
 
     new_status = "scheduled" if scheduled_at else "approved"
     feedback = body.get("feedback") if body else None
@@ -257,22 +265,23 @@ async def approve_draft(
             draft_id, user["id"], new_status,
         )
 
-        # 승인된 draft → Broadcast 자동 생성 (account_id가 있는 경우)
+        # 승인된 draft → Broadcast 자동 생성
         broadcast_id = None
-        if draft.get("account_id") and draft.get("content"):
+        effective_account_id = override_account_id or draft.get("account_id")
+        if effective_account_id and draft.get("content"):
             try:
                 manager = RuntimeManager.get_instance()
                 broadcast_input = CreateBroadcastInput(
-                    account_id=draft["account_id"],
+                    account_id=effective_account_id,
                     message=draft["content"],
-                    recipients=[],  # 빈 recipients는 추후 채워짐
+                    recipients=recipients or [],
                     scheduled_at=scheduled_at,
                 )
                 broadcast = await manager.create_broadcast(broadcast_input)
                 broadcast_id = broadcast.id
                 logger.info(
-                    "[draft] broadcast auto-created: draft=%s broadcast=%s",
-                    draft_id, broadcast_id,
+                    "[draft] broadcast auto-created: draft=%s broadcast=%s recipients=%d",
+                    draft_id, broadcast_id, len(recipients or []),
                 )
             except Exception as e:
                 logger.exception(
@@ -284,6 +293,7 @@ async def approve_draft(
             "status": new_status,
             "scheduled_at": scheduled_at,
             "broadcast_id": broadcast_id,
+            "recipients_count": len(recipients) if recipients else 0,
         }
     finally:
         conn.close()
