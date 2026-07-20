@@ -138,6 +138,18 @@ export interface Broadcast {
   replyToMessageId: number | null;
   /** Inline keyboard buttons attached to this broadcast message. */
   inlineButtons: InlineButton[] | null;
+  /** Set when this broadcast is one account's slice of a group list split across
+   * the tenant's active accounts (see backend app/services/broadcast_distribution.py).
+   * Null = sent from a single account as usual. */
+  distributionBatchId: string | null;
+}
+
+/** One account's slice of a distributed broadcast, from GET /api/broadcast/distribution/{batchId}. */
+export interface DistributionSibling {
+  broadcast: Broadcast;
+  accountId: string;
+  accountPhone: string;
+  accountName: string | null;
 }
 
 /** Broadcasts not yet finished -- poll these until they reach a terminal status. */
