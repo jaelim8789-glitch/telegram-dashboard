@@ -566,6 +566,8 @@ export interface CreateBroadcastInput {
   campaignId?: string;
   /** Number of rooms to send in each batch (1, 5, 10). Only applies to "normal" delivery mode. */
   batchSize?: number;
+  /** Auto-retry on failure */
+  autoRetry?: { maxRetries: number; intervalMinutes: number };
 }
 
 export async function createBroadcast(input: CreateBroadcastInput): Promise<Broadcast> {
@@ -581,6 +583,9 @@ export async function createBroadcast(input: CreateBroadcastInput): Promise<Broa
   if (input.replyToMessageId != null) form.append("reply_to_message_id", String(input.replyToMessageId));
   if (input.inlineButtons && input.inlineButtons.length > 0) {
     form.append("inline_buttons", JSON.stringify(input.inlineButtons));
+  }
+  if (input.autoRetry) {
+    form.append("auto_retry", JSON.stringify(input.autoRetry));
   }
 
   try {
