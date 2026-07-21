@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Zap, Settings, Shield, Bot } from "lucide-react";
+import Image from "next/image";
 
 const REASONS = [
   { 
@@ -44,38 +45,122 @@ export function WhyChooseTeleMon() {
         <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {REASONS.map((reason, i) => {
-          const Icon = reason.icon;
-          return (
-            <motion.div
-              key={reason.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
-              style={{
-                borderTop: "4px solid var(--color-accent)",
-              }}
-            >
-              {/* 상단 우측 TM 배지 */}
-              <div className="absolute -top-2.5 right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
-                TM
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {REASONS.map((reason, i) => {
+            const Icon = reason.icon;
+            return (
+              <motion.div
+                key={reason.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
+                style={{
+                  borderTop: "4px solid var(--color-accent)",
+                }}
+              >
+                {/* 상단 우측 TM 배지 */}
+                <div className="absolute -top-2.5 right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
+                  TM
+                </div>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg mb-4 bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] shadow-md">
-                <Icon className="h-6 w-6" />
-              </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg mb-4 bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] shadow-md">
+                  <Icon className="h-6 w-6" />
+                </div>
 
-              <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{reason.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{reason.desc}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{reason.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{reason.desc}</p>
 
-              {/* 하단 장식선 */}
-              <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
-            </motion.div>
-          );
-        })}
+                {/* 하단 장식선 */}
+                <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Corporate elegance in a tech space.png"
+              alt="Corporate elegance in a tech space"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Serene portrait of a confident woman.png"
+              alt="Serene portrait of a confident woman"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9 }}
+            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Profesyonal na portrait ng kabataang babae.png"
+              alt="Profesyonal na portrait ng kabataang babae"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.0 }}
+            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Seryoso at estilong portret ni lalaki.png"
+              alt="Seryoso at estilong portret ni lalaki"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+        </div>
       </div>
     </div>
   );

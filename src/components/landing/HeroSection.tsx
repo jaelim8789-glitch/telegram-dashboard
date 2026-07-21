@@ -25,6 +25,13 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const scrollToAISection = () => {
+    const aiSection = document.getElementById('ai-operational-status');
+    if (aiSection) {
+      aiSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section
       ref={ref}
@@ -171,6 +178,23 @@ export function HeroSection() {
           </Link>
         </motion.div>
       </div>
+
+      {/* 나만의 AI 카드 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.0 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+      >
+        <button
+          onClick={scrollToAISection}
+          className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-accent-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:bg-[var(--color-accent-light)] transition-all duration-300 shadow-lg hover:shadow-xl"
+        >
+          <Sparkles className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
+          <span className="text-xs font-medium">나만의 AI</span>
+          <ArrowRight className="h-3 w-3" style={{ color: "var(--color-accent)" }} />
+        </button>
+      </motion.div>
 
       {/* Scroll indicator */}
       <div className="scroll-indicator">

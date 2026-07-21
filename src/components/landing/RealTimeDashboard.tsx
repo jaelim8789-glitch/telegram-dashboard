@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { DashboardPreview } from "./DashboardPreview";
+import Image from "next/image";
 
 export function RealTimeDashboard() {
   return (
@@ -21,18 +21,45 @@ export function RealTimeDashboard() {
         <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
       </div>
 
-      <div className="flex justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative rounded-xl shadow-2xl overflow-hidden border border-[var(--color-accent-border)] w-full max-w-5xl"
+          transition={{ duration: 0.6 }}
+          className="relative rounded-xl shadow-2xl overflow-hidden border border-[var(--color-accent-border)]"
           style={{
             background: "var(--color-card)",
           }}
         >
-          <DashboardPreview />
+          <Image
+            src="/landing/미래형 AI 자동화 대시보드.png"
+            alt="미래형 AI 자동화 대시보드"
+            width={600}
+            height={400}
+            className="w-full h-auto"
+            priority
+          />
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="relative rounded-xl shadow-2xl overflow-hidden border border-[var(--color-accent-border)]"
+          style={{
+            background: "var(--color-card)",
+          }}
+        >
+          <Image
+            src="/landing/프리미엄 대시보드 UI 디자인.png"
+            alt="프리미엄 대시보드 UI 디자인"
+            width={600}
+            height={400}
+            className="w-full h-auto"
+            priority
+          />
         </motion.div>
       </div>
     </div>
