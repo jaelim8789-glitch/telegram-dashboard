@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { LayoutDashboard, Send, Activity, Sparkles, Settings, Plus, ChevronLeft } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { LayoutDashboard, Send, Activity, Sparkles, Settings, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -24,15 +24,29 @@ function hasTabs(group: TabGroup): boolean {
 export function CategoryStrip() {
   const navView = useDashboardStore((s) => s.navView);
   const navCategory = useDashboardStore((s) => s.navCategory);
+  const navFeature = useDashboardStore((s) => s.navFeature);
+  const tabBadges = useDashboardStore((s) => s.tabBadges);
+  const accounts = useDashboardStore((s) => s.accounts);
   const navigateToChat = useDashboardStore((s) => s.navigateToChat);
   const navigateToCategory = useDashboardStore((s) => s.navigateToCategory);
   const navigateBack = useDashboardStore((s) => s.navigateBack);
   const haptics = useHapticFeedback();
 
+  const categoryBadges = useMemo(() => {
+    const badges: Partial<Record<TabGroup, number>> = {};
+    const sendBadge = tabBadges["send"];
+    if (sendBadge) badges.send = sendBadge;
+    const unhealthy = accounts.filter((a) => a.status !== "active").length;
+    if (unhealthy > 0) badges.ops = unhealthy;
+    return badges;
+  }, [tabBadges, accounts]);
+
   const categories = Object.keys(CATEGORY_META) as TabGroup[];
   const visibleCategories = categories.filter(hasTabs);
 
   const isDeep = navView === "category" || navView === "feature";
+  const featureTab = navFeature ? TABS.find((t) => t.id === navFeature) : null;
+  const categoryMeta = navCategory ? CATEGORY_META[navCategory] : null;
 
   const chatIndex = 0;
   const categoryStartIndex = 1;
@@ -72,15 +86,46 @@ export function CategoryStrip() {
       className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden"
       style={{ scrollbarWidth: "none" }}
     >
+      {/* ── Breadcrumb ── */}
       {isDeep && (
-        <button
-          type="button"
-          onClick={() => { haptics.light(); navigateBack(); }}
-          className="flex items-center justify-center h-8 w-8 rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors shrink-0 mr-0.5"
-          aria-label="뒤로 가기"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0 mr-1">
+          <button
+            type="button"
+            onClick={() => { haptics.light(); navigateBack(); }}
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors shrink-0"
+            aria-label="뒤로 가기"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {navView === "category" && categoryMeta ? (
+            <div className="flex items-center gap-0.5 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => { haptics.light(); navigateToChat(); }}
+                className="text-app-text-muted hover:text-app-primary hover:underline transition-colors"
+              >
+                AI
+              </button>
+              <ChevronRight className="h-3 w-3 text-app-text-subtle" />
+              <span className="font-semibold text-app-text">{categoryMeta.label}</span>
+            </div>
+          ) : navView === "feature" && categoryMeta && featureTab ? (
+            <div className="flex items-center gap-0.5 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => { haptics.light(); navigateToCategory(navCategory!); }}
+                className="text-app-text-muted hover:text-app-primary hover:underline transition-colors"
+              >
+                {categoryMeta.label}
+              </button>
+              <ChevronRight className="h-3 w-3 text-app-text-subtle" />
+              <span className="font-semibold text-app-text">{featureTab.shortLabel ?? featureTab.label}</span>
+            </div>
+          ) : null}
+
+          <div className="h-5 w-px bg-app-border/50 mx-1 shrink-0" aria-hidden="true" />
+        </div>
       )}
 
       <button
@@ -106,6 +151,7 @@ export function CategoryStrip() {
         const meta = CATEGORY_META[group];
         const Icon = CATEGORY_ICONS[group];
         const active = navView !== "chat" && navCategory === group;
+        const badge = categoryBadges[group];
         return (
           <button
             key={group}
@@ -113,7 +159,7 @@ export function CategoryStrip() {
             onClick={() => { haptics.light(); navigateToCategory(group); }}
             tabIndex={0}
             aria-current={active ? "page" : undefined}
-            aria-label={`${meta.label} 카테고리`}
+            aria-label={`${meta.label} 카테고리${badge ? `, ${badge}개 알림` : ""}`}
             className={cn(
               "focus-ring relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0",
               active
@@ -123,6 +169,11 @@ export function CategoryStrip() {
           >
             {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
             <span className="hidden sm:inline">{meta.label}</span>
+            {badge != null && badge > 0 && (
+              <span className="flex items-center justify-center rounded-full bg-app-danger px-1.5 h-4 min-w-[16px] text-[9px] font-bold leading-none text-white">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
             {active && (
               <motion.span
                 layoutId="category-active"
