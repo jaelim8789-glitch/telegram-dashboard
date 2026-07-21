@@ -46,7 +46,7 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
         onClick={sendHandler}
         disabled={!message.trim() || sending}
         style={{
-          backgroundColor: "var(--tg-theme-button-color, "#40a7e3"),
+          backgroundColor: "var(--tg-theme-button-color, #40a7e3)",
           color: "var(--tg-theme-button-text-color, #fff)",
         }}
         className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50 transition-opacity"

@@ -9,9 +9,8 @@ const config: SentryBuildOptions = {
   authToken: process.env.SENTRY_AUTH_TOKEN || "",
   silent: !process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
-  transpileClientSDK: true,
   tunnelRoute: "/monitoring",
-  hideSourceMaps: true,
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
   disableLogger: true,
   automaticVercelMonitors: true,
 };

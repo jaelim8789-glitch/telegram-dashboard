@@ -33,12 +33,12 @@ export function SendMonitorTab() {
     setPolling(true);
     try {
       const logs = await api.fetchLogs({ accountId: selectedAccountId || undefined, days: 1 });
-      const active = logs.filter((l) => l.status === "pending" || l.status === "running").slice(0, 10);
+      const active = logs.filter((l) => l.status === "sending").slice(0, 10);
       setStats({
         total: logs.length,
         sent: logs.filter((l) => l.status === "sent").length,
         failed: logs.filter((l) => l.status === "failed").length,
-        pending: logs.filter((l) => l.status === "pending" || l.status === "running").length,
+        pending: logs.filter((l) => l.status === "sending").length,
         activeBroadcasts: active.map((l) => ({ id: l.id, message: l.message.slice(0, 80), status: l.status, sentCount: l.recipients?.length ?? 0, createdAt: l.createdAt })),
       });
     } catch {}

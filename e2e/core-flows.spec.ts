@@ -38,7 +38,7 @@ test.describe("TeleMon E2E — 핵심 유저 플로우", () => {
     await page.goto(`${APP_URL}/app`);
 
     // 발송탭 진입
-    await page.click("text=발송").first();
+    await page.locator("text=발송").first().click();
     await page.waitForTimeout(2000);
 
     // 작성/히스토리 서브탭 확인
@@ -50,7 +50,7 @@ test.describe("TeleMon E2E — 핵심 유저 플로우", () => {
   test("그룹탭 — 그룹 목록 존재", async ({ page }) => {
     await page.goto(`${APP_URL}/app`);
 
-    await page.click("text=그룹").first();
+    await page.locator("text=그룹").first().click();
     await page.waitForTimeout(3000);
 
     // 검색창 또는 그룹 리스트 확인
