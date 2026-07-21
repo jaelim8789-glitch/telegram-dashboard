@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Bot, Sparkles, Copy, Check, Loader2, Send, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bot, Sparkles, Copy, Check, Loader2, Send, Users, Palette } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -19,6 +19,22 @@ export function AiBroadcastAssistantTab() {
   const [result, setResult] = useState<{ message: string; variant_a?: string; variant_b?: string; reasoning?: string } | null>(null);
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [styleProfileId, setStyleProfileId] = useState("");
+  const [styleProfiles, setStyleProfiles] = useState<{ id: string; name: string; style_prompt: string }[]>([]);
+
+  const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    fetch(`${BASE}/api/style-profiles`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((r) => r.json().catch(() => []))
+      .then((d) => setStyleProfiles(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   const generateMessage = async () => {
     if (!purpose.trim() || loading) return;
@@ -36,6 +52,9 @@ export function AiBroadcastAssistantTab() {
           tone,
           language,
           generate_ab_test: generateAbTest,
+          style_prompt: styleProfileId
+            ? styleProfiles.find((sp) => sp.id === styleProfileId)?.style_prompt || undefined
+            : undefined,
         }),
       });
 
@@ -115,6 +134,21 @@ export function AiBroadcastAssistantTab() {
                 <option value="promotional">프로모션</option>
               </select>
             </div>
+            {/* 스타일 프로필 */}
+            {styleProfiles.length > 0 && (
+              <div>
+                <label className="text-[11px] font-medium text-app-text-muted flex items-center gap-1">
+                  <Palette className="h-3 w-3 text-app-primary" /> 브랜드 스타일
+                </label>
+                <select value={styleProfileId} onChange={e => setStyleProfileId(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text focus:outline-none focus:border-app-primary">
+                  <option value="">기본 (스타일 없음)</option>
+                  {styleProfiles.map((sp) => (
+                    <option key={sp.id} value={sp.id}>{sp.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-[11px] font-medium text-app-text-muted">언어</label>
               <select value={language} onChange={e => setLanguage(e.target.value)}
