@@ -1,0 +1,21 @@
+set -e
+
+echo "🔍 [pre-commit] 실행 중..."
+
+# 1. TypeScript 타입 체크
+echo "📦 [tsc --noEmit] ..."
+npx tsc --noEmit 2>&1 || {
+  echo "❌ [tsc --noEmit] 타입 오류가 있습니다. 커밋이 차단되었습니다."
+  exit 1
+}
+echo "✅ [tsc --noEmit] 통과"
+
+# 2. Next.js lint (staged files)
+echo "🧹 [lint-staged] ..."
+npx lint-staged 2>&1 || {
+  echo "❌ [lint-staged] 린트 오류가 있습니다. 커밋이 차단되었습니다."
+  exit 1
+}
+echo "✅ [lint-staged] 통과"
+
+echo "🎉 [pre-commit] 모든 검사 통과 — 커밋 진행합니다."
