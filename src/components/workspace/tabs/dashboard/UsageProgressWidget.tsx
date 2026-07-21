@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { MessageSquare, Bot, Users, Sparkles, Zap } from "lucide-react";
+import Link from "next/link";
+import { MessageSquare, Bot, Users, Sparkles, Zap, AlertTriangle, Info } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/cn";

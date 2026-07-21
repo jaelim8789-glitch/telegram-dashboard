@@ -19,6 +19,7 @@ interface GroupSelectCardProps {
   onToggleSelect: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onAddTag: (id: string) => void;
+  disabled?: boolean;
 }
 
 export const GroupSelectCard = memo(function GroupSelectCard({

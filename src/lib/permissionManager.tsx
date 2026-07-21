@@ -65,9 +65,9 @@ class PermissionManager {
 
   // 권한 검증 후 실행
   async withPermission<T>(
-    permission: Permission, 
-    accountId?: string, 
-    action: () => Promise<T>
+    permission: Permission,
+    action: () => Promise<T>,
+    accountId?: string
   ): Promise<T> {
     if (!this.hasPermission(permission, accountId)) {
       throw new Error(`권한이 없습니다: ${permission}`);

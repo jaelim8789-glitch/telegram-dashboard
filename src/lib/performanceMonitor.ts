@@ -161,7 +161,10 @@ class PerformanceMonitor {
       averageLoadTime: loadTimes.length > 0 ? loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length : 0,
       averageApiTime: apiTimes.length > 0 ? apiTimes.reduce((a, b) => a + b, 0) / apiTimes.length : 0,
       averageRenderTime: renderTimes.length > 0 ? renderTimes.reduce((a, b) => a + b, 0) / renderTimes.length : 0,
-      memoryUsage: performance.memory ? performance.memory.usedJSHeapSize / 1024 / 1024 : 0, // MB
+      memoryUsage: (() => {
+        const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+        return mem ? mem.usedJSHeapSize / 1024 / 1024 : 0; // MB — non-standard Chrome-only API
+      })(),
       fps: 60 // 실제 FPS는 별도로 측정 필요
     };
   }
