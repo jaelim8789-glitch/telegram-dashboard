@@ -15,7 +15,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
-import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary } from "@/types";
+import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary, TeleMonMemorySnapshot } from "@/types";
 import { isRecurringActive, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
 import { DailyDigest } from "@/components/workspace/tabs/dashboard/DailyDigest";
@@ -137,6 +137,7 @@ export function DashboardTab() {
   const [recurring, setRecurring] = useState<Broadcast[]>([]);
   const recurringPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overview, setOverview] = useState<DeliveryOverview | null>(null);
+  const [telemonMemory, setTelemonMemory] = useState<TeleMonMemorySnapshot | null>(null);
   const plan = useDashboardStore((s) => s.plan);
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
 
@@ -354,10 +355,15 @@ export function DashboardTab() {
     catch { setHealthItems([]); markError("health", true); }
   };
 
+  const loadTeleMonMemory = async () => {
+    try { setTelemonMemory(await api.fetchTeleMonMemorySnapshot()); markError("telemonMemory", false); }
+    catch { setTelemonMemory(null); markError("telemonMemory", true); }
+  };
+
   const loadAll = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()]);
+      await Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth(), loadTeleMonMemory()]);
     } finally {
       setRefreshing(false);
     }
@@ -365,7 +371,7 @@ export function DashboardTab() {
 
   useEffect(() => {
     setDataLoading(true);
-    Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth()])
+    Promise.all([fetchAccounts(), loadLogs(), loadUpcoming(), loadRecurring(), loadOverview(), loadHealth(), loadTeleMonMemory()])
       .finally(() => setDataLoading(false));
   }, [fetchAccounts]);
 
@@ -433,6 +439,8 @@ export function DashboardTab() {
   [accounts, logs, healthItems]);
 
   const summary = overview?.summary;
+  const memoryPeriods = telemonMemory?.periods;
+  const memoryTopPosts = telemonMemory?.top_posts ?? [];
 
   const totalAttention = healthCritical.length + healthWarning.length + erroredRecurring.length + pausedRecurring.length + nonRetryableFailures.length;
 
@@ -533,6 +541,76 @@ export function DashboardTab() {
           <DailyDigest accounts={accounts} logs={logs} />
         )}
       </div>
+
+      <section className="rounded-2xl border border-app-border bg-app-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-app-text">
+              <Sparkles className="h-4 w-4 text-app-primary" aria-hidden="true" />
+              TeleMon AI Memory
+            </div>
+            <p className="mt-1 text-[11px] text-app-text-muted">
+              AI가 참고하는 이번달, 지난주, 작년 성과와 반응 좋은 글입니다.
+            </p>
+          </div>
+          <div className="text-[11px] text-app-text-subtle">
+            {telemonMemory?.generated_at ? `${formatRelativeTime(telemonMemory.generated_at)} 업데이트` : "데이터 준비 중"}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {[
+            { label: "이번달", value: memoryPeriods?.this_month },
+            { label: "지난주", value: memoryPeriods?.last_week },
+            { label: "작년", value: memoryPeriods?.last_year },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-app-border bg-app-bg p-3">
+              <div className="text-[11px] font-medium text-app-text-muted">{item.label}</div>
+              <div className="mt-2 text-lg font-bold tabular-nums text-app-text">{item.value?.attempted ?? 0}</div>
+              <div className="text-[11px] text-app-text-subtle">발송 시도</div>
+              <div className="mt-2 flex items-center justify-between text-[11px]">
+                <span className="text-app-text-muted">성공</span>
+                <span className="font-medium text-app-text">{item.value?.successful ?? 0}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[11px]">
+                <span className="text-app-text-muted">성공률</span>
+                <span className="font-medium text-app-primary">{item.value?.success_rate ?? 0}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-app-border bg-app-bg p-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-app-text">
+            <TrendingUp className="h-4 w-4 text-app-success" aria-hidden="true" />
+            반응 좋았던 글 TOP 3
+          </div>
+          {memoryTopPosts.length === 0 ? (
+            <p className="mt-3 text-xs text-app-text-muted">아직 참고할 고성과 발송 데이터가 부족합니다. 최근 180일 내 시도 3건 이상인 브로드캐스트부터 메모리에 쌓입니다.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {memoryTopPosts.map((post, index) => (
+                <div key={post.broadcast_id} className="rounded-lg border border-app-border/80 bg-app-card px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 text-[11px] text-app-text-muted">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-app-primary/10 font-semibold text-app-primary">{index + 1}</span>
+                        <span>시도 {post.attempted}건</span>
+                        <span>성공 {post.successful}건</span>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-app-text">{post.message_preview}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-sm font-bold text-app-success">{post.success_rate}%</div>
+                      <div className="text-[10px] text-app-text-subtle">성공률</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ── Real-time Metrics Row ──────────────── */}
       <div key="realtimeMetrics" style={{ order: widgetIdx("realtimeMetrics") }}>
