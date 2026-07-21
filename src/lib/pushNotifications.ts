@@ -15,7 +15,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlB64ToUint8(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""),
+    applicationServerKey: urlB64ToUint8(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "") as BufferSource,
   });
   await fetch("/api/push/subscribe", {
     method: "POST",

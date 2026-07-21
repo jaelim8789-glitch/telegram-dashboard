@@ -190,9 +190,9 @@ export function ProfileTab() {
     setDeactivateOpen(true);
   }, []);
 
-  const triggerDeactivate = useCallback((acc: Account) => {
-    setDeactivateAccountId(acc.id);
-    setDeactivateOpen(true);
+  const triggerResetSession = useCallback((acc: Account) => {
+    setResetSessionAccountId(acc.id);
+    setResetSessionOpen(true);
   }, []);
 
   // ── Empty state ──
