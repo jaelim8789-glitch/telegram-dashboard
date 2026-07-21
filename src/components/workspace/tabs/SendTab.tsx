@@ -188,7 +188,7 @@ export function SendTab() {
 
   // ── Send Groups (folders from the Groups page) ──
   const [sendFolders, setSendFolders] = useState<GroupFolder[]>([]);
-  const [telegramFolders, setTelegramFolders] = useState<{ id: string; title: string; groupIds: string[] }>([]);
+  const [telegramFolders, setTelegramFolders] = useState<{ id: string; title: string; groupIds: string[] }[]>([]);
 
   useEffect(() => {
     if (!selectedAccountId) { setSendFolders([]); setTelegramFolders([]); return; }
