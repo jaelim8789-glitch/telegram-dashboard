@@ -86,6 +86,12 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
           className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-app-primary"
         />
       )}
+      {mobile && (
+        <span className={cn(
+          "absolute inset-0 rounded-lg transition-colors duration-100",
+          active ? "bg-app-primary/10" : ""
+        )} />
+      )}
     </button>
   );
 }
@@ -265,9 +271,9 @@ export function TabBar() {
           <div key={group.label}>
             {i > 0 && <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />}
             <div role="group" aria-label={group.label} className="flex items-center gap-0.5">
-              {group.tabs.map((tab) => (
-                <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => setActiveTab(tab.id)} badge={tabBadges[tab.id]} />
-              ))}
+            {group.tabs.map((tab) => (
+                  <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => { haptics.light(); setActiveTab(tab.id); }} badge={tabBadges[tab.id]} />
+                ))}
             </div>
           </div>
         ))}
