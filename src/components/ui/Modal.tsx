@@ -127,10 +127,10 @@ export function Modal({
             aria-labelledby={title ? titleId : undefined}
             aria-describedby={description ? descId : undefined}
             tabIndex={-1}
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", stiffness: 450, damping: 30, mass: 0.9 }}
             className={cn(
               "relative flex max-h-[85dvh] w-full flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl",
               "scrollbar-thin",

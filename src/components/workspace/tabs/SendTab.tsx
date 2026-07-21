@@ -259,7 +259,7 @@ export function SendTab() {
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
-  const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk" | "reply">("normal");
+  const [deliveryMode, setDeliveryMode] = useState<"normal" | "bulk" | "replyMacro">("normal");
   const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
   const [dragOver, setDragOver] = useState(false);
   const [dragError, setDragError] = useState<string | null>(null);
@@ -267,6 +267,10 @@ export function SendTab() {
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
   const [dedupeReply, setDedupeReply] = useState(false);
+  const [replyMacroActive, setReplyMacroActive] = useState(false);
+  const [replyMacroMessage, setReplyMacroMessage] = useState("");
+  const [replyMacroLoading, setReplyMacroLoading] = useState(false);
+  const [replyMacroSaving, setReplyMacroSaving] = useState(false);
   const [autoRetry, setAutoRetry] = useState(false);
   const [autoRetryCount, setAutoRetryCount] = useState(3);
   const [autoRetryInterval, setAutoRetryInterval] = useState(5);
@@ -399,7 +403,7 @@ export function SendTab() {
         const est = await api.fetchBroadcastEstimate({
           accountId: selectedAccountId,
           recipientCount: selectedRecipientIds.length,
-          deliveryMode: deliveryMode === "reply" ? "normal" : deliveryMode,
+          deliveryMode: deliveryMode === "replyMacro" ? "normal" : deliveryMode,
           delaySeconds: normalDelaySeconds,
         });
         setEstimatePreview(est);
@@ -894,8 +898,8 @@ export function SendTab() {
     setSubmitNotice(null);
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
-      // 답장 모드가 활성화되면 delivery_mode를 "reply"로 설정
-      const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim() ? "reply" : deliveryMode;
+      // 답장 모드가 활성화되면 delivery_mode를 "replyMacro"로 설정
+      const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim() ? "replyMacro" : deliveryMode;
       // Use send-to-group API when sending to groups (no manual recipients)
       const created = await api.createBroadcast({
         accountId: selectedAccountId,
@@ -920,7 +924,7 @@ export function SendTab() {
       if (replyMacroEnabled && dedupeReply && replyToMessageId.trim() && selectedAccountId) {
         addToReplyDedupeSet(selectedAccountId, replyToMessageId.trim(), effectiveRecipients);
       }
-      const modeLabel = deliveryMode === "cycle" ? "사이클 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
+      const modeLabel = deliveryMode === "replyMacro" ? "답장매크로 발송" : deliveryMode === "bulk" ? "전체 즉시 발송" : "발송";
       if (created.distributionBatchId) {
         setDistributionBatchId(created.distributionBatchId);
         void loadDistributionStatus(created.distributionBatchId);
@@ -1069,6 +1073,59 @@ export function SendTab() {
   const tone = useMemo(() => analyzeTone(message), [message]);
   const viral = useMemo(() => computeViralScore(message), [message]);
 
+  // ── 답장매크로 (랜덤리플라이) 토글 연동 ──
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
+  function authHeaders(): Record<string, string> {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }
+
+  useEffect(() => {
+    if (!selectedAccountId) return;
+    setReplyMacroLoading(true);
+    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
+      headers: authHeaders(),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setReplyMacroActive(!!data.is_active);
+        setReplyMacroMessage(data.message_content || "");
+      })
+      .catch(() => {})
+      .finally(() => setReplyMacroLoading(false));
+  }, [selectedAccountId]);
+
+  async function saveReplyMacroToggle(nextActive: boolean) {
+    if (!selectedAccountId || replyMacroSaving) return;
+    setReplyMacroSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ is_active: nextActive, message_content: replyMacroMessage }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", data.detail || "저장 실패");
+        return;
+      }
+      setReplyMacroActive(!!data.is_active);
+      if (data.is_active) {
+        toast("success", "랜덤 답장 켜짐 — 모든 그룹에 자동으로 나갑니다");
+      } else {
+        toast("success", "랜덤 답장 꺼짐");
+      }
+    } catch {
+      toast("error", "네트워크 오류");
+    } finally {
+      setReplyMacroSaving(false);
+    }
+  }
+
   if (!account) {
     return (
       <Panel title="메시지 작성" description="발송을 시작하려면 계정을 선택하세요.">
@@ -1077,7 +1134,6 @@ export function SendTab() {
     );
   }
 
-  const cycleMinutes = selectedRecipientIds.length; // N개 방 = N분 사이클
   const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
@@ -1852,12 +1908,55 @@ export function SendTab() {
                       )}
                     </div>
                   </label>
-                  <label className="flex items-start gap-2.5 rounded-lg border border-app-border/60 bg-app-bg/30 p-2.5 cursor-pointer hover:border-app-primary/40 transition-colors">
-                    <input type="radio" name="deliveryMode" value="cycle" checked={deliveryMode === "cycle"}
-                      onChange={() => setDeliveryMode("cycle")} className="mt-0.5" />
-                    <div>
-                      <div className="text-sm font-medium text-app-text">사이클 발송</div>
-                      <div className="text-xs text-app-text-muted">방마다 {cycleMinutes}분 주기로 순차 자동 전송 (총 {cycleMinutes}분 소요)</div>
+                  <label className="flex items-start gap-2.5 rounded-lg border border-app-info/30 bg-app-info-muted/5 p-2.5 cursor-pointer hover:border-app-info/60 transition-colors">
+                    <input type="radio" name="deliveryMode" value="replyMacro" checked={deliveryMode === "replyMacro"}
+                      onChange={() => setDeliveryMode("replyMacro")} className="mt-0.5" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-app-text">답장매크로</div>
+                        <Badge tone="info" className="text-[9px] px-1.5 py-0">자동</Badge>
+                      </div>
+                      <div className="text-xs text-app-text-muted">랜덤리플라이 — 켜면 모든 그룹에서 무작위 대상에게 자동 답장</div>
+                      {deliveryMode === "replyMacro" && (
+                        <div className="mt-2 rounded-lg border border-app-border/60 bg-app-card/60 p-2.5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs font-medium text-app-text">{replyMacroActive ? "켜짐 — 자동 실행 중" : "꺼짐"}</div>
+                              {replyMacroActive && <div className="text-[10px] text-app-text-subtle mt-0.5">이 계정의 모든 그룹에 자동 답장이 활성화됩니다</div>}
+                            </div>
+                            <Button
+                              type="button"
+                              variant={replyMacroActive ? "secondary" : "primary"}
+                              size="sm"
+                              loading={replyMacroSaving}
+                              disabled={replyMacroSaving || (!replyMacroActive && !replyMacroMessage.trim())}
+                              onClick={(e) => { e.stopPropagation(); saveReplyMacroToggle(!replyMacroActive); }}
+                            >
+                              {replyMacroActive ? "끄기" : "켜기"}
+                            </Button>
+                          </div>
+                          <textarea
+                            value={replyMacroMessage}
+                            onChange={(e) => setReplyMacroMessage(e.target.value)}
+                            placeholder="답장으로 보낼 메시지를 입력하세요"
+                            rows={3}
+                            disabled={replyMacroSaving}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-2 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs outline-none focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 resize-none"
+                          />
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              id="dedupeReplyMacro"
+                              checked={dedupeReply}
+                              onChange={(e) => setDedupeReply(e.target.checked)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-3.5 w-3.5 rounded border-app-border"
+                            />
+                            <label htmlFor="dedupeReplyMacro" className="text-[10px] text-app-text-muted cursor-pointer select-none">중복 수신자 제외</label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </label>
                   <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">

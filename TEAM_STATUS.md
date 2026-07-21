@@ -19,3 +19,4 @@
 | 템플릿 탭 카테고리 기능 정상 작동 개선 + 발송 화면 간격 슬라이더 조건부 표시 | Qoder | 커밋완료 | TemplateTab.tsx, SendTab.tsx | 카테고리 분류/필터 기능 개선 및 발송 간격 슬라이더 조건부 표시로 혼동 방지 |
 | API 등록 시 계정 여러 개 등록 가능하도록 제한 조정 | Qoder | 커밋완료 | plans.py, deps.py | Free 요금제의 max_accounts 제한 조정 및 API 키 등록 시 계정 등록 가능하도록 수정 |
 | 모바일 UI/UX 명품스타일 고도화 (Top 5 + TS 오류 수정) | Buffy | 커밋완료 | 615d28e | PullToRefresh/ BottomSheet/ useVisualViewport/ TabBar/ globals.css 고도화, TS오류 3건 수정 |
+| 모바일 UI/UX Top 5 추가 개선 (바텀시트프리미엄/햅틱확장/폼최적화/공유확장/ReducedMotion) | Buffy | 커밋완료 | 50854c3 | BottomSheet premium화, HapticFeedback 5패턴추가, Input모바일최적화, useWebShare파일공유, html-to-image설치 |
