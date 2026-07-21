@@ -14,6 +14,7 @@ import { useNetworkQuality } from "@/hooks/useNetworkQuality";
 import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
+import { PinnedKpiBar } from "@/components/ui/PinnedKpiBar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
 import { Loader2, WifiOff } from "lucide-react";
@@ -25,6 +26,7 @@ import { useBatterySaver } from "@/hooks/useBatterySaver";
 import { useAutoNightMode } from "@/hooks/useAutoNightMode";
 import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
+import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
   ssr: false,
@@ -231,6 +233,7 @@ export function Workspace() {
   const [confetti, setConfetti] = useState(false);
   useWakeLock();
   const netQuality = useNetworkQuality();
+  const dashboardSwitchProfile = useDashboardStore((s) => s.dashboardSwitchProfile);
 
   // Init push notifications + app badge + native bridge
   useEffect(() => {
@@ -315,7 +318,7 @@ export function Workspace() {
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* ── Network offline strip ── */}
         <AnimatePresence>
           {!online && (
@@ -354,6 +357,8 @@ export function Workspace() {
         <AppRatingPrompt />
 
         <CategoryStrip />
+
+        {isMobile && <PinnedKpiBar />}
 
         <div
           ref={scrollRef}
