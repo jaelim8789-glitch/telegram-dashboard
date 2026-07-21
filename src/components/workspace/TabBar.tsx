@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
   CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
+  Share2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
@@ -42,6 +43,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   aioperations: BarChart3,
   aiopscenter: Bot,
   aiusage: BarChart3,
+  referral: Share2,
 };
 
 // 모바일 하단 핵심 탭

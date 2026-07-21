@@ -43,9 +43,9 @@ export function predictMemberChurn(
     }
 
     const score = Math.max(0, Math.min(100, penalty));
-    const riskLevel = score >= 50 ? "high" : score >= 25 ? "medium" : "low";
+    const riskLevel: ChurnPrediction["riskLevel"] = score >= 50 ? "high" : score >= 25 ? "medium" : "low";
 
-    const retentionTips: Record<string, string> = {
+    const retentionTips: Record<ChurnPrediction["riskLevel"], string> = {
       high: "멘션하여 개인 메시지를 보내보세요. '@사용자님, 요즘 어떻게 지내세요?'",
       medium: "그룹 활동에 초대하거나 관련 콘텐츠를 공유해보세요.",
       low: "정상 활동 멤버입니다. 현재 상태를 유지하세요.",

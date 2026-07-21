@@ -60,6 +60,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   stars: dynamic(() => import("@/components/workspace/tabs/StarsTab"), { loading: TabFallback }),
   apikeys: dynamic(() => import("@/components/workspace/tabs/ApiKeyManagerTab").then(m => ({ default: m.ApiKeyManagerTab })), { loading: TabFallback }),
   audit: dynamic(() => import("@/components/workspace/tabs/ActivityAuditTab").then(m => ({ default: m.ActivityAuditTab })), { loading: TabFallback }),
+  referral: dynamic(() => import("@/components/workspace/tabs/ReferralTab").then(m => ({ default: m.ReferralTab })), { loading: TabFallback }),
 };
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
