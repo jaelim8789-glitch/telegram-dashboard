@@ -20,8 +20,9 @@ const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = 
 export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-2 pt-2" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}
+      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-2 pt-2"
       style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
         backgroundColor: "var(--tg-theme-bg-color, #17212b)",
         borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
       }}
