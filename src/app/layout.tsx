@@ -7,6 +7,7 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
 import { BiometricLock } from "@/components/ui/BiometricLock";
+import LiveChat from "@/components/LiveChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,6 +52,7 @@ export default function RootLayout({
           <PwaInstallPrompt />
           <ToastProvider>{children}</ToastProvider>
         </BiometricLock>
+        <LiveChat />
       </body>
     </html>
   );
