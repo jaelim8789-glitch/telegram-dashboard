@@ -181,24 +181,31 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
 function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
   const [phoneInput, setPhoneInput] = useState("");
   const [amount, setAmount] = useState(1000);
+  const [memo, setMemo] = useState("관리자 수동 충전");
   const [toppingUp, setToppingUp] = useState(false);
   const [done, setDone] = useState(false);
+  const [resultText, setResultText] = useState<string | null>(null);
   const { toast } = useToast();
 
   async function handleTopUp() {
     if (!phoneInput.trim() || toppingUp) return;
     setToppingUp(true);
-    // Optimistically update localStorage (server sync via backend API later)
+    setResultText(null);
     try {
-      const key = "telemon_tokens_admin_topup";
-      const log: { phone: string; amount: number; time: string }[] = JSON.parse(localStorage.getItem(key) || "[]");
-      log.push({ phone: phoneInput, amount, time: new Date().toISOString() });
-      localStorage.setItem(key, JSON.stringify(log));
+      const lookup = await api.adminUserLookup(phoneInput.trim());
+      if (!lookup?.userId) {
+        toast("error", "해당 전화번호 사용자를 찾을 수 없습니다.");
+        return;
+      }
+      const result = await api.adminTopUpTokens(lookup.userId, amount, memo.trim() || undefined);
       setDone(true);
+      setResultText(`충전 완료: 새 잔액 ${result.newBalance.toLocaleString()} 토큰`);
       setPhoneInput("");
-      toast("success", `${phoneInput}에 ${amount.toLocaleString()}토큰 충전 완료`);
+      toast("success", `${lookup.phone ?? "사용자"}에 ${amount.toLocaleString()}토큰 충전 완료`);
       onTopUp();
-    } catch { toast("error", "충전 실패"); }
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "충전 실패");
+    }
     finally { setToppingUp(false); }
   }
 
@@ -212,6 +219,9 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
         <div className="flex-1 min-w-[180px]">
           <Input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="전화번호" className="font-mono" />
         </div>
+        <div className="min-w-[180px]">
+          <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="사유 메모" />
+        </div>
         <select value={amount} onChange={(e) => setAmount(Number(e.target.value))}
           className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-xs text-app-text outline-none">
           <option value={100}>100</option>
@@ -224,7 +234,7 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
           <Zap className="h-3.5 w-3.5" /> 충전
         </Button>
       </div>
-      {done && <p className="mt-2 text-xs text-app-success">✅ 충전 내역이 기록되었습니다. 서버 API 연동 시 실제 적용됩니다.</p>}
+      {done && <p className="mt-2 text-xs text-app-success">✅ {resultText ?? "충전 완료"}</p>}
     </Panel>
   );
 }
@@ -250,6 +260,10 @@ function UsersContent() {
   const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [billingPlan, setBillingPlan] = useState<"keep" | "free" | "pro" | "team">("keep");
+  const [billingSubscription, setBillingSubscription] = useState<"keep" | "active" | "inactive" | "pending" | "past_due" | "canceled">("keep");
+  const [extendTrialDays, setExtendTrialDays] = useState<number>(7);
+  const [billingLoading, setBillingLoading] = useState(false);
   const [filters, setFilters] = useState<UserFilterState>({
     search: "",
     plan: "all",
@@ -267,6 +281,13 @@ function UsersContent() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!selectedUser) return;
+    setBillingPlan("keep");
+    setBillingSubscription("keep");
+    setExtendTrialDays(7);
+  }, [selectedUser?.id]);
 
   useEffect(() => {
     try {
@@ -388,6 +409,35 @@ function UsersContent() {
       await api.toggleUser(u.id, !u.isActive);
       await load();
     } catch { setError("상태 변경 실패"); }
+  }
+
+  async function refreshUsersAndSelection(userId: string) {
+    const next = await api.fetchUsers();
+    setUsers(next);
+    const refreshed = next.find((u) => u.id === userId) ?? null;
+    setSelectedUser(refreshed);
+  }
+
+  async function handleBillingUpdate() {
+    if (!selectedUser || billingLoading) return;
+    const payload: api.AdminBillingUpdateInput = {};
+    if (billingPlan !== "keep") payload.plan = billingPlan;
+    if (billingSubscription !== "keep") payload.subscriptionStatus = billingSubscription;
+    if (extendTrialDays > 0) payload.extendTrialDays = extendTrialDays;
+    if (!payload.plan && !payload.subscriptionStatus && !payload.extendTrialDays) {
+      setError("변경할 결제/플랜 항목을 선택해주세요.");
+      return;
+    }
+    setBillingLoading(true);
+    setError(null);
+    try {
+      await api.adminUpdateUserBilling(selectedUser.id, payload);
+      await refreshUsersAndSelection(selectedUser.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "결제/플랜 업데이트 실패");
+    } finally {
+      setBillingLoading(false);
+    }
   }
 
   function getRiskLevel(u: DashboardUser): "normal" | "warning" | "high" {
@@ -680,6 +730,35 @@ function UsersContent() {
                   {selectedUser.isActive ? "비활성화" : "활성화"}
                 </Button>
                 <Button variant="secondary" onClick={() => handleReissue(selectedUser)}>API 키 재발급</Button>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                <p className="text-sm font-semibold text-app-text">결제/플랜 운영</p>
+                <div className="mt-2 grid grid-cols-1 gap-2">
+                  <Select value={billingPlan} onChange={(e) => setBillingPlan(e.target.value as typeof billingPlan)}>
+                    <option value="keep">플랜 변경 안함</option>
+                    <option value="free">무료로 변경</option>
+                    <option value="pro">프로로 변경</option>
+                    <option value="team">팀으로 변경</option>
+                  </Select>
+                  <Select value={billingSubscription} onChange={(e) => setBillingSubscription(e.target.value as typeof billingSubscription)}>
+                    <option value="keep">구독상태 변경 안함</option>
+                    <option value="active">active</option>
+                    <option value="inactive">inactive</option>
+                    <option value="pending">pending</option>
+                    <option value="past_due">past_due</option>
+                    <option value="canceled">canceled</option>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={extendTrialDays}
+                    onChange={(e) => setExtendTrialDays(Number(e.target.value || 0))}
+                    placeholder="트라이얼 연장 일수"
+                  />
+                  <Button onClick={handleBillingUpdate} loading={billingLoading} disabled={billingLoading}>결제/플랜 반영</Button>
+                </div>
               </div>
             </div>
           </div>
