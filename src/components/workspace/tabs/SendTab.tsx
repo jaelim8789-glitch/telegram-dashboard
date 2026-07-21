@@ -121,7 +121,6 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
   balanced: "균형",
   fast: "속도 우선",
 };
-};
 
 
 
@@ -909,7 +908,6 @@ export function SendTab() {
       setBatchSize(10);
       setAutoRetry(false);
     }
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -1113,6 +1111,16 @@ export function SendTab() {
   const tone = useMemo(() => analyzeTone(message), [message]);
   const viral = useMemo(() => computeViralScore(message), [message]);
 
+  // 재시도로 살아날 가능성이 있는 실패 항목(네트워크/속도제한류)만 골라 일괄 선택할 수 있게 함
+  const recoverableFailedIds = useMemo(
+    () => history
+      .filter((b) => b.status === "failed" && b.failureInfo?.retryable === "retryable")
+      .map((b) => b.id),
+    [history],
+  );
+
+  const bottleneckHints = riskAnalysis.recommendations;
+
   // ── 답장매크로 (랜덤리플라이) 토글 연동 ──
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -1130,15 +1138,6 @@ export function SendTab() {
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
       headers: authHeaders(),
     })
-        }
-        function handleSelectRecoverableFailures() {
-          if (recoverableFailedIds.length === 0) {
-            toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
-            return;
-          }
-          setSelectedHistoryIds(new Set(recoverableFailedIds));
-          toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
-        }
       .then((r) => r.json())
       .then((data) => {
         setReplyMacroActive(!!data.is_active);
@@ -1147,6 +1146,15 @@ export function SendTab() {
       .catch(() => {})
       .finally(() => setReplyMacroLoading(false));
   }, [selectedAccountId]);
+
+  function handleSelectRecoverableFailures() {
+    if (recoverableFailedIds.length === 0) {
+      toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
+      return;
+    }
+    setSelectedHistoryIds(new Set(recoverableFailedIds));
+    toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
+  }
 
   async function saveReplyMacroToggle(nextActive: boolean) {
     if (!selectedAccountId || replyMacroSaving) return;
@@ -2122,23 +2130,25 @@ export function SendTab() {
           }
           description={`대상이 많아 계정 ${distributionSiblings.length}개에 나눠서 보냈습니다`}
           action={
-                        {recoverableFailedIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleSelectRecoverableFailures}
-                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-warning hover:bg-app-warning-muted transition-colors"
-                          >
-                            <FileWarning className="h-3.5 w-3.5" />
-                            복구형 실패 선택 {recoverableFailedIds.length}개
-                          </button>
-                        )}
-            <button
-              onClick={() => loadDistributionStatus(distributionBatchId)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              새로고침
-            </button>
+            <>
+              {recoverableFailedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectRecoverableFailures}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-warning hover:bg-app-warning-muted transition-colors"
+                >
+                  <FileWarning className="h-3.5 w-3.5" />
+                  복구형 실패 선택 {recoverableFailedIds.length}개
+                </button>
+              )}
+              <button
+                onClick={() => loadDistributionStatus(distributionBatchId)}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                새로고침
+              </button>
+            </>
           }
         >
           <div className="space-y-2">
