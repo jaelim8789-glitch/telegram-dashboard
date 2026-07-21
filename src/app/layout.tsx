@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
@@ -6,6 +7,8 @@ import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import { PwaRegister } from "@/components/PwaRegister";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import "./globals.css";
+
+const SplashScreen = dynamic(() => import("@/components/ui/SplashScreen").then(m => ({ default: m.SplashScreen })), { ssr: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://telemon.online"),
@@ -41,6 +44,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
+        <SplashScreen />
         <RuntimeInitializer />
         <CommandPaletteProvider />
         <PwaRegister />

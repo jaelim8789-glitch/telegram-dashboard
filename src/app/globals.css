@@ -1011,3 +1011,59 @@ body.modal-open {
 .card-3d-hover:hover {
   transform: perspective(800px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-4px);
 }
+
+/* ── Responsive table → card on mobile ── */
+@media (max-width: 640px) {
+  .responsive-table table,
+  .responsive-table thead,
+  .responsive-table tbody,
+  .responsive-table th,
+  .responsive-table td,
+  .responsive-table tr {
+    display: block;
+  }
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table tr.table-row-card {
+    border: 1px solid var(--color-app-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: var(--color-app-card);
+  }
+  .responsive-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0;
+    border: none;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-app-text-muted);
+    flex-shrink: 0;
+    margin-right: 1rem;
+  }
+}
+
+/* ── Min touch target (44px WCAG) ── */
+@media (hover: none) and (pointer: coarse) {
+  .touch-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Force min 44px on all interactive elements on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  button, a, select, textarea, input[type="button"],
+  input[type="submit"], input[type="reset"], [role="button"] {
+    min-height: 44px;
+  }
+  button, a, [role="button"] {
+    min-width: 44px;
+  }
+}

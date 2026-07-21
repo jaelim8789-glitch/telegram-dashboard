@@ -46,6 +46,13 @@ export function PublicLayoutClient({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { t } = useTranslation();
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -73,8 +80,14 @@ export function PublicLayoutClient({
       <GoldCursor />
       <ScrollProgress />
 
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-glass-bg)] backdrop-blur-2xl border-b border-[var(--color-accent-border)] satin-overlay">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-12">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 bg-[var(--color-glass-bg)] backdrop-blur-2xl border-b border-[var(--color-accent-border)] satin-overlay transition-all duration-300 ${
+          scrolled ? "shadow-sm" : ""
+        }`}
+      >
+        <div className={`mx-auto flex max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-12 transition-all duration-300 ${
+          scrolled ? "h-12" : "h-16"
+        }`}>
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="flex h-9 w-9 items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] text-xs font-bold tracking-wider shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[var(--color-accent-glow)]">
               TM

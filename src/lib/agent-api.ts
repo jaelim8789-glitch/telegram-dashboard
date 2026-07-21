@@ -33,6 +33,14 @@ export interface AgentMessage {
   createdAt: string;
 }
 
+export interface ToolConfirmation {
+  tool_name: string;
+  label: string;
+  arguments: Record<string, unknown>;
+  tc_id: string;
+}
+
+
 export interface CreateAgentInput {
   name: string;
   role: string;
@@ -159,6 +167,17 @@ export async function deleteChat(chatId: string): Promise<void> {
 export async function fetchChatMessages(chatId: string): Promise<AgentMessage[]> {
   const list = await request<ApiAgentMessage[]>(`/api/ai/chats/${chatId}/messages`);
   return list.map(toMessage);
+}
+
+export async function confirmTool(
+  chatId: string,
+  toolName: string,
+  arguments_: Record<string, unknown>
+): Promise<{ status: string; tool: string; result: unknown }> {
+  return request(`/api/ai/chats/${chatId}/confirm-tool`, {
+    method: "POST",
+    body: JSON.stringify({ tool_name: toolName, arguments: arguments_ }),
+  });
 }
 
 export async function sendChatMessage(
