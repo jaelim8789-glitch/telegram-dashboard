@@ -7,6 +7,7 @@ import {
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
@@ -182,15 +183,7 @@ export function TabBar() {
                 mobile
               />
             ))}
-            <button
-              type="button"
-              onClick={() => setMoreOpen(!moreOpen)}
-              className="flex flex-col items-center gap-0.5 flex-1 py-1.5 text-app-text-muted"
-              aria-label="더보기"
-            >
-              <MoreHorizontal className="h-5 w-5" />
-              <span className="text-[10px] leading-none">더보기</span>
-            </button>
+            <QuickActionSheet />
           </div>
         </nav>
 

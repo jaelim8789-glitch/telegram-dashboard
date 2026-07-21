@@ -49,6 +49,8 @@ const TOAST_STYLES: Record<ToastType, string> = {
   loading: "border-app-primary/30 bg-app-primary-muted text-app-primary",
 };
 
+
+
 const TOAST_VARIANTS = {
   initial: { opacity: 0, x: 80, scale: 0.92 },
   animate: {
@@ -112,8 +114,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 animate="animate"
                 exit="exit"
                 className={cn(
-                  "pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg",
-                  TOAST_STYLES[t.type]
+                  "pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg relative overflow-hidden",
+                  TOAST_STYLES[t.type],
+                  t.type !== "loading" && "before:absolute before:inset-0 before:rounded-xl before:border before:border-[var(--color-accent-border)] before:opacity-15 before:pointer-events-none"
                 )}
               >
                 <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", t.type === "loading" && "animate-spin")} />

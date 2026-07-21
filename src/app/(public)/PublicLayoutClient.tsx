@@ -18,14 +18,14 @@ const pageVariants = {
     opacity: 1,
     scale: 1,
     filter: "blur(0px)",
-    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
 
 const overlayVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-  exit: { opacity: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+  exit: { opacity: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
 const menuItemVariants = {
@@ -34,7 +34,7 @@ const menuItemVariants = {
     opacity: 1,
     y: 0,
     rotateX: 0,
-    transition: { duration: 0.5, delay: 0.1 + i * 0.07, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.5, delay: 0.1 + i * 0.07, ease: [0.16, 1, 0.3, 1] as const },
   }),
 };
 

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
@@ -34,6 +34,10 @@ import { DraftsTab } from "@/components/workspace/tabs/DraftsTab";
 import StarsTab from "@/components/workspace/tabs/StarsTab";
 import type { TabId } from "@/types";
 
+const MOBILE_ORDER: TabId[] = [
+  "dashboard", "send", "group", "log", "myai",
+];
+
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   dashboard: DashboardTab,
   register: AccountRegisterTab,
@@ -65,22 +69,55 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   stars: StarsTab,
 };
 
+function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+      if (dx > 0) onSwipeRight();
+      else onSwipeLeft();
+    }
+    touchStart.current = null;
+  }, [onSwipeLeft, onSwipeRight, threshold]);
+
+  return { onTouchStart, onTouchEnd };
+}
+
 export function Workspace() {
   const activeTab = useDashboardStore((s) => s.activeTab);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const ActiveTabContent = TAB_CONTENT[activeTab];
+
+  const swipe = useSwipe(
+    useCallback(() => {
+      const idx = MOBILE_ORDER.indexOf(activeTab);
+      if (idx < MOBILE_ORDER.length - 1) setActiveTab(MOBILE_ORDER[idx + 1]);
+    }, [activeTab, setActiveTab]),
+    useCallback(() => {
+      const idx = MOBILE_ORDER.indexOf(activeTab);
+      if (idx > 0) setActiveTab(MOBILE_ORDER[idx - 1]);
+    }, [activeTab, setActiveTab]),
+  );
 
   return (
     <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <TabBar />
-      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4" {...swipe}>
         <ScrollToTop />
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
           >
             <ActiveTabContent />
           </motion.div>

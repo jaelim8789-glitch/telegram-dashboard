@@ -136,6 +136,7 @@ export function Modal({
               "scrollbar-thin",
               "mx-auto max-w-[calc(100vw-2rem)] sm:max-w-none",
               SIZE_STYLE[size],
+              "before:absolute before:inset-0 before:rounded-2xl before:border before:border-[var(--color-accent-border)] before:opacity-20 before:pointer-events-none",
               className
             )}
           >
