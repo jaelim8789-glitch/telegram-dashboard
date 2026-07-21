@@ -3,20 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2,
-  X,
-  Loader2,
-  Crown,
-  Copy,
-  Check,
-  Clock,
-  Wallet,
-  ExternalLink,
-  Star,
-  ArrowLeft,
-  TriangleAlert,
-  PartyPopper,
+  CheckCircle2, X, Loader2, Crown, Copy, Check, Clock,
+  Wallet, ExternalLink, Star, ArrowLeft, TriangleAlert, PartyPopper,
 } from "lucide-react";
+
+// ── Auth helper ──
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
+  if (token) h["Authorization"] = `Bearer ${token}`;
+  return h;
+}
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 
@@ -108,6 +105,7 @@ export function PlanUpgradeModal({
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeLeftRef = useRef(PAYMENT_TIMEOUT_MINUTES * 60);
   const qrUrl = invoice
     ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(invoice.pay_address)}`
     : "";
@@ -141,20 +139,22 @@ export function PlanUpgradeModal({
 
   /* ── Timer countdown ─────────────────────────────────────────── */
   useEffect(() => {
-    if (step !== "payment" || timeLeft <= 0) return;
+    if (step !== "payment") return;
+    timeLeftRef.current = PAYMENT_TIMEOUT_MINUTES * 60;
+    setTimeLeft(PAYMENT_TIMEOUT_MINUTES * 60);
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
+      timeLeftRef.current -= 1;
+      setTimeLeft(timeLeftRef.current);
+      if (timeLeftRef.current <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setStep("error");
+        setStatusMessage("결제 시간이 만료되었습니다.");
+      }
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [step, timeLeft]);
+  }, [step]);
 
   /* ── Payment status polling ──────────────────────────────────── */
   useEffect(() => {
@@ -163,6 +163,7 @@ export function PlanUpgradeModal({
       try {
         const res = await fetch(
           `/api/payments/nowpayments/status/${invoice.payment_id}`,
+          { headers: authHeaders() },
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -217,7 +218,7 @@ export function PlanUpgradeModal({
           "/api/payments/nowpayments/create-invoice",
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({
               plan: planId,
               amount: plan.price_usdt,
@@ -228,8 +229,12 @@ export function PlanUpgradeModal({
         );
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || "결제 인보이스 생성에 실패했습니다.");
+          const contentType = res.headers.get("content-type");
+          let errMsg = "결제 인보이스 생성에 실패했습니다.";
+          if (res.status === 401) errMsg = "로그인이 필요합니다. 로그인 후 다시 시도해주세요.";
+          else if (res.status === 429) errMsg = "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
+          else try { const err = await res.json(); errMsg = err.detail || errMsg; } catch {}
+          throw new Error(errMsg);
         }
 
         const data = await res.json();
