@@ -2445,6 +2445,10 @@ export async function fetchAIAnalyticsDaily(days?: number): Promise<import("@/ty
   return request<import("@/types").AIAnalyticsDaily[]>(`/api/ai/analytics/daily${qs}`);
 }
 
+export async function fetchTeleMonMemorySnapshot(): Promise<import("@/types").TeleMonMemorySnapshot> {
+  return request<import("@/types").TeleMonMemorySnapshot>("/api/ai/telemon-memory/snapshot");
+}
+
 export async function fetchAIAnalyticsAgentBreakdown(): Promise<import("@/types").AIAnalyticsAgentBreakdown[]> {
   return request<import("@/types").AIAnalyticsAgentBreakdown[]>("/api/ai/analytics/agents");
 }

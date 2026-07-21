@@ -1,4 +1,4 @@
-export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator";
+export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -52,6 +52,7 @@ export const TABS: TabDef[] = [
   { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "settings" },
   { id: "referral", label: "추천인", shortLabel: "추천", group: "settings" },
   { id: "operator", label: "AI 직원", shortLabel: "직원", group: "ai" },
+  { id: "styleprofile", label: "브랜드 톤", shortLabel: "톤", group: "ai" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
@@ -766,6 +767,32 @@ export interface AIAnalyticsOverview {
 export interface AIAnalyticsDaily {
   date: string;
   [key: string]: unknown;
+}
+
+export interface TeleMonMemoryPeriod {
+  attempted: number;
+  successful: number;
+  success_rate: number;
+}
+
+export interface TeleMonMemoryTopPost {
+  broadcast_id: string;
+  message_preview: string;
+  attempted: number;
+  successful: number;
+  success_rate: number;
+  last_sent_at: string | null;
+}
+
+export interface TeleMonMemorySnapshot {
+  generated_at: string;
+  periods: {
+    this_month?: TeleMonMemoryPeriod;
+    last_week?: TeleMonMemoryPeriod;
+    last_year?: TeleMonMemoryPeriod;
+  };
+  top_posts: TeleMonMemoryTopPost[];
+  memory_text: string;
 }
 
 export interface AIAnalyticsAgentBreakdown {
