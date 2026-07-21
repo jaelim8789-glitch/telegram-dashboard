@@ -9,6 +9,8 @@ export function useHapticFeedback() {
     }
   }, []);
 
+  const isSupported = typeof navigator !== "undefined" && "vibrate" in navigator;
+
   return {
     light: useCallback(() => vibrate(5), [vibrate]),
     medium: useCallback(() => vibrate([10, 30, 10]), [vibrate]),
@@ -16,5 +18,16 @@ export function useHapticFeedback() {
     selection: useCallback(() => vibrate(5), [vibrate]),
     success: useCallback(() => vibrate([10, 30, 15]), [vibrate]),
     error: useCallback(() => vibrate([30, 50, 30]), [vibrate]),
+    /** Sharp impact feedback for swipe threshold, drag snap, etc. */
+    impact: useCallback(() => vibrate(15), [vibrate]),
+    /** Three rapid pulses for important notifications */
+    notification: useCallback(() => vibrate([10, 50, 10, 50, 10]), [vibrate]),
+    /** Very subtle tick for passive feedback */
+    tick: useCallback(() => vibrate(3), [vibrate]),
+    /** Double pulse for confirmation of multi-step actions */
+    confirm: useCallback(() => vibrate([10, 40, 10]), [vibrate]),
+    /** Declining buzz for rejection/cancel */
+    reject: useCallback(() => vibrate([15, 40, 20]), [vibrate]),
+    isSupported,
   };
 }

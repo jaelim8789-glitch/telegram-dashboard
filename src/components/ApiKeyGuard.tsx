@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, type ReactNode } from "react";
-import { KeyRound, Loader2, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { KeyRound, Loader2, X, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import * as api from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
@@ -16,6 +17,7 @@ interface ApiKeyGuardProps {
 }
 
 export default function ApiKeyGuard({ description, children, hasApiKey: hasApiKeyProp, onKeySet }: ApiKeyGuardProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -127,9 +129,19 @@ export default function ApiKeyGuard({ description, children, hasApiKey: hasApiKe
                   </button>
                 </form>
 
-                <p className="mt-4 text-center text-xs text-app-text-muted">
-                  API 키가 없으신가요? 봇 메뉴에서 &quot;🔑 내 API 키&quot;를 통해 발급받으세요.
-                </p>
+                <div className="mt-3 pt-3 border-t border-app-border/40 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/get-api-key")}
+                    className="w-full rounded-xl py-2.5 text-sm font-semibold border border-app-primary/40 text-app-primary hover:bg-app-primary/10 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    결제하고 발급받기
+                  </button>
+                  <p className="text-center text-[10px] text-app-text-subtle">
+                    NOWPayments로 안전하게 결제하고 즉시 API 키를 발급받으세요
+                  </p>
+                </div>
               </>
             )}
           </div>
