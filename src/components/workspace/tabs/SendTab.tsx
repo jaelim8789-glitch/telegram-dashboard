@@ -121,10 +121,6 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
   balanced: "균형",
   fast: "속도 우선",
 };
-};
-
-
-
 
 
 export function SendTab() {
