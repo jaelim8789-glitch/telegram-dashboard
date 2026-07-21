@@ -7,6 +7,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import type { NavView } from "@/types";
 import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
+import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
