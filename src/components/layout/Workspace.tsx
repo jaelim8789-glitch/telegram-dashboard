@@ -64,9 +64,15 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const touchCurrent = useRef<{ x: number; y: number } | null>(null);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchCurrent.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    touchCurrent.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
@@ -78,9 +84,42 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold =
       else onSwipeLeft();
     }
     touchStart.current = null;
+    touchCurrent.current = null;
   }, [onSwipeLeft, onSwipeRight, threshold]);
 
-  return { onTouchStart, onTouchEnd };
+  return { onTouchStart, onTouchMove, onTouchEnd };
+}
+
+// Direction-aware tab transition variants (iOS style push/pop)
+const tabVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 80 : -80,
+    opacity: 0,
+    scale: 0.97,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 80 : -80,
+    opacity: 0,
+    scale: 0.97,
+  }),
+};
+
+function useTabDirection() {
+  const prevRef = useRef<string | null>(null);
+  return useCallback((tab: string) => {
+    const prev = prevRef.current;
+    prevRef.current = tab;
+    if (prev === null) return 0;
+    const prevIdx = MOBILE_ORDER.indexOf(prev as TabId);
+    const currIdx = MOBILE_ORDER.indexOf(tab as TabId);
+    if (prevIdx === -1 || currIdx === -1) return 0;
+    return currIdx - prevIdx;
+  }, []);
 }
 
 export function Workspace() {
@@ -88,6 +127,8 @@ export function Workspace() {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const ActiveTabContent = TAB_CONTENT[activeTab];
   const haptics = useHapticFeedback();
+  const getDirection = useTabDirection();
+  const direction = getDirection(activeTab);
 
   const swipe = useSwipe(
     useCallback(() => {
@@ -111,13 +152,19 @@ export function Workspace() {
       <TabBar />
       <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4" {...swipe}>
         <ScrollToTop />
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
+            custom={direction}
+            variants={tabVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 380, damping: 30 },
+              opacity: { duration: 0.2 },
+              scale: { duration: 0.2 },
+            }}
           >
             <ActiveTabContent />
           </motion.div>

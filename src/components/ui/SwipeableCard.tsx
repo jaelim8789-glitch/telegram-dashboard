@@ -1,7 +1,8 @@
 "use client";
 
 import { type ReactNode, useCallback, useRef } from "react";
-import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, useSpring, type PanInfo } from "framer-motion";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
 interface SwipeAction {
   label: string;
@@ -26,27 +27,59 @@ export function SwipeableCard({
   className = "",
 }: SwipeableCardProps) {
   const x = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 25 });
   const constraintsRef = useRef<HTMLDivElement>(null);
+  const haptics = useHapticFeedback();
 
   const leftOpacity = useTransform(x, [-threshold, 0], [1, 0]);
   const rightOpacity = useTransform(x, [0, threshold], [0, 1]);
   const scale = useTransform(x, [-threshold, 0, threshold], [0.95, 1, 0.95]);
+  // Gold glow on pull
+  const glowOpacity = useTransform(x, [-threshold, -threshold * 0.5, 0, threshold * 0.5, threshold], [0.4, 0.1, 0, 0.1, 0.4]);
 
   const handleDragEnd = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       const offsetX = info.offset.x;
       if (offsetX < -threshold && onSwipeLeft) {
+        haptics.impact();
         onSwipeLeft.onSwipe();
       } else if (offsetX > threshold && onSwipeRight) {
+        haptics.impact();
         onSwipeRight.onSwipe();
       }
       x.set(0);
     },
-    [x, threshold, onSwipeLeft, onSwipeRight]
+    [x, threshold, onSwipeLeft, onSwipeRight, haptics]
+  );
+
+  const thresholdCrossedRef = useRef(false);
+
+  const handleDrag = useCallback(
+    (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const dx = info.offset.x;
+      const crossed = Math.abs(dx) >= threshold;
+      // Fire tick only ONCE when crossing the threshold (not on every frame)
+      if (crossed && !thresholdCrossedRef.current) {
+        haptics.tick();
+      }
+      thresholdCrossedRef.current = crossed;
+    },
+    [threshold, haptics]
   );
 
   return (
     <div ref={constraintsRef} className="relative overflow-hidden">
+      {/* Gold glow effect on drag */}
+      <motion.div
+        style={{ opacity: glowOpacity }}
+        className="absolute inset-0 z-0 pointer-events-none rounded-xl"
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 rounded-xl" style={{
+          background: "radial-gradient(ellipse at center, var(--color-accent-glow) 0%, transparent 70%)",
+        }} />
+      </motion.div>
+
       {onSwipeRight && (
         <motion.div
           style={{ opacity: rightOpacity }}
@@ -87,7 +120,8 @@ export function SwipeableCard({
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={{ left: onSwipeLeft ? 0.3 : 0, right: onSwipeRight ? 0.3 : 0 }}
-        style={{ x, scale }}
+        style={{ x: springX, scale }}
+        onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         whileTap={{ cursor: "grabbing" }}
         className={`relative z-20 cursor-grab active:cursor-grabbing ${className}`}

@@ -342,6 +342,15 @@ export function TabBar() {
   }
 
   // ── 데스크톱 ──
+  const desktopSectionGroups: { label: string; tabs: TabDef[] }[] = [
+    { label: "대시보드", tabs: dashboardTabs },
+    { label: "발송", tabs: sendTabs },
+    { label: "운영", tabs: opsTabs },
+    { label: "AI", tabs: aiTabs },
+    { label: "설정", tabs: settingsTabs },
+    { label: "신규", tabs: newTabs },
+  ].filter((g) => g.tabs.length > 0);
+
   return (
     <nav aria-label="작업 영역 이동" className="relative flex shrink-0 border-b border-app-border/50 bg-app-surface/50">
       {canScrollLeft && (
@@ -352,22 +361,14 @@ export function TabBar() {
         onScroll={updateFade}
         onKeyDown={handleKeyDown}
         style={{ scrollbarWidth: "none" }}
-        className="flex items-center gap-0.5 overflow-x-auto px-3 [&::-webkit-scrollbar]:hidden"
+        className="flex items-stretch gap-0 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden"
       >
-        {[
-          { label: "발송", tabs: sendTabs },
-          { label: "운영", tabs: opsTabs },
-          { label: "AI", tabs: aiTabs },
-          { label: "설정", tabs: settingsTabs },
-          { label: "신규", tabs: newTabs },
-        ].map((group, i) => (
-          <div key={group.label}>
-            {i > 0 && <div className="mx-1 h-4 w-px shrink-0 self-center bg-app-border" aria-hidden="true" />}
-            <div role="group" aria-label={group.label} className="flex items-center gap-0.5">
+        {desktopSectionGroups.map((group) => (
+          <div key={group.label} role="group" aria-label={group.label} className="flex items-center gap-0.5 border-r border-app-border/40 last:border-r-0 px-1 first:pl-0">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-app-text-subtle/60 px-1.5 select-none shrink-0">{group.label}</span>
             {group.tabs.map((tab) => (
-                  <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => { haptics.light(); setActiveTab(tab.id); }} badge={tabBadges[tab.id]} />
-                ))}
-            </div>
+              <TabButton key={tab.id} tab={tab} active={tab.id === activeTab} onSelect={() => { haptics.light(); setActiveTab(tab.id); }} badge={tabBadges[tab.id]} />
+            ))}
           </div>
         ))}
       </div>
