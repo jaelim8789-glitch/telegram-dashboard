@@ -8,8 +8,6 @@ import { useToast } from "@/components/ui/Toast";
 import { getToken } from "@/lib/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const token = getToken();
-const authHeaders: Record<string, string> = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 
 interface SmartRule {
   id?: string;
@@ -26,6 +24,8 @@ interface SmartFoldersProps {
 
 export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps) {
   const { toast } = useToast();
+  const token = getToken();
+  const authHeaders: Record<string, string> = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
   const [rules, setRules] = useState<SmartRule[]>([]);
   const [categories, setCategories] = useState<Record<string, any[]>>({});
   const [showAddRule, setShowAddRule] = useState(false);
@@ -97,7 +97,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
           <span className="text-[9px] text-app-text-muted">({totalCount}개 대화)</span>
         </div>
         <button onClick={() => setShowAddRule(!showAddRule)} className="flex items-center gap-1 rounded-lg bg-app-primary/10 px-2 py-1 text-[9px] text-app-primary hover:bg-app-primary/20 transition-colors">
-          <Plus className="h-3 w-3" /> 규칙 추가
+          <Plus className="h-3 w-3" /> 규칙
         </button>
       </div>
 

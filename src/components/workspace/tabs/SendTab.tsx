@@ -207,6 +207,7 @@ export function SendTab() {
     if (typeof window === 'undefined') return false;
     return window.innerWidth >= 768; // md breakpoint
   });
+  const [foldersExpanded, setFoldersExpanded] = useState(false);
 
   const [savedSendGroupIds, setSavedSendGroupIds] = useState<string[]>([]);
 
@@ -1419,7 +1420,7 @@ export function SendTab() {
 
               {/* Tag filter chips */}
               {allTags.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-1.5">
+                <div className="mb-2 flex gap-1.5 overflow-x-auto [-webkit-overflow-scrolling:touch] scrollbar-thin">
                   <button type="button" onClick={() => setTagFilter(null)}
                     className={`rounded-full px-2 py-0.5 text-[11px] transition-colors ${!tagFilter ? 'bg-app-primary text-white' : 'bg-app-card-hover text-app-text-muted hover:text-app-text'}`}>
                     전체
