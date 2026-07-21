@@ -9,6 +9,9 @@ import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useNetworkQuality } from "@/hooks/useNetworkQuality";
+import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -226,6 +229,8 @@ export function Workspace() {
   useBatterySaver();
   useAutoNightMode();
   const [confetti, setConfetti] = useState(false);
+  useWakeLock();
+  const netQuality = useNetworkQuality();
 
   // Init push notifications + app badge + native bridge
   useEffect(() => {
@@ -272,6 +277,14 @@ export function Workspace() {
     refreshKey.current += 1;
     setRefreshTick(refreshKey.current);
   }, []);
+
+  const prevOnline = useRef(online);
+  useEffect(() => {
+    if (!prevOnline.current && online) {
+      handleRefresh();
+    }
+    prevOnline.current = online;
+  }, [online, handleRefresh]);
 
   const pull = usePullToRefresh(scrollRef, handleRefresh, isMobile);
 
@@ -339,6 +352,9 @@ export function Workspace() {
 
         <ConfettiAnimation active={confetti} />
         <AppRatingPrompt />
+
+        <CategoryStrip />
+
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch] p-4 md:pb-4"
@@ -402,6 +418,7 @@ export function Workspace() {
         <GlobalSearch />
         <CommandPalette />
         <OnboardingTour />
+        <div className="fixed bottom-20 right-2 z-30"><NetworkQualityIndicator /></div>
       </main>
     </MotionConfig>
   );

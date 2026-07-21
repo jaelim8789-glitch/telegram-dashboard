@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Send, Calendar, Search, BarChart3, Settings, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Send, Calendar, Search, BarChart3, Settings, CheckCircle, XCircle, Copy, Check } from "lucide-react";
 import type { AgentMessage } from "@/lib/agent-api";
 import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
 
@@ -39,6 +39,20 @@ const TOOL_BUTTONS: Record<
     icon: <Settings className="h-3.5 w-3.5" />,
     color: "border-indigo-500/30 text-indigo-500 hover:bg-indigo-500/10",
   },
+};
+
+const CopyButton = ({ text }: { text: string }) => {
+  const [copied, setCopied] = useState(false);
+  const Icon = copied ? Check : Copy;
+  return (
+    <button
+      onClick={async (e) => { e.stopPropagation(); await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="absolute top-1 right-1 h-7 w-7 rounded-md flex items-center justify-center text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-all opacity-0 group-hover:opacity-100"
+      aria-label="메시지 복사"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
 };
 
 export function ChatMessageBubble({ message, onExecuteTool }: ChatMessageBubbleProps) {
@@ -89,7 +103,7 @@ export function ChatMessageBubble({ message, onExecuteTool }: ChatMessageBubbleP
 
         {/* Bubble */}
         <div
-          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+          className={`group relative rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
             isUser
               ? "bg-app-primary text-white rounded-br-md"
               : "bg-app-card-hover text-app-text rounded-bl-md border border-app-border"
@@ -98,7 +112,10 @@ export function ChatMessageBubble({ message, onExecuteTool }: ChatMessageBubbleP
           {isUser ? (
             <span className="whitespace-pre-wrap break-words">{message.content}</span>
           ) : (
-            <MarkdownMessage content={message.content} />
+            <>
+              <MarkdownMessage content={message.content} />
+              <CopyButton text={message.content} />
+            </>
           )}
         </div>
 

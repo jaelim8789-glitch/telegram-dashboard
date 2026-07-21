@@ -21,6 +21,23 @@ export function ApiKeyManagerTab() {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [expiringKeys, setExpiringKeys] = useState<Array<{id: string; keyName: string; expiresAt: string}>>([]);
+
+  useEffect(() => {
+    if (!keys || keys.length === 0) { setExpiringKeys([]); return; }
+    const soon: Array<{id: string; keyName: string; expiresAt: string}> = [];
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    for (const k of keys) {
+      if (!k.createdAt) continue;
+      const created = new Date(k.createdAt).getTime();
+      const expiresAt = created + 365 * 24 * 60 * 60 * 1000;
+      if (expiresAt > now && expiresAt - now < sevenDays) {
+        soon.push({ id: k.id, keyName: k.name || k.id.slice(0, 8), expiresAt: new Date(expiresAt).toISOString() });
+      }
+    }
+    setExpiringKeys(soon);
+  }, [keys]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -54,6 +71,12 @@ export function ApiKeyManagerTab() {
 
   return (
     <div className="space-y-4 pb-8">
+      {expiringKeys.length > 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 mb-4">
+          <p className="text-xs font-semibold text-amber-700">⚠️ {expiringKeys.length}개 API 키가 곧 만료됩니다</p>
+          <p className="text-[10px] text-amber-600/70 mt-0.5">7일 이내 만료 예정인 키를 확인하고 갱신하세요</p>
+        </div>
+      )}
       <header className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-app-text">API 키 관리</h2>

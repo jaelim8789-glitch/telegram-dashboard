@@ -170,6 +170,21 @@ export function AiReplyAssistantTab() {
               </div>
             )}
 
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-app-text-muted">답장 길이</span>
+              <div className="flex items-center gap-0.5 rounded-lg border border-app-border bg-app-card/50 p-0.5">
+                {(["short", "medium", "long"] as const).map((l) => (
+                  <button key={l} onClick={() => setReplyLength(l)}
+                    className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                      replyLength === l ? "bg-app-primary text-white" : "text-app-text-muted hover:text-app-text"
+                    }`}
+                    aria-label={l === "short" ? "짧게" : l === "medium" ? "보통" : "길게"}
+                  >
+                    {l === "short" ? "짧게" : l === "medium" ? "보통" : "길게"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div>
               <label className="text-[11px] font-medium text-app-text-muted">들어온 메시지</label>
               <textarea value={incomingMessage} onChange={e => setIncomingMessage(e.target.value)}
