@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Smartphone, RefreshCw, Loader2, Users, Search, Star } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { DialogList } from "./DialogList";
+import { SmartFolders } from "./SmartFolders";
 import { TelegramChatView } from "./TelegramChatView";
 import { InlineError } from "@/components/ui/InlineError";
 import { Panel } from "@/components/ui/Panel";
@@ -42,21 +43,29 @@ export function TelegramInboxTab() {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [deleteConfirmChatId, setDeleteConfirmChatId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const [folderDialogIds, setFolderDialogIds] = useState<Set<number>>(new Set());
   const token = getToken();
   const authHeaders = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 
-  const displayDialogs: Dialog[] = searchResults.length > 0
-    ? searchResults.map((r) => ({
-        id: r.chat_id,
-        title: r.chat_title || "",
-        type: "private" as const,
-        unread_count: 0,
-        last_message: r.text || r.message || "",
-        last_message_date: r.date || null,
-        pinned: false,
-        participants_count: 0,
-      }))
-    : dialogs;
+  const displayDialogs = useMemo(() => {
+    let base: Dialog[] = searchResults.length > 0
+      ? searchResults.map((r) => ({
+          id: r.chat_id,
+          title: r.chat_title || "",
+          type: "private" as const,
+          unread_count: 0,
+          last_message: r.text || r.message || "",
+          last_message_date: r.date || null,
+          pinned: false,
+          participants_count: 0,
+        }))
+      : dialogs;
+    if (folderFilter && folderDialogIds.size > 0) {
+      base = base.filter((d) => folderDialogIds.has(d.id));
+    }
+    return base;
+  }, [dialogs, searchResults, folderFilter, folderDialogIds]);
 
   const activeChat = displayDialogs.find((d) => d.id === activeChatId);
 
@@ -213,6 +222,19 @@ export function TelegramInboxTab() {
                 {acc.name || acc.phone?.slice(-4) || "?"}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Smart Folders */}
+        {!activeChatId && (
+          <div className="px-1.5 py-1 border-b border-app-border">
+            <SmartFolders
+              dialogs={dialogs}
+              onSelectFolder={(name, ids) => {
+                setFolderFilter(name);
+                setFolderDialogIds(new Set(ids));
+              }}
+            />
           </div>
         )}
 

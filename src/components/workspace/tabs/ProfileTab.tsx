@@ -506,7 +506,7 @@ export function ProfileTab() {
             size="sm"
             onClick={async () => {
               const count = await backupData("telemon-", "telemon-backup");
-              alert(`백업 완료 (${count}개 항목)`);
+              toast("success", `백업 완료 (${count}개 항목)`);
             }}
           >
             백업 다운로드
@@ -516,7 +516,7 @@ export function ProfileTab() {
             size="sm"
             onClick={async () => {
               const count = await restoreData("telemon-");
-              alert(`복원 완료 (${count}개 항목)`);
+              toast("success", `복원 완료 (${count}개 항목)`);
             }}
           >
             복원

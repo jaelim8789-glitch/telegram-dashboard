@@ -41,7 +41,7 @@ export default function DataSettingsPage() {
     api.fetchLogs({ days: 7 }).then((logs) => {
       const headers = ["ID", "메시지", "상태", "계정", "생성일"];
       const rows = logs.slice(0, 1000).map((l) => [
-        l.id, l.message.slice(0, 50), l.status, l.account_id || "", l.createdAt,
+        l.id, l.message.slice(0, 50), l.status, l.accountId || "", l.createdAt,
       ]);
       exportCSV(headers, rows, `telemon-logs-${new Date().toISOString().slice(0, 10)}`);
       toast("success", `${rows.length}건 CSV 내보내기 완료`);
@@ -72,11 +72,8 @@ export default function DataSettingsPage() {
           const cols = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
           return { title: cols[0] || "Imported Group", externalLink: cols[1] || "" };
         });
-        // Import via API
-        for (const g of groups.slice(0, 50)) {
-          try { await api.createGroup({ title: g.title }); } catch {}
-        }
-        toast("success", `${Math.min(groups.length, 50)}개 그룹 가져오기 완료`);
+        void groups;
+        toast("error", "그룹 가져오기 API가 아직 준비되지 않았습니다.");
       } catch {
         toast("error", "파일을 읽을 수 없습니다. CSV 형식이어야 합니다.");
       } finally { setImporting(false); }

@@ -7,13 +7,29 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
-export async function subscribeToPush(registration: ServiceWorkerRegistration): Promise<PushSubscription | null> {
-  if (!registration.pushManager) return null;
+export async function requestPushPermission(): Promise<boolean> {
+  if (!("Notification" in window)) return false;
+  const perm = await Notification.requestPermission();
+  return perm === "granted";
+}
+
+export async function subscribeToPush(registration: ServiceWorkerRegistration): Promise<PushSubscription | null>;
+export async function subscribeToPush(): Promise<PushSubscription | null>;
+export async function subscribeToPush(registration?: ServiceWorkerRegistration): Promise<PushSubscription | null> {
+  let reg: ServiceWorkerRegistration;
+  if (registration) {
+    reg = registration;
+  } else {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+    reg = await navigator.serviceWorker.ready;
+  }
+
+  if (!reg.pushManager) return null;
 
   try {
-    let subscription = await registration.pushManager.getSubscription();
+    let subscription = await reg.pushManager.getSubscription();
     if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
+      subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
       });
     }

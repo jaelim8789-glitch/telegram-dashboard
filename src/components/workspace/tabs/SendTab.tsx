@@ -586,6 +586,17 @@ export function SendTab() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [message, selectedIds]);
 
+  // Warn on page leave if form has content
+  useEffect(() => {
+    if (!message.trim() && !imageFile) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [message, imageFile]);
+
   // ── Template library ──
   function refreshTemplates() {
     setTemplates(loadTemplates());
@@ -1563,7 +1574,7 @@ export function SendTab() {
                               <hr className="my-2 border-app-border" />
                             </div>
                           )}
-                          <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 md:max-h-96">
+                          <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto [-webkit-overflow-scrolling:touch] pr-1 md:max-h-96">
                           {filteredByTag.map((g) => {
                             const selected = selectedRecipientIds.includes(g.id);
                             return (

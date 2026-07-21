@@ -22,8 +22,13 @@ export function AppRatingPrompt() {
     } catch {}
   }, [dismissed]);
 
+  const APP_STORE_ID = process.env.NEXT_PUBLIC_APP_STORE_ID || null;
   function rate() {
-    window.open("https://apps.apple.com/app/idXXX", "_blank");
+    if (APP_STORE_ID) {
+      window.open(`https://apps.apple.com/app/id${APP_STORE_ID}`, "_blank");
+    } else {
+      window.open("https://apps.apple.com/search?term=telemon", "_blank");
+    }
     try { localStorage.setItem("telemon-rating-last", String(Date.now())); } catch {}
     setShow(false);
   }

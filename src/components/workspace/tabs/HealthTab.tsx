@@ -219,6 +219,7 @@ export function HealthTab() {
       </header>
 
       {/* Summary cards */}
+      <div className="min-h-[100px]">
       {summary && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
@@ -263,6 +264,7 @@ export function HealthTab() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Health Trend Chart */}
       {trend.length > 0 && (
@@ -377,7 +379,7 @@ export function HealthTab() {
           <div className="relative flex-1 min-w-[160px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-app-text-subtle" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="계정 검색..." aria-label="계정 검색" className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle focus-ring" />
+              placeholder="계정 검색..." aria-label="계정 검색" className="w-full rounded-lg border border-app-border bg-app-bg py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle focus-ring min-h-[44px]" />
             {search && <button onClick={() => setSearch("")} aria-label="검색 지우기" className="absolute right-2 top-1/2 -translate-y-1/2 text-app-text-subtle"><X className="h-3 w-3" /></button>}
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}

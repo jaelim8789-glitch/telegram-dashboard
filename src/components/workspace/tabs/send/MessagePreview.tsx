@@ -24,7 +24,8 @@ export const MessagePreview = memo(function MessagePreview({
 }: MessagePreviewProps) {
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
 
-  const WATERMARK = "\n\n━━━━━━━━━━━━━━━━━━\n🤖 TeleMon AI\n\n🚀 Telegram 운영, 아직도 직접 하시나요?\n\nAI 비서가\n✅ 자동 홍보\n✅ 자동 답장\n✅ 채널 운영\n✅ 그룹 관리\n\n🌐 https://telemon.online";
+  const WATERMARK_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online";
+  const WATERMARK = `\n\n━━━━━━━━━━━━━━━━━━\n🤖 TeleMon AI\n\n🚀 Telegram 운영, 아직도 직접 하시나요?\n\nAI 비서가\n✅ 자동 홍보\n✅ 자동 답장\n✅ 채널 운영\n✅ 그룹 관리\n\n🌐 ${WATERMARK_URL}`;
 
   const preview = useMemo(
     () =>

@@ -650,7 +650,7 @@ export function DashboardTab() {
 
             <div className="flex items-center gap-2 text-xs text-app-text-muted border-t border-app-border pt-3">
               <AlertCircle className="h-3.5 w-3.5" />
-              도움이 필요하시면 support@telemon.online 으로 문의하세요
+              도움이 필요하시면 {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@telemon.io"} 으로 문의하세요
             </div>
           </div>
         </Panel>

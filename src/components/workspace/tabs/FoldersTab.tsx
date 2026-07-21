@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/components/ui/Toast";
 import * as folderApi from "@/lib/folderApi";
 import type { GroupFolder, Group, SmartFolderType, FolderReorderInput } from "@/types";
 
@@ -66,8 +67,8 @@ function FolderTreeNode({
   return (
     <div className="select-none">
       <div
-        className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-all hover:bg-gray-700/50 ${
-          depth > 0 ? "ml-6 border-l-2 border-gray-700" : ""
+        className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-all hover:bg-app-card-hover ${
+          depth > 0 ? "ml-6 border-l-2 border-app-border" : ""
         }`}
         style={{ borderLeftColor: depth > 0 ? folder.color : undefined }}
         draggable
@@ -82,7 +83,7 @@ function FolderTreeNode({
         {children.length > 0 && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-gray-500 hover:text-white transition-colors"
+            className="text-app-text-subtle hover:text-app-text transition-colors"
           >
             {collapsed ? "▶" : "▼"}
           </button>
@@ -100,24 +101,24 @@ function FolderTreeNode({
         )}
 
         {/* Folder name */}
-        <span className="flex-1 truncate font-medium text-white">{folder.name}</span>
+        <span className="flex-1 truncate font-medium text-app-text">{folder.name}</span>
 
         {/* Group count */}
-        <span className="text-xs text-gray-500">{folder.group_ids.length}개</span>
+        <span className="text-xs text-app-text-subtle">{folder.group_ids.length}개</span>
 
         {/* Actions */}
         <div className="hidden gap-1 group-hover:flex">
           <button
             onClick={() => onSendToFolder(folder.id)}
             disabled={folder.group_ids.length === 0 || !sendMessage.trim()}
-            className="rounded p-1 text-xs text-gray-400 hover:bg-gray-600 hover:text-white disabled:opacity-30"
+            className="rounded p-1 text-xs text-app-text-muted hover:bg-app-card-hover hover:text-app-text disabled:opacity-30"
             title="폴더 발송"
           >
             📤
           </button>
           <button
             onClick={() => onDeleteFolder(folder.id)}
-            className="rounded p-1 text-xs text-gray-500 hover:bg-red-900/30 hover:text-red-400"
+            className="rounded p-1 text-xs text-app-text-subtle hover:bg-red-900/30 hover:text-red-400"
             title="삭제"
           >
             ✕
@@ -158,7 +159,7 @@ function FolderTreeNode({
             return (
               <label
                 key={gid}
-                className="flex cursor-pointer items-center gap-2 rounded px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
+                className="flex cursor-pointer items-center gap-2 rounded px-3 py-1.5 text-sm text-app-text hover:bg-app-card-hover transition-colors"
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData("text/plain", JSON.stringify({
@@ -180,7 +181,7 @@ function FolderTreeNode({
                   type="checkbox"
                   checked={selectedGroupIds.has(gid)}
                   onChange={() => onToggleGroup(gid)}
-                  className="rounded border-gray-500 bg-gray-700 text-indigo-600"
+                  className="rounded border-app-border-strong bg-app-bg text-indigo-600"
                 />
                 <span className="truncate">{group?.title ?? `Group ${gid.slice(0, 8)}`}</span>
               </label>
@@ -193,6 +194,7 @@ function FolderTreeNode({
 }
 
 export function FoldersTab() {
+  const { toast } = useToast();
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const [folders, setFolders] = useState<GroupFolder[]>([]);
   const [treeView, setTreeView] = useState(true);
@@ -321,7 +323,7 @@ export function FoldersTab() {
       if (result.sent_count > 0) {
         setSendMessage("");
       }
-      alert(`✅ ${result.sent_count}개 그룹에 메시지 발송 완료`);
+      toast("success", `✅ ${result.sent_count}개 그룹에 메시지 발송 완료`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
     } finally {
@@ -339,7 +341,7 @@ export function FoldersTab() {
         message: sendMessage.trim(),
       });
       if (result.sent_count > 0) setSendMessage("");
-      alert(`✅ ${result.sent_count}개 그룹에 메시지 발송 완료`);
+      toast("success", `✅ ${result.sent_count}개 그룹에 메시지 발송 완료`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
     } finally {
@@ -418,7 +420,7 @@ export function FoldersTab() {
 
   if (!accountId) {
     return (
-      <div className="flex h-full items-center justify-center text-gray-400">
+      <div className="flex h-full items-center justify-center text-app-text-muted">
         계정을 선택해주세요
       </div>
     );
@@ -429,15 +431,15 @@ export function FoldersTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">📁 폴더 관리</h2>
-          <p className="text-sm text-gray-400">
+          <h2 className="text-xl font-bold text-app-text">📁 폴더 관리</h2>
+          <p className="text-sm text-app-text-muted">
             드래그 앤 드롭으로 폴더/그룹 이동 · 계층 구조 · 스마트 폴더
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setTreeView(!treeView)}
-            className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700"
+            className="rounded-lg border border-app-border px-3 py-1.5 text-sm text-app-text hover:bg-app-card-hover"
             title={treeView ? "리스트 뷰" : "트리 뷰"}
           >
             {treeView ? "📋" : "🌳"}
@@ -445,7 +447,7 @@ export function FoldersTab() {
           <button
             onClick={handleSyncTelegram}
             disabled={syncLoading}
-            className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+            className="rounded-lg border border-app-border px-3 py-1.5 text-sm text-app-text hover:bg-app-card-hover disabled:opacity-50"
           >
             {syncLoading ? "🔄 동기화 중..." : "🔄 텔레그램 동기화"}
           </button>
@@ -473,8 +475,8 @@ export function FoldersTab() {
 
       {/* Create Folder Modal */}
       {isCreating && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <h3 className="mb-3 font-semibold text-white">새 폴더 생성</h3>
+        <div className="rounded-xl border border-app-border bg-app-card p-4">
+          <h3 className="mb-3 font-semibold text-app-text">새 폴더 생성</h3>
           <div className="space-y-3">
             <input
               type="text"
@@ -482,7 +484,7 @@ export function FoldersTab() {
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="폴더 이름을 입력하세요"
               aria-label="새 폴더 이름"
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-lg border border-app-border bg-app-card px-3 py-2 text-sm text-app-text placeholder-app-text-muted focus:border-indigo-500 focus:outline-none"
               onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
               autoFocus
             />
@@ -491,7 +493,7 @@ export function FoldersTab() {
               value={newFolderParentId ?? ""}
               onChange={(e) => setNewFolderParentId(e.target.value || null)}
               aria-label="상위 폴더 선택"
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg border border-app-border bg-app-card px-3 py-2 text-sm text-app-text"
             >
               <option value="">최상위 폴더</option>
               {flatFolders.map((f) => (
@@ -524,7 +526,7 @@ export function FoldersTab() {
               </button>
               <button
                 onClick={() => { setIsCreating(false); setNewFolderName(""); setNewFolderParentId(null); }}
-                className="rounded-lg bg-gray-700 px-4 py-1.5 text-sm text-gray-300 hover:bg-gray-600"
+                className="rounded-lg bg-app-card px-4 py-1.5 text-sm text-app-text hover:bg-app-card-hover"
               >
                 취소
               </button>
@@ -535,22 +537,22 @@ export function FoldersTab() {
 
       {/* Smart Folder Modal */}
       {smartFolderOpen && (
-        <div className="rounded-xl border border-green-700 bg-gray-800 p-4">
+        <div className="rounded-xl border border-green-700 bg-app-card p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-white">✨ 스마트 폴더 생성</h3>
-            <button onClick={() => setSmartFolderOpen(false)} className="text-gray-400 hover:text-white">✕</button>
+            <h3 className="font-semibold text-app-text">✨ 스마트 폴더 생성</h3>
+            <button onClick={() => setSmartFolderOpen(false)} className="text-app-text-muted hover:text-app-text">✕</button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {SMART_FOLDER_OPTIONS.map((opt) => (
               <button
                 key={opt.type}
                 onClick={() => handleCreateSmartFolder(opt.type)}
-                className="flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-900/50 p-3 text-left hover:border-green-700 hover:bg-gray-800 transition-all"
+                className="flex items-start gap-3 rounded-lg border border-app-border bg-app-bg-hover p-3 text-left hover:border-green-700 hover:bg-app-card transition-all"
               >
                 <span className="text-2xl">{opt.icon}</span>
                 <div>
-                  <div className="font-medium text-white">{opt.label}</div>
-                  <div className="text-xs text-gray-400">{opt.description}</div>
+                  <div className="font-medium text-app-text">{opt.label}</div>
+                  <div className="text-xs text-app-text-muted">{opt.description}</div>
                 </div>
               </button>
             ))}
@@ -566,7 +568,7 @@ export function FoldersTab() {
               {selectedGroupIds.size}개 그룹 선택됨
             </span>
             <select
-              className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white"
+              className="rounded border border-app-border bg-app-card px-2 py-1 text-sm text-app-text"
               defaultValue=""
               aria-label="이동할 폴더 선택"
               onChange={(e) => {
@@ -580,13 +582,13 @@ export function FoldersTab() {
             </select>
             <button
               onClick={() => handleBatchMove(null)}
-              className="text-sm text-gray-400 underline hover:text-white"
+              className="text-sm text-app-text-muted underline hover:text-app-text"
             >
               분류 해제
             </button>
             <button
               onClick={() => setSelectedGroupIds(new Set())}
-              className="ml-auto text-sm text-gray-400 underline hover:text-white"
+              className="ml-auto text-sm text-app-text-muted underline hover:text-app-text"
             >
               선택 해제
             </button>
@@ -595,7 +597,7 @@ export function FoldersTab() {
       )}
 
       {/* Send Bar */}
-      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-3">
+      <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
         <div className="flex items-center gap-3">
           <input
             type="text"
@@ -603,7 +605,7 @@ export function FoldersTab() {
             onChange={(e) => setSendMessage(e.target.value)}
             placeholder="폴더 단위 발송할 메시지 입력 (폴더명 옆 📤 버튼으로 개별 발송)..."
             aria-label="발송할 메시지 입력"
-            className="flex-1 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-app-border bg-app-card px-3 py-2 text-sm text-app-text placeholder-app-text-muted focus:border-indigo-500 focus:outline-none"
             onKeyDown={(e) => {
               if (e.key === "Enter" && sendMessage.trim()) {
                 handleSendToAllFolders();
@@ -630,7 +632,7 @@ export function FoldersTab() {
       {/* Folder Tree/List */}
       {!loading && (
         <div
-          className="space-y-2 rounded-xl border border-gray-700 bg-gray-800/50 p-4"
+          className="space-y-2 rounded-xl border border-app-border bg-app-card/50 p-4"
           onDragOver={(e) => e.preventDefault()}
           onDrop={async (e) => {
             e.preventDefault();
@@ -651,7 +653,7 @@ export function FoldersTab() {
           {treeView ? (
             // Tree View
             folders.length === 0 ? (
-              <div className="py-12 text-center text-gray-500">
+              <div className="py-12 text-center text-app-text-subtle">
                 <div className="mb-2 text-4xl">📂</div>
                 <p>폴더가 없습니다. &ldquo;새 폴더&rdquo; 버튼으로 폴더를 생성하세요.</p>
                 <p className="mt-1 text-sm">
@@ -682,7 +684,7 @@ export function FoldersTab() {
               {flatFolders.map((folder) => (
                 <div
                   key={folder.id}
-                  className={`rounded-xl border border-gray-700 bg-gray-800/80 p-4 transition-all hover:border-gray-600 ${
+                  className={`rounded-xl border border-app-border bg-app-card/80 p-4 transition-all hover:border-app-border-strong ${
                     dragOverFolderId === folder.id ? "border-indigo-500 bg-indigo-900/20" : ""
                   }`}
                   onDragOver={(e) => handleDragOver(e, folder.id)}
@@ -694,20 +696,20 @@ export function FoldersTab() {
                       {folder.is_smart && (
                         <span className="rounded bg-green-900/40 px-1 text-[10px] text-green-400">SMART</span>
                       )}
-                      <span className="font-medium text-white">{folder.name}</span>
+                      <span className="font-medium text-app-text">{folder.name}</span>
                     </div>
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleSendToFolder(folder.id)}
                         disabled={!sendMessage.trim() || folder.group_ids.length === 0}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white disabled:opacity-30"
+                        className="rounded p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text disabled:opacity-30"
                         title="폴더 발송"
                       >
                         📤
                       </button>
                       <button
                         onClick={() => handleDeleteFolder(folder.id)}
-                        className="rounded p-1 text-gray-500 hover:bg-red-900/30 hover:text-red-400"
+                        className="rounded p-1 text-app-text-subtle hover:bg-red-900/30 hover:text-red-400"
                         title="삭제"
                       >
                         ✕
@@ -715,24 +717,24 @@ export function FoldersTab() {
                     </div>
                   </div>
 
-                  <div className="mb-2 text-xs text-gray-500">
+                  <div className="mb-2 text-xs text-app-text-subtle">
                     {folder.parent_id ? "하위 폴더" : "최상위 폴더"} · {folder.group_ids.length}개 그룹
                   </div>
 
                   <div className="max-h-32 space-y-0.5 overflow-y-auto">
                     {folder.group_ids.length === 0 ? (
-                      <div className="py-2 text-center text-xs text-gray-500">그룹 없음</div>
+                      <div className="py-2 text-center text-xs text-app-text-subtle">그룹 없음</div>
                     ) : (
                       folder.group_ids.map((gid) => (
                         <label
                           key={gid}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-gray-300 hover:bg-gray-700"
+                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-app-text hover:bg-app-card-hover"
                         >
                           <input
                             type="checkbox"
                             checked={selectedGroupIds.has(gid)}
                             onChange={() => toggleGroupSelection(gid)}
-                            className="rounded border-gray-500 bg-gray-700 text-indigo-600"
+                  className="rounded border-app-border-strong bg-app-bg text-indigo-600"
                           />
                           <span className="truncate">{getGroupTitle(gid)}</span>
                         </label>
@@ -745,7 +747,7 @@ export function FoldersTab() {
               ))}
 
               {flatFolders.length === 0 && (
-                <div className="col-span-full py-12 text-center text-gray-500">
+                <div className="col-span-full py-12 text-center text-app-text-subtle">
                   <div className="mb-2 text-4xl">📂</div>
                   <p>폴더가 없습니다.</p>
                 </div>
@@ -757,7 +759,7 @@ export function FoldersTab() {
 
       {/* Summary */}
       {!loading && flatFolders.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className="flex items-center gap-4 text-xs text-app-text-subtle">
           <span>📁 총 {flatFolders.length}개 폴더</span>
           <span>📋 {folders.length}개 루트 폴더</span>
           <span>👥 {groups.length}개 그룹</span>

@@ -277,6 +277,7 @@ function UsersContent() {
   const [auditLogs, setAuditLogs] = useState<api.AdminAuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [commissions, setCommissions] = useState<api.AdminReferralCommission[]>([]);
+  const { toast } = useToast();
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionStatusFilter, setCommissionStatusFilter] = useState<"all" | "pending" | "paid">("pending");
   const [commissionTxDrafts, setCommissionTxDrafts] = useState<Record<string, string>>({});
@@ -439,7 +440,7 @@ function UsersContent() {
     if (!confirmUser) return;
     try {
       const newKey = await api.reissueUserApiKey(confirmUser.id, "Admin reissue");
-      alert(`새 API 키: ${newKey}\n\n이 키는 한 번만 표시됩니다.`);
+      toast("success", `새 API 키가 생성되었습니다. 이 키는 한 번만 표시됩니다.`);
       setConfirmUser(null);
     } catch { setError("키 재발급 실패"); }
   }

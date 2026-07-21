@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
 import { Loader2, WifiOff } from "lucide-react";
 import { updateBadgeFromStats } from "@/lib/appBadge";
-import { requestPushPermission, subscribeToPush } from "@/lib/pushNotifications";
+import { requestPushPermission, subscribeToPush } from "@/lib/pushManager";
 import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 import { usePwaUpdate } from "@/hooks/usePwaUpdate";
 import { useBatterySaver } from "@/hooks/useBatterySaver";
@@ -341,7 +341,7 @@ export function Workspace() {
         <AppRatingPrompt />
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-4 md:pb-4"
+          className="flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch] p-4 md:pb-4"
           style={{
             paddingBottom: isMobile
               ? `max(5rem, calc(5rem + ${keyboardHeight}px), env(safe-area-inset-bottom, 0px))`

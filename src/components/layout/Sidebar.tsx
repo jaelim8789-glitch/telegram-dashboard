@@ -40,7 +40,17 @@ export function Sidebar() {
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem("telemon-sidebar-recent-searches") || "[]"); } catch { return []; } });
+  const [showRecent, setShowRecent] = useState(false);
   const [groupMgmtOpen, setGroupMgmtOpen] = useState(false);
+  const [showDormantBanner, setShowDormantBanner] = useState(false);
+  const dormantAccounts = accounts.filter(a => a.status !== "active");
+
+  useEffect(() => {
+    if (dormantAccounts.length > 0 && !localStorage.getItem("telemon-dormant-banner-dismissed")) {
+      setShowDormantBanner(true);
+    }
+  }, [dormantAccounts.length]);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
   const { isFavorite, toggleFavorite } = useAccountFavorites();
@@ -210,6 +220,7 @@ export function Sidebar() {
                 ? "bg-app-primary text-white"
                 : "text-app-text-muted hover:text-app-text hover:bg-app-card"
             )}
+            aria-label="배치 모드 전환"
             title={batchMode ? "일괄 선택 종료" : "일괄 선택 모드"}
           >
             <CheckSquare className="h-4 w-4" />
@@ -220,6 +231,7 @@ export function Sidebar() {
               onClick={() => setGroupMgmtOpen(true)}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
               title="그룹 관리"
+              aria-label="그룹 관리"
             >
               <Layers className="h-4 w-4" />
             </button>
@@ -276,6 +288,7 @@ export function Sidebar() {
             onClick={exitBatchMode}
             className="flex h-6 w-6 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
             title="일괄 모드 종료"
+            aria-label="배치 모드 종료"
           >
             <X className="h-3 w-3" />
           </button>
@@ -286,21 +299,46 @@ export function Sidebar() {
       {accounts.length > 0 && (
         <div className="relative border-b border-app-border px-3 py-2">
           <Search aria-hidden="true" className="pointer-events-none absolute left-[18px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="계정 이름 또는 전화번호 검색"
-            aria-label="계정 검색"
-            className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
-          />
-          {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
-              title="검색 지우기">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowRecent(true)}
+              onBlur={() => setTimeout(() => setShowRecent(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  const q = searchQuery.trim();
+                  setRecentSearches(prev => {
+                    const next = [q, ...prev.filter(s => s !== q)].slice(0, 5);
+                    try { localStorage.setItem("telemon-sidebar-recent-searches", JSON.stringify(next)); } catch {}
+                    return next;
+                  });
+                }
+              }}
+              placeholder="계정 이름 또는 전화번호 검색"
+              aria-label="계정 검색"
+              className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => { setSearchQuery(""); setRecentSearches([]); try { localStorage.removeItem("telemon-sidebar-recent-searches"); } catch {} }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
+                title="검색 지우기"
+                aria-label="검색 초기화">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {showRecent && recentSearches.length > 0 && !searchQuery && (
+              <div className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-app-border bg-app-card shadow-lg z-50 py-1">
+                {recentSearches.map((s, i) => (
+                  <button key={i} type="button" onMouseDown={() => setSearchQuery(s)}
+                    className="w-full px-3 py-1.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors">
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -379,7 +417,21 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="flex-1 space-y-1 overflow-y-auto p-3">
+      <div className="flex-1 space-y-1 overflow-y-auto [-webkit-overflow-scrolling:touch] p-3">
+        {showDormantBanner && dormantAccounts.length > 0 && (
+          <div className="mx-0 mb-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-amber-700">비활성 계정 {dormantAccounts.length}개</p>
+                <p className="text-[10px] text-amber-600/70 mt-0.5">사이드바에서 확인하고 정리하세요</p>
+              </div>
+              <button onClick={() => { setShowDormantBanner(false); try { localStorage.setItem("telemon-dormant-banner-dismissed", "true"); } catch {} }}
+                className="shrink-0 h-5 w-5 rounded flex items-center justify-center text-amber-500 hover:bg-amber-500/10">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
         {accountsError && <InlineError>{accountsError}</InlineError>}
         {deleteError && <InlineError>{deleteError}</InlineError>}
         {!accountsError && accountsLoading && accounts.length === 0 && (
@@ -407,12 +459,13 @@ export function Sidebar() {
           return (
             <div key={account.id} className="flex items-start gap-1.5">
               {batchMode && (
-                <button
-                  type="button"
-                  onClick={() => toggleBatchSelection(account.id)}
-                  className="mt-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition-colors"
-                  title={isBatchSelected ? "선택 해제" : "선택"}
-                >
+              <button
+                type="button"
+                onClick={() => toggleBatchSelection(account.id)}
+                className="mt-3 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors"
+                title={isBatchSelected ? "선택 해제" : "선택"}
+                aria-label={isBatchSelected ? "선택 해제" : "선택"}
+              >
                   {isBatchSelected ? (
                     <CheckSquare className="h-4 w-4 text-app-primary" />
                   ) : (

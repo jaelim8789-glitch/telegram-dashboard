@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Send, FileText, CalendarClock, Zap, MessageSquare, CheckCircle2, AlertTriangle, Clock, ArrowRight, Plus } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId } from "@/types";
 import { getToken } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -28,6 +29,7 @@ const FEATURE_META: Record<string, { icon: React.ComponentType<{ className?: str
 };
 
 export function SendHub() {
+  const { toast } = useToast();
   const navigateToFeature = useDashboardStore((s) => s.navigateToFeature);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const [stats, setStats] = useState<{ sent: number; failed: number; scheduled: number; loading: boolean }>({ sent: 0, failed: 0, scheduled: 0, loading: true });
@@ -48,7 +50,7 @@ export function SendHub() {
         const scheduled = list.filter((b: any) => b.status === "pending" || b.status === "scheduled").length;
         setStats({ sent, failed, scheduled, loading: false });
       })
-      .catch(() => { if (!cancelled) setStats((s) => ({ ...s, loading: false })); });
+      .catch(() => { if (!cancelled) { setStats((s) => ({ ...s, loading: false })); toast("error", "발송 통계를 불러오지 못했습니다."); } });
     return () => { cancelled = true; };
   }, [selectedAccountId]);
 
