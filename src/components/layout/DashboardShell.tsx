@@ -90,6 +90,19 @@ export function DashboardShell() {
   }), [setActiveTab]);
   useKeyboardShortcuts(shortcutHandlers);
 
+  // ── Foreground auto-refresh ──
+  const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        fetchAccounts();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [fetchAccounts]);
+
   // ── Browser notifications ──
   const { notify, isSupported } = useNotification();
 

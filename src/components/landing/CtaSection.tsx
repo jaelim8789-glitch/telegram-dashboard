@@ -18,15 +18,15 @@ export function CtaSection() {
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-8 bg-[var(--color-accent)]" />
             <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em]" style={{ color: "var(--color-accent)" }}>
-              지금 시작
+              무료 체험
             </p>
             <div className="h-px w-8 bg-[var(--color-accent)]" />
           </div>
           <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
-            지금 바로 시작하세요
+            지금 <span style={{ color: "var(--color-accent)" }}>무료체험</span> 시작하기
           </h2>
           <p className="text-xs sm:text-sm editorial-body max-w-md mx-auto luxury-section-desc">
-            코드 없이, 복잡한 설정 없이. 하나의 대시보드로 모든 텔레그램 작업을 자동화하십시오.
+            코드 없이, 복잡한 설정 없이. 하나의 대시보드로 모든 텔레그램 작업을 자동화해보세요.
           </p>
 
           {/* Gold divider */}
@@ -34,7 +34,7 @@ export function CtaSection() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link href="/signup" className="btn-luxury btn-luxury-primary group w-full sm:w-auto justify-center">
-              무료로 시작하기
+              무료체험 시작하기
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link href="/pricing" className="btn-luxury btn-luxury-secondary w-full sm:w-auto justify-center">

@@ -246,6 +246,7 @@ export default function SignupPage() {
                   const s = document.createElement("script");
                   s.src = "https://telegram.org/js/telegram-widget.js?22";
                   s.setAttribute("data-telegram-login", TELEGRAM_BOT_USERNAME);
+                  s.setAttribute("data-auth-url", `${SITE.app}/api/auth/telegram-login`);
                   s.setAttribute("data-size", "large");
                   s.setAttribute("data-onauth", "onTelegramAuth(user)");
                   s.setAttribute("data-request-access", "write");

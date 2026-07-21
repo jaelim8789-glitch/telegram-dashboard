@@ -1,14 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, MessageSquare, Users } from "lucide-react";
+import { Shield, Zap, MessageSquare, Users, Bot } from "lucide-react";
 import Link from "next/link";
 
 const STEPS = [
-  { icon: Shield, title: "1. 계정 등록", desc: "전화번호를 입력하고 Telegram 계정을 등록하세요. SMS/2FA 인증을 지원합니다." },
-  { icon: Users, title: "2. 타겟 설정", desc: "참여 중인 그룹에서 발송 대상을 선택하거나, 키워드로 새 그룹을 검색하세요." },
-  { icon: MessageSquare, title: "3. 자동 응답", desc: "키워드 기반 자동 응답 규칙을 설정해 들어오는 메시지에 즉시 답장하세요." },
-  { icon: Zap, title: "4. 자동화 실행", desc: "예약 발송, 반복 발송, 답장매크로로 모든 메시지 작업을 자동화하세요." },
+  { icon: Shield, title: "1. 계정 연결", desc: "전화번호를 입력하고 Telegram 계정을 연결하세요. SMS/2FA 인증을 지원합니다." },
+  { icon: Zap, title: "2. 자동화 설정", desc: "키워드 기반 자동 응답, 예약 발송, 반복 작업 등을 설정하세요." },
+  { icon: Bot, title: "3. AI와 운영 시작", desc: "AI 비서와 함께 채널 운영을 시작하고, 자연스럽게 대화를 이어가세요." },
 ];
 
 export function HowItWorksSection() {
@@ -24,13 +23,13 @@ export function HowItWorksSection() {
             <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
           </div>
           <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
-            4단계로 <span style={{ color: "var(--color-accent)" }}>완벽 자동화</span>
+            간단한 <span style={{ color: "var(--color-accent)" }}>3단계</span>로 시작
           </h2>
-          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">복잡한 설정 없이, 클릭 몇 번으로 끝납니다.</p>
+          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">복잡한 설정 없이, 간단한 3단계로 끝납니다.</p>
           <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
