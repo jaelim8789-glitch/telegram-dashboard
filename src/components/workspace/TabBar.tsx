@@ -46,6 +46,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   aiusage: BarChart3,
   referral: Share2,
   operator: Zap,
+  styleprofile: FileText,
 };
 
 // 모바일 하단 핵심 탭 — AI 대화 첫 화면
