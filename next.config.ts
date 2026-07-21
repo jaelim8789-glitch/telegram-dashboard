@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: true },
-  swcMinify: true,
   compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -20,7 +19,6 @@ const nextConfig: NextConfig = {
     optimisticClientCache: true,
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
-    reactCompiler: true,
     staleTimes: { dynamic: 30, static: 180 },
   },
   async rewrites() {
