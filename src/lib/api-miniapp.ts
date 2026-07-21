@@ -1,12 +1,12 @@
 import * as api from './api';
-import type { Account } from '@/types';
+import type { Account, BroadcastStatus } from '@/types';
 
 // ── 미니앱 전용 API 함수들 ──────────────────────────────────────────────────
 
 export interface RecentBroadcast {
   id: string;
   message: string;
-  status: 'pending' | 'sent' | 'failed';
+  status: BroadcastStatus;
   sentAt: string;
   recipients: number;
 }
