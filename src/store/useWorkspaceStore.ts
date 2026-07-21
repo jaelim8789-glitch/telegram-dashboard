@@ -1,7 +1,9 @@
+import { create } from "zustand";
+import type { AutonomousGrowthLoop } from "@/types/autonomous-growth";
 
 interface WorkspaceStore {
-  // ... existing properties ...
-  // Autonomous Growth Loop 관련 상태 추가
+  // TODO: wire to the real logged-in identity (see useDashboardStore's selectedAccountId)
+  user: { id: string; phone: string } | null;
   activeGrowthLoops: AutonomousGrowthLoop[];
   addGrowthLoop: (loop: AutonomousGrowthLoop) => void;
   updateGrowthLoop: (loopId: string, updates: Partial<AutonomousGrowthLoop>) => void;
@@ -11,8 +13,8 @@ interface WorkspaceStore {
   stopGrowthLoop: (loopId: string) => void;
 }
 
-const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
-  // ... existing state and actions ...
+export const useStore = create<WorkspaceStore>((set, get) => ({
+  user: null,
   
   // Autonomous Growth Loop 관련 초기 상태
   activeGrowthLoops: [],
