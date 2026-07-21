@@ -20,7 +20,6 @@ export const TABS: TabDef[] = [
   { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "send" },
   { id: "scheduler", label: "스케줄러", group: "send" },
   { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "send" },
-  { id: "campaigns", label: "캠페인", shortLabel: "캠페인", group: "send" },
   { id: "templates", label: "템플릿", group: "send" },
 
   // ── 운영/모니터링 ──
