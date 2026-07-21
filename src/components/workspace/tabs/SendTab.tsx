@@ -149,6 +149,9 @@ export function SendTab() {
   const imageFile = useDashboardStore((s) => s.sendImageFile);
   const setImageFile = useDashboardStore((s) => s.setSendImageFile);
   const plan = useDashboardStore((s) => s.plan);
+  const sendProgress = useDashboardStore((s) => s.sendProgress);
+  const setSendProgress = useDashboardStore((s) => s.setSendProgress);
+  const clearSendProgress = useDashboardStore((s) => s.clearSendProgress);
   const imageObjectUrl = useMemo(() => imageFile ? URL.createObjectURL(imageFile) : null, [imageFile]);
   useEffect(() => {
     return () => { if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl); };
@@ -1144,30 +1147,54 @@ export function SendTab() {
 
   useEffect(() => {
     if (!selectedAccountId) return;
+    
+    // 계정 상태 확인 후 활성 상태일 때만 답장매크로 정보 가져오기
+    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+    if (currentAccount?.status !== 'active') {
+      setReplyMacroActive(false);
+      setReplyMacroMessage('');
+      setReplyMacroLoading(false);
+      return;
+    }
+    
     setReplyMacroLoading(true);
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
       headers: authHeaders(),
     })
-      .then((r) => r.json())
-      .then((data) => {
-        setReplyMacroActive(!!data.is_active);
-        setReplyMacroMessage(data.message_content || "");
+      .then(async (r) => {
+        if (r.status === 400 || r.status === 401 || r.status === 403) {
+          // 인증 관련 에러 처리
+          const errorData = await r.json();
+          console.warn('답장매크로 인증 에러:', errorData.detail);
+          setReplyMacroActive(false);
+          setReplyMacroMessage('');
+          return { is_active: false, message_content: '' };
+        }
+        return r.json();
       })
-      .catch(() => {})
+      .then((data) => {
+        setReplyMacroActive(!!data?.is_active);
+        setReplyMacroMessage(data?.message_content || '');
+      })
+      .catch((error) => {
+        console.error('답장매크로 정보 가져오기 실패:', error);
+        setReplyMacroActive(false);
+        setReplyMacroMessage('');
+      })
       .finally(() => setReplyMacroLoading(false));
-  }, [selectedAccountId]);
-
-  function handleSelectRecoverableFailures() {
-    if (recoverableFailedIds.length === 0) {
-      toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
-      return;
-    }
-    setSelectedHistoryIds(new Set(recoverableFailedIds));
-    toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
-  }
+  }, [selectedAccountId, accounts]);
 
   async function saveReplyMacroToggle(nextActive: boolean) {
     if (!selectedAccountId || replyMacroSaving) return;
+    
+    // 계정 상태 확인
+    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+    if (currentAccount?.status !== 'active') {
+      toast("error", "계정이 인증되지 않아 답장매크로를 사용할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
+      setReplyMacroActive(false);
+      return;
+    }
+    
     setReplyMacroSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
@@ -1175,6 +1202,14 @@ export function SendTab() {
         headers: authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: replyMacroMessage }),
       });
+      
+      if (res.status === 400 || res.status === 401 || res.status === 403) {
+        const errorData = await res.json();
+        toast("error", errorData.detail || "계정 인증이 필요합니다. 먼저 계정 등록에서 Telegram 인증을 완료해주세요.");
+        setReplyMacroActive(false);
+        return;
+      }
+      
       const data = await res.json();
       if (!res.ok) {
         toast("error", data.detail || "저장 실패");
@@ -1186,11 +1221,21 @@ export function SendTab() {
       } else {
         toast("success", "랜덤 답장 꺼짐");
       }
-    } catch {
-      toast("error", "네트워크 오류");
+    } catch (error) {
+      console.error('답장매크로 토글 에러:', error);
+      toast("error", "네트워크 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setReplyMacroSaving(false);
     }
+  }
+
+  function handleSelectRecoverableFailures() {
+    if (recoverableFailedIds.length === 0) {
+      toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
+      return;
+    }
+    setSelectedHistoryIds(new Set(recoverableFailedIds));
+    toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
   }
 
   if (!account) {
