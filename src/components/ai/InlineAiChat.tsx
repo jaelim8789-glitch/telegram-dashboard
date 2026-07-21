@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
 import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
+import { AiWelcomeCard } from "@/components/ai/AiWelcomeCard";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
@@ -634,8 +635,10 @@ export function InlineAiChat() {
               </>
             )}
           </div>
-        ) : (
-          <div className="space-y-3">
+            ) : (
+              <>
+              <AiWelcomeCard />
+              <div className="space-y-3">
             {messagesLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (

@@ -13,6 +13,7 @@ import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
+import { getSafeAreaStyle } from "@/lib/safeArea";
 import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -53,8 +54,8 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   pixeloffice: Building2,
 };
 
-// 모바일 하단 핵심 탭 — AI 대화 첫 화면
-const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "pixeloffice"];
+// 모바일 하단 핵심 탭 — AI 대화 첫 화면 (v3: AI 중심)
+const MOBILE_MAIN_TAB_IDS = ["myai", "send", "group"];
 
 function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
@@ -67,7 +68,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
       className={cn(
         "focus-ring relative flex items-center justify-center transition-all duration-200",
         mobile
-          ? "flex-col gap-0.5 flex-1 min-h-[48px] min-w-[48px] py-1"
+          ? "flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2" // 터치 타겟 크기 증가
           : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
         active
           ? (mobile ? "text-app-primary" : "text-app-text")
@@ -77,16 +78,16 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
       {Icon && (
         <Icon className={cn(
           "transition-all duration-200",
-          mobile ? "h-5 w-5" : "h-3.5 w-3.5",
+          mobile ? "h-6 w-6" : "h-3.5 w-3.5", // 모바일 아이콘 크기 증가
           active ? "text-app-primary" : "text-app-text-subtle"
         )} />
       )}
-      <span className={mobile ? "text-[10px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
+      <span className={mobile ? "text-[11px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
       <span className={cn(mobile ? "hidden" : "sm:hidden")}>{tab.shortLabel ?? tab.label}</span>
       {badge != null && badge > 0 && (
         <span className={cn(
           "flex items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white",
-          mobile ? "absolute -top-0.5 right-1/4 h-4 min-w-[16px]" : "h-4 min-w-[16px]"
+          mobile ? "absolute -top-0.5 right-1/4 h-5 min-w-[20px]" : "h-4 min-w-[16px]"
         )}>
           {badge > 99 ? "99+" : badge}
         </span>
@@ -224,6 +225,8 @@ export function TabBar() {
             }}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchEnd={(e) => e.stopPropagation()}
+            role="navigation"
+            aria-label="모바일 하단 내비게이션"
           >
             <div className="flex items-center justify-around max-w-lg mx-auto px-1">
               {mobileMainTabs.map((tab) => (
@@ -231,7 +234,11 @@ export function TabBar() {
                   key={tab.id}
                   tab={tab}
                   active={tab.id === activeTab}
-                  onSelect={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
+                  onSelect={() => { 
+                    haptics.light(); 
+                    setActiveTab(tab.id); 
+                    setMoreOpen(false); 
+                  }}
                   badge={tabBadges[tab.id]}
                   mobile
                 />
@@ -240,22 +247,34 @@ export function TabBar() {
               {hasMoreTab && (
                 <button
                   type="button"
-                  onClick={() => { haptics.light(); setMoreOpen(true); }}
-                  className={`flex flex-col gap-0.5 flex-1 min-h-[48px] min-w-[48px] py-1 items-center justify-center transition-all duration-200 relative ${
+                  onClick={() => { 
+                    haptics.light(); 
+                    setMoreOpen(true); 
+                  }}
+                  className={`flex flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2 items-center justify-center transition-all duration-200 relative ${
                     moreOpen ? "text-app-primary" : "text-app-text-muted hover:text-app-text-secondary"
                   }`}
+                  aria-expanded={moreOpen}
+                  aria-controls="more-menu"
+                  aria-haspopup="true"
                 >
-                  <MoreHorizontal className="h-5 w-5" />
-                  <span className="text-[10px] leading-none">더보기</span>
+                  <MoreHorizontal className="h-6 w-6" />
+                  <span className="text-[11px] leading-none">더보기</span>
                   <span className="absolute inset-1.5 rounded-xl transition-all duration-200 hover:bg-app-card-hover/50" />
                 </button>
               )}
               <button
                 type="button"
-                onClick={() => { haptics.light(); setShowAccountPicker(true); }}
-                className="flex shrink-0 flex-col items-center gap-0.5 py-1.5 px-1 min-w-0 min-h-[44px] text-app-text-muted hover:text-app-text-secondary transition-colors relative"
+                onClick={() => { 
+                  haptics.light(); 
+                  setShowAccountPicker(true); 
+                }}
+                className="flex shrink-0 flex-col items-center gap-0.5 py-2.5 px-1 min-w-0 min-h-[60px] text-app-text-muted hover:text-app-text-secondary transition-colors relative"
+                aria-expanded={showAccountPicker}
+                aria-controls="account-picker"
+                aria-haspopup="true"
               >
-                <span className="text-[10px] leading-none">{accountLabel}</span>
+                <span className="text-[11px] leading-none">{accountLabel}</span>
               </button>
               <QuickActionSheet />
             </div>
@@ -271,15 +290,21 @@ export function TabBar() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-40 bg-black/40"
                 onClick={() => setMoreOpen(false)}
+                aria-hidden="true"
               />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                id="more-menu"
                 className="fixed bottom-16 left-0 right-0 z-50 max-h-[60vh] overflow-y-auto rounded-t-2xl bg-app-card border-t border-app-border/60 px-4 pb-6 pt-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="more-menu-title"
               >
                 <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
+                <h2 id="more-menu-title" className="sr-only">추가 메뉴</h2>
                 {moreGroups.map((group) => (
                   <div key={group.label} className="mb-3">
                     <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-1.5 px-1">
@@ -293,11 +318,16 @@ export function TabBar() {
                           <button
                             key={tab.id}
                             type="button"
-                            onClick={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
+                            onClick={() => { 
+                              haptics.light(); 
+                              setActiveTab(tab.id); 
+                              setMoreOpen(false); 
+                            }}
                             className={cn(
-                              "flex flex-col items-center gap-1 rounded-xl py-3 transition-colors",
+                              "flex flex-col items-center gap-1 rounded-xl py-3 transition-colors min-h-[60px]", // 각 아이템의 최소 높이 증가
                               active ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
                             )}
+                            aria-current={active ? "page" : undefined}
                           >
                             {Icon && <Icon className="h-5 w-5" />}
                             <span className="text-[10px] leading-tight text-center">{tab.shortLabel ?? tab.label}</span>
@@ -321,16 +351,21 @@ export function TabBar() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-40 bg-black/40"
                 onClick={() => setShowAccountPicker(false)}
+                aria-hidden="true"
               />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                id="account-picker"
                 className="fixed bottom-16 left-0 right-0 z-50 max-h-[45vh] overflow-y-auto rounded-t-2xl bg-app-card border-t border-app-border/60 px-4 pb-6 pt-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="account-picker-title"
               >
                 <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
-                <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-2 px-1">계정 전환</p>
+                <h2 id="account-picker-title" className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-2 px-1">계정 전환</h2>
                 <div className="max-h-[35vh] overflow-y-auto space-y-1">
                   {accounts.map((account) => {
                     const isSelected = account.id === selectedAccountId;
@@ -344,9 +379,10 @@ export function TabBar() {
                           setShowAccountPicker(false);
                         }}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                          "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[50px]", // 계정 선택 항목의 최소 높이 증가
                           isSelected ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
                         )}
+                        aria-current={isSelected ? "page" : undefined}
                       >
                         <span className="text-sm font-medium truncate flex-1">{getAccountDisplayName(account)}</span>
                         {isSelected && (
