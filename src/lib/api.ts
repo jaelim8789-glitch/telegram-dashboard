@@ -1157,14 +1157,12 @@ export interface DashboardUser {
   isActive: boolean;
   createdAt: string;
   lastLogin: string | null;
-}
-
-interface ApiUser {
-  id: string;
-  phone: string;
-  is_active: boolean;
-  created_at: string;
-  last_login: string | null;
+  // Tenant info (enriched)
+  plan: string | null;  // free, pro, team
+  subscriptionStatus: string | null;  // active, inactive, pending, past_due, canceled
+  trialExpiresAt: string | null;
+  accountCount: number;  // number of Telegram accounts
+  starsBalance: number;  // Telegram Stars balance
 }
 
 function toDashboardUser(api: ApiUser): DashboardUser {
@@ -1174,7 +1172,25 @@ function toDashboardUser(api: ApiUser): DashboardUser {
     isActive: api.is_active,
     createdAt: api.created_at,
     lastLogin: api.last_login,
+    plan: api.plan,
+    subscriptionStatus: api.subscription_status,
+    trialExpiresAt: api.trial_expires_at,
+    accountCount: api.account_count,
+    starsBalance: api.stars_balance,
   };
+}
+
+interface ApiUser {
+  id: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+  plan: string | null;
+  subscription_status: string | null;
+  trial_expires_at: string | null;
+  account_count: number;
+  stars_balance: number;
 }
 
 export async function fetchUsers(): Promise<DashboardUser[]> {
