@@ -277,7 +277,7 @@ export function StyleProfileTab() {
           {/* Detailed breakdown */}
           <Panel
             title="🔍 상세 분석"
-            actions={
+            action={
               <button onClick={() => setShowRaw(!showRaw)} className="text-[10px] text-app-text-muted hover:text-app-text">
                 {showRaw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 {showRaw ? "간단히" : "상세히"}
