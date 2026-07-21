@@ -74,3 +74,4 @@ test_server.ps1
 # nested backend repo checked out locally (separate git repo, not a submodule) + stray log dump
 /telegram-dashboard-backend/
 /git_log.txt
+TeleMon-qoder-backend/
