@@ -9,6 +9,7 @@ import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Modal } from "@/components/ui/Modal";
 import { InlineError } from "@/components/ui/InlineError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -273,6 +274,15 @@ function UsersContent() {
   });
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [newViewName, setNewViewName] = useState("");
+  const [auditLogs, setAuditLogs] = useState<api.AdminAuditLog[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [commissions, setCommissions] = useState<api.AdminReferralCommission[]>([]);
+  const [commissionLoading, setCommissionLoading] = useState(false);
+  const [commissionStatusFilter, setCommissionStatusFilter] = useState<"all" | "pending" | "paid">("pending");
+  const [commissionTxDrafts, setCommissionTxDrafts] = useState<Record<string, string>>({});
+  const [highRiskAction, setHighRiskAction] = useState<{ kind: "bulk_deactivate" | "delete_user"; phone?: string } | null>(null);
+  const [highRiskPhrase, setHighRiskPhrase] = useState("");
+  const [highRiskSubmitting, setHighRiskSubmitting] = useState(false);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -281,6 +291,11 @@ function UsersContent() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    void loadAuditLogs();
+    void loadCommissions();
+  }, []);
 
   useEffect(() => {
     if (!selectedUser) return;
@@ -391,6 +406,31 @@ function UsersContent() {
     }
   }
 
+  async function loadAuditLogs() {
+    setAuditLoading(true);
+    try {
+      const logs = await api.fetchAdminAuditLogs(30);
+      setAuditLogs(logs);
+    } finally {
+      setAuditLoading(false);
+    }
+  }
+
+  async function loadCommissions() {
+    setCommissionLoading(true);
+    try {
+      const status = commissionStatusFilter === "all" ? undefined : commissionStatusFilter;
+      const list = await api.fetchAdminReferralCommissions(status);
+      setCommissions(list);
+    } finally {
+      setCommissionLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadCommissions();
+  }, [commissionStatusFilter]);
+
   async function handleReissue(u: DashboardUser) {
     setConfirmUser(u);
   }
@@ -409,6 +449,46 @@ function UsersContent() {
       await api.toggleUser(u.id, !u.isActive);
       await load();
     } catch { setError("상태 변경 실패"); }
+  }
+
+  async function handleApproveCommission(commissionId: string) {
+    try {
+      await api.approveAdminReferralCommission(commissionId, commissionTxDrafts[commissionId] || undefined);
+      await Promise.all([loadCommissions(), loadAuditLogs()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "커미션 승인 실패");
+    }
+  }
+
+  function requestHighRiskAction(action: { kind: "bulk_deactivate" | "delete_user"; phone?: string }) {
+    setHighRiskAction(action);
+    setHighRiskPhrase("");
+  }
+
+  async function executeHighRiskAction() {
+    if (!highRiskAction || highRiskSubmitting) return;
+    const required = highRiskAction.kind === "bulk_deactivate" ? "DEACTIVATE" : "DELETE";
+    if (highRiskPhrase.trim().toUpperCase() !== required) {
+      setError(`확인 문구가 일치하지 않습니다. ${required} 를 입력해주세요.`);
+      return;
+    }
+    setHighRiskSubmitting(true);
+    setError(null);
+    try {
+      if (highRiskAction.kind === "bulk_deactivate") {
+        await runBulkToggle(false);
+      } else if (highRiskAction.kind === "delete_user" && highRiskAction.phone) {
+        await api.adminDeleteUserByPhone(highRiskAction.phone);
+        await load();
+      }
+      await loadAuditLogs();
+      setHighRiskAction(null);
+      setHighRiskPhrase("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "고위험 작업 실패");
+    } finally {
+      setHighRiskSubmitting(false);
+    }
   }
 
   async function refreshUsersAndSelection(userId: string) {
@@ -458,7 +538,7 @@ function UsersContent() {
         </Link>
       </div>
 
-      <TokenTopUpSection onTopUp={() => {}} />
+      <TokenTopUpSection onTopUp={() => { void loadAuditLogs(); void load(); }} />
       <DeleteUserByPhoneSection onDeleted={load} />
       <ManualIssueSection onIssued={load} />
 
@@ -521,7 +601,7 @@ function UsersContent() {
             <span>선택 {selectedIds.length}명</span>
             <Button size="sm" variant="ghost" onClick={resetFilters}>필터 초기화</Button>
             <Button size="sm" variant="secondary" onClick={() => runBulkToggle(true)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 활성화</Button>
-            <Button size="sm" variant="danger" onClick={() => runBulkToggle(false)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 비활성화</Button>
+            <Button size="sm" variant="danger" onClick={() => requestHighRiskAction({ kind: "bulk_deactivate" })} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 비활성화</Button>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-t border-app-border pt-2">
             <Input
@@ -676,6 +756,104 @@ function UsersContent() {
         )}
       </Panel>
 
+      <Panel
+        accent="violet"
+        title={<div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-violet-400" /> 추천/총판 커미션 운영</div>}
+        description="대기 중 커미션을 검토하고 지급 처리합니다."
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Select value={commissionStatusFilter} onChange={(e) => setCommissionStatusFilter(e.target.value as typeof commissionStatusFilter)}>
+            <option value="all">전체</option>
+            <option value="pending">대기</option>
+            <option value="paid">지급완료</option>
+          </Select>
+          <Button size="sm" variant="ghost" onClick={() => void loadCommissions()} disabled={commissionLoading}>새로고침</Button>
+        </div>
+        {commissionLoading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
+        {!commissionLoading && commissions.length === 0 && <EmptyState icon={TrendingUp} title="커미션 데이터 없음" />}
+        {!commissionLoading && commissions.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-app-border text-app-text-muted">
+                  <th className="px-2 py-2 text-left">상태</th>
+                  <th className="px-2 py-2 text-left">금액</th>
+                  <th className="px-2 py-2 text-left">Rate</th>
+                  <th className="px-2 py-2 text-left">지급 TX</th>
+                  <th className="px-2 py-2 text-right">작업</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-app-border">
+                {commissions.map((c) => (
+                  <tr key={c.id}>
+                    <td className="px-2 py-2">
+                      <Badge tone={c.status === "pending" ? "warning" : "success"}>{c.status}</Badge>
+                    </td>
+                    <td className="px-2 py-2">{(c.amountCents / 100).toLocaleString()} USDT</td>
+                    <td className="px-2 py-2">{(c.rate * 100).toFixed(1)}%</td>
+                    <td className="px-2 py-2">
+                      {c.status === "pending" ? (
+                        <Input
+                          value={commissionTxDrafts[c.id] ?? ""}
+                          onChange={(e) => setCommissionTxDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                          placeholder="지급 TX ID (선택)"
+                          className="w-52"
+                        />
+                      ) : (
+                        <span className="text-app-text-muted">{c.paymentTxId ?? "-"}</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {c.status === "pending" ? (
+                        <Button size="sm" onClick={() => void handleApproveCommission(c.id)}>지급 승인</Button>
+                      ) : (
+                        <span className="text-app-text-muted">완료</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        accent="slate"
+        title={<div className="flex items-center gap-2"><Search className="h-4 w-4 text-slate-400" /> 관리자 감사로그</div>}
+        description="고위험 작업 추적용 최근 감사 이벤트입니다."
+      >
+        <div className="mb-2 flex items-center justify-end">
+          <Button size="sm" variant="ghost" onClick={() => void loadAuditLogs()} disabled={auditLoading}>새로고침</Button>
+        </div>
+        {auditLoading && <p className="text-xs text-app-text-muted">불러오는 중...</p>}
+        {!auditLoading && auditLogs.length === 0 && <EmptyState icon={Search} title="감사로그 없음" />}
+        {!auditLoading && auditLogs.length > 0 && (
+          <div className="max-h-72 overflow-y-auto rounded-lg border border-app-border">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-app-card">
+                <tr className="border-b border-app-border text-app-text-muted">
+                  <th className="px-2 py-2 text-left">시간</th>
+                  <th className="px-2 py-2 text-left">액션</th>
+                  <th className="px-2 py-2 text-left">대상</th>
+                  <th className="px-2 py-2 text-left">메모</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-app-border">
+                {auditLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="px-2 py-2 text-app-text-muted">{formatDateTime(log.createdAt)}</td>
+                    <td className="px-2 py-2"><Badge tone="info">{log.action}</Badge></td>
+                    <td className="px-2 py-2">{log.targetPhone ?? log.targetId ?? "-"}</td>
+                    <td className="px-2 py-2 text-app-text-muted">{log.memo ?? log.detail ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
       {selectedUser && (
         <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSelectedUser(null)}>
           <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-app-border bg-app-card p-4" onClick={(e) => e.stopPropagation()}>
@@ -785,12 +963,7 @@ function UsersContent() {
           setDeleteConfirmOpen(false);
           setDeletePhone(null);
           if (!phone) return;
-          try {
-            await api.adminDeleteUserByPhone(phone);
-            await load();
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "삭제 실패");
-          }
+          requestHighRiskAction({ kind: "delete_user", phone });
         }}
         onCancel={() => { setDeleteConfirmOpen(false); setDeletePhone(null); }}
       />
@@ -803,6 +976,30 @@ function UsersContent() {
         onConfirm={() => { const u = toggleConfirm; setToggleConfirm(null); if (u) handleToggle(u); }}
         onCancel={() => setToggleConfirm(null)}
       />
+
+      <Modal
+        open={!!highRiskAction}
+        onClose={() => { if (!highRiskSubmitting) setHighRiskAction(null); }}
+        title="고위험 작업 2단계 승인"
+        description={highRiskAction?.kind === "bulk_deactivate"
+          ? "선택 사용자 일괄 비활성화 전, 확인 문구를 입력해주세요."
+          : `"${highRiskAction?.phone}" 사용자 영구 삭제 전, 확인 문구를 입력해주세요.`}
+        size="sm"
+        preventClose={highRiskSubmitting}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setHighRiskAction(null)} disabled={highRiskSubmitting}>취소</Button>
+            <Button variant="danger" onClick={() => void executeHighRiskAction()} loading={highRiskSubmitting}>실행</Button>
+          </>
+        }
+      >
+        <div className="space-y-2">
+          <p className="text-xs text-app-text-muted">
+            확인 문구: <span className="font-semibold text-app-text">{highRiskAction?.kind === "bulk_deactivate" ? "DEACTIVATE" : "DELETE"}</span>
+          </p>
+          <Input value={highRiskPhrase} onChange={(e) => setHighRiskPhrase(e.target.value)} placeholder="확인 문구 입력" />
+        </div>
+      </Modal>
     </div>
   );
 }
