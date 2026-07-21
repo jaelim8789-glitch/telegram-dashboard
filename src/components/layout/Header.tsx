@@ -7,6 +7,7 @@ import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { FullscreenToggle } from "@/components/ui/FullscreenToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { PixelOfficeWidget } from "@/components/ai/PixelOfficeWidget";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
   if (!expiresAt) return null;
@@ -71,6 +72,11 @@ export function Header() {
       </Link>
 
       <div className="flex items-center gap-2">
+        {/* Pixel Office Widget — 모든 화면에서 보임 */}
+        <div className="flex items-center rounded-xl border border-app-border bg-app-card px-2 py-1 max-sm:hidden sm:flex">
+          <PixelOfficeWidget compact />
+        </div>
+
         <div className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-1.5">
           <span className="status-dot online" />
           <span className="text-xs text-app-text-muted hidden sm:inline">Online</span>

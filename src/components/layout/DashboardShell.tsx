@@ -100,7 +100,7 @@ export function DashboardShell() {
   useKeyboardShortcuts(shortcutHandlers);
 
   const { isKeyboardVisible } = useVisualViewport();
-  const { orientation } = useOrientation();
+  const orientation = useOrientation();
   const scrollPositions = useRef<Map<string, number>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -210,7 +210,7 @@ export function DashboardShell() {
           {sidebarOpen && (
             <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
           )}
-          <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`}>
+          <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`} style={{ paddingLeft: "env(safe-area-inset-left, 0px)" }}>
             <Sidebar />
           </div>
         </div>
@@ -225,7 +225,7 @@ export function DashboardShell() {
           {inspectorOpen && (
             <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
           )}
-          <div className={`relative z-10 ${inspectorOpen ? "block" : "hidden"} sm:block`}>
+          <div className={`relative z-10 ${inspectorOpen ? "block" : "hidden"} sm:block`} style={{ paddingRight: "env(safe-area-inset-right, 0px)" }}>
             <Inspector />
           </div>
         </div>

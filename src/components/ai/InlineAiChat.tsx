@@ -490,7 +490,7 @@ export function InlineAiChat() {
       {chatPanelOpen && (
         <>
           <div className="absolute inset-0 z-20 bg-black/30" onClick={() => setChatPanelOpen(false)} />
-          <div className="absolute left-0 top-0 bottom-0 z-30 w-64 max-w-[80vw] bg-app-card border-r border-app-border flex flex-col shadow-xl transition-transform duration-300" style={{ transform: "translateX(0)" }}>
+          <div className="absolute left-0 top-0 bottom-0 z-30 w-64 max-w-[80vw] bg-app-card border-r border-app-border flex flex-col shadow-xl transition-transform duration-300" style={{ transform: "translateX(0)", paddingLeft: "env(safe-area-inset-left, 0px)" }}>
             <div className="flex items-center justify-between border-b border-app-border px-3 py-2.5 shrink-0">
               <button
                 onClick={() => setChatPanelOpen(false)}
@@ -737,7 +737,7 @@ export function InlineAiChat() {
 
       {/* Tool Confirmation Banner */}
       {pendingConfirmation && (
-        <div className="border-t border-amber-500/30 bg-amber-500/5 px-3 py-2.5 shrink-0 animate-slide-up">
+        <div className="border-t border-amber-500/30 bg-amber-500/5 px-3 py-2.5 shrink-0 animate-slide-up" style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom, 0px))" }}>
           <div className="flex items-start gap-2.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
               <Sparkles className="h-3.5 w-3.5 text-amber-600" />
@@ -810,7 +810,7 @@ export function InlineAiChat() {
 
       {/* Chat input */}
       {activeChatId && (
-        <div className="border-t border-app-border px-3 py-2 shrink-0">
+        <div className="border-t border-app-border px-3 pt-2 shrink-0" style={{ paddingBottom: `max(0.5rem, env(safe-area-inset-bottom, 0px))` }}>
           {/* Quick prompts row */}
           {messages.length > 0 && (
             <div className="flex gap-1 mb-2 overflow-x-auto scrollbar-thin">
@@ -818,9 +818,9 @@ export function InlineAiChat() {
                 <button
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.text)}
-                  className="shrink-0 inline-flex items-center gap-1 rounded-full border border-app-border/60 px-2 py-1 text-[10px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-app-border/60 px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors min-h-[36px]"
                 >
-                  <qp.icon className="h-3 w-3" />
+                  <qp.icon className="h-3.5 w-3.5" />
                   {qp.label}
                 </button>
               ))}
@@ -864,7 +864,7 @@ export function InlineAiChat() {
 
       {/* ── FAB (Floating Action Button) ── */}
       {activeChatId && messages.length > 0 && (
-        <div className="absolute bottom-28 right-4 z-20">
+        <div className="absolute right-4 z-20" style={{ bottom: "max(7rem, calc(7rem + env(safe-area-inset-bottom, 0px)))" }}>
           {fabOpen && (
             <div className="flex flex-col gap-2 mb-2 animate-scale-in">
               <button

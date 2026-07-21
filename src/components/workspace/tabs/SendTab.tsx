@@ -1545,7 +1545,19 @@ export function SendTab() {
                                 {recentGroupIds.map((gid) => {
                                   const group = groups.find((g) => g.id === gid);
                                   if (!group) return null;
-                                  return <GroupSelectCard key={gid} group={group} selected={selectedIds.includes(gid)} onToggleSelect={toggleGroup} />;
+                                  return (
+                                    <GroupSelectCard
+                                      key={gid}
+                                      group={group}
+                                      selected={selectedIds.includes(gid)}
+                                      isFavorite={isFavorite(group.id)}
+                                      isRecent={true}
+                                      tags={tagsByGroup[group.id] ?? []}
+                                      onToggleSelect={toggleGroup}
+                                      onToggleFavorite={toggleFavorite}
+                                      onAddTag={handleAddTag}
+                                    />
+                                  );
                                 })}
                               </div>
                               <hr className="my-2 border-app-border" />
@@ -1569,6 +1581,7 @@ export function SendTab() {
                             );
                           })}
                         </div>
+                        </>
                       )}
                       {!groupsLoading && !groupsError && groups.length > 0 && visibleGroups.length === 0 && (
                         <div className="flex flex-col items-center gap-2 py-6 text-app-text-muted">
@@ -1858,7 +1871,7 @@ export function SendTab() {
                           <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
                         </button>
                         <button type="button"
-                          onClick={() => { setMessage(tpl.content); handleSubmit(); }}
+                          onClick={() => { setMessage(tpl.content); handleSubmit({ preventDefault: () => {} } as FormEvent); }}
                           className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors opacity-0 group-hover:opacity-100"
                           title="바로 발송">🚀</button>
                         <button

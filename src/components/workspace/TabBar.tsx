@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
   CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
-  Share2, TrendingUp,
+  Share2, TrendingUp, Sparkles, Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
@@ -48,10 +48,13 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   operator: Zap,
   styleprofile: FileText,
   growthloop: TrendingUp,
+  fortune: Sparkles,
+  telegram: MessageCircle,
+  pixeloffice: Building2,
 };
 
 // 모바일 하단 핵심 탭 — AI 대화 첫 화면
-const MOBILE_MAIN_TAB_IDS = ["myai", "send", "group"];
+const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "pixeloffice"];
 
 function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
