@@ -7,7 +7,11 @@ export function SplashScreen() {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 1800);
+    const isStandalone =
+      typeof window !== "undefined" &&
+      (window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+    const timer = setTimeout(() => setShow(false), isStandalone ? 1400 : 1800);
     return () => clearTimeout(timer);
   }, []);
 
@@ -28,6 +32,13 @@ export function SplashScreen() {
               background: `linear-gradient(135deg, transparent 0%, var(--color-accent-glow) 30%, transparent 50%, var(--color-accent-glow) 70%, transparent 100%)`,
               backgroundSize: '400% 400%',
               animation: 'gold-shimmer 4s ease-in-out infinite',
+            }}
+          />
+
+          <div
+            className="absolute inset-x-8 top-20 h-24 opacity-[0.12] blur-3xl"
+            style={{
+              background: "radial-gradient(circle at center, var(--color-accent-glow) 0%, transparent 70%)",
             }}
           />
 
@@ -63,7 +74,7 @@ export function SplashScreen() {
               Tele<span style={{ color: "var(--color-accent)" }}>Mon</span>
             </p>
             <p className="mt-2 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-              텔레그램 자동화 플랫폼
+              앱 환경 준비 중
             </p>
           </motion.div>
 

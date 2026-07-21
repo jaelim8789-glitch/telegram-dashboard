@@ -11,6 +11,36 @@ const nextConfig: NextConfig = {
   // Explicit React strict mode (Next.js default, made explicit for clarity)
   reactStrictMode: true,
 
+  // Image optimization domains
+  images: {
+    domains: ['localhost', 'telemon.online', 'www.telemon.online'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'telemon.online',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.telemon.online',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
+    // 이미지 최적화를 위한 설정
+    formats: ['image/webp'], // WebP 형식 지원
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30일 캐시 TTL
+  },
+
+  // 성능 최적화를 위한 설정
+  experimental: {
+    // 번들 분석 도구 활성화
+    outputFileTracingRoot: undefined,
+    // 동적 임포트를 통한 코드 분할
+    esmExternals: 'loose',
+  },
+
   // Rewrite /api/* to the backend so `next dev` works without nginx.
   // In production (Docker), nginx handles this proxy — the rewrite is a no-op
   // because `output: "standalone"` compiles it away and nginx runs in front.

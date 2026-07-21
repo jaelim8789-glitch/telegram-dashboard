@@ -138,6 +138,12 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   setActiveTab: (tab) => {
     try { localStorage.setItem(LAST_TAB_KEY, tab); } catch { }
+    // Debounce double-tap: ignore if same tab within 300ms
+    const now = Date.now();
+    const lastSwitch = (window as any).__lastTabSwitch;
+    if (lastSwitch && now - lastSwitch < 300 && tab === (window as any).__lastTabId) return;
+    (window as any).__lastTabSwitch = now;
+    (window as any).__lastTabId = tab;
     set({ activeTab: tab });
   },
 

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
@@ -7,10 +7,12 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
 import { BiometricLock } from "@/components/ui/BiometricLock";
+import LiveChat from "@/components/LiveChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://telemon.online"),
+  manifest: "/manifest.json",
   title: {
     default: "TeleMon | 텔레그램 자동화 매크로 플랫폼",
     template: "%s | TeleMon",
@@ -18,8 +20,24 @@ export const metadata: Metadata = {
   description:
     "Telegram 계정 관리, 자동 응답, 예약 발송, 그룹 검색, 계정 건강 모니터링, 전달 분석까지. 코딩 없이 하나의 대시보드에서 텔레그램을 완전 자동화하세요.",
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.svg", type: "image/svg+xml", sizes: "192x192" },
+      { url: "/icons/icon-512.svg", type: "image/svg+xml", sizes: "512x512" },
+    ],
+    apple: [{ url: "/icons/icon-192.svg" }],
   },
+  appleWebApp: {
+    capable: true,
+    title: "TeleMon",
+    statusBarStyle: "black-translucent",
+    startupImage: ["/icons/icon-512.svg"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#bfa260",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -51,6 +69,7 @@ export default function RootLayout({
           <PwaInstallPrompt />
           <ToastProvider>{children}</ToastProvider>
         </BiometricLock>
+        <LiveChat />
       </body>
     </html>
   );
