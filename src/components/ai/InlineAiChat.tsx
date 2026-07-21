@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
 import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
 import { AiWelcomeCard } from "@/components/ai/AiWelcomeCard";
+import { AiStaffBoard, FloatingAiButton } from "@/components/ai/AiStaffBoard";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
@@ -555,8 +556,9 @@ export function InlineAiChat() {
                             <p className="text-[10px] text-app-text-muted">
                               {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}
                             </p>
-                          </div>
-                        </div>
+        </div>
+      </div>
+      <FloatingAiButton />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat.id); }}
@@ -638,6 +640,7 @@ export function InlineAiChat() {
             ) : (
               <>
               <AiWelcomeCard />
+              <AiStaffBoard />
               <div className="space-y-3">
             {messagesLoading ? (
               <div className="space-y-3">
