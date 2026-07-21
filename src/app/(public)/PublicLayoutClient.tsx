@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,22 @@ const pageVariants = {
   },
 };
 
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  exit: { opacity: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const menuItemVariants = {
+  hidden: { opacity: 0, y: 24, rotateX: -15 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transition: { duration: 0.5, delay: 0.1 + i * 0.07, ease: [0.16, 1, 0.3, 1] },
+  }),
+};
+
 export function PublicLayoutClient({
   children,
 }: {
@@ -30,6 +46,27 @@ export function PublicLayoutClient({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { t } = useTranslation();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileNavOpen]);
+
+  const menuItems = [
+    { href: "/features", label: t("app.features") },
+    { href: "/pricing", label: t("app.pricing") },
+    { href: "/get-api-key", label: t("app.apiKey") },
+    { href: "/changelog", label: t("app.updates") },
+    { href: "/#faq", label: t("app.faq") },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-app-bg leather-bg">
@@ -59,21 +96,16 @@ export function PublicLayoutClient({
             <LanguageSwitcher />
             <ThemeToggle className="hidden md:flex" />
 
+            {/* Luxury hamburger — animated gold-tinted button */}
             <button
               type="button"
-              onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="flex items-center justify-center rounded-md p-2 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-all md:hidden"
-              aria-label={mobileNavOpen ? "메뉴 닫기" : "메뉴 열기"}
+              onClick={() => setMobileNavOpen(true)}
+              className="flex items-center justify-center rounded-full w-11 h-11 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-all md:hidden border border-[var(--color-accent-border)]"
+              aria-label="메뉴 열기"
             >
-              {mobileNavOpen ? (
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                  <path d="M4.5 4.5L13.5 13.5M13.5 4.5L4.5 13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                  <path d="M3 5H15M3 9H15M3 13H15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-              )}
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <path d="M3 5H15M3 9H15M3 13H15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
             </button>
 
             <div className="hidden sm:flex items-center gap-2">
@@ -82,27 +114,101 @@ export function PublicLayoutClient({
             </div>
           </div>
         </div>
+      </header>
 
+      {/* Full-screen luxury overlay menu (mobile only) */}
+      <AnimatePresence>
         {mobileNavOpen && (
-          <div className="border-t border-[var(--color-accent-border)] bg-[var(--color-card)] md:hidden animate-fade-in">
-            <nav className="flex flex-col px-6 py-4 space-y-1">
-              <Link href="/features" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.features")}</Link>
-              <Link href="/pricing" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.pricing")}</Link>
-              <Link href="/get-api-key" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.apiKey")}</Link>
-              <Link href="/changelog" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.updates")}</Link>
-              <Link href="/#faq" className="tab-heritage w-full" onClick={() => setMobileNavOpen(false)}>{t("app.faq")}</Link>
-              <div className="pt-4 mt-3 border-t border-[var(--color-accent-border)] flex items-center gap-3">
-                <Link href="/admin/login" className="btn-heritage-secondary w-full text-center py-1.5 text-xs">{t("app.login")}</Link>
-                <Link href="/signup" className="btn-heritage w-full text-center py-1.5 text-xs">{t("app.start")}</Link>
+          <motion.div
+            key="mobile-menu-overlay"
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="luxury-mobile-overlay md:hidden"
+          >
+            {/* TM watermark */}
+            <div className="absolute top-8 left-6 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] text-xs font-bold tracking-wider">
+                TM
               </div>
-              <div className="flex items-center gap-2 pt-3">
+              <span className="text-sm font-semibold heritage-heading">
+                Tele<span className="text-[var(--color-accent)]">Mon</span>
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              className="luxury-mobile-menu-close"
+              aria-label="메뉴 닫기"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            <nav className="relative z-10 flex flex-col items-center text-center">
+              {menuItems.map((item, i) => (
+                <motion.div
+                  key={item.href}
+                  custom={i}
+                  variants={menuItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="overflow-hidden"
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileNavOpen(false)}
+                    className="luxury-mobile-nav-link"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+
+              <motion.div
+                custom={menuItems.length}
+                variants={menuItemVariants}
+                initial="hidden"
+                animate="visible"
+                className="mt-12 w-full max-w-[240px] space-y-3"
+              >
+                <div className="divider-heritage" />
+                <Link
+                  href="/admin/login"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="btn-luxury btn-luxury-secondary w-full justify-center text-sm"
+                >
+                  {t("app.login")}
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="btn-luxury btn-luxury-primary w-full justify-center text-sm"
+                >
+                  {t("app.start")}
+                </Link>
+              </motion.div>
+
+              <motion.div
+                custom={menuItems.length + 2}
+                variants={menuItemVariants}
+                initial="hidden"
+                animate="visible"
+                className="absolute bottom-12 left-0 right-0 flex items-center justify-center gap-6"
+              >
                 <ThemeToggle />
                 <LanguageSwitcher />
-              </div>
+              </motion.div>
             </nav>
-          </div>
+
+            {/* Bottom gold line */}
+            <div className="absolute bottom-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
+          </motion.div>
         )}
-      </header>
+      </AnimatePresence>
 
       <div className="pt-16">
         <AnnouncementBanner />

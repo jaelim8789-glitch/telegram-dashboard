@@ -554,6 +554,213 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   transition: width 0.1s ease;
 }
 
+/* ── Luxury Mobile Overlay Menu ── */
+.luxury-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  backdrop-filter: blur(40px) saturate(1.3);
+  -webkit-backdrop-filter: blur(40px) saturate(1.3);
+}
+
+.luxury-mobile-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, var(--color-accent-glow) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.luxury-mobile-nav-link {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  padding: 0.75rem 0;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.luxury-mobile-nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: var(--color-accent);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(-50%);
+}
+
+.luxury-mobile-nav-link:hover::after,
+.luxury-mobile-nav-link:focus-visible::after {
+  width: 100%;
+}
+
+.luxury-mobile-nav-link:hover,
+.luxury-mobile-nav-link:focus-visible {
+  color: var(--color-accent);
+}
+
+.luxury-mobile-menu-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-accent-light);
+  color: var(--color-text);
+  border: 1px solid var(--color-accent-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.luxury-mobile-menu-close:hover,
+.luxury-mobile-menu-close:focus-visible {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  transform: rotate(90deg);
+}
+
+/* ── Luxury Mobile Section Padding ── */
+@media (max-width: 640px) {
+  .luxury-section {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  
+  .luxury-hero {
+    min-height: 90vh;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .luxury-hero-title {
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+  
+  .luxury-hero-subtitle {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    margin-top: 1rem;
+  }
+  
+  .luxury-section-title {
+    font-size: 1.5rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  
+  .luxury-section-desc {
+    font-size: 0.8125rem;
+    line-height: 1.8;
+  }
+  
+  .luxury-card {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+  }
+  
+  .luxury-stack > * + * {
+    margin-top: 0.75rem;
+  }
+}
+
+/* ── Mobile Refined Typography ── */
+@media (max-width: 640px) {
+  .text-display {
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+  }
+  
+  .text-heading {
+    font-size: 1.375rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .text-subheading {
+    font-size: 0.8125rem;
+    letter-spacing: 0.15em;
+  }
+  
+  .text-body-sm {
+    font-size: 0.8125rem;
+    line-height: 1.8;
+  }
+  
+  .gold-smallcaps {
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+  }
+  
+  .section-heading {
+    font-size: 1.5rem;
+  }
+}
+
+/* ── Luxury Mobile Bottom CTA ── */
+.luxury-bottom-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 0.75rem 1.25rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  background: var(--color-glass-bg);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-top: 1px solid var(--color-accent-border);
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .luxury-bottom-cta {
+    display: flex;
+  }
+}
+
+/* ── Luxury Touch Feedback ── */
+@media (hover: none) and (pointer: coarse) {
+  .tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .tap-highlight:active {
+    background: var(--color-accent-light);
+    transition: background 0.05s ease;
+  }
+}
+
+/* ── Smooth Mobile Scroll Snap ── */
+@media (max-width: 640px) {
+  .scroll-snap-mobile {
+    scroll-snap-type: y proximity;
+  }
+  
+  .scroll-snap-mobile > section {
+    scroll-snap-align: start;
+  }
+}
+
 /* ── Marquee ── */
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .tm-marquee-track { display: flex; flex-wrap: nowrap; overflow: hidden; width: 100%; }

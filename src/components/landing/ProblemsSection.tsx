@@ -33,24 +33,29 @@ const PROBLEMS = [
 
 export function ProblemsSection() {
   return (
-    <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
+    <section className="tm-section-bg px-6 sm:px-6 lg:px-8 py-12 sm:py-12 luxury-section">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
-            <AlertTriangle className="h-3 w-3 inline mr-1" /> 현실을 직시하라
-          </p>
-          <h2 className="section-heading text-2xl sm:text-3xl">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em]" style={{ color: "var(--color-accent)" }}>
+              <AlertTriangle className="h-3 w-3 inline mr-1" /> 현실을 직시하라
+            </p>
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+          </div>
+          <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
             당신, 이런 적 없습니까?
           </h2>
-          <p className="mt-4 text-sm editorial-body max-w-lg mx-auto">
+          <p className="mt-3 sm:mt-4 text-xs sm:text-sm editorial-body max-w-lg mx-auto luxury-section-desc">
             솔직히 털어놓으십시오. 우리는 당신을 판단하지 않습니다.
             <br />
             <span style={{ color: "var(--color-accent)" }}>함께 해결하러 온 동료입니다.</span>
           </p>
+          <div className="h-px w-16 mx-auto mt-6 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
         {/* 에르메스 명품 카드 그리드 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           {PROBLEMS.map((p, i) => {
             const Icon = p.icon;
             return (

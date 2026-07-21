@@ -25,16 +25,21 @@ export function FAQ() {
     : ITEMS;
 
   return (
-    <section id="faq" className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
+    <section id="faq" className="tm-section-bg px-6 sm:px-6 lg:px-8 py-12 sm:py-12 luxury-section">
       <div className="mx-auto max-w-3xl">
-        <div className="text-center mb-12" data-fade>
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
-            FAQ
-          </p>
-          <h2 className="section-heading text-2xl sm:text-3xl">
+        <div className="text-center mb-10 sm:mb-12" data-fade>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em]" style={{ color: "var(--color-accent)" }}>
+              FAQ
+            </p>
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+          </div>
+          <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
             자주 묻는 <span style={{ color: "var(--color-accent)" }}>질문</span>
           </h2>
-          <p className="mt-3 text-sm editorial-body">TeleMon에 대해 궁금한 점을 확인하세요.</p>
+          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">TeleMon에 대해 궁금한 점을 확인하세요.</p>
+          <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
         <div className="relative mb-8">

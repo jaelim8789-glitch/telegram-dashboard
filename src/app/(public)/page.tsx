@@ -15,6 +15,8 @@ import { NewFeaturesSection } from "@/components/landing/NewFeaturesSection";
 import { PricingPreview } from "@/components/landing/PricingPreview";
 import { FAQ } from "@/components/landing/FAQ";
 import { CtaSection } from "@/components/landing/CtaSection";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   useFadeIn();
@@ -33,7 +35,7 @@ export default function HomePage() {
       <SectionDivider />
 
       {/* Dashboard preview with TeleMon signature pattern */}
-      <section className="tm-section-bg py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+      <section className="tm-section-bg py-12 sm:py-16 px-6 sm:px-6 lg:px-8 luxury-section">
         <div className="mx-auto max-w-6xl">
           <DashboardPreview />
         </div>
@@ -51,6 +53,17 @@ export default function HomePage() {
       <FAQ />
       <SectionDivider />
       <CtaSection />
+
+      {/* Fixed bottom CTA for mobile (luxury brand pattern) */}
+      <div className="luxury-bottom-cta md:hidden">
+        <Link
+          href="/signup"
+          className="btn-luxury btn-luxury-primary flex-1 justify-center text-xs py-3"
+        >
+          무료로 시작하기
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
     </>
   );
 }
