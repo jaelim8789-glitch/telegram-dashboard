@@ -15,6 +15,7 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
 import { BiometricLock } from "@/components/ui/BiometricLock";
+import ShareTargetHandler from "@/components/ShareTargetHandler";
 import LiveChat from "@/components/LiveChat";
 import "./globals.css";
 
@@ -72,6 +73,7 @@ export default function RootLayout({
         <SplashScreen />
         <GestureTour />
         <BiometricLock>
+          <ShareTargetHandler />
           <RuntimeInitializer />
           <PwaRegister />
           <PwaInstallPrompt />
