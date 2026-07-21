@@ -6,6 +6,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId, type DeliveryOverview } from "@/types";
 import { getToken } from "@/lib/auth";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 
@@ -30,7 +31,7 @@ export function DashboardOverview() {
     try {
       const params = new URLSearchParams();
       params.set("period", "7d");
-      const res = await fetch(`${BASE_URL}/api/analytics/overview?${params}`, { headers: authHeaders() });
+      const res = await fetchWithTimeout(`${BASE_URL}/api/analytics/overview?${params}`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setOverview(data);

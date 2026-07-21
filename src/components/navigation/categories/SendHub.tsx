@@ -6,6 +6,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId } from "@/types";
 import { getToken } from "@/lib/auth";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 
@@ -40,7 +41,7 @@ export function SendHub() {
       setStats((s) => ({ ...s, loading: false }));
       return;
     }
-    fetch(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: authHeaders() })
+    fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: authHeaders() })
       .then((r) => r.json().catch(() => ({})))
       .then((data) => {
         if (cancelled) return;
