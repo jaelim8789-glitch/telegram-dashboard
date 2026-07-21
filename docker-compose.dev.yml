@@ -10,6 +10,9 @@
 
 services:
   backend:
+    volumes:
+      - ./telegram-dashboard-backend:/app
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     environment:
       # Local Postgres — replace host/credentials to match your local DB.
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/telegram_messenger
