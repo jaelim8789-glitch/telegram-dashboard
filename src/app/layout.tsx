@@ -14,7 +14,6 @@ import { PwaRegister } from "@/components/PwaRegister";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
-import { BiometricLock } from "@/components/ui/BiometricLock";
 import ShareTargetHandler from "@/components/ShareTargetHandler";
 import LiveChat from "@/components/LiveChat";
 import "./globals.css";
@@ -72,13 +71,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <SplashScreen />
         <GestureTour />
-        <BiometricLock>
-          <ShareTargetHandler />
-          <RuntimeInitializer />
-          <PwaRegister />
-          <PwaInstallPrompt />
-          <ToastProvider>{children}</ToastProvider>
-        </BiometricLock>
+        <ShareTargetHandler />
+        <RuntimeInitializer />
+        <PwaRegister />
+        <PwaInstallPrompt />
+        <ToastProvider>{children}</ToastProvider>
         <LiveChat />
       </body>
     </html>
