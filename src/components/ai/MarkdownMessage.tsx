@@ -142,8 +142,8 @@ export function MarkdownMessage({ content, className }: MarkdownProps) {
   return <div className={className}>{elements}</div>;
 }
 
-function parseInline(text: string): React.ReactNode[] {
-  if (!text) return [];
+function parseInline(text: string, depth = 0): React.ReactNode[] {
+  if (!text || depth > 5) return [<span key="trunc">{text}</span>];
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
