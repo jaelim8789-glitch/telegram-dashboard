@@ -720,23 +720,22 @@ const UNAUTHORIZED_STATUSES: AccountHealthItem["status"][] = ["unauthorized", "e
 export function ReAuthPanel({ healthItems, onStartReAuth, submitting }: ReAuthPanelProps) {
   const [selectedId, setSelectedId] = useState<string>("");
 
-  const expiredAccounts = healthItems.filter(
-    (h) => UNAUTHORIZED_STATUSES.includes(h.status) || !h.hasSession
-  );
+  // 만료된 계정뿐만 아니라 모든 계정을 표시하도록 변경
+  const allAccounts = healthItems;
 
-  const selectedAccount = expiredAccounts.find((a) => a.accountId === selectedId);
+  const selectedAccount = allAccounts.find((a) => a.accountId === selectedId);
 
   return (
     <Panel
       title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-warning" /> 세션 재인증</div>}
       description="세션이 만료된 계정을 선택하고 재인증을 진행하세요."
     >
-      {expiredAccounts.length === 0 ? (
+      {allAccounts.length === 0 ? (
         <div className="flex items-center gap-3 rounded-xl border border-app-border bg-app-card px-4 py-3">
           <CheckCircle2 className="h-5 w-5 text-app-success shrink-0" />
           <div>
-            <p className="text-sm font-medium text-app-text">모든 계정이 정상입니다</p>
-            <p className="text-xs text-app-text-muted">재인증이 필요한 계정이 없습니다.</p>
+            <p className="text-sm font-medium text-app-text">등록된 계정이 없습니다</p>
+            <p className="text-xs text-app-text-muted">새 계정을 등록해주세요.</p>
           </div>
         </div>
       ) : (
@@ -748,9 +747,9 @@ export function ReAuthPanel({ healthItems, onStartReAuth, submitting }: ReAuthPa
               className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-sm text-app-text outline-none focus:border-app-primary transition-colors appearance-none"
             >
               <option value="">계정을 선택하세요</option>
-              {expiredAccounts.map((a) => (
+              {allAccounts.map((a) => (
                 <option key={a.accountId} value={a.accountId}>
-                  {a.name ?? a.phone} ({a.phone})
+                  {a.name ?? a.phone} ({a.phone}) {UNAUTHORIZED_STATUSES.includes(a.status) || !a.hasSession ? '⚠️' : '✅'}
                 </option>
               ))}
             </select>
@@ -758,9 +757,19 @@ export function ReAuthPanel({ healthItems, onStartReAuth, submitting }: ReAuthPa
           </div>
 
           {selectedAccount && (
-            <div className="rounded-xl border border-app-warning/20 bg-app-warning-muted px-4 py-3">
+            <div className={cn(
+              "rounded-xl border px-4 py-3",
+              UNAUTHORIZED_STATUSES.includes(selectedAccount.status) || !selectedAccount.hasSession 
+                ? "border-app-warning/20 bg-app-warning-muted" 
+                : "border-app-success/20 bg-app-success-muted"
+            )}>
               <div className="flex items-center gap-2 text-sm">
-                <AlertTriangle className="h-4 w-4 text-app-warning shrink-0" />
+                <AlertTriangle className={cn(
+                  "h-4 w-4 shrink-0",
+                  UNAUTHORIZED_STATUSES.includes(selectedAccount.status) || !selectedAccount.hasSession 
+                    ? "text-app-warning" 
+                    : "text-app-success"
+                )} />
                 <span className="font-medium text-app-text">
                   {selectedAccount.name ?? selectedAccount.phone}
                 </span>
