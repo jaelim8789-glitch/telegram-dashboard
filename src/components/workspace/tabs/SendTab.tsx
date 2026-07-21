@@ -319,6 +319,8 @@ export function SendTab() {
   const [batchRetrying, setBatchRetrying] = useState(false);
   const [batchRetryDelay, setBatchRetryDelay] = useState(5);
   const [dedupeNormalSend, setDedupeNormalSend] = useState(false);
+  const [subTab, setSubTab] = useState<"compose" | "history">("compose");
+  const [deliveryExpanded, setDeliveryExpanded] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
   const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
@@ -1336,6 +1338,27 @@ export function SendTab() {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* ── Sub Tab Bar ── */}
+      <div className="flex gap-1.5 sticky top-0 z-10 bg-app-bg/90 backdrop-blur-sm py-2 -mx-1 px-1">
+        {[
+          { id: "compose" as const, label: "✍️ 작성", count: selectedRecipientIds.length },
+          { id: "history" as const, label: "📋 히스토리", count: history.length },
+        ].map((t) => (
+          <button key={t.id} onClick={() => { setSubTab(t.id); haptics.light(); }}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              subTab === t.id
+                ? "bg-app-primary text-white shadow-sm"
+                : "bg-app-card border border-app-border text-app-text-muted hover:bg-app-card-hover"
+            }`}>
+            {t.label}
+            {t.count > 0 && (
+              <span className={subTab === t.id ? "text-white/70" : "text-app-text-muted"}>{t.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "compose" && (<>
       {/* ── Compose Panel ── */}
       <Panel
         title={
@@ -1515,7 +1538,7 @@ export function SendTab() {
                 </div>
               )}
 
-              {deliveryMode === "bulk" && (
+            {deliveryMode === "bulk" && deliveryExpanded && (
                 <p className="mb-2 text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</p>
               )}
 
@@ -2154,9 +2177,15 @@ export function SendTab() {
 
             {/* Delivery Mode Selector */}
             <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
-                  <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
-                  발송 방식
+                <label className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-medium text-app-text">
+                    <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
+                    발송 방식
+                  </span>
+                  <button type="button" onClick={() => setDeliveryExpanded(!deliveryExpanded)}
+                    className="text-[10px] text-app-text-muted hover:text-app-text transition-colors">
+                    {deliveryExpanded ? "▲ 접기" : "▼ 고급 설정"}
+                  </button>
                 </label>
                 <div className="flex flex-col gap-2">
                   <label className="flex items-start gap-2.5 rounded-lg border border-app-success/30 bg-app-success-muted/10 p-2.5 cursor-pointer hover:border-app-success/60 transition-colors">
@@ -2167,7 +2196,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">일반 발송</div>
                         <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
                       </div>
-                      {deliveryMode === "normal" ? (
+                      {deliveryMode === "normal" && deliveryExpanded && (
                         <div className="mt-1.5 space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-app-text-muted">방마다</span>
@@ -2233,7 +2262,7 @@ export function SendTab() {
                         <Badge tone="danger" className="text-[9px] px-1.5 py-0">위험</Badge>
                       </div>
                       <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
-                      {deliveryMode === "bulk" && (
+                      {deliveryMode === "bulk" && deliveryExpanded && (
                         <div className="mt-2 flex items-center gap-1.5">
                           <input type="checkbox" id="dedupeNormal" checked={dedupeNormalSend}
                             onChange={(e) => setDedupeNormalSend(e.target.checked)}
@@ -2335,7 +2364,9 @@ export function SendTab() {
           )}
         </form>
       </Panel>
+      </>)}
 
+      {subTab === "history" && (<>
       {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
       {distributionBatchId && distributionSiblings.length > 0 && (
         <Panel
@@ -2732,6 +2763,7 @@ export function SendTab() {
           )}
         </ApiKeyGuard>
       </motion.div>
+      </>)}
     </div>
   );
 }
