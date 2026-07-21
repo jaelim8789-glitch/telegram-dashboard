@@ -194,6 +194,10 @@ export function SendTab() {
   const { clearDraft } = useAutoSaveDraft();
 
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
+
+  const recentGroupIds: string[] = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("recent_group_ids") || "[]"); } catch { return []; }
+  }, []);
   const { recent, markUsed } = useRecentGroups();
   const { tagsByGroup, addTag } = useGroupTags();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -536,6 +540,51 @@ export function SendTab() {
     draftRestoredRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId, accounts.length]);
+
+  // ── Auto-save draft: restore from localStorage on mount ──
+  useEffect(() => {
+    const saved = localStorage.getItem("send_draft");
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved);
+        toast("info", "💾 자동 저장된 발송이 있습니다", {
+          action: {
+            label: "복원하기",
+            onClick: () => {
+              setMessage(draft.message || "");
+              setSendSelectedGroupIds(draft.groupIds || []);
+              localStorage.removeItem("send_draft");
+            }
+          }
+        });
+      } catch {}
+    }
+  }, []);
+
+  // Save draft every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (message || selectedIds.length > 0) {
+        localStorage.setItem("send_draft", JSON.stringify({
+          message,
+          groupIds: selectedIds,
+          savedAt: Date.now(),
+        }));
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [message, selectedIds]);
+
+  // Save draft on page close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (message || selectedIds.length > 0) {
+        localStorage.setItem("send_draft", JSON.stringify({ message, groupIds: selectedIds, savedAt: Date.now() }));
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [message, selectedIds]);
 
   // ── Template library ──
   function refreshTemplates() {
@@ -990,6 +1039,8 @@ export function SendTab() {
       clearSendDraft();
       clearPersistedDraft();
       clearDraft();
+      localStorage.removeItem("send_draft");
+      localStorage.setItem("recent_group_ids", JSON.stringify(Array.from(selectedIds).slice(0, 5)));
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal"); setNormalDelaySeconds(60);
@@ -1486,7 +1537,21 @@ export function SendTab() {
                         <EmptyState icon={Users2} title="참여 중인 그룹/채널이 없습니다" />
                       )}
                       {!groupsLoading && visibleGroups.length > 0 && (
-                        <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 md:max-h-96">
+                        <>
+                          {recentGroupIds.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-[10px] font-semibold text-app-text-muted tracking-wider px-1 mb-1">📌 자주 사용하는 그룹</p>
+                              <div className="space-y-0.5">
+                                {recentGroupIds.map((gid) => {
+                                  const group = groups.find((g) => g.id === gid);
+                                  if (!group) return null;
+                                  return <GroupSelectCard key={gid} group={group} selected={selectedIds.includes(gid)} onToggleSelect={toggleGroup} />;
+                                })}
+                              </div>
+                              <hr className="my-2 border-app-border" />
+                            </div>
+                          )}
+                          <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 md:max-h-96">
                           {filteredByTag.map((g) => {
                             const selected = selectedRecipientIds.includes(g.id);
                             return (
@@ -1792,6 +1857,10 @@ export function SendTab() {
                           <div className="truncate text-xs font-medium text-app-text">{tpl.name}</div>
                           <div className="truncate text-[10px] text-app-text-subtle">{tpl.content}</div>
                         </button>
+                        <button type="button"
+                          onClick={() => { setMessage(tpl.content); handleSubmit(); }}
+                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                          title="바로 발송">🚀</button>
                         <button
                           type="button"
                           onClick={() => handleDeleteTemplate(tpl.id)}

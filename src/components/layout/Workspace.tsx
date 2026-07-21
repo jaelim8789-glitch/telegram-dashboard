@@ -7,7 +7,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import type { NavView } from "@/types";
 import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
-import { CommandPalette } from "@/components/workspace/CommandPalette";
+import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -18,8 +18,9 @@ import { requestPushPermission, subscribeToPush } from "@/lib/pushNotifications"
 import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
+  ssr: false,
   loading: () => (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 p-4 min-h-[80vh]">
       <Skeleton className="h-6 w-1/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
@@ -77,6 +78,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   styleprofile: dynamic(() => import("@/components/workspace/tabs/StyleProfileTab").then(m => ({ default: m.StyleProfileTab })), { loading: TabFallback }),
   growthloop: dynamic(() => import("@/components/workspace/tabs/GrowthLoopTab").then(m => ({ default: m.GrowthLoopTab })), { loading: TabFallback }),
   fortune: dynamic(() => import("@/components/workspace/tabs/FortuneTab").then(m => ({ default: m.FortuneTab })), { loading: TabFallback }),
+  telegram: dynamic(() => import("@/components/telegram-chat/TelegramInboxTab").then(m => ({ default: m.TelegramInboxTab })), { loading: TabFallback }),
   sendhub: dynamic(() => import("@/components/navigation/categories/SendHub").then(m => ({ default: m.SendHub })), { loading: TabFallback }),
 };
 
@@ -366,6 +368,7 @@ export function Workspace() {
             </motion.div>
           </AnimatePresence>
         </div>
+        <GlobalSearch />
         <CommandPalette />
         <OnboardingTour />
       </main>

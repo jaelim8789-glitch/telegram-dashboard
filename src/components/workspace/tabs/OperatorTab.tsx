@@ -264,6 +264,8 @@ export function OperatorTab() {
                     const msg = String(result.steps.find((s) => s.step === "content")?.result?.message || "");
                     useDashboardStore.getState().setSendMessage(msg);
                     useDashboardStore.getState().setActiveTab("send");
+                    // Draft에 자동 저장
+                    try { localStorage.setItem("telemon-draft-message", msg); } catch {}
                   }}
                 >
                   <Send className="h-3.5 w-3.5" /> 발송탭으로 보내기
