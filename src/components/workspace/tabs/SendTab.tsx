@@ -188,13 +188,15 @@ export function SendTab() {
 
   // ── Send Groups (folders from the Groups page) ──
   const [sendFolders, setSendFolders] = useState<GroupFolder[]>([]);
+  const [telegramFolders, setTelegramFolders] = useState<{ id: string; title: string; groupIds: string[] }>([]);
 
   useEffect(() => {
-    if (!selectedAccountId) { setSendFolders([]); return; }
+    if (!selectedAccountId) { setSendFolders([]); setTelegramFolders([]); return; }
     let cancelled = false;
     folderApi.fetchFolders(selectedAccountId)
       .then((f) => { if (!cancelled) setSendFolders(f); })
       .catch(() => { if (!cancelled) setSendFolders([]); });
+    api.fetchGroupFolders(selectedAccountId).then((f) => { if (!cancelled) setTelegramFolders(f); });
     return () => { cancelled = true; };
   }, [selectedAccountId]);
 
@@ -820,24 +822,26 @@ export function SendTab() {
   // Selecting a folder (Send Group) adds every group in it to the current manual
   // selection — same additive pattern as handleSelectSavedSendGroup/handleSelectAllVisible,
   // so manual checkbox selection keeps working unchanged before and after.
-  function handleSelectFolder(folder: GroupFolder) {
+  function handleSelectFolder(folder: GroupFolder | { id: string; title: string; groupIds: string[] }) {
+    const folderName = "name" in folder ? folder.name : folder.title;
+    const folderGroupIds = "group_ids" in folder ? folder.group_ids : folder.groupIds;
     const availableGroupIds = new Set(groups.map((g) => g.id));
-    const valid = folder.group_ids.filter((id) => availableGroupIds.has(id));
+    const valid = folderGroupIds.filter((id) => availableGroupIds.has(id));
     const toAdd = valid.filter((id) => !selectedIds.includes(id));
     if (valid.length === 0) {
       toast("error", "이 폴더에는 현재 계정에서 사용할 수 있는 그룹이 없습니다.");
       return;
     }
     if (toAdd.length === 0) {
-      toast("info", `"${folder.name}" 폴더의 모든 그룹이 이미 선택되어 있습니다.`);
+      toast("info", `"${folderName}" 폴더의 모든 그룹이 이미 선택되어 있습니다.`);
       return;
     }
     const next = [...selectedIds, ...toAdd];
     setSendSelectedGroupIds(next);
     if (toAdd.length < valid.length) {
-      toast("success", `"${folder.name}" 폴더에서 ${toAdd.length}개 그룹을 선택했습니다 (${valid.length - toAdd.length}개는 이미 선택됨).`);
+      toast("success", `"${folderName}" 폴더에서 ${toAdd.length}개 그룹을 선택했습니다 (${valid.length - toAdd.length}개는 이미 선택됨).`);
     } else {
-      toast("success", `"${folder.name}" 폴더의 그룹 ${toAdd.length}개를 선택했습니다.`);
+      toast("success", `"${folderName}" 폴더의 그룹 ${toAdd.length}개를 선택했습니다.`);
     }
   }
 
@@ -1200,26 +1204,55 @@ export function SendTab() {
                 <p className="mb-2 text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</p>
               )}
 
-              {!groupsLoading && sendFolders.length > 0 && (
+              {!groupsLoading && (sendFolders.length > 0 || telegramFolders.length > 0) && (
                 <div className="mb-3">
                   <div className="mb-1.5 flex items-center gap-2">
                     <span className="text-xs font-medium text-app-text-muted">그룹 폴더</span>
                     <span className="h-px flex-1 bg-app-border/50" />
-                    <span className="text-[10px] text-app-text-subtle">{sendFolders.length}개</span>
+                    <span className="text-[10px] text-app-text-subtle">{sendFolders.length + telegramFolders.length}개</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sendFolders.map((folder) => (
-                      <button
-                        key={folder.id}
-                        type="button"
-                        onClick={() => handleSelectFolder(folder)}
-                        title={`"${folder.name}" 폴더의 그룹 ${folder.group_ids.length}개 선택`}
-                        className="rounded-full bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:text-app-text"
-                      >
-                        📁 {folder.name} <span className="text-app-text-subtle">{folder.group_ids.length}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {sendFolders.length > 0 && (
+                    <div className="mb-2">
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="text-[10px] font-medium text-app-text-muted">내 폴더</span>
+                        <span className="text-[10px] text-app-text-subtle">{sendFolders.length}개</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {sendFolders.map((folder) => (
+                          <button
+                            key={folder.id}
+                            type="button"
+                            onClick={() => handleSelectFolder(folder)}
+                            title={`"${folder.name}" 폴더의 그룹 ${folder.group_ids.length}개 선택`}
+                            className="rounded-full bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:text-app-text"
+                          >
+                            📁 {folder.name} <span className="text-app-text-subtle">{folder.group_ids.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {telegramFolders.length > 0 && (
+                    <div>
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="text-[10px] font-medium text-app-text-muted">텔레그램 폴더</span>
+                        <span className="text-[10px] text-app-text-subtle">{telegramFolders.length}개</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {telegramFolders.map((folder) => (
+                          <button
+                            key={folder.id}
+                            type="button"
+                            onClick={() => handleSelectFolder(folder)}
+                            title={`"${folder.title}" 폴더의 그룹 ${folder.groupIds.length}개 선택`}
+                            className="rounded-full bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:text-app-text"
+                          >
+                            📂 {folder.title} <span className="text-app-text-subtle">{folder.groupIds.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
