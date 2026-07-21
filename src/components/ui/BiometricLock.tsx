@@ -14,7 +14,7 @@ interface BiometricLockProps {
  * Biometric Lock — 지문/Face ID 인증 화면
  * WebAuthn API로 생체인증 후 children 표시
  */
-export function BiometricLock({ children, enabled = true, lockAfterMs = 30000 }: BiometricLockProps) {
+export function BiometricLock({ children, enabled = false, lockAfterMs = 30000 }: BiometricLockProps) {
   const [locked, setLocked] = useState(enabled);
   const [authenticating, setAuthenticating] = useState(false);
   const [error, setError] = useState("");
