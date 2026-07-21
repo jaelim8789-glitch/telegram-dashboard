@@ -607,7 +607,7 @@ export interface CreateBroadcastInput {
   image?: File;
   scheduledAt?: string;
   recurringIntervalMinutes?: number;
-  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
+  deliveryMode?: "normal" | "bulk" | "replyMacro";
   delaySeconds?: number;
   replyToMessageId?: number;
   inlineButtons?: { label: string; url: string }[];
@@ -687,7 +687,7 @@ export async function sendToGroup(input: {
   message: string;
   groupIds: string[];
   scheduledAt?: string;
-  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
+  deliveryMode?: "normal" | "bulk" | "replyMacro";
   delaySeconds?: number;
   inlineButtons?: { label: string; url: string }[];
   campaignId?: string;
@@ -743,7 +743,7 @@ export async function fetchSchedulerStatus(): Promise<{
 export async function fetchBroadcastEstimate(input: {
   accountId: string;
   recipientCount: number;
-  deliveryMode: "normal" | "cycle" | "bulk" | "reply";
+  deliveryMode: "normal" | "bulk" | "replyMacro";
   delaySeconds?: number;
 }): Promise<{ estimated_seconds: number; estimated_minutes: number; readable: string }> {
   return request("/api/broadcast/estimate", {
