@@ -22,7 +22,7 @@ export function LiveStatsBar() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="text-center"
+                className="text-center min-h-[80px] flex flex-col justify-center"
               >
                 <div className="stat-number">{stat.value}</div>
                 <div className="mt-1.5 text-xs" style={{ color: "var(--color-text-muted)" }}>

@@ -53,7 +53,7 @@ export function PricingPreview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col card-3d card-3d-hover"
+              className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col card-3d card-3d-hover min-h-[350px]"
               style={{
                 boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
                 borderTop: plan.popular ? "4px solid var(--color-accent)" : "4px solid var(--color-accent)",
@@ -85,20 +85,20 @@ export function PricingPreview() {
               <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
               <div className="absolute right-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-[var(--color-accent)]/20 to-transparent" />
 
-              <h3 className="font-serif font-semibold text-base" style={{ color: "var(--color-text)" }}>
+              <h3 className="font-serif font-semibold text-base break-words" style={{ color: "var(--color-text)" }}>
                 {plan.name}
               </h3>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-2xl font-bold gold-text">
                   {plan.price}
                 </span>
-                {plan.period && <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>/{plan.period}</span>}
+                {plan.period && <span className="text-xs break-words" style={{ color: "var(--color-text-muted)" }}>/{plan.period}</span>}
               </div>
-              {plan.tagline && <p className="mt-2 text-xs italic-script" style={{ color: "var(--color-text-muted)" }}>{plan.tagline}</p>}
+              {plan.tagline && <p className="mt-2 text-xs italic-script break-words" style={{ color: "var(--color-text-muted)" }}>{plan.tagline}</p>}
 
               <ul className="mt-5 space-y-2 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                  <li key={f} className="flex items-center gap-2 text-xs break-words" style={{ color: "var(--color-text-secondary)" }}>
                     <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: "var(--color-accent)" }} />
                     {f}
                   </li>
@@ -107,7 +107,7 @@ export function PricingPreview() {
 
               <Link
                 href={plan.href}
-                className="mt-6 flex h-10 items-center justify-center text-xs font-semibold btn-luxury btn-luxury-primary animate-gold-shimmer"
+                className="mt-6 flex h-10 items-center justify-center text-xs font-semibold btn-luxury btn-luxury-primary animate-gold-shimmer min-h-[44px] items-center justify-center"
               >
                 {plan.cta}
                 <ArrowRight className="h-3 w-3 ml-1" />

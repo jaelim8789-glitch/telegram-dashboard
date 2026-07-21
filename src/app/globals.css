@@ -1104,6 +1104,25 @@ body.modal-open {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
+/* Prevent 300ms tap delay on mobile */
+html {
+  touch-action: manipulation;
+}
+
+/* Better overscroll behavior for iOS */
+.overscroll-none {
+  overscroll-behavior: none;
+}
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Gold highlight for selected items on mobile */
+.mobile-selected {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent-border);
+}
+
 /* ── Mobile 터치 피드백 (3. 터치 반응성) ── */
 @media (hover: none) and (pointer: coarse) {
   .touch-scale:active {

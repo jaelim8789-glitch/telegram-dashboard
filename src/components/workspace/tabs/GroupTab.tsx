@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, RefreshCw, Send, Star, Users, Users2, Filter, Hash, MessageCircle } from "lucide-react";
+import { Megaphone, RefreshCw, Send, Star, Users, Users2, Filter, Hash, MessageCircle, Activity, AlertTriangle } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -17,6 +17,9 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { formatRelativeTime } from "@/lib/formatTime";
 import type { Group, GroupType } from "@/types";
+import { classifyGroups, categoryLabel, categoryColor, categoryBg, type ClassifiedGroup } from "@/lib/groupClassifier";
+import { computeGroupInsights, computeOverallEngagement } from "@/lib/groupInsights";
+import { predictMemberChurn, churnColor, churnBg, type ChurnPrediction } from "@/lib/churnPrediction";
 
 const TYPE_LABEL: Record<GroupType, string> = {
   group: "그룹",
@@ -179,6 +182,14 @@ export function GroupTab() {
 
   const totalMembers = useMemo(() => groups.reduce((s, g) => s + (g.participantsCount ?? 0), 0), [groups]);
   const favoriteCount = useMemo(() => groups.filter((g) => isFavorite(g.id)).length, [groups, isFavorite]);
+  const classifiedGroups = useMemo(() => classifyGroups(groups), [groups]);
+  const classifiedMap = useMemo(() => new Map(classifiedGroups.map((cg) => [cg.id, cg])), [classifiedGroups]);
+  const groupInsights = useMemo(() => computeGroupInsights(groups), [groups]);
+  const overallEngagement = useMemo(() => computeOverallEngagement(groupInsights), [groupInsights]);
+  const churnPredictions = useMemo(
+    () => predictMemberChurn(groups.map((g) => ({ id: g.id, name: g.title, member_count: g.participantsCount ?? 0, type: g.type }))),
+    [groups],
+  );
 
   if (!account) {
     return (
@@ -260,6 +271,54 @@ export function GroupTab() {
             })}
           </div>
         </Panel>
+      )}
+
+      {!loading && groups.length > 0 && (
+      <Panel
+        title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" /> 그룹 인사이트</div>}
+        description="활동 분석 및 인사이트"
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="text-xs text-app-text-muted">전체 활동 점수</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{overallEngagement ?? '-'}</div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="text-xs text-app-text-muted">최적 발송 시간</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{groupInsights?.bestPostingTime ?? '-'}</div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="text-xs text-app-text-muted">가장 흔한 카테고리</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{groupInsights?.mostCommonCategory ?? '-'}</div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="text-xs text-app-text-muted">티어별 그룹 수</div>
+            <div className="mt-1 text-sm text-app-text">
+              {groupInsights?.groupCountByTier ? (
+                Object.entries(groupInsights.groupCountByTier).map(([tier, count]) => (
+                  <span key={tier} className="mr-2">{tier}: {count}</span>
+                ))
+              ) : '-'}
+            </div>
+          </div>
+        </div>
+      </Panel>
+      )}
+
+      {!loading && churnPredictions.length > 0 && (
+      <Panel
+        title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-danger" /> 이탈 예측</div>}
+        description="이탈 위험이 높은 상위 멤버"
+      >
+        <div className="space-y-1">
+          {churnPredictions.slice(0, 5).map((p) => (
+            <div key={p.id} className="flex items-center justify-between rounded-lg border border-app-border bg-app-card px-3 py-2">
+              <span className="text-sm text-app-text">{p.name}</span>
+              <Badge className={cn(churnColor(p.risk), churnBg(p.risk))}>{p.risk}</Badge>
+            </div>
+          ))}
+        </div>
+      </Panel>
       )}
 
       <Panel
@@ -347,7 +406,14 @@ export function GroupTab() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-app-text">{g.title}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="truncate text-sm font-medium text-app-text">{g.title}</div>
+                        {classifiedMap.get(g.id)?.category && (
+                          <Badge className={cn("shrink-0", categoryBg(classifiedMap.get(g.id)!.category), categoryColor(classifiedMap.get(g.id)!.category))}>
+                            {categoryLabel(classifiedMap.get(g.id)!.category)}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1 text-[11px] text-app-text-subtle">
                         <Users className="h-3 w-3" />
                         <MemberCount count={g.participantsCount} />

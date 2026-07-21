@@ -88,7 +88,7 @@ export function PublicLayoutClient({
         <div className={`mx-auto flex max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-12 transition-all duration-300 ${
           scrolled ? "h-12" : "h-16"
         }`}>
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <Link href="/" className="flex items-center gap-3 group shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
             <div className="flex h-9 w-9 items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] text-xs font-bold tracking-wider shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[var(--color-accent-glow)]">
               TM
             </div>
@@ -98,11 +98,11 @@ export function PublicLayoutClient({
           </Link>
 
           <nav className="hidden items-center gap-0.5 md:flex">
-            <Link href="/features" className="tab-heritage">{t("app.features")}</Link>
-            <Link href="/pricing" className="tab-heritage">{t("app.pricing")}</Link>
-            <Link href="/get-api-key" className="tab-heritage">{t("app.apiKey")}</Link>
-            <Link href="/changelog" className="tab-heritage">{t("app.updates")}</Link>
-            <Link href="/#faq" className="tab-heritage">{t("app.faq")}</Link>
+            <Link href="/features" className="tab-heritage min-h-[44px] flex items-center justify-center">{t("app.features")}</Link>
+            <Link href="/pricing" className="tab-heritage min-h-[44px] flex items-center justify-center">{t("app.pricing")}</Link>
+            <Link href="/get-api-key" className="tab-heritage min-h-[44px] flex items-center justify-center">{t("app.apiKey")}</Link>
+            <Link href="/changelog" className="tab-heritage min-h-[44px] flex items-center justify-center">{t("app.updates")}</Link>
+            <Link href="/#faq" className="tab-heritage min-h-[44px] flex items-center justify-center">{t("app.faq")}</Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export function PublicLayoutClient({
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center rounded-full w-11 h-11 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-all md:hidden border border-[var(--color-accent-border)]"
+              className="flex items-center justify-center rounded-full w-11 h-11 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-all md:hidden border border-[var(--color-accent-border)] min-h-[44px] min-w-[44px]"
               aria-label="메뉴 열기"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -122,8 +122,8 @@ export function PublicLayoutClient({
             </button>
 
             <div className="hidden sm:flex items-center gap-2">
-              <Link href="/admin/login" className="btn-heritage-secondary px-5 py-1.5 text-xs animate-gold-shimmer">{t("app.login")}</Link>
-              <Link href="/signup" className="btn-heritage px-5 py-1.5 text-xs">{t("app.start")}</Link>
+              <Link href="/admin/login" className="btn-heritage-secondary px-5 py-1.5 text-xs animate-gold-shimmer min-h-[44px] flex items-center justify-center">{t("app.login")}</Link>
+              <Link href="/signup" className="btn-heritage px-5 py-1.5 text-xs min-h-[44px] flex items-center justify-center">{t("app.start")}</Link>
             </div>
           </div>
         </div>
@@ -153,7 +153,7 @@ export function PublicLayoutClient({
             <button
               type="button"
               onClick={() => setMobileNavOpen(false)}
-              className="luxury-mobile-menu-close"
+              className="luxury-mobile-menu-close min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="메뉴 닫기"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -169,12 +169,12 @@ export function PublicLayoutClient({
                   variants={menuItemVariants}
                   initial="hidden"
                   animate="visible"
-                  className="overflow-hidden"
+                  className="overflow-hidden w-full"
                 >
                   <Link
                     href={item.href}
                     onClick={() => setMobileNavOpen(false)}
-                    className="luxury-mobile-nav-link"
+                    className="luxury-mobile-nav-link min-h-[44px] flex items-center justify-center"
                   >
                     {item.label}
                   </Link>
@@ -192,14 +192,14 @@ export function PublicLayoutClient({
                 <Link
                   href="/admin/login"
                   onClick={() => setMobileNavOpen(false)}
-                  className="btn-luxury btn-luxury-secondary w-full justify-center text-sm"
+                  className="btn-luxury btn-luxury-secondary w-full justify-center text-sm min-h-[44px] flex items-center justify-center"
                 >
                   {t("app.login")}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setMobileNavOpen(false)}
-                  className="btn-luxury btn-luxury-primary w-full justify-center text-sm"
+                  className="btn-luxury btn-luxury-primary w-full justify-center text-sm min-h-[44px] flex items-center justify-center"
                 >
                   {t("app.start")}
                 </Link>
@@ -268,7 +268,7 @@ export function PublicLayoutClient({
                 <ul className="space-y-3">
                   {section.links.map(([label, href]) => (
                     <li key={label}>
-                      <Link href={href} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors">{label}</Link>
+                      <Link href={href} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors min-h-[44px] flex items-center">{label}</Link>
                     </li>
                   ))}
                 </ul>
@@ -279,8 +279,8 @@ export function PublicLayoutClient({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">&copy; {new Date().getFullYear()} TeleMon. {t("app.allRightsReserved")}</p>
             <div className="flex items-center gap-6">
-              <Link href="/terms" className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors">{t("app.terms")}</Link>
-              <Link href="/privacy" className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors">{t("app.privacy")}</Link>
+              <Link href="/terms" className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors min-h-[44px] flex items-center">{t("app.terms")}</Link>
+              <Link href="/privacy" className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors min-h-[44px] flex items-center">{t("app.privacy")}</Link>
             </div>
           </div>
         </div>

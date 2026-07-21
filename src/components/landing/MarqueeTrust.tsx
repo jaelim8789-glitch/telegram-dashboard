@@ -51,7 +51,7 @@ export function MarqueeTrust() {
             {ITEMS.map((item, i) => {
               const Icon = item.icon;
               return (
-                <span key={`a-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2" role="listitem">
+                <span key={`a-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2 min-h-[44px] min-w-[120px] justify-center" role="listitem">
                   <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-accent)" }} />
                   {item.label}
                 </span>
@@ -67,7 +67,7 @@ export function MarqueeTrust() {
             {ITEMS.map((item, i) => {
               const Icon = item.icon;
               return (
-                <span key={`b-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2" role="presentation">
+                <span key={`b-${i}`} className="tm-marquee-item whitespace-nowrap flex items-center gap-2 min-h-[44px] min-w-[120px] justify-center" role="presentation">
                   <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-accent)" }} />
                   {item.label}
                 </span>

@@ -144,6 +144,7 @@ export function SendTab() {
   const setMessage = useDashboardStore((s) => s.setSendMessage);
   const imageFile = useDashboardStore((s) => s.sendImageFile);
   const setImageFile = useDashboardStore((s) => s.setSendImageFile);
+  const plan = useDashboardStore((s) => s.plan);
   const imageObjectUrl = useMemo(() => imageFile ? URL.createObjectURL(imageFile) : null, [imageFile]);
   useEffect(() => {
     return () => { if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl); };
@@ -1422,6 +1423,7 @@ export function SendTab() {
                 accountPhone={account?.phone}
                 groupName={selectedRecipients[0]?.title}
                 imagePreviewUrl={imageObjectUrl}
+                plan={plan}
               />
               {message.trim() && TEMPLATE_VARIABLES.some((v) => message.includes(v.key)) && (
                 <div className="rounded-xl border border-app-info/15 bg-app-info-muted/5 px-3 py-2 self-start">

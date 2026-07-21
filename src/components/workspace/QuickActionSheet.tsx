@@ -31,16 +31,15 @@ export function QuickActionSheet() {
   const haptics = useHapticFeedback();
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => { haptics.light(); setOpen(true); }}
-        className="flex flex-col items-center gap-0.5 flex-1 py-1.5 text-app-text-muted"
-        aria-label="퀵 액션"
-      >
-        <Zap className="h-5 w-5" />
-        <span className="text-[10px] leading-none">퀵</span>
-      </button>
+    <>        <button
+          type="button"
+          onClick={() => { haptics.light(); setOpen(true); }}
+          className="flex flex-col items-center gap-0.5 flex-1 min-h-[48px] min-w-[48px] py-1 text-app-text-muted hover:text-app-text-secondary transition-colors relative"
+          aria-label="퀵 액션"
+        >
+          <Zap className="h-5 w-5" />
+          <span className="text-[10px] leading-none">퀵</span>
+        </button>
 
       <AnimatePresence>
         {open && (

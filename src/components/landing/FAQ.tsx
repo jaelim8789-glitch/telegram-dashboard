@@ -51,7 +51,7 @@ export function FAQ() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="질문 검색..."
-            className="w-full py-3 pl-11 pr-4 text-sm outline-none"
+            className="w-full py-3 pl-11 pr-4 text-sm outline-none min-h-[44px]"
             style={{
               background: "var(--color-card)",
               border: "1px solid var(--color-accent-border)",
@@ -72,7 +72,7 @@ export function FAQ() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.05 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-0.5 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 overflow-hidden"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-0.5 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 overflow-hidden min-h-[80px]"
                 style={{
                   background: "linear-gradient(var(--color-card), var(--color-card)), linear-gradient(to bottom, var(--color-accent), var(--color-gold-deep))",
                   borderTop: "4px solid var(--color-accent)",
@@ -87,10 +87,10 @@ export function FAQ() {
                   <button
                     type="button"
                     onClick={() => setOpenIdx(isOpen ? null : i)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium transition-all"
+                    className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium transition-all min-h-[60px]"
                     style={{ color: "var(--color-text)" }}
                   >
-                    <span className="flex-1 pr-4">{item.q}</span>
+                    <span className="flex-1 pr-4 break-words">{item.q}</span>
                     <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} style={{ color: "var(--color-text-muted)" }} />
                   </button>
                   <AnimatePresence>
@@ -102,7 +102,7 @@ export function FAQ() {
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)", paddingTop: "0.75rem" }}>
+                        <div className="px-5 pb-4 text-sm leading-relaxed break-words" style={{ color: "var(--color-text-secondary)", paddingTop: "0.75rem" }}>
                           {item.a}
                         </div>
                       </motion.div>
@@ -118,7 +118,7 @@ export function FAQ() {
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+          <p className="text-sm break-words" style={{ color: "var(--color-text-muted)" }}>
             더 궁금한 점이 있으면{' '}
             <Link href="mailto:support@telemon.io" style={{ color: "var(--color-accent)" }}>support@telemon.io</Link>
             {' '}로 문의해주세요.

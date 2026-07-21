@@ -14,10 +14,7 @@
 | telegram_id BigInteger 마이그레이션 | Kiro | 푸시완료 | 커밋 미상 (user.py + alembic e1a2b3c4d5e6) | VPS 배포 대기 중 |
 | DashboardShell.tsx containerRef 중복선언 수정 | Claude(조율) | 푸시완료 | 604c759 | |
 | VPS 배포 | Claude-sub | 대기 | - | telegram_id 수정 커밋 확인되면 트리거 예정 |
-
-## 사용 규칙
-- 작업 시작하면 "진행중"으로 본인 행 추가/수정
-- 커밋하면 "커밋완료" + 커밋해시 기입
-- push하면 "푸시완료"
-- VPS 배포까지 끝나면 "배포완료" (Claude-sub만 이 상태로 바꿀 수 있음)
-- 같은 파일을 다른 사람이 "진행중"으로 표시해뒀으면 먼저 확인하고 시작할 것
+| test_config.py의 admin 기본값 assertion 수정 (123123/123456 → 실제 코드값 sksk2929/ysjr0508) | Copilot | 푸시완료 | telegram-dashboard-backend 07f6293 | pytest tests/test_config.py 27 passed 확인 |
+| 런칭 전 UX 정리 — 터치타겟/가로스크롤/텍스트잘림 개선 | Qoder | 커밋완료 | HeroSection.tsx, DashboardPreview.tsx, HowItWorksSection.tsx, CtaSection.tsx | 모바일 최적화 및 UX 개선 완료 |
+| 템플릿 탭 카테고리 기능 정상 작동 개선 + 발송 화면 간격 슬라이더 조건부 표시 | Qoder | 커밋완료 | TemplateTab.tsx, SendTab.tsx | 카테고리 분류/필터 기능 개선 및 발송 간격 슬라이더 조건부 표시로 혼동 방지 |
+| API 등록 시 계정 여러 개 등록 가능하도록 제한 조정 | Qoder | 커밋완료 | plans.py, deps.py | Free 요금제의 max_accounts 제한 조정 및 API 키 등록 시 계정 등록 가능하도록 수정 |

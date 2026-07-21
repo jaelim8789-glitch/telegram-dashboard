@@ -56,16 +56,18 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
       aria-current={active ? "page" : undefined}
       data-tour={`nav-${tab.id}`}
       className={cn(
-        "focus-ring relative flex items-center justify-center transition-colors",
+        "focus-ring relative flex items-center justify-center transition-all duration-200",
         mobile
-          ? "flex-col gap-0.5 flex-1 py-1.5 min-h-0"
+          ? "flex-col gap-0.5 flex-1 min-h-[48px] min-w-[48px] py-1"
           : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
-        active ? (mobile ? "text-app-primary" : "text-app-text") : "text-app-text-muted hover:text-app-text-secondary"
+        active
+          ? (mobile ? "text-app-primary" : "text-app-text")
+          : "text-app-text-muted hover:text-app-text-secondary"
       )}
     >
       {Icon && (
         <Icon className={cn(
-          "transition-colors",
+          "transition-all duration-200",
           mobile ? "h-5 w-5" : "h-3.5 w-3.5",
           active ? "text-app-primary" : "text-app-text-subtle"
         )} />
@@ -88,10 +90,26 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
         />
       )}
       {mobile && (
-        <span className={cn(
-          "absolute inset-0 rounded-lg transition-colors duration-100",
-          active ? "bg-app-primary/10" : ""
-        )} />
+        <>
+          {/* Active indicator: gold top line */}
+          <motion.span
+            layoutId="mobile-tab-active"
+            transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            className={cn(
+              "absolute top-0 w-8 h-0.5 rounded-full",
+              active ? "opacity-100" : "opacity-0"
+            )}
+            style={{
+              background: active ? "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))" : undefined,
+              boxShadow: active ? "0 0 8px var(--color-accent-glow)" : undefined,
+            }}
+          />
+          {/* Background highlight */}
+          <span className={cn(
+            "absolute inset-1.5 rounded-xl transition-all duration-200",
+            active ? "bg-app-primary/8 shadow-sm" : "hover:bg-app-card-hover/50"
+          )} />
+        </>
       )}
     </button>
   );
@@ -185,28 +203,41 @@ export function TabBar() {
     const accountLabel = selectedAccount ? getAccountDisplayName(selectedAccount).slice(0, 6) : "계정";
     return (
       <>
-        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-app-border/60 bg-app-surface/95 backdrop-blur-lg safe-area-bottom">
-          <div className="flex items-center justify-around max-w-lg mx-auto">
-            {mobileMainTabs.map((tab) => (
-              <TabButton
-                key={tab.id}
-                tab={tab}
-                active={tab.id === activeTab}
-                onSelect={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
-                badge={tabBadges[tab.id]}
-                mobile
-              />
-            ))}
-            <button
-              type="button"
-              onClick={() => { haptics.light(); setShowAccountPicker(true); }}
-              className="flex shrink-0 flex-col items-center gap-0.5 py-1.5 px-1 min-w-0 text-app-text-muted hover:text-app-text-secondary transition-colors"
-            >
-              <span className="text-[10px] leading-none">{accountLabel}</span>
-            </button>
-            <QuickActionSheet />
-          </div>
-        </nav>
+        {/* Top gold accent line on the bottom nav */}
+        <div className="fixed bottom-0 left-0 right-0 z-50">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
+          <nav
+            className="border-t-0 bg-app-surface/95 backdrop-blur-xl"
+            style={{
+              paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+              borderTop: "1px solid var(--color-border)",
+            }}
+            // Stop touch events from propagating to workspace swipe handler
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-around max-w-lg mx-auto px-1">
+              {mobileMainTabs.map((tab) => (
+                <TabButton
+                  key={tab.id}
+                  tab={tab}
+                  active={tab.id === activeTab}
+                  onSelect={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
+                  badge={tabBadges[tab.id]}
+                  mobile
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => { haptics.light(); setShowAccountPicker(true); }}
+                className="flex shrink-0 flex-col items-center gap-0.5 py-1.5 px-1 min-w-0 min-h-[44px] text-app-text-muted hover:text-app-text-secondary transition-colors relative"
+              >
+                <span className="text-[10px] leading-none">{accountLabel}</span>
+              </button>
+              <QuickActionSheet />
+            </div>
+          </nav>
+        </div>
 
         <AnimatePresence>
           {moreOpen && (
