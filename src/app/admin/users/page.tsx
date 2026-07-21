@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle, Zap } from "lucide-react";
+import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle, Zap, Sparkles, TrendingUp } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select } from "@/components/ui/Field";
@@ -304,51 +304,104 @@ function UsersContent() {
         {!loading && !error && users.length === 0 && (
           <EmptyState icon={Users} title="가입한 사용자 없음" />
         )}
-        <div className="divide-y divide-app-border">
-          {users.map((u) => (
-            <div key={u.id} className="flex items-center justify-between py-3 text-sm transition-colors hover:bg-app-card-hover -mx-4 px-4 first:rounded-t-lg last:rounded-b-lg">
-              <div className="min-w-0 flex-1 pr-3">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="h-3.5 w-3.5 text-app-text-muted shrink-0" />
-                  <span className="font-medium text-app-text">{u.phone}</span>
-                  <Badge tone={u.isActive ? "success" : "neutral"}>
-                    {u.isActive ? "활성" : "비활성"}
-                  </Badge>
-                </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-app-text-subtle">
-                  <span>가입 {formatDateTime(u.createdAt)}</span>
-                  {u.lastLogin && (
-                    <span className="inline-flex items-center gap-1">
-                      <UserCheck className="h-3 w-3" />
-                      마지막 로그인 {formatDateTime(u.lastLogin)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => handleReissue(u)}>
-                  <KeyRound className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant={u.isActive ? "danger" : "secondary"}
-                  size="sm"
-                  onClick={() => setToggleConfirm(u)}
-                >
-                  {u.isActive ? "비활성화" : "활성화"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
-                  className="text-app-danger hover:bg-app-danger-muted/20"
-                  title="사용자 삭제"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Users table with enriched info */}
+        {!loading && users.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-app-border text-app-text-muted">
+                  <th className="px-4 py-3 text-left font-semibold">전화번호</th>
+                  <th className="px-4 py-3 text-left font-semibold">플랜</th>
+                  <th className="px-4 py-3 text-left font-semibold">구독상태</th>
+                  <th className="px-4 py-3 text-center font-semibold">계정수</th>
+                  <th className="px-4 py-3 text-center font-semibold">별 잔액</th>
+                  <th className="px-4 py-3 text-left font-semibold">가입일</th>
+                  <th className="px-4 py-3 text-left font-semibold">상태</th>
+                  <th className="px-4 py-3 text-right font-semibold">작업</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-app-border">
+                {users.map((u) => (
+                  <tr key={u.id} className="transition-colors hover:bg-app-card-hover">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4 text-app-text-muted" />
+                        <span className="font-medium">{u.phone}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.plan ? (
+                        <Badge tone={u.plan === "team" ? "info" : u.plan === "pro" ? "success" : "neutral"}>
+                          {u.plan === "team" ? "팀" : u.plan === "pro" ? "프로" : "무료"}
+                        </Badge>
+                      ) : (
+                        <span className="text-app-text-muted">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.subscriptionStatus ? (
+                        <Badge tone={u.subscriptionStatus === "active" ? "success" : "danger"}>
+                          {u.subscriptionStatus === "active" ? "활성" : "비활성"}
+                        </Badge>
+                      ) : (
+                        <span className="text-app-text-muted">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {u.accountCount > 0 ? (
+                        <span className="font-semibold text-app-text">{u.accountCount}</span>
+                      ) : (
+                        <span className="text-app-text-muted">0</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {u.starsBalance > 0 ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <Sparkles className="h-3.5 w-3.5 text-yellow-400" />
+                          <span className="font-semibold text-yellow-600 dark:text-yellow-400">{u.starsBalance}</span>
+                        </div>
+                      ) : (
+                        <span className="text-app-text-muted">0</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-app-text-muted">
+                      {formatDateTime(u.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge tone={u.isActive ? "success" : "neutral"}>
+                        {u.isActive ? "활성" : "비활성"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleReissue(u)} title="API 키 재발급">
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={u.isActive ? "danger" : "secondary"}
+                          size="sm"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => setToggleConfirm(u)}
+                        >
+                          {u.isActive ? "비활성" : "활성"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-app-danger hover:bg-app-danger-muted/20"
+                          onClick={() => { setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
+                          title="사용자 삭제"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Panel>
 
       <ConfirmDialog
