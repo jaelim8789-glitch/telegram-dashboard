@@ -100,8 +100,6 @@ export function DashboardShell() {
   );
 
   // Close sidebar/inspector when swiping in the opposite direction
-  const containerRef = useRef<HTMLDivElement>(null);
-  
   useEffect(() => {
     function handleSwipeLeft() {
       if (sidebarOpen) {
