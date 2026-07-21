@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Loader2, MessageSquare, AlertTriangle } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { getToken } from "@/lib/auth";
 import { getAccountDisplayName } from "@/types";
+import { Link } from "@/components/ui/Link";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -20,59 +21,161 @@ function authHeaders(): Record<string, string> {
 }
 
 export function ReplyMacroTab() {
-  const accounts = useDashboardStore((s) => s.accounts);
-  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
-  const account = accounts.find((a) => a.id === selectedAccountId);
-  const { toast } = useToast();
-
+  const { selectedAccountId, accounts } = useDashboardStore();
+  const [macros, setMacros] = useState<ReplyMacro[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  
+  const account = useMemo(
+    () => accounts.find((a) => a.id === selectedAccountId),
+    [accounts, selectedAccountId]
+  );
 
   useEffect(() => {
     if (!selectedAccountId) return;
-    setLoading(true);
-    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-      headers: authHeaders(),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setIsActive(!!data.is_active);
-        setMessage(data.message_content || "");
-      })
-      .catch(() => { toast("error", "로드 실패"); })
-      .finally(() => setLoading(false));
-  }, [selectedAccountId]);
+    
+    // 계정 상태 확인 후 활성 상태일 때만 매크로 정보 가져오기
+    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+    if (currentAccount?.status !== 'active') {
+      setMacros([]);
+      setLoading(false);
+      return;
+    }
+    
+    loadMacros();
+  }, [selectedAccountId, accounts]);
 
-  async function saveToggle(nextActive: boolean) {
-    if (!selectedAccountId || saving) return;
+  async function loadMacros() {
+    setLoading(true);
+    setError(null);
+    try {
+      // 계정 상태 확인
+      const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+      if (currentAccount?.status !== 'active') {
+        throw new Error("계정이 인증되지 않아 답장매크로를 불러올 수 없습니다.");
+      }
+      
+      const data = await fetchReplyMacros(selectedAccountId!);
+      setMacros(data);
+    } catch (err: any) {
+      setError(err.message || "답장매크로 목록을 불러오지 못했습니다.");
+      console.error("답장매크로 로드 실패:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveToggle(macroId: string, nextActive: boolean) {
+    if (!selectedAccountId) return;
+    
+    // 계정 상태 확인
+    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+    if (currentAccount?.status !== 'active') {
+      toast("error", "계정이 인증되지 않아 답장매크로를 사용할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
+      return;
+    }
+    
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({ is_active: nextActive, message_content: message }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast("error", data.detail || "저장 실패");
-        return;
-      }
-      setIsActive(!!data.is_active);
-      toast("success", data.is_active ? "랜덤 답장 켜짐 — 모든 그룹에 자동으로 나갑니다" : "랜덤 답장 꺼짐");
-    } catch {
-      toast("error", "네트워크 오류");
+      const updated = await updateReplyMacro(selectedAccountId, macroId, { is_active: nextActive });
+      setMacros(prev => prev.map(m => m.id === macroId ? updated : m));
+      toast("success", nextActive ? "답장매크로 켜짐" : "답장매크로 꺼짐");
+    } catch (err: any) {
+      toast("error", err.message || "저장 실패");
+      console.error("답장매크로 토글 실패:", err);
     } finally {
       setSaving(false);
     }
   }
 
+  async function saveMessage(macroId: string, message: string) {
+    if (!selectedAccountId) return;
+    
+    // 계정 상태 확인
+    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
+    if (currentAccount?.status !== 'active') {
+      toast("error", "계정이 인증되지 않아 답장매크로를 수정할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const updated = await updateReplyMacro(selectedAccountId, macroId, { message_content: message });
+      setMacros(prev => prev.map(m => m.id === macroId ? updated : m));
+      toast("success", "메시지 저장됨");
+    } catch (err: any) {
+      toast("error", err.message || "저장 실패");
+      console.error("답장매크로 메시지 저장 실패:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!selectedAccountId) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-center">
+        <div>
+          <MessageSquare className="mx-auto h-12 w-12 text-app-text-subtle" />
+          <h3 className="mt-3 text-lg font-medium text-app-text">계정을 선택하세요</h3>
+          <p className="mt-1 text-sm text-app-text-secondary">
+            왼쪽 사이드바에서 계정을 선택한 후 답장매크로를 설정할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!account) {
     return (
-      <Panel title="랜덤 답장">
-        <p className="text-sm text-app-text-muted">사이드바에서 계정을 선택하세요</p>
-      </Panel>
+      <div className="flex h-full items-center justify-center p-8 text-center">
+        <div>
+          <MessageSquare className="mx-auto h-12 w-12 text-app-text-subtle" />
+          <h3 className="mt-3 text-lg font-medium text-app-text">계정을 찾을 수 없습니다</h3>
+          <p className="mt-1 text-sm text-app-text-secondary">
+            선택한 계정이 존재하지 않습니다. 다른 계정을 선택해주세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 계정 상태 확인
+  if (account.status !== 'active') {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+        <div className="rounded-2xl border border-app-border bg-app-card p-6 max-w-md w-full">
+          <MessageSquare className="mx-auto h-12 w-12 text-app-warning" />
+          <h3 className="mt-3 text-lg font-medium text-app-text">계정 인증 필요</h3>
+          <p className="mt-2 text-sm text-app-text-secondary">
+            이 계정은 현재 {account.status === 'inactive' ? '비활성화' : 
+            account.status === 'banned' ? '차단' : '알 수 없는 상태'} 상태입니다.
+          </p>
+          <p className="mt-2 text-xs text-app-text-subtle">
+            답장매크로를 사용하려면 계정 등록에서 Telegram 인증을 완료해야 합니다.
+          </p>
+          <Link href="/app" className="mt-4 inline-block">
+            <Button variant="outline" size="sm">
+              계정 등록으로 이동
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-center">
+        <div>
+          <AlertTriangle className="mx-auto h-12 w-12 text-app-danger" />
+          <h3 className="mt-3 text-lg font-medium text-app-text">오류 발생</h3>
+          <p className="mt-1 text-sm text-app-text-secondary">{error}</p>
+          <Button onClick={loadMacros} className="mt-4">
+            다시 시도
+          </Button>
+        </div>
+      </div>
     );
   }
 
