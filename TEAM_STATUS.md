@@ -20,3 +20,17 @@
 | API 등록 시 계정 여러 개 등록 가능하도록 제한 조정 | Qoder | 커밋완료 | plans.py, deps.py | Free 요금제의 max_accounts 제한 조정 및 API 키 등록 시 계정 등록 가능하도록 수정 |
 | 모바일 UI/UX 명품스타일 고도화 (Top 5 + TS 오류 수정) | Buffy | 커밋완료 | 615d28e | PullToRefresh/ BottomSheet/ useVisualViewport/ TabBar/ globals.css 고도화, TS오류 3건 수정 |
 | 모바일 UI/UX Top 5 추가 개선 (바텀시트프리미엄/햅틱확장/폼최적화/공유확장/ReducedMotion) | Buffy | 커밋완료 | 50854c3 | BottomSheet premium화, HapticFeedback 5패턴추가, Input모바일최적화, useWebShare파일공유, html-to-image설치 |
+| logs.py account_id 생략 시 검증 확인 및 수정 | Copilot | 푸시완료 | telegram-dashboard-backend 6311193 | 실유출 없음(crud tenant 필터링 정상) 확인, require_account_tenant_access가 account_id=None일 때 항상 404 나던 가용성 버그 수정 + 회귀테스트 추가. 전체 suite 956 passed/15 failed(결제·콘텐츠스케줄러 관련, 무관한 기존 실패) |
+| SendTab 모바일 UI 개선 (방 목록 접기/펼치기, 정리) | Copilot | 푸시완료 | 25807f9 | 전체 대화방 섹션 기본 접힌 상태(모바일 <768px), 토글 버튼 추가, 호버/탭 피드백 개선, max-height 모바일 조정 |
+
+## 사용 규칙
+- 작업 시작하면 "진행중"으로 본인 행 추가/수정
+- 커밋하면 "커밋완료" + 커밋해시 기입
+- push하면 "푸시완료"
+- VPS 배포까지 끝나면 "배포완료" (Claude-sub만 이 상태로 바꿀 수 있음)
+- 같은 파일을 다른 사람이 "진행중"으로 표시해뒀으면 먼저 확인하고 시작할 것
+
+## 병렬 작업 충돌 방지 규칙 (2026-07-21 추가)
+- **소유 영역 분리**: 새 에이전트 투입 시 기존 담당(Cline=프론트, Kiro=백엔드 계정/결제, OpenCode=QA/보안, Claude-sub=배포)이 만지는 파일과 겹치지 않는 독립 신규 영역(예: AI 콘텐츠 스튜디오, AI 채팅 어시스턴트 등 새 디렉토리)에 배정할 것
+- **만들면 바로 커밋+푸시**: 파일 하나만 커밋하고 그게 참조하는 다른 파일을 로컬에만 남겨두는 것 금지. 서로 참조하는 변경분은 항상 함께 커밋
+- **alembic 마이그레이션은 `alembic heads`로 단일 head 확인 후 커밋** — 여러 head로 분기된 채 커밋하면 배포 시 충돌 발생
