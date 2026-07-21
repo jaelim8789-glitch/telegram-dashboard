@@ -15,6 +15,15 @@ import { AiEmployeeTab } from "@/components/workspace/tabs/AiEmployeeTab";
 import { InlineAiChat } from "@/components/ai/InlineAiChat";
 import * as agentApi from "@/lib/agent-api";
 
+function AgentLevelBadge({ level, exp }: { level: number; exp: number }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1 rounded-full bg-app-primary/10 px-2 py-0.5 text-[10px] font-semibold text-app-primary">
+      Lv.{level}
+      <span className="font-normal text-app-text-subtle">{exp} EXP</span>
+    </span>
+  );
+}
+
 const SUB_TABS = [
   { id: "chat", label: "AI 대화", shortLabel: "대화", icon: MessageSquare, desc: "AI 운영 비서와 자유롭게 대화" },
   { id: "reply", label: "AI 답장", shortLabel: "답장", icon: MessageCircle, desc: "스마트 답장 추천" },

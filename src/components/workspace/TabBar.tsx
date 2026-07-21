@@ -229,7 +229,7 @@ export function TabBar() {
                 />
               ))}
               {/* "더보기" 버튼 */}
-              {hasMoreTab && (
+              {moreGroups.length > 0 && (
                 <button
                   type="button"
                   onClick={() => { haptics.light(); setMoreOpen(true); }}

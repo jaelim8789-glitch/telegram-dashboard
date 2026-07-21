@@ -848,7 +848,7 @@ function UsersContent() {
       </Panel>
 
       <Panel
-        accent="slate"
+        accent="indigo"
         title={<div className="flex items-center gap-2"><Search className="h-4 w-4 text-slate-400" /> 관리자 감사로그</div>}
         description="고위험 작업 추적용 최근 감사 이벤트입니다."
       >
