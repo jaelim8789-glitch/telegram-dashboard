@@ -1,4 +1,4 @@
-k 예를들client';
+'use client';
 
 import React from 'react';
 

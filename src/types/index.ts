@@ -1,10 +1,4 @@
-<<<<<<< Updated upstream
 export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
-||||||| Stash base
-export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
-=======
-export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "groupsearch" | "linkinspector" | "profile" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
->>>>>>> Stashed changes
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
