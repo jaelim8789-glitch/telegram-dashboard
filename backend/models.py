@@ -174,6 +174,7 @@ class Broadcast(BaseModel):
     delivery_mode: str | None = None
     reply_to_message_id: int | None = None
     inline_buttons: list[InlineButton] | None = None
+    plan: str = "free"
 
 
 class BroadcastChild(BaseModel):

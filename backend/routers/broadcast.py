@@ -18,6 +18,22 @@ from ..runtime_manager import RuntimeManager
 
 router = APIRouter()
 
+
+def _resolve_plan_from_request(request: Request) -> str:
+    auth = request.headers.get("authorization", "")
+    if not auth.startswith("Bearer "):
+        return "free"
+    token = auth[7:]
+    try:
+        from ..admin_platform import AdminPlatform
+        admin = AdminPlatform.get_instance()
+        key_data = admin.validate_api_key(token)
+        if key_data:
+            return key_data.get("plan", "free")
+    except Exception:
+        pass
+    return "free"
+
 # ── Media upload directory ────────────────────────────────────────────
 
 _MEDIA_DIR = os.environ.get("TELEMON_MEDIA_DIR", "data/media")
@@ -138,7 +154,8 @@ async def create_broadcast(
             del _idempotency_store[idempotency_key]
 
     try:
-        broadcast = await manager.create_broadcast(input_data)
+        plan = _resolve_plan_from_request(request)
+        broadcast = await manager.create_broadcast(input_data, plan=plan)
         # Record the idempotency key for 24h
         if idempotency_key:
             _idempotency_store[idempotency_key] = (broadcast.id, time.time() + _IDEMPOTENCY_TTL)

@@ -198,6 +198,19 @@ class BroadcastQueue:
     MAX_RETRIES = 5
     """Maximum number of flood-wait retries before marking a broadcast as failed."""
 
+    WATERMARK_AD = (
+        "\n\n━━━━━━━━━━━━━━━━━━\n"
+        "🤖 TeleMon AI\n\n"
+        "🚀 Telegram 운영, 아직도 직접 하시나요?\n\n"
+        "AI 비서가\n"
+        "✅ 자동 홍보\n"
+        "✅ 자동 답장\n"
+        "✅ 채널 운영\n"
+        "✅ 그룹 관리\n\n"
+        "🌐 https://telemon.online"
+    )
+    FREE_PLANS = {"free"}
+
     def __init__(self, account_id: str, client: TelegramClient, rate_limiter: RateLimiter, event_bus: EventBus, broadcast_store_ref: list[Broadcast] | None = None) -> None:
         self._account_id = account_id
         self._client = client
@@ -273,9 +286,11 @@ class BroadcastQueue:
 
             try:
                 entity = await self._client.get_entity(int(recipient_id))
+                message_to_send = broadcast.message
+                if broadcast.plan in self.FREE_PLANS:
+                    message_to_send = broadcast.message + self.WATERMARK_AD
                 if broadcast.media_path:
-                    # Send with media (photo/video/document) + optional caption
-                    caption = broadcast.message or None
+                    caption = message_to_send or None
                     await self._client.send_file(
                         entity,
                         broadcast.media_path,
@@ -285,11 +300,11 @@ class BroadcastQueue:
                 elif broadcast.reply_to_message_id:
                     await self._client.send_message(
                         entity,
-                        broadcast.message,
+                        message_to_send,
                         reply_to=broadcast.reply_to_message_id,
                     )
                 else:
-                    await self._client.send_message(entity, broadcast.message)
+                    await self._client.send_message(entity, message_to_send)
                 success_count += 1
                 current_idx += 1
             except FloodWaitError as e:
@@ -1370,7 +1385,7 @@ class AccountRuntime:
 
     # ── Broadcast Operations ──────────────────────────────────────
 
-    async def create_broadcast(self, input_data: CreateBroadcastInput) -> Broadcast:
+    async def create_broadcast(self, input_data: CreateBroadcastInput, plan: str = "free") -> Broadcast:
         import uuid
         now = datetime.now(timezone.utc).isoformat()
         broadcast = Broadcast(
@@ -1385,6 +1400,7 @@ class AccountRuntime:
             delivery_mode=input_data.delivery_mode,
             reply_to_message_id=input_data.reply_to_message_id,
             inline_buttons=input_data.inline_buttons,
+            plan=plan,
         )
 
         self._broadcast_store.append(broadcast)
