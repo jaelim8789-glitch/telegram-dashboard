@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { subscribeToPush } from "@/lib/pushManager";
+import { cacheClear } from "@/lib/cacheStorage";
+import { useOnlineStatus } from "@/lib/offlineDetector";
 
 interface PwaRegisterProps {
   onUpdateAvailable?: () => void;
@@ -9,9 +11,23 @@ interface PwaRegisterProps {
 
 /**
  * Registers the PWA service worker for offline support, installability,
- * and push notification subscriptions.
+ * and push notification subscriptions. Also syncs stale IndexedDB cache
+ * when the app comes back online after being offline.
  */
 export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
+  const { online, wasOffline } = useOnlineStatus();
+  const syncingRef = useRef(false);
+
+  useEffect(() => {
+    if (online && wasOffline && !syncingRef.current) {
+      syncingRef.current = true;
+      cacheClear("api-responses").finally(() => {
+        syncingRef.current = false;
+        window.location.reload();
+      });
+    }
+  }, [online, wasOffline]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;

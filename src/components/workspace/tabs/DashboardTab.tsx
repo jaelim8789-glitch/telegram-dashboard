@@ -558,7 +558,7 @@ export function DashboardTab() {
   };
 
   return (
-    <div className="flex flex-col gap-5 pb-8">
+    <div ref={dashboardRef} className="flex flex-col gap-5 pb-8">
       {/* ── Header Section ───────────────────────────────────── */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>

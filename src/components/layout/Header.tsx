@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { FullscreenToggle } from "@/components/ui/FullscreenToggle";
+import { StatusBarOverlay } from "@/components/ui/StatusBarOverlay";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { PixelOfficeWidget } from "@/components/ai/PixelOfficeWidget";
 
@@ -42,6 +43,7 @@ export function Header() {
 
   return (
     <header className="dashboard-header flex h-14 shrink-0 items-center justify-between px-4 sm:px-5">
+      <StatusBarOverlay />
       <Link href="/app" className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-app-primary to-orange-600 text-xs font-bold text-white shadow-lg shadow-app-primary/30">
           TM

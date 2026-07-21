@@ -44,6 +44,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
+import { MobileInspectorSheet } from "@/components/ui/MobileInspectorSheet";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
@@ -60,9 +61,12 @@ export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const [isMobile, setIsMobile] = useState(false);
 
   const haptics = useHapticFeedback();
 
@@ -116,6 +120,22 @@ export function DashboardShell() {
       scrollPositions.current.set(key, container.scrollTop);
     };
   }, [orientation, activeTab]);
+
+  // ── Mobile detection ──
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    function handler(e: MediaQueryListEvent) { setIsMobile(e.matches); }
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Auto-open mobile inspector when an account is selected on mobile
+  useEffect(() => {
+    if (isMobile && selectedAccountId) {
+      setMobileInspectorOpen(true);
+    }
+  }, [isMobile, selectedAccountId]);
 
   // ── Foreground auto-refresh ──
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
@@ -186,7 +206,14 @@ export function DashboardShell() {
         <CommandPaletteTrigger />
         <button
           type="button"
-          onClick={toggleInspector}
+          onClick={() => {
+            haptics.light();
+            if (isMobile) {
+              setMobileInspectorOpen(true);
+            } else {
+              toggleInspector();
+            }
+          }}
           aria-label={inspectorOpen ? "인스펙터 패널 닫기" : "인스펙터 패널 열기"}
           aria-expanded={inspectorOpen}
           aria-controls="dashboard-inspector"
@@ -215,20 +242,28 @@ export function DashboardShell() {
           </div>
         </div>
         <Workspace />
-        {/* Inspector — always visible on desktop, toggle on mobile (higher z than sidebar) */}
+        {/* Inspector — always visible on desktop, bottom sheet on mobile */}
         <div
           id="dashboard-inspector"
           role="complementary"
           aria-label="인스펙터"
-          className={`${inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
+          className={`${!isMobile && inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
         >
-          {inspectorOpen && (
+          {!isMobile && inspectorOpen && (
             <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
           )}
-          <div className={`relative z-10 ${inspectorOpen ? "block" : "hidden"} sm:block`} style={{ paddingRight: "env(safe-area-inset-right, 0px)" }}>
+          <div className={`relative z-10 ${!isMobile && inspectorOpen ? "block" : "hidden"} sm:block`} style={{ paddingRight: "env(safe-area-inset-right, 0px)" }}>
             <Inspector />
           </div>
         </div>
+
+        {/* Mobile bottom sheet inspector */}
+        {isMobile && (
+          <MobileInspectorSheet
+            open={mobileInspectorOpen}
+            onClose={() => setMobileInspectorOpen(false)}
+          />
+        )}
       </div>
       <ScrollToTop />
       <div className="hidden sm:flex absolute bottom-2 left-72">

@@ -305,6 +305,8 @@ export function SendTab() {
   const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
+  const [showRecentMessages, setShowRecentMessages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -1653,6 +1655,28 @@ export function SendTab() {
               </>
             )}
 
+            {/* Message formatting toolbar */}
+            <div className="flex items-center gap-1 pb-1 -mt-1">
+              {[{ open: '**', close: '**', label: 'B', style: 'font-bold' },
+                { open: '_', close: '_', label: 'I', style: 'italic' },
+                { open: '~~', close: '~~', label: 'S', style: 'line-through' },
+              ].map((fmt) => (
+                <button key={fmt.label} type="button"
+                  onClick={() => setMessage(message + `${fmt.open}텍스트${fmt.close}`)}
+                  className={`flex items-center justify-center h-7 w-7 rounded-md border border-app-border/60 bg-app-card-hover text-app-text-muted hover:border-app-primary/40 hover:text-app-primary transition-colors ${fmt.style}`}
+                  aria-label={fmt.label}
+                >{fmt.label}</button>
+              ))}
+              <span className="mx-1 h-4 w-px bg-app-border/50" />
+            </div>
+            <div className="flex items-center gap-1 flex-wrap pb-1">
+              {['😊', '👍', '🔥', '🎉', '❤️'].map((emoji) => (
+                <button key={emoji} type="button"
+                  onClick={() => setMessage(message + emoji)}
+                  className="flex items-center justify-center h-7 w-7 rounded-md border border-app-border/60 bg-app-card-hover text-sm hover:border-app-primary/40 hover:bg-app-primary/5 transition-colors"
+                >{emoji}</button>
+              ))}
+            </div>
             {/* Variable quick-insert chips */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-app-text-muted">변수:</span>
@@ -1671,16 +1695,18 @@ export function SendTab() {
 
             {/* Message */}
             <Field label="메시지 내용">
-              <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
-                placeholder="발송할 메시지를 입력하세요." required />
-              <div className={cn("text-[10px] mt-1 flex items-center gap-1",
-                message.length > 4096 ? "text-app-danger font-semibold" :
-                message.length > 3500 ? "text-app-warning" :
-                "text-app-text-muted"
-              )}>
-                <span>{message.length.toLocaleString()} / 4,096자</span>
-                {message.length > 4096 && <span>— 초과분은 자동 절단됩니다</span>}
-                {message.length > 3500 && message.length <= 4096 && <span>— 곧 한도 도달</span>}
+              <textarea rows={5} value={message} onChange={(e) => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 320) + 'px'; }}
+                placeholder="발송할 메시지를 입력하세요." required
+                className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 resize-none min-h-[88px]" />
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 h-1.5 rounded-full bg-app-bg overflow-hidden">
+                  <div className={cn("h-full rounded-full transition-all",
+                    message.length > 4096 ? "bg-app-danger" : message.length > 3500 ? "bg-app-warning" : "bg-app-success"
+                  )} style={{ width: `${Math.min(message.length / 4096 * 100, 100)}%` }} />
+                </div>
+                <span className={cn("text-[10px] tabular-nums shrink-0",
+                  message.length > 4096 ? "text-app-danger font-semibold" : message.length > 3500 ? "text-app-warning" : "text-app-text-muted"
+                )}>{message.length.toLocaleString()} / 4,096</span>
               </div>
             </Field>
 
@@ -1830,6 +1856,15 @@ export function SendTab() {
               >
                 <Plus className="h-3 w-3" /> 현재 메시지 저장
               </button>
+              <button type="button" onClick={() => {
+                const recent = history.slice(0, 5).map(h => h.message);
+                if (recent.length > 0) setMessage(recent[0]);
+              }}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+                title="최근 메시지 불러오기"
+              >
+                <RefreshCw className="h-3 w-3" /> 최근 메시지
+              </button>
               <span className="mx-1 h-3 w-px bg-app-border" />
               {TEMPLATE_VARIABLES.map((v) => (
                 <button
@@ -1925,6 +1960,18 @@ export function SendTab() {
 
             {/* Image / Video — Drag & Drop */}
             <Field label="이미지 또는 영상 (선택)">
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button"
+                  onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'environment'; i.onchange = () => { const f = i.files?.[0]; if (f) setImageFile(f); }; i.click(); }}
+                  className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-card px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors min-h-[48px]">
+                  📷 촬영
+                </button>
+                <button type="button"
+                  onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/jpeg,image/png,image/webp,image/gif'; i.onchange = () => { const f = i.files?.[0]; if (f) setImageFile(f); }; i.click(); }}
+                  className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-card px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors min-h-[48px]">
+                  🖼 갤러리
+                </button>
+              </div>
               <div
                 className={cn(
                   "relative rounded-xl border-2 border-dashed transition-colors cursor-pointer",
@@ -2417,7 +2464,7 @@ export function SendTab() {
           <div className="space-y-3">
             {groupedHistory.map((g) => (
               <div key={g.label}>
-                <div className="mb-1.5 flex items-center gap-2">
+                <div className="mb-1.5 flex items-center gap-2 sticky top-0 z-10 bg-app-bg/95 backdrop-blur-sm py-1 -mx-2 px-2">
                   <span className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider">
                     {g.label}
                   </span>
@@ -2596,23 +2643,32 @@ export function SendTab() {
       {message.trim().length > 0 && (
         <p className="text-right text-[10px] text-app-text-subtle -mb-1.5">임시 저장됨</p>
       )}
+      {selectedRecipientIds.length > 0 && (
+        <div className="sticky bottom-20 flex justify-center mb-2">
+          <span className="rounded-full bg-app-primary/10 px-3 py-1 text-xs font-medium text-app-primary">
+            {selectedRecipientIds.length}개 그룹 선택
+          </span>
+        </div>
+      )}
       {/* Floating submit button */}
       <motion.div
         initial={false}
         animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0.5, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="sticky bottom-4 ml-auto flex w-fit"
+        className="sticky bottom-4 flex items-center justify-end gap-2 w-full"
       >
         <ApiKeyGuard
           description="발송 기능을 사용하려면 API 키가 필요합니다. 봇 메뉴에서 '🔑 내 API 키'를 통해 발급받으세요."
           hasApiKey={hasApiKey}
           onKeySet={onKeySet}
         >
-          <Button type="submit" form="send-form" variant="primary"
-            className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30" disabled={!canSubmit}>
+          <button type="button"
+            onClick={() => { if (selectedRecipientIds.length >= 10) setSendConfirmOpen(true); else document.getElementById('send-form')?.requestSubmit(); }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-medium shadow-lg shadow-app-primary/30 bg-app-primary text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
+            disabled={!canSubmit}>
             <SendIcon className="h-4 w-4" />
             {spamBlocked ? "스팸 차단됨" : riskBlocked ? "위험 차단됨" : submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
-          </Button>
+          </button>
           {spamBlocked && (
             <p className="text-[10px] text-app-danger mt-1 text-center">
               스팸 점수 {spamScore.score}/100 — 메시지 수정이 필요합니다
@@ -2625,6 +2681,14 @@ export function SendTab() {
           )}
         </ApiKeyGuard>
       </motion.div>
+      <ConfirmDialog
+        open={sendConfirmOpen}
+        title="발송 확인"
+        description={`${selectedRecipientIds.length}개 그룹에 메시지를 발송합니다.\n\n메시지: ${message.slice(0, 80)}${message.length > 80 ? '...' : ''}`}
+        confirmLabel="발송" cancelLabel="취소" variant="primary"
+        onConfirm={() => { setSendConfirmOpen(false); document.getElementById('send-form')?.requestSubmit(); }}
+        onCancel={() => setSendConfirmOpen(false)}
+      />
     </div>
   );
 }

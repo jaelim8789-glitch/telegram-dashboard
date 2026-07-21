@@ -75,6 +75,10 @@ export const INITIAL_STATE: DashboardStateValue = {
 };
 
 interface DashboardState extends DashboardStateValue {
+  /** Switch to a saved dashboard profile by name */
+  dashboardSwitchProfile: (profileName: string) => void;
+  /** Refresh the dashboard tab (used by ProfileSuggestion) */
+  dashboardRefreshKey: number;
   setActiveTab: (tab: TabId) => void;
   navigateToChat: () => void;
   navigateToCategory: (category: TabGroup) => void;
@@ -163,6 +167,13 @@ interface TabMemoryManagement {
 // 탭 메모리 관리 기능 추가
 export const useDashboardStore = create<DashboardState & TabMemoryManagement>((set, get) => ({
   ...INITIAL_STATE,
+  dashboardRefreshKey: 0,
+  dashboardSwitchProfile: (profileName) => {
+    const current = get().dashboardRefreshKey;
+    localStorage.setItem("telemon-dashboard-current-profile", profileName);
+    set({ dashboardRefreshKey: current + 1 });
+    get().setActiveTab("dashboard");
+  },
 
   resetStore: () => {
     runtimeManagerSubscription?.();

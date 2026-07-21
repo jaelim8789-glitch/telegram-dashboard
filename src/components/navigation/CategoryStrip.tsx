@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard, Send, Activity, Sparkles, Settings, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
@@ -31,6 +31,20 @@ export function CategoryStrip() {
   const navigateToCategory = useDashboardStore((s) => s.navigateToCategory);
   const navigateBack = useDashboardStore((s) => s.navigateBack);
   const haptics = useHapticFeedback();
+
+  const [scrolled, setScrolled] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setScrolled(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-1px 0px 0px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const categoryBadges = useMemo(() => {
     const badges: Partial<Record<TabGroup, number>> = {};
@@ -79,13 +93,20 @@ export function CategoryStrip() {
   }, [navView, navCategory, navigateToChat, navigateToCategory, visibleCategories, haptics]);
 
   return (
-    <nav
-      role="navigation"
-      aria-label="카테고리 탐색"
-      onKeyDown={handleKeyDown}
-      className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-      style={{ scrollbarWidth: "none" }}
-    >
+    <>
+      <div ref={sentinelRef} className="pointer-events-none absolute top-0 h-px" />
+      <nav
+        role="navigation"
+        aria-label="카테고리 탐색"
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden",
+          "sticky top-0 z-20 transition-shadow duration-200",
+          scrolled ? "shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "shadow-none",
+          "backdrop-blur-md bg-app-surface/70",
+        )}
+        style={{ scrollbarWidth: "none" }}
+      >
       {/* ── Breadcrumb ── */}
       {isDeep && (
         <div className="flex items-center gap-0.5 shrink-0 mr-1">
@@ -183,7 +204,8 @@ export function CategoryStrip() {
             )}
           </button>
         );
-      })}
+      }      )}
     </nav>
+    </>
   );
 }

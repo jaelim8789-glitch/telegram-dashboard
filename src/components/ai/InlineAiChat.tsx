@@ -440,6 +440,115 @@ export function InlineAiChat() {
     setPendingConfirmation(null);
   }
 
+  function renderChatContent() {
+    if (!activeAgentId) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-2 text-app-text-muted">
+          <Sparkles className="h-8 w-8 opacity-30" />
+          <p className="text-xs">Agent를 선택하고 대화를 시작하세요</p>
+          <Button variant="primary" size="sm" onClick={() => setShowNewAgentModal(true)}>
+            <Plus className="h-3 w-3" /> 새 Agent
+          </Button>
+        </div>
+      );
+    }
+
+    if (!activeChatId) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-2 text-app-text-muted">
+          {autoChatCreating ? (
+            <>
+              <Loader2 className="h-6 w-6 animate-spin text-app-primary" />
+              <p className="text-xs">채팅 준비 중...</p>
+            </>
+          ) : (
+            <>
+              <MessageSquare className="h-8 w-8 opacity-30" />
+              <p className="text-xs">
+                <span className="font-medium text-app-text">{activeAgent?.name}</span> 👋
+              </p>
+              <Button variant="primary" size="sm" onClick={handleNewChat}>
+                <Plus className="h-3 w-3" /> 새 채팅
+              </Button>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <AiWelcomeCard />
+        <AiStaffBoard />
+        <div className="space-y-3">
+          {messagesLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-12 rounded" />
+                    <Skeleton className={`h-14 w-40 rounded-2xl ${i % 2 === 0 ? "rounded-br-md" : "rounded-bl-md"}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : messagesError ? (
+            <div className="flex flex-col items-center gap-2 py-6">
+              <InlineError className="max-w-md">{messagesError}</InlineError>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="w-full max-w-sm rounded-2xl border border-app-primary/20 bg-gradient-to-br from-app-primary/5 to-app-bg p-5 text-center">
+                <Bot className="h-10 w-10 text-app-primary mx-auto mb-2" />
+                <p className="text-sm font-bold text-app-text">{activeAgent?.name || "AI"} 👋</p>
+                <p className="text-xs text-app-text-muted mt-1">무엇을 도와드릴까요? 대화하듯 질문해보세요</p>
+                {broadcastSummary && (
+                  <div className="flex items-center justify-center gap-2 mt-3 text-[10px]">
+                    <span className="flex items-center gap-0.5 text-app-success"><CheckCircle className="h-3 w-3" />{broadcastSummary.sent}건 성공</span>
+                    {broadcastSummary.failed > 0 && (
+                      <button onClick={() => handleQuickPrompt("실패한 발송 원인 분석해줘")} className="flex items-center gap-0.5 text-app-danger hover:underline">
+                        <AlertTriangle className="h-3 w-3" />{broadcastSummary.failed}건 실패
+                      </button>
+                    )}
+                    {broadcastSummary.scheduled > 0 && (
+                      <span className="flex items-center gap-0.5 text-app-text-muted"><Clock className="h-3 w-3" />{broadcastSummary.scheduled}건 예약</span>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <button onClick={() => handleQuickPrompt("오늘 발송 현황 요약해줘")} className="rounded-full bg-app-primary/10 px-3 py-1.5 text-[11px] font-medium text-app-primary hover:bg-app-primary/20 transition-colors">📊 오늘 리포트</button>
+                  <button onClick={() => useDashboardStore.getState().setActiveTab("send")} className="rounded-full border border-app-border px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-text transition-colors">✍️ 새 발송 작성</button>
+                </div>
+              </div>
+              <p className="text-[10px] text-app-text-muted -mb-2">자주 묻는 질문</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {quickPrompts.map((qp) => (
+                  <button key={qp.label} onClick={() => handleQuickPrompt(qp.text)} className="inline-flex items-center gap-1 rounded-full border border-app-border/60 bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors">
+                    <qp.icon className="h-3 w-3" />{qp.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((m) => <ChatMessageBubble key={m.id} message={m} onExecuteTool={handleExecuteTool} />)
+          )}
+
+          {loading && !streamMsg?.content && (
+            <div className="flex justify-start">
+              <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-app-border bg-app-card-hover px-3 py-2 text-xs text-app-text-muted">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />답변 생성 중...
+              </div>
+            </div>
+          )}
+          {streamMsg?.content && (
+            <ChatMessageBubble message={{ id: "streaming", role: "agent", content: streamMsg.content, toolName: streamMsg.toolName, toolButtonLabel: streamMsg.toolButtonLabel, toolPayload: streamMsg.toolPayload, tokensUsed: streamMsg.tokensUsed, createdAt: "" }} onExecuteTool={handleExecuteTool} />
+          )}
+          <div ref={bottomRef} />
+        </div>
+      </>
+    );
+  }
+
 
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
@@ -610,143 +719,7 @@ export function InlineAiChat() {
 
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        {!activeAgentId ? (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-app-text-muted">
-            <Sparkles className="h-8 w-8 opacity-30" />
-            <p className="text-xs">Agent를 선택하고 대화를 시작하세요</p>
-            <Button variant="primary" size="sm" onClick={() => setShowNewAgentModal(true)}>
-              <Plus className="h-3 w-3" /> 새 Agent
-            </Button>
-          </div>
-        ) : !activeChatId ? (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-app-text-muted">
-            {autoChatCreating ? (
-              <>
-                <Loader2 className="h-6 w-6 animate-spin text-app-primary" />
-                <p className="text-xs">채팅 준비 중...</p>
-              </>
-            ) : (
-              <>
-                <MessageSquare className="h-8 w-8 opacity-30" />
-                <p className="text-xs">
-                  <span className="font-medium text-app-text">{activeAgent?.name}</span> 👋
-                </p>
-                <Button variant="primary" size="sm" onClick={handleNewChat}>
-                  <Plus className="h-3 w-3" /> 새 채팅
-                </Button>
-              </>
-            )}
-          </div>
-            ) : (
-              <>
-              <AiWelcomeCard />
-              <AiStaffBoard />
-              <div className="space-y-3">
-            {messagesLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
-                    <div className="space-y-1.5">
-                      <Skeleton className={`h-3 w-12 rounded`} />
-                      <Skeleton className={`h-14 w-40 rounded-2xl ${i % 2 === 0 ? "rounded-br-md" : "rounded-bl-md"}`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : messagesError ? (
-              <div className="flex flex-col items-center gap-2 py-6">
-                <InlineError className="max-w-md">{messagesError}</InlineError>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-6">
-                {/* Welcome card */}
-                <div className="w-full max-w-sm rounded-2xl border border-app-primary/20 bg-gradient-to-br from-app-primary/5 to-app-bg p-5 text-center">
-                  <Bot className="h-10 w-10 text-app-primary mx-auto mb-2" />
-                  <p className="text-sm font-bold text-app-text">
-                    {activeAgent?.name || "AI"} 👋
-                  </p>
-                  <p className="text-xs text-app-text-muted mt-1">
-                    무엇을 도와드릴까요? 대화하듯 질문해보세요
-                  </p>
-                  {/* Broadcast status inline */}
-                  {broadcastSummary && (
-                    <div className="flex items-center justify-center gap-2 mt-3 text-[10px]">
-                      <span className="flex items-center gap-0.5 text-app-success">
-                        <CheckCircle className="h-3 w-3" />{broadcastSummary.sent}건 성공
-                      </span>
-                      {broadcastSummary.failed > 0 && (
-                        <button onClick={() => handleQuickPrompt("실패한 발송 원인 분석해줘")}
-                          className="flex items-center gap-0.5 text-app-danger hover:underline">
-                          <AlertTriangle className="h-3 w-3" />{broadcastSummary.failed}건 실패
-                        </button>
-                      )}
-                      {broadcastSummary.scheduled > 0 && (
-                        <span className="flex items-center gap-0.5 text-app-text-muted">
-                          <Clock className="h-3 w-3" />{broadcastSummary.scheduled}건 예약
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    <button onClick={() => handleQuickPrompt("오늘 발송 현황 요약해줘")}
-                      className="rounded-full bg-app-primary/10 px-3 py-1.5 text-[11px] font-medium text-app-primary hover:bg-app-primary/20 transition-colors">
-                      📊 오늘 리포트
-                    </button>
-                    <button onClick={() => {
-                      useDashboardStore.getState().setActiveTab("send");
-                    }}
-                      className="rounded-full border border-app-border px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-text transition-colors">
-                      ✍️ 새 발송 작성
-                    </button>
-                  </div>
-                </div>
-                {/* Quick prompts */}
-                <p className="text-[10px] text-app-text-muted -mb-2">자주 묻는 질문</p>
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {quickPrompts.map((qp) => (
-                    <button
-                      key={qp.label}
-                      onClick={() => handleQuickPrompt(qp.text)}
-                      className="inline-flex items-center gap-1 rounded-full border border-app-border/60 bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors"
-                    >
-                      <qp.icon className="h-3 w-3" />
-                      {qp.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              messages.map((m) => (
-                <ChatMessageBubble key={m.id} message={m} onExecuteTool={handleExecuteTool} />
-              ))
-            )}
-
-            {loading && !streamMsg?.content && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-app-border bg-app-card-hover px-3 py-2 text-xs text-app-text-muted">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  답변 생성 중...
-                </div>
-              </div>
-            )}
-            {streamMsg?.content && (
-              <ChatMessageBubble
-                message={{
-                  id: "streaming",
-                  role: "agent",
-                  content: streamMsg.content,
-                  toolName: streamMsg.toolName,
-                  toolButtonLabel: streamMsg.toolButtonLabel,
-                  toolPayload: streamMsg.toolPayload,
-                  tokensUsed: streamMsg.tokensUsed,
-                  createdAt: "",
-                }}
-                onExecuteTool={handleExecuteTool}
-              />
-            )}
-            <div ref={bottomRef} />
-          </div>
-        )}
+        {renderChatContent()}
       </div>
 
       {/* Tool Confirmation Banner */}

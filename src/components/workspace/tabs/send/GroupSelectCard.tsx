@@ -61,7 +61,12 @@ export const GroupSelectCard = memo(function GroupSelectCard({
           <div className="min-w-0">
             <div className="truncate text-sm font-medium text-app-text">{group.title}</div>
             <div className="text-[11px] text-app-text-subtle">
-              {group.participantsCount != null ? `${group.participantsCount.toLocaleString()}명` : "-"}
+              {group.participantsCount != null ? (
+                <span className="inline-flex items-center gap-0.5">
+                  <Users className="h-2.5 w-2.5" />
+                  {group.participantsCount.toLocaleString()}명
+                </span>
+              ) : "-"}
             </div>
           </div>
         </div>

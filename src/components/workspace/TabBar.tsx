@@ -220,7 +220,7 @@ export function TabBar() {
           <nav
             className="border-t-0 bg-app-surface/95 backdrop-blur-xl"
             style={{
-              paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+              ...getSafeAreaStyle("bottom"),
               borderTop: "1px solid var(--color-border)",
             }}
             onTouchStart={(e) => e.stopPropagation()}
