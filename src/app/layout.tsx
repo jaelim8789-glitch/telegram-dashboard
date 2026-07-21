@@ -5,7 +5,7 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
   variable: "--font-heading",
-  display: "swap",
+  display: "optional",
 });
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
@@ -19,7 +19,7 @@ import LiveChat from "@/components/LiveChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://telemon.online"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online"),
   manifest: "/manifest.json",
   title: {
     default: "TeleMon | 텔레그램 자동화 매크로 플랫폼",
@@ -67,6 +67,8 @@ export default function RootLayout({
             was causing tab/button clicks to silently misfire right after
             first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <link rel="preload" href="/manifest.json" as="fetch" crossOrigin="anonymous" />
+        <link rel="preload" href="/icons/icon-192.svg" as="image" />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <SplashScreen />

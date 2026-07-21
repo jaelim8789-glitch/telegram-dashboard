@@ -500,6 +500,18 @@ function AdminDashboardContent() {
             </Link>
           </div>
         </Panel>
+
+        <Panel
+          accent="purple"
+          title={<div className="flex items-center gap-2"><Download className="h-4 w-4 text-purple-400" />데이터 관리</div>}
+          description="CSV/JSON 내보내기 · 엑셀 가져오기 · 백업 · 복원 · 스냅샷">
+          <div className="space-y-2 text-xs text-app-text-muted">
+            <p>발송 내역, 그룹 멤버, 전체 설정을 내보내거나 가져옵니다. 스냅샷으로 상태를 저장하고 복원할 수 있습니다.</p>
+            <Link href="/admin/data">
+              <Button variant="primary" className="w-full">데이터 관리 바로가기</Button>
+            </Link>
+          </div>
+        </Panel>
       </div>
     </div>
   );
