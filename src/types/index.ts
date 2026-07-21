@@ -769,6 +769,32 @@ export interface AIAnalyticsDaily {
   [key: string]: unknown;
 }
 
+export interface TeleMonMemoryPeriod {
+  attempted: number;
+  successful: number;
+  success_rate: number;
+}
+
+export interface TeleMonMemoryTopPost {
+  broadcast_id: string;
+  message_preview: string;
+  attempted: number;
+  successful: number;
+  success_rate: number;
+  last_sent_at: string | null;
+}
+
+export interface TeleMonMemorySnapshot {
+  generated_at: string;
+  periods: {
+    this_month?: TeleMonMemoryPeriod;
+    last_week?: TeleMonMemoryPeriod;
+    last_year?: TeleMonMemoryPeriod;
+  };
+  top_posts: TeleMonMemoryTopPost[];
+  memory_text: string;
+}
+
 export interface AIAnalyticsAgentBreakdown {
   agentId: string;
   [key: string]: unknown;
