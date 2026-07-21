@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any
 
 from ..admin_platform import AdminPlatform, AuditAction
@@ -61,10 +62,43 @@ def _verify_keyboard(token: str) -> dict[str, Any]:
     return {"inline_keyboard": [[{"text": _VERIFY_BUTTON_TEXT, "callback_data": f"verify:{token}"}]]}
 
 
+_WEB_BACKEND_URL = os.environ.get("WEB_BACKEND_URL", "http://localhost:8000")
+
+
+async def _check_web_account(telegram_id: int) -> dict[str, Any] | None:
+    """봇 /start 시 웹 백엔드에 telegram_id로 기존 계정이 있는지 조회."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as http:
+            resp = await http.get(f"{_WEB_BACKEND_URL}/api/auth/check-telegram/{telegram_id}")
+            if resp.status_code == 200:
+                return resp.json()
+    except Exception:
+        logger.debug("web_account_check_failed", telegram_id=telegram_id)
+    return None
+
+
 async def _handle_start(client: TelegramBotClient, chat_id: int, message: dict[str, Any]) -> None:
     text = message.get("text", "")
     parts = text.split(maxsplit=1)
     token = parts[1].strip() if len(parts) > 1 else ""
+    from_user = message.get("from", {})
+    telegram_user_id = from_user.get("id")
+
+    # ── 웹 연동 확인 ──────────────────────────────────────────────────
+    if telegram_user_id:
+        web_account = await _check_web_account(telegram_user_id)
+        if web_account and web_account.get("linked"):
+            plan = web_account.get("plan", "free")
+            await client.send_message(
+                chat_id,
+                f"👋 이미 TeleMon에 가입된 계정입니다!\n\n"
+                f"📱 요금제: {plan.upper()}\n"
+                f"🌐 대시보드: https://app.telemon.online\n\n"
+                f"웹 대시보드에서 모든 기능을 이용하실 수 있습니다.\n"
+                f"도움이 필요하시면 언제든지 말씀해주세요!",
+            )
+            return
 
     if not token:
         await client.send_message(chat_id, "잘못된 접근입니다. 웹사이트에서 다시 시도해주세요.")
@@ -75,7 +109,6 @@ async def _handle_start(client: TelegramBotClient, chat_id: int, message: dict[s
         await client.send_message(chat_id, "인증 토큰을 찾을 수 없습니다. 웹사이트에서 다시 시도해주세요.")
         return
 
-    from_user = message.get("from", {})
     bot_db.upsert_session(
         chat_id=str(chat_id),
         token=token,
