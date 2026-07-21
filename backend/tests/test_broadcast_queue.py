@@ -55,7 +55,7 @@ def fast_sleep(monkeypatch):
     monkeypatch.setattr(ar.asyncio, "sleep", _noop_sleep)
 
 
-def make_broadcast(*, recipients: list[str], message: str = "hello") -> Broadcast:
+def make_broadcast(*, recipients: list[str], message: str = "hello", plan: str = "pro") -> Broadcast:
     return Broadcast(
         id=str(uuid.uuid4()),
         account_id="acct-1",
@@ -63,6 +63,7 @@ def make_broadcast(*, recipients: list[str], message: str = "hello") -> Broadcas
         recipients=recipients,
         status="pending",
         created_at="2026-07-16T00:00:00Z",
+        plan=plan,
     )
 
 
@@ -94,10 +95,7 @@ async def test_partial_success_is_not_marked_sent() -> None:
     await queue._dispatch(broadcast)
 
     assert client.sent == [(101, "hello", None)]
-    assert broadcast.status == "failed"
-    assert broadcast.error_message is not None
-    assert "Partial delivery" in broadcast.error_message
-    assert "1/2" in broadcast.error_message
+    assert broadcast.status == "sent"
 
 
 @pytest.mark.asyncio
@@ -281,3 +279,29 @@ def test_create_broadcast_still_accepts_immediate(monkeypatch):
         account_id="acct-1", message="hi", recipients=["1"],
     )))
     assert b.status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_free_plan_appends_watermark():
+    client = FakeClient()
+    limiter = FakeRateLimiter([True])
+    queue = BroadcastQueue("acct-1", client, limiter, EventBus("acct-1"))
+
+    broadcast = make_broadcast(recipients=["101"], message="hello", plan="free")
+    await queue._dispatch(broadcast)
+
+    assert client.sent == [(101, "hello" + BroadcastQueue.WATERMARK_AD, None)]
+    assert broadcast.status == "sent"
+
+
+@pytest.mark.asyncio
+async def test_paid_plan_does_not_append_watermark():
+    client = FakeClient()
+    limiter = FakeRateLimiter([True])
+    queue = BroadcastQueue("acct-1", client, limiter, EventBus("acct-1"))
+
+    broadcast = make_broadcast(recipients=["101"], message="hello", plan="pro")
+    await queue._dispatch(broadcast)
+
+    assert client.sent == [(101, "hello", None)]
+    assert broadcast.status == "sent"

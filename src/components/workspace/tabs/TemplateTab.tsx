@@ -708,7 +708,7 @@ export function TemplateTab() {
           <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-5 shadow-xl max-h-[70dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-app-text flex items-center gap-2">
-                <History className="h-4 w-4" /> "{versionTarget.name}" 버전 기록
+                <History className="h-4 w-4" /> &ldquo;{versionTarget.name}&rdquo; 버전 기록
               </h3>
               <button onClick={() => setVersionTarget(null)} aria-label="닫기" className="text-app-text-muted hover:text-app-text">
                 <X className="h-4 w-4" />

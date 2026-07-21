@@ -323,9 +323,9 @@ class RuntimeManager:
 
     # ── Broadcast operations ───────────────────────────────────────
 
-    async def create_broadcast(self, input_data: CreateBroadcastInput) -> Broadcast:
+    async def create_broadcast(self, input_data: CreateBroadcastInput, plan: str = "free") -> Broadcast:
         runtime = self._get_runtime_or_raise(input_data.account_id)
-        return await runtime.create_broadcast(input_data)
+        return await runtime.create_broadcast(input_data, plan=plan)
 
     async def get_broadcasts(self, account_id: str | None = None, limit: int = 50) -> list[Broadcast]:
         """Get broadcasts, optionally filtered by account_id."""
