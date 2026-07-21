@@ -59,7 +59,6 @@ export function InlineAiChat() {
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [chatPanelOpen, setChatPanelOpen] = useState(false);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
-  const [showQuickPrompts, setShowQuickPrompts] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [broadcastSummary, setBroadcastSummary] = useState<{ sent: number; failed: number; scheduled: number } | null>(null);
@@ -72,6 +71,8 @@ export function InlineAiChat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   const loadAgents = useCallback(async () => {
     setAgentsLoading(true);
@@ -252,11 +253,11 @@ export function InlineAiChat() {
     setDeletingChatId(chatId);
     try {
       await agentApi.deleteChat(chatId);
-      setChats((prev) => prev.filter((c) => c.id !== chatId));
-      if (activeChatId === chatId) {
-        const remaining = chats.filter((c) => c.id !== chatId);
-        setActiveChatId(remaining[0]?.id ?? null);
-      }
+      setChats((prev) => {
+        const next = prev.filter((c) => c.id !== chatId);
+        if (activeChatId === chatId) setActiveChatId(next[0]?.id ?? null);
+        return next;
+      });
     } catch {
       toast("error", "채팅 삭제 실패");
     } finally {
@@ -349,7 +350,7 @@ export function InlineAiChat() {
       recognition.onerror = () => {
         setIsListening(false);
         isLongPressRef.current = false;
-        if (isLongPressRef.current) toast("error", "음성 인식 오류");
+        toastRef.current("error", "음성 인식 오류");
       };
       recognition.onend = () => {
         setIsListening(false);
@@ -357,7 +358,7 @@ export function InlineAiChat() {
       };
       recognitionRef.current = recognition;
     }
-  }, [toast]);
+  }, []);
 
   function handleVoicePointerDown() {
     if (!recognitionRef.current || loading) return;

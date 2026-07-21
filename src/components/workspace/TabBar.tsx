@@ -46,8 +46,8 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   referral: Share2,
 };
 
-// 모바일 하단 핵심 탭
-const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "group", "log", "myai"];
+// 모바일 하단 핵심 탭 — AI 대화 첫 화면
+const MOBILE_MAIN_TAB_IDS = ["myai", "send", "group"];
 
 function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
@@ -148,12 +148,13 @@ export function TabBar() {
 
   // 모바일
   const mobileMainTabs = allTabs.filter((t) => MOBILE_MAIN_TAB_IDS.includes(t.id));
+  const hasMoreTab = MOBILE_MAIN_TAB_IDS.includes("more") || true;
   const moreGroups: { label: string; tabs: TabDef[] }[] = [
-    { label: "발송", tabs: sendTabs },
-    { label: "운영/모니터링", tabs: opsTabs },
-    { label: "AI", tabs: aiTabs },
+    { label: "대시보드", tabs: dashboardTabs },
+    { label: "발송", tabs: sendTabs.filter(t => !MOBILE_MAIN_TAB_IDS.includes(t.id)) },
+    { label: "운영", tabs: opsTabs },
+    { label: "AI", tabs: aiTabs.filter(t => t.id !== "myai") },
     { label: "설정", tabs: settingsTabs },
-    { label: "신규", tabs: newTabs },
   ].filter((g) => g.tabs.length > 0);
 
   function updateFade() {
