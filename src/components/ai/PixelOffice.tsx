@@ -520,7 +520,7 @@ export function PixelOffice() {
       </div>
 
       {/* 게임화면 컨테이너 */}
-      <div className="relative overflow-hidden rounded-2xl border border-app-border bg-[#1a1a2e] shadow-2xl">
+      <div className={cn("relative overflow-hidden rounded-2xl border border-app-border bg-[#1a1a2e] shadow-2xl", actualNight && "night-mode-screen")}>
         {/* Sky gradient */}
         <div className={cn(
           "absolute inset-0 transition-colors duration-1000",
@@ -548,12 +548,10 @@ export function PixelOffice() {
         ))}
 
         {/* 야근모드 특수 효과 */}
-        {actualNight && hour >= 21 && (
+        {actualNight && (
           <>
-            {/* 모니터 불빛 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none" />
             {/* 로파이 BGM 텍스트 */}
-            <div className="absolute bottom-2 left-2 text-[7px] text-white/20 flex items-center gap-1 z-20">
+            <div className="absolute bottom-2 left-2 text-[7px] text-white/20 flex items-center gap-1 z-20 pointer-events-none">
               🎵 lofi hip hop radio
             </div>
             {/* 별 더 많이 */}
@@ -566,9 +564,9 @@ export function PixelOffice() {
         )}
 
         {/* 야근 환영 메시지 */}
-        {actualNight && hour >= 21 && (
+        {actualNight && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 px-3 py-1.5 text-center"
+            className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 px-3 py-1.5 text-center pointer-events-none"
           >
             <p className="text-[9px] text-purple-300/80">
               🌙 야근 중... {new Date().getHours()}시 {new Date().getMinutes()}분 — 오늘도 수고하셨어요! ☕
