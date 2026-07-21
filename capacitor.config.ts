@@ -19,6 +19,11 @@ const config: CapacitorConfig = {
     Badge: {
       persist: true,
     },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#0a0a0a',
+      overlaysWebView: true,
+    },
   },
 };
 

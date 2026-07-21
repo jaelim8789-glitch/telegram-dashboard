@@ -144,22 +144,22 @@ function LogRow({
         )}
       >
         {/* ── Top info line ── */}
-        <div className="flex items-center gap-2 px-3 py-2.5">
+        <div className="flex items-center gap-2 px-3 py-3">
           <button
             type="button"
             onClick={(e) => onToggleSelect(log.id, e)}
             className={cn(
-              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors touch-target",
               selected ? "border-app-primary bg-app-primary text-white" : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
             )}
             aria-label={selected ? "선택 해제" : "선택"}
             aria-pressed={selected}
           >
-            {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-3 w-3 rounded-sm border border-current" />}
+            {selected ? <CheckCircle2 className="h-4 w-4" /> : <span className="h-3.5 w-3.5 rounded-sm border border-current" />}
           </button>
 
           <Icon className={cn(
-            "h-4 w-4 shrink-0",
+            "h-5 w-5 shrink-0",
             isSending && "animate-spin text-app-info",
             isFailed && "text-app-danger",
             isSent && "text-app-success",
@@ -188,7 +188,7 @@ function LogRow({
               aria-label="즉시 발송"
               title="즉시 발송"
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                "flex h-10 w-10 items-center justify-center rounded-lg transition-colors active:scale-95 touch-target",
                 "text-app-text-muted hover:bg-app-card-hover hover:text-app-text disabled:opacity-40",
               )}
             >
@@ -202,7 +202,7 @@ function LogRow({
                   aria-label={expanded ? "세부 정보 접기" : "세부 정보 보기"}
                   aria-expanded={expanded}
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                    "flex h-10 w-10 items-center justify-center rounded-lg transition-colors active:scale-95 touch-target",
                     expanded ? "text-app-text bg-app-card-hover" : "text-app-danger hover:bg-app-danger-muted/30",
                   )}
                 >
@@ -216,7 +216,7 @@ function LogRow({
                   disabled={retryLocked}
                   aria-label="재발송"
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg text-app-danger transition-colors active:scale-95",
+                    "flex h-10 w-10 items-center justify-center rounded-lg text-app-danger transition-colors active:scale-95 touch-target",
                     "hover:bg-app-danger-muted/30 disabled:opacity-40",
                   )}
                 >
@@ -231,7 +231,7 @@ function LogRow({
                   aria-label="편집 후 재발송"
                   title="편집 후 재발송"
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                    "flex h-10 w-10 items-center justify-center rounded-lg transition-colors active:scale-95 touch-target",
                     "text-app-text-muted hover:bg-app-card-hover hover:text-app-primary",
                   )}
                 >
@@ -267,22 +267,22 @@ function LogRow({
         </div>
 
         {swipeActionsOpen && (
-          <div className="border-t border-app-border/70 bg-app-card/60 px-3 py-2 sm:hidden">
+          <div className="border-t border-app-border/70 bg-app-card/60 px-3 py-3 sm:hidden">
             <div className="flex items-center gap-2 overflow-x-auto">
-              <Button variant="secondary" size="sm" onClick={() => onSendNow(log)} disabled={sendNowLocked}>
-                <Play className="h-3.5 w-3.5" /> 즉시 발송
+              <Button variant="secondary" size="md" onClick={() => onSendNow(log)} disabled={sendNowLocked}>
+                <Play className="h-4 w-4" /> 즉시 발송
               </Button>
               {!isFailed && !isSending && (
-                <Button variant="ghost" size="sm" onClick={() => onEditResend(log)}>
-                  <SendHorizonal className="h-3.5 w-3.5" /> 재사용
+                <Button variant="ghost" size="md" onClick={() => onEditResend(log)}>
+                  <SendHorizonal className="h-4 w-4" /> 재사용
                 </Button>
               )}
               {showRetryButton && (
-                <Button variant="danger" size="sm" onClick={() => setRetryConfirmOpen(true)} disabled={retryLocked}>
-                  <RotateCcw className="h-3.5 w-3.5" /> 재시도
+                <Button variant="danger" size="md" onClick={() => setRetryConfirmOpen(true)} disabled={retryLocked}>
+                  <RotateCcw className="h-4 w-4" /> 재시도
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setSwipeActionsOpen(false)}>
+              <Button variant="ghost" size="md" onClick={() => setSwipeActionsOpen(false)}>
                 닫기
               </Button>
             </div>
@@ -899,63 +899,25 @@ export function LogTab() {
         </button>
       </div>
 
-      {/* ── Hide inactive toggle ── */}
-      <div className="mb-3 flex items-center gap-2 pb-1 border-b border-app-border/50">
-        <button
-          type="button"
-          onClick={() => setStatusPillFilter("all")}
-          className={cn("text-xs font-medium transition-colors", statusPillFilter === "all" ? "text-app-primary" : "text-app-text-muted hover:text-app-text")}
-        >
-          전체 보기
-        </button>
-        <span className="text-app-text-subtle text-[10px]">|</span>
-        <button
-          type="button"
-          onClick={() => setStatusPillFilter("failed")}
-          className={cn("text-xs font-medium transition-colors", statusPillFilter === "failed" ? "text-app-danger" : "text-app-text-muted hover:text-app-danger")}
-        >
-          🔴 실패만
-        </button>
-        <span className="text-app-text-subtle text-[10px]">|</span>
-        <button
-          type="button"
-          onClick={() => setStatusPillFilter("sent")}
-          className={cn("text-xs font-medium transition-colors", statusPillFilter === "sent" ? "text-app-success" : "text-app-text-muted hover:text-app-success")}
-        >
-          ✅ 완료만
-        </button>
-        <span className="text-app-text-subtle text-[10px]">|</span>
-        <button
-          type="button"
-          onClick={() => setStatusPillFilter("pending")}
-          className={cn("text-xs font-medium transition-colors", statusPillFilter === "pending" ? "text-app-info" : "text-app-text-muted hover:text-app-info")}
-        >
-          ⏳ 대기/진행
-        </button>
-      </div>
 
-      {/* Loading */}
-      {loading && filteredLogs.length === 0 && (
-        <div className="space-y-1.5">
-          <Skeleton className="h-11 w-full rounded-xl" />
-          <Skeleton className="h-11 w-full rounded-xl" />
-          <Skeleton className="h-11 w-full rounded-xl" />
-        </div>
-      )}
-
-      {/* Error */}
-      {error && <InlineError className="mb-2">{error}</InlineError>}
-      {retryError && <InlineError className="mb-2">{retryError}</InlineError>}
-
-      {/* Empty */}
-      {!loading && !error && logs.length === 0 && (
-        <EmptyState icon={ScrollText} title="조건에 맞는 발송 로그가 없습니다." />
-      )}
-
-      {/* Log rows */}
-      {filteredLogs.length > 0 && (
-        <div className="space-y-1.5 text-xs">
-          {filteredLogs.map((log) => (
+      {/* ── Mobile-friendly log list ── */}
+      <div className="space-y-2">
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
+        ) : error ? (
+          <InlineError title="로그를 불러올 수 없습니다" message={error} />
+        ) : filteredLogs.length === 0 ? (
+          <EmptyState
+            icon={ScrollText}
+            title="발송 로그가 없습니다"
+            description="새로운 발송을 예약하거나 기존 발송 내역이 여기에 표시됩니다."
+          />
+        ) : (
+          filteredLogs.map((log) => (
             <LogRow
               key={log.id}
               log={log}
@@ -964,67 +926,75 @@ export function LogTab() {
               accountLabel={accountLabel}
               accounts={accounts}
               selected={selectedLogIds.has(log.id)}
-               onToggleSelect={(id, e) => {
-                if (e?.shiftKey && lastClickedIdx.current !== null) {
-                  const currentIdx = filteredLogs.findIndex((l) => l.id === id);
-                  if (currentIdx === -1) return;
-                  const start = Math.min(lastClickedIdx.current, currentIdx);
-                  const end = Math.max(lastClickedIdx.current, currentIdx);
-                  setSelectedLogIds((prev) => {
-                    const next = new Set(prev);
-                    for (let i = start; i <= end; i++) {
-                      next.add(filteredLogs[i].id);
-                    }
-                    return next;
-                  });
-                  lastClickedIdx.current = currentIdx;
-                } else {
-                  setSelectedLogIds((current) => {
-                    const next = new Set(current);
-                    if (next.has(id)) next.delete(id); else next.add(id);
-                    return next;
-                  });
-                  lastClickedIdx.current = filteredLogs.findIndex((l) => l.id === id);
-                }
+              onToggleSelect={(id, e) => {
+                e?.stopPropagation();
+                setSelectedLogIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return next;
+                });
               }}
               onRetry={handleRetry}
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
-              onSendNow={(b) => setSendNowConfirmId(b.id)}
+              onSendNow={handleSendNow}
             />
-          ))}
+          ))
+        )}
+      </div>
+
+      {selectedLogIds.size > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-xs">
+          <span className="text-app-text-muted">
+            {selectedLogIds.size}개 선택됨
+          </span>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setBulkAction("send_now")}
+              disabled={!selectedLogs.some(log => log.status !== "sent" && log.status !== "cancelled")}
+            >
+              <Play className="h-3.5 w-3.5" />
+              즉시 발송
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setBulkAction("retry")}
+              disabled={!selectedLogs.some(canRetryFromFailureInfo)}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              재시도
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setBulkAction("delete")}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              삭제
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedLogIds(new Set())}
+            >
+              선택 해제
+            </Button>
+          </div>
         </div>
       )}
 
-      {filteredLogs.length === 0 && logs.length > 0 && (
-        <p className="py-4 text-center text-xs text-app-text-subtle">선택한 상태의 로그가 없습니다.</p>
-      )}
-
       <ConfirmDialog
-        open={!!sendNowConfirmId}
-        title="즉시 발송"
-        description={
-          sendNowConfirmId
-            ? `"${logs.find((b) => b.id === sendNowConfirmId)?.message?.slice(0, 50)}" — 이 발송을 지금 즉시 1회 실행할까요? 원본 발송 상태는 변경되지 않습니다.`
-            : ""
-        }
-        confirmLabel="즉시 발송"
-        onConfirm={() => {
-          const b = logs.find((l) => l.id === sendNowConfirmId);
-          if (b) handleSendNow(b);
-        }}
-        onCancel={() => setSendNowConfirmId(null)}
-      />
-
-      <ConfirmDialog
-        open={bulkAction !== null}
-        title={bulkAction === "retry" ? "선택 항목 재발송" : bulkAction === "send_now" ? "선택 항목 즉시 발송" : bulkAction === "delete" ? "선택 항목 삭제" : "선택 항목 반복 취소"}
-        description={bulkAction === "delete" ? `${bulkTargets.length}건을 삭제합니다. 복구할 수 없습니다.` : `${bulkTargets.length}건을 처리합니다.`}
-        variant={bulkAction === "cancel" || bulkAction === "delete" ? "danger" : "default"}
-        confirmLabel={bulkAction === "delete" ? "삭제" : bulkAction === "cancel" ? "취소" : "실행"}
-        onConfirm={async () => {
-          if (bulkAction) await handleBulkAction(bulkAction);
-        }}
+        open={!!bulkAction}
+        title={`${selectedLogIds.size}개 항목을 ${bulkAction === "send_now" ? "즉시 발송" : bulkAction === "retry" ? "재시도" : bulkAction === "delete" ? "삭제" : "취소"}하시겠습니까?`}
+        description={`${selectedLogIds.size}개의 발송 항목을 ${bulkAction === "send_now" ? "즉시 발송" : bulkAction === "retry" ? "재시도" : bulkAction === "delete" ? "삭제" : "취소"}합니다.`}
+        variant={bulkAction === "delete" ? "danger" : "default"}
+        confirmLabel={bulkAction === "delete" ? "삭제" : "실행"}
+        cancelLabel="취소"
+        onConfirm={() => bulkAction && handleBulkAction(bulkAction)}
         onCancel={() => setBulkAction(null)}
       />
     </Panel>

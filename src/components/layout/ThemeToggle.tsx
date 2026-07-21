@@ -30,10 +30,18 @@ export function ThemeToggle({ className }: { className?: string }) {
     );
   }
 
-  const icons = {
+  const icons: Record<string, React.ReactNode> = {
     dark: <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />,
+    "dark-pure": <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />,
     light: <Sun className="h-4 w-4 sm:h-3.5 sm:w-3.5" />,
     system: <Monitor className="h-4 w-4 sm:h-3.5 sm:w-3.5" />,
+  };
+
+  const themeLabel: Record<string, string> = {
+    dark: "다크",
+    "dark-pure": "OLED 다크",
+    light: "라이트",
+    system: "시스템",
   };
 
   return (
@@ -44,10 +52,17 @@ export function ThemeToggle({ className }: { className?: string }) {
         "flex min-h-11 min-w-11 items-center justify-center rounded-md text-app-text-muted hover:text-app-text hover:bg-app-card transition-all sm:min-h-7 sm:min-w-7",
         className
       )}
-      title={`테마: ${theme === "dark" ? "다크" : theme === "light" ? "라이트" : "시스템"} (${resolvedTheme === "dark" ? "🌙" : "☀️"})`}
+      title={`테마: ${themeLabel[theme] ?? theme}`}
       aria-label="테마 변경"
     >
-      {icons[theme]}
+      {theme === "dark-pure" ? (
+        <span className="relative">
+          <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <span className="absolute -right-0.5 -top-0.5 text-[6px] leading-none">●</span>
+        </span>
+      ) : (
+        icons[theme]
+      )}
     </button>
   );
 }

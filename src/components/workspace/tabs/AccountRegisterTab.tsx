@@ -35,6 +35,8 @@ import { PlanUpgradeModal } from "@/components/workspace/tabs/register/PlanUpgra
 
 type Step = "form" | "code" | "2fa" | "done";
 
+const SWIPE_THRESHOLD = 50;
+
 const STEPS = [
   { key: "form", label: "계정 정보", icon: Phone },
   { key: "code", label: "인증번호", icon: Smartphone },
@@ -1035,10 +1037,44 @@ export function NewRegistrationForm({
   phone, name, submitting, error, successMessage, fieldErrors, phoneConflict, onRequestSelfReset,
   onPhoneChange, onNameChange, onSubmit, onReset,
 }: NewRegistrationFormProps) {
+  // 스와이프 제스처 상태
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // 스와이프 제스처 핸들러
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > SWIPE_THRESHOLD;
+    const isRightSwipe = distance < -SWIPE_THRESHOLD;
+
+    if (isLeftSwipe) {
+      // 왼쪽 스와이프: 폼 제출
+      if (!submitting && !fieldErrors.phone) {
+        void onSubmit(new Event('submit') as unknown as FormEvent);
+      }
+    } else if (isRightSwipe) {
+      // 오른쪽 스와이프: 폼 초기화
+      onReset();
+    }
+  };
   return (
     <Panel
       title={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4 text-app-primary" /> 새 계정 등록</div>}
       description="전화번호로 실제 Telegram 인증을 진행합니다. API ID/Hash는 서버(.env)에 앱 단위로 한 번만 설정하면 됩니다."
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <form onSubmit={onSubmit}>
         <div className="grid grid-cols-2 gap-4">

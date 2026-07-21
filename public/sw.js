@@ -1,8 +1,8 @@
 // TeleMon PWA Service Worker
 // Cache-first for static assets, network-first for API calls.
-// Supports push notifications.
+// Supports push notifications + IndexedDB offline data layer.
 
-const CACHE_NAME = "telemon-v5";
+const CACHE_NAME = "telemon-v6";
 const STATIC_ASSETS = [
   "/",
   "/app",
@@ -67,6 +67,51 @@ const OFFLINE_HTML = `<!doctype html>
   </body>
 </html>`;
 
+const DB_NAME = "telemon-cache";
+const DB_VERSION = 1;
+
+function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("api-responses")) {
+        db.createObjectStore("api-responses");
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbPut(storeName, key, data, ttl) {
+  return openIndexedDB().then((db) => {
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    store.put({ data, expiry: Date.now() + ttl }, key);
+  });
+}
+
+function idbGet(storeName, key) {
+  return openIndexedDB().then((db) => {
+    return new Promise((resolve) => {
+      const tx = db.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const entry = request.result;
+        if (!entry) return resolve(null);
+        if (entry.expiry && Date.now() > entry.expiry) {
+          db.transaction(storeName, "readwrite").objectStore(storeName).delete(key);
+          return resolve(null);
+        }
+        resolve(entry.data);
+      };
+      request.onerror = () => resolve(null);
+    });
+  });
+}
+
 // Install: cache static assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -117,7 +162,6 @@ self.addEventListener("push", (event) => {
       )
     );
   } catch {
-    // If JSON parsing fails, show raw text
     event.waitUntil(
       self.registration.showNotification("TeleMon", {
         body: event.data.text(),
@@ -136,10 +180,9 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Check if action was provided
       if (action && event.notification.data?.actions) {
         const actionConfig = event.notification.data.actions.find(
-          (a: { action: string }) => a.action === action
+          (a) => a.action === action
         );
         if (actionConfig?.url) {
           return openOrFocus(actionConfig.url);
@@ -150,7 +193,7 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 
-  function openOrFocus(targetUrl: string) {
+  function openOrFocus(targetUrl) {
     return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
@@ -166,19 +209,17 @@ self.addEventListener("notificationclick", (event) => {
   }
 });
 
-// Fetch: cache-first for static, network-first for API
+// Fetch: network-first for API (IndexedDB + Cache Storage fallback),
+// cache-first for static, offline fallback for navigation
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") {
-    return;
-  }
+  if (request.method !== "GET") return;
 
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin) {
-    return;
-  }
+  if (url.origin !== self.location.origin) return;
 
+  // API routes: network-first, fall back to Cache Storage then IndexedDB
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request)
@@ -187,13 +228,30 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, clone);
           });
+          clone.json().then((json) => {
+            idbPut("api-responses", request.url, json, 5 * 60 * 1000);
+          }).catch(() => {});
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(async () => {
+          const cachedResponse = await caches.match(request);
+          if (cachedResponse) return cachedResponse;
+          const idbData = await idbGet("api-responses", request.url);
+          if (idbData) {
+            return new Response(JSON.stringify(idbData), {
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+          return new Response(JSON.stringify({ error: "offline" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          });
+        })
     );
     return;
   }
 
+  // Static Next.js assets: cache-first with network update
   if (url.pathname.startsWith("/_next/static")) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -212,6 +270,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // All other requests: network-first, offline fallback for navigation
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -224,9 +283,7 @@ self.addEventListener("fetch", (event) => {
       .catch(() => {
         if (request.mode === "navigate") {
           return caches.match("/offline").then((cachedOfflinePage) => {
-            if (cachedOfflinePage) {
-              return cachedOfflinePage;
-            }
+            if (cachedOfflinePage) return cachedOfflinePage;
             return new Response(OFFLINE_HTML, {
               headers: {
                 "Content-Type": "text/html; charset=utf-8",

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark" | "dark-pure" | "system";
 
 const STORAGE_KEY = "telemon-theme";
 
@@ -14,7 +14,7 @@ const STORAGE_KEY = "telemon-theme";
  * applyTheme() above exactly (default "light" when unset, "system" resolves
  * via prefers-color-scheme: light) since it can't import this file — no JS
  * bundle has loaded yet when it runs. */
-export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="system")?v:"system";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="dark-pure"||v==="system")?v:"system";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch(e){}})();`;
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";
@@ -36,7 +36,7 @@ function applyTheme(theme: Theme, animate = false) {
   }
 
   el.setAttribute("data-theme", resolved);
-  el.classList.remove("light", "dark");
+  el.classList.remove("light", "dark", "dark-pure");
   el.classList.add(resolved);
 }
 
@@ -53,12 +53,12 @@ export function useTheme() {
   }, []);
 
   const cycleTheme = useCallback(() => {
-    const order: Theme[] = ["light", "dark", "system"];
+    const order: Theme[] = ["light", "dark", "dark-pure", "system"];
     const idx = order.indexOf(theme);
     setTheme(order[(idx + 1) % order.length]);
   }, [theme, setTheme]);
 
-  const resolvedTheme = theme === "system" ? getSystemTheme() : theme;
+  const resolvedTheme = theme === "system" ? getSystemTheme() : theme === "dark-pure" ? "dark" : theme;
 
   useEffect(() => {
     applyTheme(theme);
@@ -83,5 +83,5 @@ export function getTheme(): Theme {
 
 export function getResolvedTheme(): "light" | "dark" {
   const t = getTheme();
-  return t === "system" ? getSystemTheme() : t;
+  return t === "system" ? getSystemTheme() : (t === "dark-pure" ? "dark" : t);
 }

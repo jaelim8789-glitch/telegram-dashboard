@@ -9,6 +9,7 @@ import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
+import { AppShell } from "@/components/layout/AppShell";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useNetworkQuality } from "@/hooks/useNetworkQuality";
 import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
@@ -317,6 +318,7 @@ export function Workspace() {
   }
 
   return (
+    <AppShell>
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* ── Network offline strip ── */}
@@ -357,6 +359,8 @@ export function Workspace() {
         <AppRatingPrompt />
 
         <CategoryStrip />
+
+        <ProfileSuggestion onApply={dashboardSwitchProfile} />
 
         {isMobile && <PinnedKpiBar />}
 
@@ -425,6 +429,7 @@ export function Workspace() {
         <OnboardingTour />
         <div className="fixed bottom-20 right-2 z-30"><NetworkQualityIndicator /></div>
       </main>
+      </AppShell>
     </MotionConfig>
   );
 }
