@@ -13,6 +13,7 @@ import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
+import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
@@ -44,6 +45,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   aiopscenter: Bot,
   aiusage: BarChart3,
   referral: Share2,
+  operator: Zap,
 };
 
 // 모바일 하단 핵심 탭 — AI 대화 첫 화면
