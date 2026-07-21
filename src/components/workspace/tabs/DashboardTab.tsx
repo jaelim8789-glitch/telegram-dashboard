@@ -448,6 +448,74 @@ export function DashboardTab() {
 
   const setTab = useDashboardStore.getState().setActiveTab;
 
+  const priorityQueue = useMemo(() => {
+    const items: Array<{
+      id: string;
+      title: string;
+      detail: string;
+      cta: string;
+      tone: "danger" | "warning" | "info" | "success";
+      action: () => void;
+    }> = [];
+
+    if (healthCritical.length > 0) {
+      items.push({
+        id: "auth",
+        title: `인증/차단 계정 ${healthCritical.length}개`,
+        detail: "발송 중단 전에 재인증 또는 상태 점검이 필요합니다.",
+        cta: "계정 확인",
+        tone: "danger",
+        action: () => setTab("register"),
+      });
+    }
+
+    if (recentFailures.length > 0) {
+      items.push({
+        id: "failures",
+        title: `최근 실패 발송 ${recentFailures.length}건`,
+        detail: recentFailures[0]?.message || "실패 원인을 확인하고 재시도하세요.",
+        cta: "로그 열기",
+        tone: "warning",
+        action: () => setTab("log"),
+      });
+    }
+
+    if ((summary?.success_rate ?? 100) < 85) {
+      items.push({
+        id: "performance",
+        title: `성공률 ${summary?.success_rate?.toFixed(1) ?? "0.0"}%`,
+        detail: "최근 성과가 낮습니다. 시간대와 계정별 실패 원인을 바로 확인하세요.",
+        cta: "분석 보기",
+        tone: "warning",
+        action: () => setTab("deliveryanalytics"),
+      });
+    }
+
+    if (memoryTopPosts.length > 0) {
+      items.push({
+        id: "reuse",
+        title: "고성과 문구 재활용 가능",
+        detail: `Top 글 ${memoryTopPosts[0].success_rate}% 성과를 참고해 재작성할 수 있습니다.`,
+        cta: "AI로 재작성",
+        tone: "success",
+        action: () => setTab("aibroadcast"),
+      });
+    }
+
+    if (upcoming.length === 0 && activeAccounts.length > 0) {
+      items.push({
+        id: "schedule",
+        title: "다음 발송 예약 없음",
+        detail: "모바일에서는 미리 1건 예약해두면 운영 누락을 줄일 수 있습니다.",
+        cta: "발송 준비",
+        tone: "info",
+        action: () => setTab("send"),
+      });
+    }
+
+    return items.slice(0, 4);
+  }, [healthCritical.length, recentFailures, summary?.success_rate, memoryTopPosts, upcoming.length, activeAccounts.length, setTab]);
+
   // Skeleton loading state
   if (accountsLoading && accounts.length === 0) {
     return (
@@ -541,6 +609,56 @@ export function DashboardTab() {
           <DailyDigest accounts={accounts} logs={logs} />
         )}
       </div>
+
+      <section className="rounded-2xl border border-app-border bg-app-card p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-app-text">
+              <Zap className="h-4 w-4 text-app-primary" aria-hidden="true" />
+              모바일 운영 우선순위
+            </div>
+            <p className="mt-1 text-[11px] text-app-text-muted">지금 바로 처리해야 할 작업만 추려서 보여줍니다.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTab(priorityQueue[0]?.id === "auth" ? "register" : "log")}
+            className="rounded-xl border border-app-border px-2.5 py-1.5 text-[10px] text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+          >
+            빠른 이동
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {priorityQueue.length === 0 ? (
+            <div className="rounded-xl border border-app-border bg-app-bg px-3 py-3 text-xs text-app-text-muted">
+              처리 우선순위가 높은 이슈가 없습니다. 지금은 발송 예약이나 AI 문구 개선을 진행하기 좋은 상태입니다.
+            </div>
+          ) : (
+            priorityQueue.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.action}
+                className={cn(
+                  "w-full rounded-xl border px-3 py-3 text-left transition-all",
+                  item.tone === "danger" && "border-app-danger/25 bg-app-danger-muted/10",
+                  item.tone === "warning" && "border-app-warning/25 bg-app-warning-muted/10",
+                  item.tone === "info" && "border-app-info/25 bg-app-info-muted/10",
+                  item.tone === "success" && "border-app-success/25 bg-app-success-muted/10",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-app-text">{item.title}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-app-text-muted">{item.detail}</p>
+                  </div>
+                  <span className="shrink-0 rounded-lg bg-app-card px-2 py-1 text-[10px] font-medium text-app-text">{item.cta}</span>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-app-border bg-app-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

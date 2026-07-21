@@ -47,6 +47,7 @@ const INSPECTOR_CONTENT: Record<TabId, React.ComponentType> = {
   referral: DashboardInspector,
   operator: DashboardInspector,
   styleprofile: DashboardInspector,
+  growthloop: DashboardInspector,
 };
 
 export function Inspector() {

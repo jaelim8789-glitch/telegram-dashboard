@@ -1,4 +1,4 @@
-export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile";
+export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -53,6 +53,7 @@ export const TABS: TabDef[] = [
   { id: "referral", label: "추천인", shortLabel: "추천", group: "settings" },
   { id: "operator", label: "AI 직원", shortLabel: "직원", group: "ai" },
   { id: "styleprofile", label: "브랜드 톤", shortLabel: "톤", group: "ai" },
+  { id: "growthloop", label: "성장 루프", shortLabel: "성장", group: "ai" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
