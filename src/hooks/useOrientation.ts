@@ -1,44 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-type Orientation = "portrait" | "landscape";
-
-interface OrientationState {
-  orientation: Orientation;
-  angle: number;
-  isSupported: boolean;
-}
-
-export function useOrientation(): OrientationState {
-  const [state, setState] = useState<OrientationState>(() => {
-    if (typeof window === "undefined") {
-      return { orientation: "portrait", angle: 0, isSupported: false };
-    }
-    const angle = screen.orientation?.angle ?? 0;
-    return {
-      orientation: angle === 0 || angle === 180 ? "portrait" : "landscape",
-      angle,
-      isSupported: "orientation" in screen,
-    };
-  });
-
-  const handleChange = useCallback(() => {
-    const angle = screen.orientation?.angle ?? 0;
-    setState({
-      orientation: angle === 0 || angle === 180 ? "portrait" : "landscape",
-      angle,
-      isSupported: true,
-    });
-  }, []);
+export function useOrientation() {
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
 
   useEffect(() => {
-    const orientation = screen.orientation;
-    if (!orientation) return;
+    function detect() {
+      setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait");
+    }
+    detect();
+    window.addEventListener("resize", detect);
+    window.addEventListener("orientationchange", () => setTimeout(detect, 200));
+    return () => {
+      window.removeEventListener("resize", detect);
+      window.removeEventListener("orientationchange", detect);
+    };
+  }, []);
 
-    orientation.addEventListener("change", handleChange);
-    return () => orientation.removeEventListener("change", handleChange);
-  }, [handleChange]);
-
-  return state;
+  return orientation;
 }
