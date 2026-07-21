@@ -64,6 +64,7 @@ const POLL_INTERVAL_MS = 3000;
 const HISTORY_POLL_INTERVAL_MS = 30000;
 type SortMode = "default" | "members" | "favorites";
 type HistoryFilter = BroadcastStatus | "all" | "recurring";
+type DeliveryPreset = "safe" | "balanced" | "fast";
 
 // 답장매크로 "중복 제거" — 계정+답장 대상 메시지 ID 조합으로 이미 답장한 수신자를 브라우저에 기억해뒀다가 다음 발송에서 제외한다.
 function replyDedupeKey(accountId: string, replyToMessageId: string) {
@@ -114,6 +115,12 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
   failed: "실패",
   cancelled: "취소",
   recurring: "반복",
+};
+const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
+  safe: "안전 우선",
+  balanced: "균형",
+  fast: "속도 우선",
+};
 };
 
 
@@ -280,6 +287,7 @@ export function SendTab() {
   const [autoRetry, setAutoRetry] = useState(false);
   const [autoRetryCount, setAutoRetryCount] = useState(3);
   const [autoRetryInterval, setAutoRetryInterval] = useState(5);
+    const [deliveryPreset, setDeliveryPreset] = useState<DeliveryPreset>("balanced");
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -875,6 +883,32 @@ export function SendTab() {
     const next = [...selectedIds, ...valid];
     setSendSelectedGroupIds(next);
     toast("success", `"${folderName}" 폴더에서 ${valid.length}개 그룹을 선택했습니다.`);
+    }
+    function applyDeliveryPreset(preset: DeliveryPreset) {
+      setDeliveryPreset(preset);
+      if (preset === "safe") {
+        setDeliveryMode("normal");
+        setNormalDelaySeconds(60);
+        setBatchSize(1);
+        setAutoRetry(true);
+        setAutoRetryCount(3);
+        setAutoRetryInterval(5);
+        return;
+      }
+      if (preset === "balanced") {
+        setDeliveryMode("normal");
+        setNormalDelaySeconds(20);
+        setBatchSize(5);
+        setAutoRetry(true);
+        setAutoRetryCount(2);
+        setAutoRetryInterval(3);
+        return;
+      }
+      setDeliveryMode("bulk");
+      setNormalDelaySeconds(3);
+      setBatchSize(10);
+      setAutoRetry(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -1096,6 +1130,15 @@ export function SendTab() {
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
       headers: authHeaders(),
     })
+        }
+        function handleSelectRecoverableFailures() {
+          if (recoverableFailedIds.length === 0) {
+            toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
+            return;
+          }
+          setSelectedHistoryIds(new Set(recoverableFailedIds));
+          toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
+        }
       .then((r) => r.json())
       .then((data) => {
         setReplyMacroActive(!!data.is_active);
@@ -1816,6 +1859,28 @@ export function SendTab() {
                 </div>
                )}
             </div>
+            <div className="rounded-xl border border-app-border bg-app-card/40 px-3 py-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-app-text-muted">속도 프리셋</span>
+                <div className="flex items-center gap-1.5">
+                  {(["safe", "balanced", "fast"] as DeliveryPreset[]).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => applyDeliveryPreset(preset)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                        deliveryPreset === preset
+                          ? "border-app-primary bg-app-primary text-white"
+                          : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text"
+                      )}
+                    >
+                      {DELIVERY_PRESET_LABEL[preset]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -2057,6 +2122,16 @@ export function SendTab() {
           }
           description={`대상이 많아 계정 ${distributionSiblings.length}개에 나눠서 보냈습니다`}
           action={
+                        {recoverableFailedIds.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleSelectRecoverableFailures}
+                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-warning hover:bg-app-warning-muted transition-colors"
+                          >
+                            <FileWarning className="h-3.5 w-3.5" />
+                            복구형 실패 선택 {recoverableFailedIds.length}개
+                          </button>
+                        )}
             <button
               onClick={() => loadDistributionStatus(distributionBatchId)}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
@@ -2360,6 +2435,14 @@ export function SendTab() {
         <div className="flex items-center justify-end gap-2 text-xs text-app-text-muted mb-2">
           <Hourglass className="h-3.5 w-3.5" />
           <span>예상 소요 시간: <strong className="text-app-text">{estimatePreview.readable}</strong></span>
+              {bottleneckHints.length > 0 && canSubmit && (
+                <div className="mb-2 rounded-xl border border-app-warning/25 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
+                  <p className="mb-1 font-medium">속도/제한 진단</p>
+                  <ul className="list-inside list-disc space-y-0.5">
+                    {bottleneckHints.map((hint, idx) => <li key={idx}>{hint}</li>)}
+                  </ul>
+                </div>
+              )}
         </div>
       )}
       {estimateLoading && !estimatePreview && canSubmit && (
