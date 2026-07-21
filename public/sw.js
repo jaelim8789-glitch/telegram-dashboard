@@ -2,7 +2,7 @@
 // Cache-first for static assets, network-first for API calls.
 // Supports push notifications.
 
-const CACHE_NAME = "telemon-v4";
+const CACHE_NAME = "telemon-v5";
 const STATIC_ASSETS = [
   "/",
   "/app",
