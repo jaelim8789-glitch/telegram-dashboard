@@ -45,6 +45,7 @@ import {
 } from "@/lib/messageTemplates";
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
 import { HistoryRow } from "@/components/workspace/tabs/send/HistoryRow";
+import { InlineButtonBuilder } from "@/components/workspace/tabs/send/InlineButtonBuilder";
 import { RecipientReviewPanel } from "@/components/workspace/tabs/send/RecipientReviewPanel";
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { STATUS_META } from "@/lib/statusMeta";
@@ -1504,88 +1505,7 @@ export function SendTab() {
 
 
 
-            {/* Inline buttons */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-app-text-muted">인라인 버튼 (선택)</span>
-                <button
-                  type="button"
-                  onClick={() => setInlineButtons((prev) => [...prev, { label: "", url: "" }])}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-app-primary hover:bg-app-primary-muted/20 transition-colors"
-                >
-                  <Plus className="h-3 w-3" /> 버튼 추가
-                </button>
-              </div>
-              {inlineButtons.length === 0 && (
-                <p className="text-[11px] text-app-text-subtle italic">
-                  버튼을 추가하면 Telegram 메시지 하단에 클릭 가능한 링크가 표시됩니다.
-                </p>
-              )}
-              {inlineButtons.map((btn, idx) => (
-                <div key={idx} className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card/50 p-2.5">
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <input
-                      value={btn.label}
-                      onChange={(e) => {
-                        const next = [...inlineButtons];
-                        next[idx] = { ...next[idx], label: e.target.value };
-                        setInlineButtons(next);
-                      }}
-                      placeholder="버튼 이름"
-                      className="rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-xs text-app-text outline-none focus:border-app-primary/60"
-                    />
-                    <input
-                      value={btn.url}
-                      onChange={(e) => {
-                        const next = [...inlineButtons];
-                        next[idx] = { ...next[idx], url: e.target.value };
-                        setInlineButtons(next);
-                      }}
-                      placeholder="https://..."
-                      className="rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-xs text-app-text outline-none focus:border-app-primary/60"
-                    />
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === 0) return;
-                        const next = [...inlineButtons];
-                        [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-                        setInlineButtons(next);
-                      }}
-                      disabled={idx === 0}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-text hover:bg-app-card-hover disabled:opacity-30 transition-colors"
-                      aria-label="위로"
-                    >
-                      <ArrowUp className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === inlineButtons.length - 1) return;
-                        const next = [...inlineButtons];
-                        [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
-                        setInlineButtons(next);
-                      }}
-                      disabled={idx === inlineButtons.length - 1}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-text hover:bg-app-card-hover disabled:opacity-30 transition-colors"
-                      aria-label="아래로"
-                    >
-                      <ArrowDown className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInlineButtons((prev) => prev.filter((_, i) => i !== idx))}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-app-text-muted hover:text-app-danger hover:bg-app-danger-muted/20 transition-colors"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <InlineButtonBuilder buttons={inlineButtons} onChange={setInlineButtons} />
 
             {/* Image / Video */}
             <Field label="이미지 또는 영상 (선택)">

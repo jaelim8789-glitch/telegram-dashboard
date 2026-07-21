@@ -24,6 +24,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
+import { BulkAccountImport } from "@/components/workspace/tabs/register/BulkAccountImport";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { AuthFlowMode, AccountHealthItem } from "@/types";
@@ -1042,6 +1043,10 @@ export function NewRegistrationForm({
           </Button>
         </div>
       </form>
+
+      <div className="mt-6 pt-4 border-t border-app-border/50">
+        <BulkAccountImport />
+      </div>
     </Panel>
   );
 }

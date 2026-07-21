@@ -277,6 +277,12 @@ class RuntimeManager:
         runtime = self._get_runtime_or_raise(account_id)
         return await runtime.re_auth()
 
+    def get_account_ids_by_user(self, user_id: str) -> list[str] | None:
+        return None
+
+    def get_account_owner(self, account_id: str) -> dict | None:
+        return None
+
     # ── Group operations ───────────────────────────────────────────
 
     async def get_groups(self, account_id: str) -> list[Group]:
