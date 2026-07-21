@@ -54,6 +54,9 @@ import { Modal } from "@/components/ui/Modal";
 import { downloadLogsCsv } from "@/lib/exportCsv";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
+import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
+import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
+import { computeViralScore, viralColor, viralBg, viralLabel, type ViralScoreResult } from "@/lib/viralScore";
 
 
 
@@ -373,13 +376,10 @@ export function SendTab() {
 
   function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
     const groupById = new Map(groups.map((group) => [group.id, group]));
-    const seen = new Set<string>();
     const next: Group[] = [];
     for (const id of selectedIds) {
-      if (seen.has(id)) continue;
       const group = groupById.get(id);
       if (!group) continue;
-      seen.add(id);
       next.push(group);
     }
     return next;
@@ -857,22 +857,13 @@ export function SendTab() {
     const folderGroupIds = "group_ids" in folder ? folder.group_ids : folder.groupIds;
     const availableGroupIds = new Set(groups.map((g) => g.id));
     const valid = folderGroupIds.filter((id) => availableGroupIds.has(id));
-    const toAdd = valid.filter((id) => !selectedIds.includes(id));
     if (valid.length === 0) {
       toast("error", "이 폴더에는 현재 계정에서 사용할 수 있는 그룹이 없습니다.");
       return;
     }
-    if (toAdd.length === 0) {
-      toast("info", `"${folderName}" 폴더의 모든 그룹이 이미 선택되어 있습니다.`);
-      return;
-    }
-    const next = [...selectedIds, ...toAdd];
+    const next = [...selectedIds, ...valid];
     setSendSelectedGroupIds(next);
-    if (toAdd.length < valid.length) {
-      toast("success", `"${folderName}" 폴더에서 ${toAdd.length}개 그룹을 선택했습니다 (${valid.length - toAdd.length}개는 이미 선택됨).`);
-    } else {
-      toast("success", `"${folderName}" 폴더의 그룹 ${toAdd.length}개를 선택했습니다.`);
-    }
+    toast("success", `"${folderName}" 폴더에서 ${valid.length}개 그룹을 선택했습니다.`);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -1072,6 +1063,10 @@ export function SendTab() {
     const predicted = Math.round(baseRate * lengthFactor * recipientFactor);
     return Math.min(99, Math.max(1, predicted));
   }, [account, history, message, selectedRecipientIds]);
+
+  const spamScore = useMemo(() => computeSpamScore(message), [message]);
+  const tone = useMemo(() => analyzeTone(message), [message]);
+  const viral = useMemo(() => computeViralScore(message), [message]);
 
   if (!account) {
     return (
@@ -1476,6 +1471,77 @@ export function SendTab() {
               </div>
             )}
 
+            {/* AI message insights */}
+            {message.trim().length > 0 && (
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                {/* Spam Score */}
+                <div className="rounded-lg border border-app-border bg-app-card p-2.5">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-app-text-muted">AI 스팸 스코어</span>
+                    <span className={cn(
+                      "text-xs font-bold tabular-nums",
+                      spamScore.score >= 70 ? "text-app-danger" : spamScore.score >= 40 ? "text-app-warning" : "text-app-success",
+                    )}>
+                      {spamScore.score}/100
+                    </span>
+                  </div>
+                  <div className="mb-1.5 h-1.5 w-full overflow-hidden rounded-full bg-app-bg">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        spamScore.score >= 70 ? "bg-app-danger" : spamScore.score >= 40 ? "bg-app-warning" : "bg-app-success",
+                      )}
+                      style={{ width: `${spamScore.score}%` }}
+                    />
+                  </div>
+                  {spamScore.reasons.length > 0 && (
+                    <ul className="space-y-0.5">
+                      {spamScore.reasons.slice(0, 2).map((r, i) => (
+                        <li key={i} className="text-[10px] text-app-text-subtle">• {r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Tone Analysis */}
+                <div className="rounded-lg border border-app-border bg-app-card p-2.5">
+                  <div className="mb-1 text-[10px] font-medium text-app-text-muted">메시지 톤 분석</div>
+                  <div className="mb-1 flex flex-wrap items-center gap-1">
+                    {tone.primary && (
+                      <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold", toneBg(tone.primary), toneColor(tone.primary))}>
+                        {toneLabel(tone.primary)}
+                      </span>
+                    )}
+                    {tone.secondary && (
+                      <span className="inline-block rounded-full bg-app-card-hover px-1.5 py-0.5 text-[10px] text-app-text-muted">
+                        {toneLabel(tone.secondary)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] leading-tight text-app-text-subtle">{tone.feedback}</p>
+                </div>
+
+                {/* Viral Score */}
+                <div className="rounded-lg border border-app-border bg-app-card p-2.5">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-app-text-muted">바이럴 스코어</span>
+                    <span className={cn("text-xs font-bold tabular-nums", viralColor(viral.score))}>
+                      {viralLabel(viral.score)}
+                    </span>
+                  </div>
+                  <div className="mb-1.5 h-1.5 w-full overflow-hidden rounded-full bg-app-bg">
+                    <div
+                      className={cn("h-full rounded-full transition-all", viralBg(viral.score))}
+                      style={{ width: `${viral.score}%` }}
+                    />
+                  </div>
+                  {viral.recommendations.length > 0 && (
+                    <p className="text-[10px] leading-tight text-app-text-subtle">{viral.recommendations[0]}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Template library toolbar */}
             {/* Template library toolbar */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-app-border bg-app-card/30 px-3 py-2">
@@ -1806,7 +1872,8 @@ export function SendTab() {
               </div>
             </div>
 
-            {deliveryMode === "normal" && (
+            {/* 발송 간격 슬라이더는 전체 즉시 발송 모드일 때만 표시 */}
+            {deliveryMode === "bulk" && (
               <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
                   <Hourglass className="h-3.5 w-3.5 text-app-text-muted" />
@@ -1831,41 +1898,6 @@ export function SendTab() {
                   <span>60초</span>
                 </div>
               </div>
-            )}
-
-            {/* "답장매크로" (답장으로 보내기) toggle + 중복 제거 */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
-                <input type="checkbox" checked={replyMacroEnabled}
-                  onChange={(e) => {
-                    setReplyMacroEnabled(e.target.checked);
-                    if (!e.target.checked) { setReplyToMessageId(""); setDedupeReply(false); }
-                  }} />
-                <MessageCircle className="h-3.5 w-3.5 text-app-text-muted" />
-                답장매크로
-              </label>
-              {replyMacroEnabled && (
-                <button
-                  type="button"
-                  onClick={() => setDedupeReply((v) => !v)}
-                  aria-pressed={dedupeReply}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
-                    dedupeReply
-                      ? "border-app-primary bg-app-primary text-white"
-                      : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
-                  )}
-                  title="켜면 이미 이 메시지에 답장한 대상을 제외하고 랜덤 순서로 발송합니다"
-                >
-                  <Filter className="h-3 w-3" />
-                  중복 제거
-                </button>
-              )}
-            </div>
-            {replyMacroEnabled && dedupeReply && (
-              <p className="text-[11px] text-app-text-subtle italic">
-                선택한 대상 중 이 메시지에 이미 답장한 사람은 제외하고, 남은 대상에게 랜덤 순서로 발송합니다.
-              </p>
             )}
 
           {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
