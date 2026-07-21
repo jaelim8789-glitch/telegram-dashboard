@@ -47,7 +47,7 @@ type DashboardStateValue = {
 };
 
 export const INITIAL_STATE: DashboardStateValue = {
-  activeTab: "dashboard" as TabId,
+  activeTab: loadLastTab(),
   role: null,
   subscriptionStatus: null,
   plan: null,
@@ -89,7 +89,17 @@ interface DashboardState extends DashboardStateValue {
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
+const LAST_TAB_KEY = "telemon-last-tab";
 let runtimeManagerSubscription: (() => void) | null = null;
+
+function loadLastTab(): TabId {
+  if (typeof localStorage === "undefined") return "dashboard" as TabId;
+  try {
+    const saved = localStorage.getItem(LAST_TAB_KEY);
+    if (saved) return saved as TabId;
+  } catch { }
+  return "dashboard" as TabId;
+}
 
 function saveRecentRecipientSets(sets: string[][]): void {
   try {
@@ -129,7 +139,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set({ ...INITIAL_STATE });
   },
 
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveTab: (tab) => {
+    try { localStorage.setItem(LAST_TAB_KEY, tab); } catch { }
+    set({ activeTab: tab });
+  },
 
   role: null,
   setRole: (role) => set({ role }),

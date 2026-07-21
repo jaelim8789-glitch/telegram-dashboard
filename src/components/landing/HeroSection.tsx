@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -7,9 +8,65 @@ import { useTranslation } from "@/lib/i18n";
 
 export function HeroSection() {
   const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  const [offsetY, setOffsetY] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => {
+      const rect = el.getBoundingClientRect();
+      const scrolled = window.scrollY;
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        setOffsetY(scrolled * 0.15);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <section className="tm-section-bg relative min-h-[90vh] sm:min-h-[80vh] flex items-center justify-center overflow-hidden px-6 sm:px-6 lg:px-8 satin-overlay luxury-hero">
+    <section
+      ref={ref}
+      className="tm-section-bg relative min-h-[90vh] sm:min-h-[80vh] flex items-center justify-center overflow-hidden px-6 sm:px-6 lg:px-8 satin-overlay luxury-hero"
+    >
+      {/* Parallax background layers */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ transform: `translateY(${offsetY * 0.3}px)` }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            background: `linear-gradient(135deg, transparent 0%, var(--color-accent-glow) 30%, transparent 50%, var(--color-accent-glow) 70%, transparent 100%)`,
+            backgroundSize: '400% 400%',
+            animation: 'gold-shimmer 6s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-text) 1px, transparent 0)`,
+            backgroundSize: '24px 24px',
+          }}
+        />
+      </div>
+
+      {/* Floating gold orbs */}
+      <div
+        className="pointer-events-none absolute top-1/4 left-[15%] w-64 h-64 rounded-full opacity-[0.04]"
+        style={{
+          background: 'radial-gradient(circle, var(--color-accent) 0%, transparent 70%)',
+          transform: `translateY(${offsetY * -0.1}px)`,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-1/4 right-[15%] w-48 h-48 rounded-full opacity-[0.03]"
+        style={{
+          background: 'radial-gradient(circle, var(--color-accent) 0%, transparent 70%)',
+          transform: `translateY(${offsetY * 0.15}px)`,
+        }}
+      />
       {/* Metallic sheen overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03] sm:opacity-[0.03]"

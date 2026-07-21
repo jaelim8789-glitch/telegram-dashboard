@@ -14,6 +14,7 @@
 const CACHE_NAME = "telemon-v2";
 const STATIC_ASSETS = [
   "/",
+  "/offline",
   "/manifest.json",
   "/favicon.svg",
   "/icons/icon-192.svg",
@@ -98,6 +99,12 @@ self.addEventListener("fetch", (event) => {
         });
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => {
+        // Navigation requests — show offline page
+        if (request.mode === "navigate") {
+          return caches.match("/offline");
+        }
+        return caches.match(request);
+      })
   );
 });
