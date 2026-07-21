@@ -1,101 +1,151 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bot, MessageCircle, Clock, Sparkles } from "lucide-react";
 import Image from "next/image";
-
-const AI_FEATURES = [
-  { 
-    icon: MessageCircle, 
-    title: "질문하면 AI가 바로 답변", 
-    desc: "채널 운영에 대한 질문을 자연스럽게 물어보세요. AI 비서가 실시간으로 도와줍니다." 
-  },
-  { 
-    icon: Clock, 
-    title: "24시간 AI 어시스턴트", 
-    desc: "언제든지 AI가 대기하고 있어, 밤낮 없이 채널 운영을 도와줍니다." 
-  },
-  { 
-    icon: Bot, 
-    title: "채널 운영을 AI에게 맡기세요", 
-    desc: "AI가 자동으로 메시지를 보내고, 응답하고, 채널을 관리합니다." 
-  },
-  { 
-    icon: Sparkles, 
-    title: "지능형 대화", 
-    desc: "AI는 단순한 키워드가 아닌, 진짜 대화를 이해하고 자연스럽게 응답합니다." 
-  },
-];
+import Link from "next/link";
+import { ArrowRight, MessageCircle, Bot, Zap, Brain, Clock } from "lucide-react";
 
 export function OperationalStatus() {
   return (
-    <section className="tm-section-bg px-4 sm:px-6 lg:px-8 py-12">
+    <section id="ai-operational-status" className="tm-section-bg-alt px-6 sm:px-6 lg:px-8 py-12 sm:py-16 luxury-section">
       <div className="mx-auto max-w-6xl">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+            <p className="section-heading-luxury mb-0">AI 운영비서</p>
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+          </div>
+          <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
+            나만의 <span style={{ color: "var(--color-accent)" }}>AI</span>와 함께
+          </h2>
+          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">AI 비서가 대화하듯 채널 운영을 도와줍니다.</p>
+          <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Text Content */}
-          <div>
-            <div className="text-center lg:text-left mb-10 lg:mb-0">
-              <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
-                AI 어시스턴트
-              </p>
-              <h2 className="section-heading text-2xl sm:text-3xl">
-                <span style={{ color: "var(--color-accent)" }}>나만의 AI</span>와 함께
-              </h2>
-              <p className="mt-3 text-sm editorial-body max-w-lg mx-auto lg:mx-0">
-                AI 비서가 대화하듯 채널 운영을 도와줍니다.
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: "var(--color-text)" }}>
+                AI 비서가 대화하듯 채널 운영을 도와줍니다
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+                질문하면 AI가 바로 답변하고, 24시간 AI 어시스턴트가 대기하고 있어 언제든지 도움을 받을 수 있습니다. 채널 운영을 AI에게 맡기세요.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-10">
-              {AI_FEATURES.map((feature, i) => {
-                const Icon = feature.icon;
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: i * 0.08 }}
-                    className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
-                    style={{
-                      borderTop: "4px solid var(--color-accent)",
-                    }}
-                  >
-                    {/* 상단 우측 TM 배지 */}
-                    <div className="absolute -top-2.5 right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
-                      TM
-                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div 
+                className="p-4 rounded-lg border border-[var(--color-accent-border)] bg-[var(--color-card)] flex items-start gap-3 group"
+                style={{
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
+                }}
+              >
+                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-bg)] text-xs">
+                  <MessageCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm" style={{ color: "var(--color-text)" }}>질문하면 AI가 바로 답변</h4>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>AI가 질문에 즉시 응답합니다</p>
+                </div>
+              </div>
 
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg mb-4 bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] shadow-md">
-                      <Icon className="h-6 w-6" />
-                    </div>
+              <div 
+                className="p-4 rounded-lg border border-[var(--color-accent-border)] bg-[var(--color-card)] flex items-start gap-3 group"
+                style={{
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
+                }}
+              >
+                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-bg)] text-xs">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm" style={{ color: "var(--color-text)" }}>24시간 AI 어시스턴트</h4>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>하루 종일 운영을 도와줍니다</p>
+                </div>
+              </div>
 
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{feature.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{feature.desc}</p>
+              <div 
+                className="p-4 rounded-lg border border-[var(--color-accent-border)] bg-[var(--color-card)] flex items-start gap-3 group"
+                style={{
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
+                }}
+              >
+                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-bg)] text-xs">
+                  <Bot className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm" style={{ color: "var(--color-text)" }}>채널 운영을 AI에게 맡기세요</h4>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>지능형 대화로 운영을 지원합니다</p>
+                </div>
+              </div>
 
-                    {/* 하단 장식선 */}
-                    <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
-                  </motion.div>
-                );
-              })}
+              <div 
+                className="p-4 rounded-lg border border-[var(--color-accent-border)] bg-[var(--color-card)] flex items-start gap-3 group"
+                style={{
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184,160,96,0.08)",
+                }}
+              >
+                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-bg)] text-xs">
+                  <Brain className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm" style={{ color: "var(--color-text)" }}>지능형 대화</h4>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>자연스러운 대화를 경험하세요</p>
+                </div>
+              </div>
             </div>
+
+            <Link
+              href="/app/chat"
+              className="inline-flex items-center gap-1 text-sm font-medium"
+              style={{ color: "var(--color-accent)" }}
+            >
+              AI 비서 만나러 가기
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          {/* Image Content */}
-          <div className="flex justify-center lg:justify-end">
+          <div className="flex flex-col gap-6">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative"
+              transition={{ duration: 0.6 }}
+              className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg"
+              style={{
+                background: "var(--color-card)",
+              }}
             >
               <Image
-                src="/landing/AI assistant in a sleek office.png"
-                alt="AI 비서 이미지"
-                width={500}
-                height={500}
-                className="rounded-xl shadow-2xl"
+                src="/landing/TeleMon AI 시스템 소개.png"
+                alt="TeleMon AI 시스템 소개"
+                width={600}
+                height={400}
+                className="w-full h-auto object-cover"
+                priority
+              />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg"
+              style={{
+                background: "var(--color-card)",
+              }}
+            >
+              <Image
+                src="/landing/프리미엄 AI 자동화 솔루션.png"
+                alt="프리미엄 AI 자동화 솔루션"
+                width={600}
+                height={400}
+                className="w-full h-auto object-cover"
                 priority
               />
             </motion.div>

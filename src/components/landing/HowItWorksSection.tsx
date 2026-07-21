@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Zap, MessageSquare, Users, Bot, ArrowRight } from "lucide-react";
+import { Shield, Zap, MessageSquare, Users, Bot } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 const STEPS = [
   { icon: Shield, title: "1. 계정 연결", desc: "전화번호를 입력하고 Telegram 계정을 연결하세요. SMS/2FA 인증을 지원합니다." },
@@ -29,7 +30,7 @@ export function HowItWorksSection() {
           <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
@@ -60,6 +61,88 @@ export function HowItWorksSection() {
               </motion.div>
             );
           })}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-md aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Modern office portrait with city view.png"
+              alt="Modern office portrait with city view"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-md aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Elegante portrait ng babae.png"
+              alt="Elegante portrait ng babae"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-md aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/Serious portrait in dark studio.png"
+              alt="Serious portrait in dark studio"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-md aspect-square"
+            style={{
+              background: "var(--color-card)",
+            }}
+          >
+            <Image
+              src="/landing/모던하고 세련된 남성 초상.png"
+              alt="모던하고 세련된 남성 초상"
+              width={300}
+              height={300}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </motion.div>
         </div>
 
         <div className="mt-10 text-center">
