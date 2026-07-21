@@ -214,21 +214,19 @@ export default function SignupPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-app-bg bg-grid px-4 py-10 sm:px-6 lg:px-8"> {/* py-10으로 모바일 여백 조정 */}
-      <div className="mx-auto max-w-lg w-full"> {/* w-full 추가 */}
-        <div className="text-center mb-8"> {/* mb-8로 모바일 마진 조정 */}
-          <h1 className="text-3xl sm:text-4xl font-bold text-app-text"> {/* 모바일 텍스트 크기 조정 */}
+    <div className="min-h-screen bg-app-bg bg-grid px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-lg">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-app-text">
             <span className="text-app-primary">회원가입</span>
           </h1>
-          <p className="mt-2 text-app-text-secondary text-sm"> {/* 텍스트 크기 조정 */}
-            1분만에 시작하세요
-          </p>
+          <p className="mt-2 text-app-text-secondary">1분만에 시작하세요</p>
         </div>
 
         {/* Telegram Login Widget (shown on first step) */}
         {step === "plan" && TELEGRAM_BOT_USERNAME && (
-          <div className="mb-6"> {/* mb-6으로 모바일 마진 조정 */}
-            <div className="rounded-2xl border border-app-border/60 bg-app-card p-4 sm:p-5 animate-scale-in"> {/* 패딩 조정 */}
+          <div className="mb-8">
+            <div className="rounded-2xl border border-app-border/60 bg-app-card p-5 animate-scale-in">
               <div className="text-center mb-3">
                 <div className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-app-text mb-0.5">
                   <Send className="h-4 w-4 text-blue-500" />
@@ -257,7 +255,7 @@ export default function SignupPage() {
                 }} />
               )}
             </div>
-            <div className="flex items-center gap-3 my-4 sm:my-6"> {/* 간격 조정 */}
+            <div className="flex items-center gap-3 my-6">
               <div className="flex-1 h-px bg-app-border" />
               <span className="text-xs text-app-text-muted font-medium">또는 이메일로 가입</span>
               <div className="flex-1 h-px bg-app-border" />
@@ -266,22 +264,22 @@ export default function SignupPage() {
         )}
 
         {/* Step Progress */}
-        <div className="flex items-center justify-center gap-0 mb-6 sm:mb-10"> {/* mb 조정 */}
+        <div className="flex items-center justify-center gap-0 mb-10">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center">
-              <div className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
                 i <= currentIdx ? "bg-app-primary text-white scale-110" : "bg-app-border text-app-text-secondary"
               }`}>{i + 1}</div>
-              {i < 3 && <div className={`h-px w-6 sm:w-8 transition-all duration-300 ${i < currentIdx ? "bg-app-primary" : "bg-app-border"}`} />}
+              {i < 3 && <div className={`h-px w-8 transition-all duration-300 ${i < currentIdx ? "bg-app-primary" : "bg-app-border"}`} />}
             </div>
           ))}
         </div>
 
-        <div className="rounded-2xl border border-app-border bg-app-card p-5 sm:p-8 animate-scale-in"> {/* 패딩 조정 */}
+        <div className="rounded-2xl border border-app-border bg-app-card p-6 sm:p-8 animate-scale-in">
           {error && <InlineError className="mb-4">{error}</InlineError>}
 
           {step === "plan" && (
-            <div className="space-y-4 sm:space-y-5"> {/* 간격 조정 */}
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">요금제 선택</h2>
               <div className="space-y-3">
                 {[
@@ -299,9 +297,7 @@ export default function SignupPage() {
                     </div>
                     <p className="mt-1 text-xs text-app-text-secondary">{p.desc}</p>
                     {p.id === "free" && selectedPlan === p.id && (
-                        <p className="mt-2 text-xs text-app-text-subtle"> {/* 텍스트 크기 조정 */}
-                          🔑 3일 동안 모든 기능을 제한 없이 사용할 수 있습니다. 결제 정보가 필요하지 않습니다.
-                        </p>
+                        <p className="mt-2 text-xs text-app-text-subtle">🔑 3일 동안 모든 기능을 제한 없이 사용할 수 있습니다. 결제 정보가 필요하지 않습니다.</p>
                     )}
                   </button>
                 ))}
@@ -312,14 +308,12 @@ export default function SignupPage() {
                 } else {
                   router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
-              } } className="w-full h-12 rounded-xl text-sm font-semibold">
-                {selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}
-              </Button>
+              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}</Button>
             </div>
           )}
 
           {step === "phone" && (
-            <div className="space-y-4 sm:space-y-5"> {/* 간격 조정 */}
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">전화번호 입력</h2>
               <form onSubmit={handleStartVerification} className="space-y-4">
                 <Field label="전화번호" error={phoneError ?? undefined}>
@@ -346,7 +340,7 @@ export default function SignupPage() {
           )}
 
           {step === "channel" && (
-            <div className="space-y-4 sm:space-y-5"> {/* 간격 조정 */}
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold text-app-text">텔레그램 채널 인증</h2>
 
               {/* Step-by-step progress */}
@@ -435,30 +429,22 @@ export default function SignupPage() {
           )}
 
           {step === "done" && (
-            <div className="text-center space-y-4 sm:space-y-6"> {/* 간격 조정 */}
-              <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-app-success-muted animate-scale-in">
-                <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-app-success" />
+            <div className="text-center space-y-6">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-app-success-muted animate-scale-in">
+                <CheckCircle2 className="h-10 w-10 text-app-success" />
               </div>
               {alreadyIssued ? (
                 <>
-                  <h2 className="text-lg sm:text-xl font-bold text-app-text"> {/* 텍스트 크기 조정 */}
-                    이미 발급된 계정입니다
-                  </h2>
-                  <p className="text-sm text-app-text-secondary">
-                    이 전화번호로는 이미 무료 API 키가 발급되었습니다. 로그인 페이지에서 계속 진행해주세요.
-                  </p>
+                  <h2 className="text-xl font-bold text-app-text">이미 발급된 계정입니다</h2>
+                  <p className="text-sm text-app-text-secondary">이 전화번호로는 이미 무료 API 키가 발급되었습니다. 로그인 페이지에서 계속 진행해주세요.</p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-lg sm:text-xl font-bold text-app-text"> {/* 텍스트 크기 조정 */}
-                    가입 완료!
-                  </h2>
-                  <p className="text-sm text-app-text-secondary">
-                    아래 API 키를 안전한 곳에 저장하세요. 지금만 확인 가능합니다.
-                  </p>
+                  <h2 className="text-xl font-bold text-app-text">가입 완료!</h2>
+                  <p className="text-sm text-app-text-secondary">아래 API 키를 안전한 곳에 저장하세요. 지금만 확인 가능합니다.</p>
                   {apiKey && !apiKey.startsWith("Telegram") && (
-                    <div className="rounded-xl bg-app-surface border border-app-border p-3 sm:p-4"> {/* 패딩 조정 */}
-                      <code className="break-all text-xs sm:text-sm text-app-text font-mono">{apiKey}</code>
+                    <div className="rounded-xl bg-app-surface border border-app-border p-4">
+                      <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
                     </div>
                   )}
                 </>

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
-import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import { PwaRegister } from "@/components/PwaRegister";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { SplashScreen } from "@/components/ui/SplashScreen";
@@ -48,7 +47,6 @@ export default function RootLayout({
         <GestureTour />
         <BiometricLock>
           <RuntimeInitializer />
-          <CommandPaletteProvider />
           <PwaRegister />
           <PwaInstallPrompt />
           <ToastProvider>{children}</ToastProvider>

@@ -5,49 +5,56 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 const PLANS = [
   {
-    name: "Free",
+    name: "Free Trial",
     price: "0",
     period: "무료",
     features: [
       "1개 계정 연결",
-      "자동 응답 기능",
-      "메시지 발송",
-      "기본 발송 로그",
+      "AI 기반 자동 응답",
+      "기본 메시지 발송",
+      "간편한 발송 로그 확인",
+      "7일간 무제한 사용",
     ],
     href: "/signup",
-    cta: "무료 시작",
+    cta: "무료 체험 시작",
     popular: false,
   },
   {
     name: "Pro",
-    price: "100",
+    price: "29",
     period: "월",
     features: [
-      "10개 계정 연결",
-      "자동 응답 규칙",
-      "메시지 발송 & 이미지 첨부",
-      "예약 & 반복 발송",
-      "발송 로그 & 전달 분석",
-      "계정 건강 모니터링",
+      "최대 10개 계정 연결",
+      "AI 맞춤형 자동 응답",
+      "메시지 & 이미지 발송",
+      "예약 & 반복 발송 기능",
+      "상세 발송 로그 & 분석",
+      "계정 건강 상태 모니터링",
+      "고급 필터링 도구",
+      "AI 챗봇 연동",
     ],
     href: "/get-api-key",
-    cta: "Pro 시작",
+    cta: "전문가용 시작",
     popular: true,
   },
   {
-    name: "Team",
-    price: "199",
-    period: "분기",
+    name: "Business",
+    price: "79",
+    period: "월",
     features: [
-      "20개 계정 연결",
-      "자동 응답 규칙",
-      "메시지 발송 & 이미지 첨부",
-      "예약 & 반복 발송",
-      "발송 로그 & 전달 분석",
-      "계정 건강 모니터링",
+      "무제한 계정 연결",
+      "고급 AI 자동 응답 시스템",
+      "메시지 & 미디어 배너 발송",
+      "예약 & 반복 & 조건부 발송",
+      "실시간 분석 & 리포트",
+      "계정 보호 & 보안 모니터링",
+      "팀 협업 기능",
+      "API 접근 권한",
+      "우선 고객 지원",
+      "맞춤형 통합 솔루션",
     ],
     href: "/get-api-key",
-    cta: "Team 시작",
+    cta: "비즈니스용 시작",
     popular: false,
   },
 ];
@@ -60,10 +67,10 @@ export default function PricingPage() {
           <div className="text-center">
             <div className="badge-premium mx-auto w-fit mb-4">요금제</div>
             <h1 className="text-4xl sm:text-5xl font-bold text-app-text">
-              투명한 <span className="text-app-primary">가격</span>
+              비용 효율적인 <span className="text-app-primary">AI 운영</span>
             </h1>
             <p className="mt-4 text-base sm:text-lg text-app-text-secondary">
-              필요한 만큼만 선택하세요. 언제든지 변경 가능합니다.
+              비즈니스 성장에 필요한 기능만 골라서, 최고의 가성비로 운영하세요. 언제든지 업그레이드 가능합니다.
             </p>
           </div>
 
@@ -118,10 +125,11 @@ export default function PricingPage() {
 
           <div className="mt-16 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-app-text">
-              더 궁금한 점이 있나요?
+              지금 시작하시면<br/>
+              <span className="text-app-primary">30%</span> 할인 혜택 제공
             </h2>
             <p className="mt-2 text-app-text-secondary">
-              지금 바로 무료로 시작해보세요
+              첫 달에는 표시된 가격보다 30% 저렴하게 이용하세요. (기간 제한 이벤트)
             </p>
             <Link
               href="/signup"
