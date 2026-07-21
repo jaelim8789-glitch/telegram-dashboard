@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { cn } from "@/lib/cn";
+import { PixelOfficeWidget } from "@/components/ai/PixelOfficeWidget";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary, TeleMonMemorySnapshot } from "@/types";
@@ -609,6 +610,15 @@ export function DashboardTab() {
           <DailyDigest accounts={accounts} logs={logs} />
         )}
       </div>
+
+      {/* ── Onboarding Wizard (0 accounts) ──────────── */}
+      {accounts.length > 0 && (
+        <div className="order-1 sm:order-none">
+          <Panel title="🏢 AI 사무실">
+            <PixelOfficeWidget onExpand={() => useDashboardStore.getState().setActiveTab("pixeloffice")} />
+          </Panel>
+        </div>
+      )}
 
       {/* ── Onboarding Wizard (0 accounts) ──────────── */}
       {accounts.length === 0 && !accountsLoading && (

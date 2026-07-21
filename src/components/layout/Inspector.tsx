@@ -45,6 +45,8 @@ const INSPECTOR_CONTENT: Record<string, React.ComponentType<any>> = {
   styleprofile: DashboardInspector,
   growthloop: DashboardInspector,
   fortune: DashboardInspector,
+  telegram: DashboardInspector,
+  pixeloffice: DashboardInspector,
   sendhub: DashboardInspector,
 };
 

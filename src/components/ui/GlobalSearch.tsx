@@ -16,7 +16,6 @@ export function GlobalSearch() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const accounts = useDashboardStore((s) => s.accounts);
-  const groups = useDashboardStore((s) => s.groups);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
 
   useEffect(() => {
@@ -46,12 +45,7 @@ export function GlobalSearch() {
       let ti = 0; for (let ci = 0; ci < q.length && ti < name.length; ci++) { if (q[ci] === name[ti]) ti++; }
       return ti === q.length;
     }).slice(0, 5).forEach((a) => {
-      items.push({ label: a.name || a.phone || "계정", sub: `계정 · ${(a.phone || "").slice(0, 12)}`, action: () => { useDashboardStore.getState().setSelectedAccountId(a.id); setOpen(false); }, icon: <Users className="h-3.5 w-3.5" /> });
-    });
-
-    // Fuzzy match groups
-    groups.filter((g) => fuzzyMatch(q, g.title || "")).slice(0, 5).forEach((g) => {
-      items.push({ label: g.title || g.id, sub: `그룹 · ${g.participantsCount ?? 0}명`, action: () => { useDashboardStore.getState().toggleGroup(g.id); setActiveTab("send"); setOpen(false); }, icon: <Send className="h-3.5 w-3.5" /> });
+      items.push({ label: a.name || a.phone || "계정", sub: `계정 · ${(a.phone || "").slice(0, 12)}`, action: () => { useDashboardStore.getState().selectAccount(a.id); setOpen(false); }, icon: <Users className="h-3.5 w-3.5" /> });
     });
 
     // Tab search

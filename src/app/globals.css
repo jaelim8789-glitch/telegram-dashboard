@@ -1161,3 +1161,31 @@ html {
 .bottom-sheet-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom, 16px));
 }
+
+/* ── Shimmer skeleton (13) ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--color-card) 25%, var(--color-card-hover) 50%, var(--color-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── System font size (21) ── */
+html { font-size: 100%; }
+@media (max-width: 480px) { html { font-size: 93.75%; } }  /* 15px */
+@media (min-width: 768px) { html { font-size: 106.25%; } } /* 17px */
+
+/* ── High contrast mode (23) ── */
+@media (prefers-contrast: more) {
+  .glass-card { border-width: 2px; }
+  .text-app-text-muted { opacity: 0.9; }
+  [data-theme="dark"] { --color-border: #666; }
+}
+
+/* ── Data saver (19) ── */
+[data-slow-network="true"] .lazy-image { display: none; }
+[data-slow-network="true"] .poll-interval { animation-duration: 30s; }
+[data-low-battery="true"] .animate-pulse { animation: none; }

@@ -1,4 +1,4 @@
-export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop" | "fortune";
+export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop" | "fortune" | "telegram" | "pixeloffice";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -65,6 +65,8 @@ export const TABS: TabDef[] = [
   { id: "styleprofile", label: "브랜드 톤", shortLabel: "톤", group: "ai" },
   { id: "growthloop", label: "성장 루프", shortLabel: "성장", group: "ai" },
   { id: "fortune", label: "운세", shortLabel: "운세", group: "new" },
+  { id: "telegram", label: "Telegram", shortLabel: "채팅", group: "send" },
+  { id: "pixeloffice", label: "🖥️ AI 사무실", shortLabel: "사무실", group: "ai" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";

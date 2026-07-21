@@ -17,6 +17,11 @@ import { Loader2, WifiOff } from "lucide-react";
 import { updateBadgeFromStats } from "@/lib/appBadge";
 import { requestPushPermission, subscribeToPush } from "@/lib/pushNotifications";
 import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
+import { usePwaUpdate } from "@/hooks/usePwaUpdate";
+import { useBatterySaver } from "@/hooks/useBatterySaver";
+import { useAutoNightMode } from "@/hooks/useAutoNightMode";
+import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
+import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
   ssr: false,
@@ -80,6 +85,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   growthloop: dynamic(() => import("@/components/workspace/tabs/GrowthLoopTab").then(m => ({ default: m.GrowthLoopTab })), { loading: TabFallback }),
   fortune: dynamic(() => import("@/components/workspace/tabs/FortuneTab").then(m => ({ default: m.FortuneTab })), { loading: TabFallback }),
   telegram: dynamic(() => import("@/components/telegram-chat/TelegramInboxTab").then(m => ({ default: m.TelegramInboxTab })), { loading: TabFallback }),
+  pixeloffice: dynamic(() => import("@/components/ai/PixelOffice").then(m => ({ default: m.PixelOffice })), { loading: TabFallback }),
   sendhub: dynamic(() => import("@/components/navigation/categories/SendHub").then(m => ({ default: m.SendHub })), { loading: TabFallback }),
 };
 
@@ -215,6 +221,12 @@ export function Workspace() {
   const navFeature = useDashboardStore((s) => s.navFeature);
   const activeTab = useDashboardStore((s) => s.activeTab);
 
+  // ── Global hooks ──
+  const { updateAvailable, applyUpdate } = usePwaUpdate();
+  useBatterySaver();
+  useAutoNightMode();
+  const [confetti, setConfetti] = useState(false);
+
   // Init push notifications + app badge + native bridge
   useEffect(() => {
     requestPushPermission().then((granted) => { if (granted) subscribeToPush(); });
@@ -308,13 +320,31 @@ export function Workspace() {
           )}
         </AnimatePresence>
 
-        <CategoryStrip />
+        {/* ── PWA Update banner (15) ── */}
+        <AnimatePresence>
+          {updateAvailable && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="shrink-0 overflow-hidden bg-app-primary/10 border-b border-app-primary/20"
+            >
+              <div className="flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] font-medium text-app-primary">
+                <span>🆕 새 버전이 있습니다</span>
+                <button onClick={applyUpdate} className="rounded-lg bg-app-primary px-2.5 py-1 text-[10px] text-white hover:opacity-90 transition-opacity">업데이트</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <ConfettiAnimation active={confetti} />
+        <AppRatingPrompt />
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-4 md:pb-4"
           style={{
             paddingBottom: isMobile
-              ? `max(5rem, calc(5rem + ${keyboardHeight}px))`
+              ? `max(5rem, calc(5rem + ${keyboardHeight}px), env(safe-area-inset-bottom, 0px))`
               : undefined,
           }}
           {...(isMobile
