@@ -34,7 +34,7 @@ export function CategoryStrip() {
   const isDeep = navView === "category" || navView === "feature";
 
   return (
-    <div className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto scrollbar-none">
+    <div className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
       {isDeep && (
         <button
           type="button"

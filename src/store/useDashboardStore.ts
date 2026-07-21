@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Account, Broadcast, Group, NavView, TabGroup, TabId } from "@/types";
+import { TABS } from "@/types";
 import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 
@@ -45,6 +46,7 @@ type DashboardStateValue = {
   sendReplyToMessageId: number | null;
   reuseNotice: string | null;
   tabBadges: Partial<Record<TabId, number>>;
+  sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
 };
 
 export const INITIAL_STATE: DashboardStateValue = {
@@ -69,6 +71,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   sendReplyToMessageId: null,
   reuseNotice: null,
   tabBadges: {},
+  sendProgress: null,
 };
 
 interface DashboardState extends DashboardStateValue {
@@ -95,12 +98,20 @@ interface DashboardState extends DashboardStateValue {
   reuseBroadcast: (broadcast: Broadcast) => void;
   setReuseNotice: (notice: string | null) => void;
   setTabBadge: (tabId: TabId, count: number) => void;
+  sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
+  setSendProgress: (progress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null) => void;
+  clearSendProgress: () => void;
   resetStore: () => void;
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
 const LAST_TAB_KEY = "telemon-last-tab";
 let runtimeManagerSubscription: (() => void) | null = null;
+
+function getTabCategory(tabId: TabId): TabGroup {
+  const tab = TABS.find((t) => t.id === tabId);
+  return tab?.group ?? "dashboard";
+}
 
 function loadLastTab(): TabId {
   if (typeof localStorage === "undefined") return "myai" as TabId;
@@ -167,7 +178,7 @@ const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get
     if (lastSwitch && now - lastSwitch < 300 && tab === (window as any).__lastTabId) return;
     (window as any).__lastTabSwitch = now;
     (window as any).__lastTabId = tab;
-    set({ activeTab: tab, navView: "feature", navFeature: tab });
+    set({ activeTab: tab, navView: "feature", navFeature: tab, navCategory: getTabCategory(tab) });
   },
 
   navigateToChat: () => set({ navView: "chat", navCategory: null, navFeature: null }),
@@ -179,7 +190,7 @@ const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get
   navigateBack: () => {
     const state = get();
     if (state.navView === "feature") {
-      set({ navView: "category", navFeature: null });
+      set({ navView: "category", navCategory: state.navFeature ? getTabCategory(state.navFeature) : state.navCategory, navFeature: null });
     } else if (state.navView === "category") {
       set({ navView: "chat", navCategory: null });
     }
@@ -306,6 +317,10 @@ const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get
   setTabBadge: (tabId, count) => set((state) => ({
     tabBadges: { ...state.tabBadges, [tabId]: count > 0 ? count : undefined },
   })),
+
+  sendProgress: null,
+  setSendProgress: (progress) => set({ sendProgress: progress }),
+  clearSendProgress: () => set({ sendProgress: null }),
 
   reuseBroadcast: (broadcast) => {
     set({

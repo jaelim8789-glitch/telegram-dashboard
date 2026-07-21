@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Check, Megaphone, Plus, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
@@ -20,7 +21,7 @@ interface GroupSelectCardProps {
   onAddTag: (id: string) => void;
 }
 
-export function GroupSelectCard({
+export const GroupSelectCard = memo(function GroupSelectCard({
   group,
   selected,
   isFavorite,
@@ -114,4 +115,9 @@ export function GroupSelectCard({
       </div>
     </div>
   );
-}
+},
+(prevProps, nextProps) =>
+  prevProps.group.id === nextProps.group.id &&
+  prevProps.selected === nextProps.selected &&
+  prevProps.disabled === nextProps.disabled
+);

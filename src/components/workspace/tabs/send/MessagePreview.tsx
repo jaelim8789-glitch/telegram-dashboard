@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { Smartphone, Monitor } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { previewTemplate } from "@/lib/messageTemplates";
@@ -14,7 +14,7 @@ interface MessagePreviewProps {
   plan?: string | null;
 }
 
-export function MessagePreview({
+export const MessagePreview = memo(function MessagePreview({
   message,
   recipientCount,
   accountPhone,
@@ -160,6 +160,6 @@ export function MessagePreview({
       </div>
     </div>
   );
-}
+});
 
 
