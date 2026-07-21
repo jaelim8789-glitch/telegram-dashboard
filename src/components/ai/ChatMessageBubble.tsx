@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Send, Calendar, Search, BarChart3, Settings, CheckCircle, XCircle } from "lucide-react";
 import type { AgentMessage } from "@/lib/agent-api";
+import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
 
 interface ChatMessageBubbleProps {
   message: AgentMessage;
@@ -94,7 +95,11 @@ export function ChatMessageBubble({ message, onExecuteTool }: ChatMessageBubbleP
               : "bg-app-card-hover text-app-text rounded-bl-md border border-app-border"
           }`}
         >
-          {message.content}
+          {isUser ? (
+            <span className="whitespace-pre-wrap break-words">{message.content}</span>
+          ) : (
+            <MarkdownMessage content={message.content} />
+          )}
         </div>
 
         {/* Tool execution buttons (agent messages only) */}
