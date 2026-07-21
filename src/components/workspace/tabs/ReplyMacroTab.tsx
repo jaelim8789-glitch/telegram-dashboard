@@ -6,12 +6,13 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { getToken } from "@/lib/auth";
 import { getAccountDisplayName } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem("access_token");
+  const token = getToken();
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

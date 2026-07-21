@@ -9,6 +9,7 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { getToken } from "@/lib/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -39,7 +40,7 @@ interface StyleProfile {
 }
 
 function authHeaders() {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
+  const token = getToken();
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

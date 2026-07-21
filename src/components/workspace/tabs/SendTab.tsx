@@ -9,6 +9,7 @@ import {
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { getToken } from "@/lib/auth";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -1119,10 +1120,10 @@ export function SendTab() {
   const bottleneckHints = riskAnalysis.recommendations;
 
   // ── 답장매크로 (랜덤리플라이) 토글 연동 ──
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
   function authHeaders(): Record<string, string> {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
+    const token = getToken();
     return {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

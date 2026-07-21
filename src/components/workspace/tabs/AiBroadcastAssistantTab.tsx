@@ -5,6 +5,7 @@ import { Bot, Sparkles, Copy, Check, Loader2, Send, Users, Palette } from "lucid
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { getToken } from "@/lib/auth";
 
 export function AiBroadcastAssistantTab() {
   const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
@@ -25,7 +26,7 @@ export function AiBroadcastAssistantTab() {
   const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getToken();
     fetch(`${BASE}/api/style-profiles`, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

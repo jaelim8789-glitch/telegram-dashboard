@@ -6,13 +6,14 @@ import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { getToken, getSessionToken } from "@/lib/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = localStorage.getItem("access_token");
-  const sessionToken = localStorage.getItem("session_token");
+  const token = getToken();
+  const sessionToken = getSessionToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (sessionToken) headers["X-Session-Token"] = sessionToken;
   return headers;

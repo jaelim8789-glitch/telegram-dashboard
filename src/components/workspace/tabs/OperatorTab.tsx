@@ -9,6 +9,7 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { getToken } from "@/lib/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -66,8 +67,8 @@ export function OperatorTab() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(localStorage.getItem("access_token")
-            ? { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
+          ...(getToken()
+            ? { Authorization: `Bearer ${getToken()}` }
             : {}),
         },
         body: JSON.stringify({

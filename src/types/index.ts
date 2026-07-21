@@ -1,4 +1,10 @@
+<<<<<<< Updated upstream
 export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
+||||||| Stash base
+export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
+=======
+export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "groupsearch" | "linkinspector" | "profile" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
+>>>>>>> Stashed changes
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -16,16 +22,15 @@ export const TABS: TabDef[] = [
   { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "dashboard" },
 
   // ── 발송 ──
-  { id: "send", label: "발송", group: "send" },
+  { id: "send", label: "발송하기", shortLabel: "발송", group: "send" },
+  { id: "sendhub", label: "발송 센터", shortLabel: "센터", group: "send" },
   { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "send" },
   { id: "scheduler", label: "스케줄러", group: "send" },
   { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "send" },
   { id: "templates", label: "템플릿", group: "send" },
 
   // ── 운영/모니터링 ──
-  { id: "log", label: "로그", group: "ops" },
   { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "ops" },
-  { id: "health", label: "계정 건강", shortLabel: "건강", group: "ops" },
   { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "ops" },
   { id: "register", label: "계정 등록", shortLabel: "등록", group: "ops" },
   { id: "group", label: "그룹", group: "ops" },

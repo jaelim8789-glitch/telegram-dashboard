@@ -1,4 +1,5 @@
 import { request } from "@/lib/api";
+import { getToken, getSessionToken } from "@/lib/auth";
 
 export interface Agent {
   id: string;
@@ -184,8 +185,8 @@ export async function sendChatMessage(
   chatId: string,
   content: string
 ): Promise<Response> {
-  const token = localStorage.getItem("access_token") || "";
-  const sessionToken = localStorage.getItem("session_token") || "";
+  const token = getToken() || "";
+  const sessionToken = getSessionToken() || "";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
