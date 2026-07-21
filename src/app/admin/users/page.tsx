@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle, Zap, Sparkles, TrendingUp } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
@@ -230,6 +230,16 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
 }
 
 function UsersContent() {
+  type UserFilterState = {
+    search: string;
+    plan: "all" | "free" | "pro" | "team";
+    subscription: "all" | "active" | "inactive";
+    activity: "all" | "active" | "inactive";
+    minAccounts: "all" | "1" | "3" | "5";
+  };
+  type SavedView = { name: string; filters: UserFilterState };
+  const SAVED_VIEW_KEY = "telemon_admin_users_saved_views_v1";
+
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -237,6 +247,18 @@ function UsersContent() {
   const [toggleConfirm, setToggleConfirm] = useState<DashboardUser | null>(null);
   const [deletePhone, setDeletePhone] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [filters, setFilters] = useState<UserFilterState>({
+    search: "",
+    plan: "all",
+    subscription: "all",
+    activity: "all",
+    minAccounts: "all",
+  });
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [newViewName, setNewViewName] = useState("");
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -245,6 +267,108 @@ function UsersContent() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_VIEW_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SavedView[];
+      if (!Array.isArray(parsed)) return;
+      setSavedViews(parsed.filter((v) => !!v?.name && !!v?.filters));
+    } catch {
+      // Keep UX resilient even if local storage is malformed.
+    }
+  }, []);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (filters.search.trim()) {
+        const q = filters.search.trim().toLowerCase();
+        if (!u.phone.toLowerCase().includes(q)) return false;
+      }
+      if (filters.plan !== "all" && (u.plan ?? "free") !== filters.plan) return false;
+      if (filters.subscription !== "all") {
+        const status = u.subscriptionStatus === "active" ? "active" : "inactive";
+        if (status !== filters.subscription) return false;
+      }
+      if (filters.activity !== "all") {
+        const activity = u.isActive ? "active" : "inactive";
+        if (activity !== filters.activity) return false;
+      }
+      if (filters.minAccounts !== "all") {
+        const min = Number(filters.minAccounts);
+        if (u.accountCount < min) return false;
+      }
+      return true;
+    });
+  }, [users, filters]);
+
+  const riskUsers = useMemo(
+    () => filteredUsers.filter((u) => !u.isActive || (u.subscriptionStatus && u.subscriptionStatus !== "active") || u.accountCount === 0).length,
+    [filteredUsers],
+  );
+
+  const allFilteredSelected = filteredUsers.length > 0 && filteredUsers.every((u) => selectedIds.includes(u.id));
+
+  function saveCurrentView() {
+    const name = newViewName.trim();
+    if (!name) return;
+    const deduped = savedViews.filter((v) => v.name !== name);
+    const next = [{ name, filters }, ...deduped].slice(0, 8);
+    setSavedViews(next);
+    setNewViewName("");
+    try {
+      localStorage.setItem(SAVED_VIEW_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage failures (private mode / quota) without breaking workflow.
+    }
+  }
+
+  function applySavedView(view: SavedView) {
+    setFilters(view.filters);
+  }
+
+  function removeSavedView(name: string) {
+    const next = savedViews.filter((v) => v.name !== name);
+    setSavedViews(next);
+    try {
+      localStorage.setItem(SAVED_VIEW_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  function resetFilters() {
+    setFilters({ search: "", plan: "all", subscription: "all", activity: "all", minAccounts: "all" });
+  }
+
+  function toggleSelectUser(userId: string) {
+    setSelectedIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  }
+
+  function toggleSelectAllFiltered() {
+    if (allFilteredSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredUsers.some((u) => u.id === id)));
+      return;
+    }
+    const merged = new Set([...selectedIds, ...filteredUsers.map((u) => u.id)]);
+    setSelectedIds(Array.from(merged));
+  }
+
+  async function runBulkToggle(nextActive: boolean) {
+    if (selectedIds.length === 0 || bulkLoading) return;
+    setBulkLoading(true);
+    setError(null);
+    try {
+      await Promise.all(selectedIds.map((id) => api.toggleUser(id, nextActive)));
+      await load();
+      setSelectedIds([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "대량 상태 변경 실패");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
 
   async function handleReissue(u: DashboardUser) {
     setConfirmUser(u);
@@ -264,6 +388,12 @@ function UsersContent() {
       await api.toggleUser(u.id, !u.isActive);
       await load();
     } catch { setError("상태 변경 실패"); }
+  }
+
+  function getRiskLevel(u: DashboardUser): "normal" | "warning" | "high" {
+    if (!u.isActive || (u.subscriptionStatus && u.subscriptionStatus !== "active")) return "high";
+    if (u.accountCount === 0 || u.starsBalance < 100) return "warning";
+    return "normal";
   }
 
   return (
@@ -293,6 +423,73 @@ function UsersContent() {
         }
         description="본인 전화번호를 인증해 API 키를 발급받은 사용자입니다."
       >
+        <div className="mb-4 space-y-3 rounded-xl border border-app-border bg-app-bg p-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <Input
+              value={filters.search}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+              placeholder="전화번호 검색"
+            />
+            <Select
+              value={filters.plan}
+              onChange={(e) => setFilters((prev) => ({ ...prev, plan: e.target.value as UserFilterState["plan"] }))}
+            >
+              <option value="all">플랜 전체</option>
+              <option value="free">무료</option>
+              <option value="pro">프로</option>
+              <option value="team">팀</option>
+            </Select>
+            <Select
+              value={filters.subscription}
+              onChange={(e) => setFilters((prev) => ({ ...prev, subscription: e.target.value as UserFilterState["subscription"] }))}
+            >
+              <option value="all">구독 전체</option>
+              <option value="active">활성</option>
+              <option value="inactive">비활성/기타</option>
+            </Select>
+            <Select
+              value={filters.activity}
+              onChange={(e) => setFilters((prev) => ({ ...prev, activity: e.target.value as UserFilterState["activity"] }))}
+            >
+              <option value="all">활성상태 전체</option>
+              <option value="active">활성 사용자</option>
+              <option value="inactive">비활성 사용자</option>
+            </Select>
+            <Select
+              value={filters.minAccounts}
+              onChange={(e) => setFilters((prev) => ({ ...prev, minAccounts: e.target.value as UserFilterState["minAccounts"] }))}
+            >
+              <option value="all">계정 수 전체</option>
+              <option value="1">1개 이상</option>
+              <option value="3">3개 이상</option>
+              <option value="5">5개 이상</option>
+            </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-app-text-muted">
+            <span>조회 {filteredUsers.length}명</span>
+            <span>리스크 후보 {riskUsers}명</span>
+            <span>선택 {selectedIds.length}명</span>
+            <Button size="sm" variant="ghost" onClick={resetFilters}>필터 초기화</Button>
+            <Button size="sm" variant="secondary" onClick={() => runBulkToggle(true)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 활성화</Button>
+            <Button size="sm" variant="danger" onClick={() => runBulkToggle(false)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 비활성화</Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 border-t border-app-border pt-2">
+            <Input
+              value={newViewName}
+              onChange={(e) => setNewViewName(e.target.value)}
+              placeholder="저장 뷰 이름"
+              className="w-full sm:w-52"
+            />
+            <Button size="sm" onClick={saveCurrentView} disabled={!newViewName.trim()}>현재 필터 저장</Button>
+            {savedViews.map((view) => (
+              <div key={view.name} className="flex items-center gap-1 rounded-lg border border-app-border px-2 py-1 text-xs">
+                <button className="text-app-text hover:underline" onClick={() => applySavedView(view)}>{view.name}</button>
+                <button className="text-app-text-muted hover:text-app-danger" onClick={() => removeSavedView(view.name)} aria-label={`${view.name} 삭제`}>x</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {loading && (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -304,25 +501,45 @@ function UsersContent() {
         {!loading && !error && users.length === 0 && (
           <EmptyState icon={Users} title="가입한 사용자 없음" />
         )}
+        {!loading && !error && users.length > 0 && filteredUsers.length === 0 && (
+          <EmptyState icon={Users} title="필터 결과가 없습니다" />
+        )}
         {/* Users table with enriched info */}
-        {!loading && users.length > 0 && (
+        {!loading && filteredUsers.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-app-border text-app-text-muted">
+                  <th className="px-4 py-3 text-center font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAllFiltered}
+                      aria-label="현재 필터 결과 전체 선택"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold">전화번호</th>
                   <th className="px-4 py-3 text-left font-semibold">플랜</th>
                   <th className="px-4 py-3 text-left font-semibold">구독상태</th>
                   <th className="px-4 py-3 text-center font-semibold">계정수</th>
                   <th className="px-4 py-3 text-center font-semibold">별 잔액</th>
+                  <th className="px-4 py-3 text-left font-semibold">리스크</th>
                   <th className="px-4 py-3 text-left font-semibold">가입일</th>
                   <th className="px-4 py-3 text-left font-semibold">상태</th>
                   <th className="px-4 py-3 text-right font-semibold">작업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
-                {users.map((u) => (
-                  <tr key={u.id} className="transition-colors hover:bg-app-card-hover">
+                {filteredUsers.map((u) => (
+                  <tr key={u.id} className="cursor-pointer transition-colors hover:bg-app-card-hover" onClick={() => setSelectedUser(u)}>
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(u.id)}
+                        onChange={() => toggleSelectUser(u.id)}
+                        aria-label={`${u.phone} 선택`}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4 text-app-text-muted" />
@@ -364,6 +581,11 @@ function UsersContent() {
                         <span className="text-app-text-muted">0</span>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      {getRiskLevel(u) === "high" && <Badge tone="danger">높음</Badge>}
+                      {getRiskLevel(u) === "warning" && <Badge tone="warning">주의</Badge>}
+                      {getRiskLevel(u) === "normal" && <Badge tone="success">정상</Badge>}
+                    </td>
                     <td className="px-4 py-3 text-xs text-app-text-muted">
                       {formatDateTime(u.createdAt)}
                     </td>
@@ -374,14 +596,14 @@ function UsersContent() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleReissue(u)} title="API 키 재발급">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); handleReissue(u); }} title="API 키 재발급">
                           <KeyRound className="h-4 w-4" />
                         </Button>
                         <Button
                           variant={u.isActive ? "danger" : "secondary"}
                           size="sm"
                           className="h-8 px-2 text-xs"
-                          onClick={() => setToggleConfirm(u)}
+                          onClick={(e) => { e.stopPropagation(); setToggleConfirm(u); }}
                         >
                           {u.isActive ? "비활성" : "활성"}
                         </Button>
@@ -389,7 +611,7 @@ function UsersContent() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-app-danger hover:bg-app-danger-muted/20"
-                          onClick={() => { setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
+                          onClick={(e) => { e.stopPropagation(); setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
                           title="사용자 삭제"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -403,6 +625,66 @@ function UsersContent() {
           </div>
         )}
       </Panel>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSelectedUser(null)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-app-border bg-app-card p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-app-text">사용자 360 상세</h2>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedUser(null)}>닫기</Button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                <p className="text-xs text-app-text-muted">전화번호</p>
+                <p className="mt-1 font-semibold text-app-text">{selectedUser.phone}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                  <p className="text-xs text-app-text-muted">플랜</p>
+                  <p className="mt-1 font-semibold text-app-text">{selectedUser.plan ?? "-"}</p>
+                </div>
+                <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                  <p className="text-xs text-app-text-muted">구독 상태</p>
+                  <p className="mt-1 font-semibold text-app-text">{selectedUser.subscriptionStatus ?? "-"}</p>
+                </div>
+                <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                  <p className="text-xs text-app-text-muted">연결 계정 수</p>
+                  <p className="mt-1 font-semibold text-app-text">{selectedUser.accountCount}</p>
+                </div>
+                <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                  <p className="text-xs text-app-text-muted">Stars 잔액</p>
+                  <p className="mt-1 font-semibold text-app-text">{selectedUser.starsBalance}</p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-app-border bg-app-bg p-3">
+                <p className="text-xs text-app-text-muted">가입일</p>
+                <p className="mt-1 text-app-text">{formatDateTime(selectedUser.createdAt)}</p>
+                <p className="mt-2 text-xs text-app-text-muted">최근 로그인</p>
+                <p className="mt-1 text-app-text">{selectedUser.lastLogin ? formatDateTime(selectedUser.lastLogin) : "로그인 이력 없음"}</p>
+                <p className="mt-2 text-xs text-app-text-muted">트라이얼 만료</p>
+                <p className="mt-1 text-app-text">{selectedUser.trialExpiresAt ? formatDateTime(selectedUser.trialExpiresAt) : "-"}</p>
+                <p className="mt-2 text-xs text-app-text-muted">운영 리스크</p>
+                <div className="mt-1">
+                  {getRiskLevel(selectedUser) === "high" && <Badge tone="danger">높음</Badge>}
+                  {getRiskLevel(selectedUser) === "warning" && <Badge tone="warning">주의</Badge>}
+                  {getRiskLevel(selectedUser) === "normal" && <Badge tone="success">정상</Badge>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  variant={selectedUser.isActive ? "danger" : "primary"}
+                  onClick={() => {
+                    setToggleConfirm(selectedUser);
+                  }}
+                >
+                  {selectedUser.isActive ? "비활성화" : "활성화"}
+                </Button>
+                <Button variant="secondary" onClick={() => handleReissue(selectedUser)}>API 키 재발급</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={!!confirmUser}
