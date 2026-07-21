@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Zap, MessageSquare, Users, Bot } from "lucide-react";
+import { Shield, Zap, MessageSquare, Users, Bot, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 

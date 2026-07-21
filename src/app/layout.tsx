@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
 import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import { PwaRegister } from "@/components/PwaRegister";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import { SplashScreen } from "@/components/ui/SplashScreen";
+import { GestureTour } from "@/components/ui/GestureTour";
+import { BiometricLock } from "@/components/ui/BiometricLock";
 import "./globals.css";
-
-const SplashScreen = dynamic(() => import("@/components/ui/SplashScreen").then(m => ({ default: m.SplashScreen })), { ssr: false });
-const GestureTour = dynamic(() => import("@/components/ui/GestureTour").then(m => ({ default: m.GestureTour })), { ssr: false });
-const BiometricLock = dynamic(() => import("@/components/ui/BiometricLock").then(m => ({ default: m.BiometricLock })), { ssr: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://telemon.online"),
