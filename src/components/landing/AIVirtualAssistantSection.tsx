@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -23,7 +23,7 @@ interface VirtualAssistant {
     efficiency: number;
     satisfaction: number;
     tasksCompleted: number;
-    responseTime: number; // 초 단위
+    responseTime: number; // 珥??⑥쐞
   };
 }
 
@@ -67,42 +67,42 @@ const AIVirtualAssistantSection = () => {
   const [teams, setTeams] = useState<Team[]>([
     {
       id: 'team-1',
-      name: '고객 응대 팀',
-      members: [1, 5], // 에이린, 에밀리
-      purpose: '고객 문의 응대 및 지원'
+      name: '怨좉컼 ?묐? ?',
+      members: [1, 5], // ?먯씠由? ?먮?由?
+      purpose: '怨좉컼 臾몄쓽 ?묐? 諛?吏??
     },
     {
       id: 'team-2',
-      name: '문서 처리 팀',
-      members: [2, 4], // 제이슨, 마이클
-      purpose: '문서 작성 및 데이터 분석'
+      name: '臾몄꽌 泥섎━ ?',
+      members: [2, 4], // ?쒖씠?? 留덉씠??
+      purpose: '臾몄꽌 ?묒꽦 諛??곗씠??遺꾩꽍'
     },
     {
       id: 'team-3',
-      name: '재무 회계 팀',
-      members: [6, 7], // 데이빗, 클레어
-      purpose: '재무 관리 및 계약 처리'
+      name: '?щТ ?뚭퀎 ?',
+      members: [6, 7], // ?곗씠鍮? ?대젅??
+      purpose: '?щТ 愿由?諛?怨꾩빟 泥섎━'
     }
   ]);
   const [workflows, setWorkflows] = useState<Workflow[]>([
     {
       id: 'wf-1',
-      name: '고객 문의 처리',
-      description: '고객 문의를 받고 해결하는 자동화된 워크플로우',
+      name: '怨좉컼 臾몄쓽 泥섎━',
+      description: '怨좉컼 臾몄쓽瑜?諛쏄퀬 ?닿껐?섎뒗 ?먮룞?붾맂 ?뚰겕?뚮줈??,
       steps: [
-        { assistantId: 1, task: '문의 접수 및 분류', order: 1 },
-        { assistantId: 5, task: 'SNS 채널 응답', order: 2 },
-        { assistantId: 7, task: '법적 검토 필요 시 전달', order: 3 }
+        { assistantId: 1, task: '臾몄쓽 ?묒닔 諛?遺꾨쪟', order: 1 },
+        { assistantId: 5, task: 'SNS 梨꾨꼸 ?묐떟', order: 2 },
+        { assistantId: 7, task: '踰뺤쟻 寃???꾩슂 ???꾨떖', order: 3 }
       ]
     },
     {
       id: 'wf-2',
-      name: '보고서 생성',
-      description: '주간 보고서를 자동으로 생성하는 워크플로우',
+      name: '蹂닿퀬???앹꽦',
+      description: '二쇨컙 蹂닿퀬?쒕? ?먮룞?쇰줈 ?앹꽦?섎뒗 ?뚰겕?뚮줈??,
       steps: [
-        { assistantId: 4, task: '데이터 수집 및 분석', order: 1 },
-        { assistantId: 2, task: '문서 작성', order: 2 },
-        { assistantId: 3, task: '최종 검토 및 배포', order: 3 }
+        { assistantId: 4, task: '?곗씠???섏쭛 諛?遺꾩꽍', order: 1 },
+        { assistantId: 2, task: '臾몄꽌 ?묒꽦', order: 2 },
+        { assistantId: 3, task: '理쒖쥌 寃??諛?諛고룷', order: 3 }
       ]
     }
   ]);
@@ -110,20 +110,31 @@ const AIVirtualAssistantSection = () => {
   const [newWorkflow, setNewWorkflow] = useState({ name: '', description: '', steps: [] as { assistantId: number; task: string; order: number }[] });
   const [editingWorkflowStep, setEditingWorkflowStep] = useState<{ workflowId: string; stepIndex: number } | null>(null);
   
-  // 8명의 AI 비서 정보 (여성 4명, 남성 4명)
+  // 8紐낆쓽 AI 鍮꾩꽌 ?뺣낫 (?ъ꽦 4紐? ?⑥꽦 4紐?
+  const assistantAvatars = [
+    '/avatars/ai-assistant-1.png',
+    '/avatars/ai-assistant-2.png',
+    '/avatars/ai-assistant-3.png',
+    '/avatars/ai-assistant-4.png',
+    '/avatars/ai-assistant-5.png',
+    '/avatars/ai-assistant-6.png',
+    '/avatars/ai-assistant-7.png',
+    '/avatars/ai-assistant-8.png',
+  ];
+
   const [virtualAssistants, setVirtualAssistants] = useState<VirtualAssistant[]>([
     {
       id: 1,
-      name: '에이린',
+      name: '?먯씠由?,
       gender: 'female',
-      position: 'AI 비서',
-      description: '고객 응대 및 일정 관리를 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/female-assistant-1.jpg',
-      specialty: ['고객 응대', '일정 관리', '문서 정리'],
-      personality: '친절하고 꼼꼼함',
-      experience: '고객 서비스 5년 경험',
-      availability: '24시간 가능',
-      contactMethods: ['채팅', '음성'],
+      position: 'AI 鍮꾩꽌',
+      description: '怨좉컼 ?묐? 諛??쇱젙 愿由щ? ?꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[0],
+      specialty: ['怨좉컼 ?묐?', '?쇱젙 愿由?, '臾몄꽌 ?뺣━'],
+      personality: '移쒖젅?섍퀬 瑗쇨세??,
+      experience: '怨좉컼 ?쒕퉬??5??寃쏀뿕',
+      availability: '24?쒓컙 媛??,
+      contactMethods: ['梨꾪똿', '?뚯꽦'],
       rating: 4.8,
       isActive: true,
       performance: {
@@ -135,16 +146,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 2,
-      name: '제이슨',
+      name: '?쒖씠??,
       gender: 'male',
-      position: 'AI 비서',
-      description: '문서 작성 및 번역을 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/male-assistant-1.jpg',
-      specialty: ['문서 작성', '번역', '리서치'],
-      personality: '논리적이고 정확함',
-      experience: '문서 처리 4년 경험',
-      availability: '평일 09:00-18:00',
-      contactMethods: ['이메일', '채팅'],
+      position: 'AI 鍮꾩꽌',
+      description: '臾몄꽌 ?묒꽦 諛?踰덉뿭???꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[1],
+      specialty: ['臾몄꽌 ?묒꽦', '踰덉뿭', '由ъ꽌移?],
+      personality: '?쇰━?곸씠怨??뺥솗??,
+      experience: '臾몄꽌 泥섎━ 4??寃쏀뿕',
+      availability: '?됱씪 09:00-18:00',
+      contactMethods: ['?대찓??, '梨꾪똿'],
       rating: 4.6,
       isActive: true,
       performance: {
@@ -156,16 +167,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 3,
-      name: '소피아',
+      name: '?뚰뵾??,
       gender: 'female',
-      position: 'AI 비서',
-      description: '이메일 관리 및 회의 준비를 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/female-assistant-2.jpg',
-      specialty: ['이메일 관리', '회의 준비', '업무 정리'],
-      personality: '효율적이고 신속함',
-      experience: '사무 관리 6년 경험',
-      availability: '24시간 가능',
-      contactMethods: ['이메일', '채팅', '음성'],
+      position: 'AI 鍮꾩꽌',
+      description: '?대찓??愿由?諛??뚯쓽 以鍮꾨? ?꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[2],
+      specialty: ['?대찓??愿由?, '?뚯쓽 以鍮?, '?낅Т ?뺣━'],
+      personality: '?⑥쑉?곸씠怨??좎냽??,
+      experience: '?щТ 愿由?6??寃쏀뿕',
+      availability: '24?쒓컙 媛??,
+      contactMethods: ['?대찓??, '梨꾪똿', '?뚯꽦'],
       rating: 4.9,
       isActive: true,
       performance: {
@@ -177,16 +188,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 4,
-      name: '마이클',
+      name: '留덉씠??,
       gender: 'male',
-      position: 'AI 비서',
-      description: '데이터 분석 및 보고서 작성 전문 AI 비서입니다.',
-      avatar: '/avatars/male-assistant-2.jpg',
-      specialty: ['데이터 분석', '보고서 작성', '통계'],
-      personality: '분석적이고 체계적임',
-      experience: '데이터 분석 5년 경험',
-      availability: '평일 08:00-20:00',
-      contactMethods: ['채팅', '이메일'],
+      position: 'AI 鍮꾩꽌',
+      description: '?곗씠??遺꾩꽍 諛?蹂닿퀬???묒꽦 ?꾨Ц AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[3],
+      specialty: ['?곗씠??遺꾩꽍', '蹂닿퀬???묒꽦', '?듦퀎'],
+      personality: '遺꾩꽍?곸씠怨?泥닿퀎?곸엫',
+      experience: '?곗씠??遺꾩꽍 5??寃쏀뿕',
+      availability: '?됱씪 08:00-20:00',
+      contactMethods: ['梨꾪똿', '?대찓??],
       rating: 4.7,
       isActive: true,
       performance: {
@@ -198,16 +209,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 5,
-      name: '에밀리',
+      name: '?먮?由?,
       gender: 'female',
-      position: 'AI 비서',
-      description: 'SNS 관리 및 콘텐츠 제작을 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/female-assistant-3.jpg',
-      specialty: ['SNS 관리', '콘텐츠 제작', '마케팅'],
-      personality: '창의적이고 감각적임',
-      experience: '디지털 마케팅 4년 경험',
-      availability: '24시간 가능',
-      contactMethods: ['채팅', '이메일'],
+      position: 'AI 鍮꾩꽌',
+      description: 'SNS 愿由?諛?肄섑뀗痢??쒖옉???꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[4],
+      specialty: ['SNS 愿由?, '肄섑뀗痢??쒖옉', '留덉???],
+      personality: '李쎌쓽?곸씠怨?媛먭컖?곸엫',
+      experience: '?붿???留덉???4??寃쏀뿕',
+      availability: '24?쒓컙 媛??,
+      contactMethods: ['梨꾪똿', '?대찓??],
       rating: 4.5,
       isActive: true,
       performance: {
@@ -219,16 +230,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 6,
-      name: '데이빗',
+      name: '?곗씠鍮?,
       gender: 'male',
-      position: 'AI 비서',
-      description: '재무 관리 및 세무 처리를 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/male-assistant-3.jpg',
-      specialty: ['재무 관리', '세무 처리', '회계'],
-      personality: '정확하고 신뢰할 수 있음',
-      experience: '재무 회계 7년 경험',
-      availability: '평일 09:00-17:00',
-      contactMethods: ['이메일', '채팅'],
+      position: 'AI 鍮꾩꽌',
+      description: '?щТ 愿由?諛??몃Т 泥섎━瑜??꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[5],
+      specialty: ['?щТ 愿由?, '?몃Т 泥섎━', '?뚭퀎'],
+      personality: '?뺥솗?섍퀬 ?좊ː?????덉쓬',
+      experience: '?щТ ?뚭퀎 7??寃쏀뿕',
+      availability: '?됱씪 09:00-17:00',
+      contactMethods: ['?대찓??, '梨꾪똿'],
       rating: 4.9,
       isActive: true,
       performance: {
@@ -240,16 +251,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 7,
-      name: '클레어',
+      name: '?대젅??,
       gender: 'female',
-      position: 'AI 비서',
-      description: '계약 관리 및 법률 자문을 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/female-assistant-4.jpg',
-      specialty: ['계약 관리', '법률 자문', '문서 검토'],
-      personality: '신중하고 전문적임',
-      experience: '법률 자문 6년 경험',
-      availability: '평일 10:00-18:00',
-      contactMethods: ['이메일', '채팅'],
+      position: 'AI 鍮꾩꽌',
+      description: '怨꾩빟 愿由?諛?踰뺣쪧 ?먮Ц???꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[6],
+      specialty: ['怨꾩빟 愿由?, '踰뺣쪧 ?먮Ц', '臾몄꽌 寃??],
+      personality: '?좎쨷?섍퀬 ?꾨Ц?곸엫',
+      experience: '踰뺣쪧 ?먮Ц 6??寃쏀뿕',
+      availability: '?됱씪 10:00-18:00',
+      contactMethods: ['?대찓??, '梨꾪똿'],
       rating: 4.8,
       isActive: true,
       performance: {
@@ -261,16 +272,16 @@ const AIVirtualAssistantSection = () => {
     },
     {
       id: 8,
-      name: '톰',
+      name: '??,
       gender: 'male',
-      position: 'AI 비서',
-      description: '고객 분석 및 마케팅 전략을 전문으로 하는 AI 비서입니다.',
-      avatar: '/avatars/male-assistant-4.jpg',
-      specialty: ['고객 분석', '마케팅 전략', '시장 조사'],
-      personality: '전략적이고 통찰력 있음',
-      experience: '마케팅 전략 5년 경험',
-      availability: '24시간 가능',
-      contactMethods: ['채팅', '이메일', '음성'],
+      position: 'AI 鍮꾩꽌',
+      description: '怨좉컼 遺꾩꽍 諛?留덉????꾨왂???꾨Ц?쇰줈 ?섎뒗 AI 鍮꾩꽌?낅땲??',
+      avatar: assistantAvatars[7],
+      specialty: ['怨좉컼 遺꾩꽍', '留덉????꾨왂', '?쒖옣 議곗궗'],
+      personality: '?꾨왂?곸씠怨??듭같???덉쓬',
+      experience: '留덉????꾨왂 5??寃쏀뿕',
+      availability: '24?쒓컙 媛??,
+      contactMethods: ['梨꾪똿', '?대찓??, '?뚯꽦'],
       rating: 4.7,
       isActive: true,
       performance: {
@@ -282,19 +293,19 @@ const AIVirtualAssistantSection = () => {
     }
   ]);
 
-  // 사용자 선호도에 따라 AI 직원 필터링
+  // ?ъ슜???좏샇?꾩뿉 ?곕씪 AI 吏곸썝 ?꾪꽣留?
   useEffect(() => {
     let filtered = [...virtualAssistants];
 
-    // 활성화 상태 필터링
+    // ?쒖꽦???곹깭 ?꾪꽣留?
     filtered = filtered.filter(assistant => assistant.isActive);
 
-    // 성별 필터링
+    // ?깅퀎 ?꾪꽣留?
     if (preferences.preferredGender !== 'all') {
       filtered = filtered.filter(assistant => assistant.gender === preferences.preferredGender);
     }
 
-    // 역할 필터링
+    // ??븷 ?꾪꽣留?
     if (preferences.preferredRoles.length > 0) {
       filtered = filtered.filter(assistant =>
         assistant.specialty.some(specialty =>
@@ -303,7 +314,7 @@ const AIVirtualAssistantSection = () => {
       );
     }
 
-    // 성격 필터링
+    // ?깃꺽 ?꾪꽣留?
     if (preferences.preferredPersonality) {
       filtered = filtered.filter(assistant =>
         assistant.personality.toLowerCase().includes(preferences.preferredPersonality.toLowerCase())
@@ -313,7 +324,7 @@ const AIVirtualAssistantSection = () => {
     setFilteredAssistants(filtered);
   }, [preferences, virtualAssistants]);
 
-  // 필터링된 결과에 따라 페이지 인덱스 조정
+  // ?꾪꽣留곷맂 寃곌낵???곕씪 ?섏씠吏 ?몃뜳??議곗젙
   useEffect(() => {
     setCurrentIndex(0);
   }, [filteredAssistants]);
@@ -358,7 +369,7 @@ const AIVirtualAssistantSection = () => {
     });
   };
 
-  // 직원 활성화/비활성화 토글
+  // 吏곸썝 ?쒖꽦??鍮꾪솢?깊솕 ?좉?
   const toggleAssistantStatus = (id: number) => {
     setVirtualAssistants(prev => 
       prev.map(assistant => 
@@ -369,7 +380,7 @@ const AIVirtualAssistantSection = () => {
     );
   };
 
-  // 팀에 멤버 추가/제거
+  // ???硫ㅻ쾭 異붽?/?쒓굅
   const toggleTeamMember = (teamId: string, assistantId: number) => {
     setTeams(prev => 
       prev.map(team => 
@@ -385,7 +396,7 @@ const AIVirtualAssistantSection = () => {
     );
   };
 
-  // 새 팀 생성
+  // ??? ?앹꽦
   const createTeam = () => {
     if (newTeam.name && newTeam.purpose && newTeam.members.length > 0) {
       const team: Team = {
@@ -399,7 +410,7 @@ const AIVirtualAssistantSection = () => {
     }
   };
 
-  // 워크플로우에 단계 추가
+  // ?뚰겕?뚮줈?곗뿉 ?④퀎 異붽?
   const addWorkflowStep = (assistantId: number, task: string) => {
     if (task.trim()) {
       const newStep = {
@@ -416,7 +427,7 @@ const AIVirtualAssistantSection = () => {
     }
   };
 
-  // 워크플로우 생성
+  // ?뚰겕?뚮줈???앹꽦
   const createWorkflow = () => {
     if (newWorkflow.name && newWorkflow.description && newWorkflow.steps.length > 0) {
       const workflow: Workflow = {
@@ -430,7 +441,7 @@ const AIVirtualAssistantSection = () => {
     }
   };
 
-  // 워크플로우 단계 수정
+  // ?뚰겕?뚮줈???④퀎 ?섏젙
   const updateWorkflowStep = (workflowId: string, stepIndex: number, newTask: string) => {
     setWorkflows(prev => 
       prev.map(wf => 
@@ -447,12 +458,12 @@ const AIVirtualAssistantSection = () => {
     setEditingWorkflowStep(null);
   };
 
-  // 모든 역할 목록 추출
+  // 紐⑤뱺 ??븷 紐⑸줉 異붿텧
   const allRoles = Array.from(
     new Set(virtualAssistants.flatMap(assistant => assistant.specialty))
   );
 
-  // 성능 요약 데이터 계산
+  // ?깅뒫 ?붿빟 ?곗씠??怨꾩궛
   const performanceSummary = {
     totalActive: virtualAssistants.filter(a => a.isActive).length,
     avgEfficiency: Math.round(virtualAssistants.reduce((sum, a) => sum + a.performance.efficiency, 0) / virtualAssistants.length),
@@ -470,7 +481,7 @@ const AIVirtualAssistantSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            AI 가상 비서 팀
+            AI 媛??鍮꾩꽌 ?
           </motion.h2>
           <motion.p 
             className="text-lg text-gray-600 max-w-2xl mx-auto"
@@ -478,75 +489,75 @@ const AIVirtualAssistantSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            TeleMon의 AI 가상 비서들이 당신의 업무를 도와드립니다. 
-            고객 응대부터 문서 작성, 일정 관리까지 전문적인 도움을 드립니다.
+            TeleMon??AI 媛??鍮꾩꽌?ㅼ씠 ?뱀떊???낅Т瑜??꾩??쒕┰?덈떎. 
+            怨좉컼 ?묐?遺??臾몄꽌 ?묒꽦, ?쇱젙 愿由ш퉴吏 ?꾨Ц?곸씤 ?꾩????쒕┰?덈떎.
           </motion.p>
           
-          {/* 성능 요약 카드 */}
+          {/* ?깅뒫 ?붿빟 移대뱶 */}
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <UsersIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <span className="text-sm text-gray-600">활성화</span>
+                <span className="text-sm text-gray-600">?쒖꽦??/span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{performanceSummary.totalActive}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <Activity className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-sm text-gray-600">효율성</span>
+                <span className="text-sm text-gray-600">?⑥쑉??/span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{performanceSummary.avgEfficiency}%</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <Star className="h-5 w-5 text-yellow-500 mr-2" />
-                <span className="text-sm text-gray-600">만족도</span>
+                <span className="text-sm text-gray-600">留뚯”??/span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{performanceSummary.avgSatisfaction}%</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <Target className="h-5 w-5 text-purple-500 mr-2" />
-                <span className="text-sm text-gray-600">총 작업</span>
+                <span className="text-sm text-gray-600">珥??묒뾽</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{performanceSummary.totalTasks.toLocaleString()}</p>
             </div>
           </div>
           
-          {/* 필터 및 관리 섹션 */}
+          {/* ?꾪꽣 諛?愿由??뱀뀡 */}
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <button
               onClick={() => setShowFilter(!showFilter)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Filter className="h-4 w-4" />
-              필터 설정
+              ?꾪꽣 ?ㅼ젙
             </button>
             <button
               onClick={() => setShowPerformance(!showPerformance)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <TrendingUp className="h-4 w-4" />
-              성능 보기
+              ?깅뒫 蹂닿린
             </button>
             <button
               onClick={() => setShowTeams(!showTeams)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <UsersIcon className="h-4 w-4" />
-              팀 구성
+              ? 援ъ꽦
             </button>
             <button
               onClick={() => setShowWorkflows(!showWorkflows)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Workflow className="h-4 w-4" />
-              워크플로우
+              ?뚰겕?뚮줈??
             </button>
           </div>
           
-          {/* 필터 옵션 */}
+          {/* ?꾪꽣 ?듭뀡 */}
           {showFilter && (
             <motion.div 
               className="mt-6 p-6 bg-white rounded-xl shadow-md border border-gray-200 max-w-4xl mx-auto"
@@ -556,7 +567,7 @@ const AIVirtualAssistantSection = () => {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">성별</h3>
+                  <h3 className="font-medium text-gray-800 mb-3">?깅퀎</h3>
                   <div className="space-y-2">
                     {(['all', 'female', 'male'] as const).map(option => (
                       <label key={option} className="flex items-center">
@@ -568,7 +579,7 @@ const AIVirtualAssistantSection = () => {
                           className="mr-2"
                         />
                         <span className="text-sm">
-                          {option === 'all' ? '전체' : option === 'female' ? '여성' : '남성'}
+                          {option === 'all' ? '?꾩껜' : option === 'female' ? '?ъ꽦' : '?⑥꽦'}
                         </span>
                       </label>
                     ))}
@@ -576,7 +587,7 @@ const AIVirtualAssistantSection = () => {
                 </div>
                 
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">전문 분야</h3>
+                  <h3 className="font-medium text-gray-800 mb-3">?꾨Ц 遺꾩빞</h3>
                   <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
                     {allRoles.map(role => (
                       <label key={role} className="flex items-center">
@@ -593,34 +604,34 @@ const AIVirtualAssistantSection = () => {
                 </div>
                 
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">성격</h3>
+                  <h3 className="font-medium text-gray-800 mb-3">?깃꺽</h3>
                   <select
                     value={preferences.preferredPersonality}
                     onChange={(e) => updatePreferences('preferredPersonality', e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-md text-sm"
                   >
-                    <option value="">전체</option>
-                    <option value="친절하고 꼼꼼함">친절하고 꼼꼼함</option>
-                    <option value="논리적이고 정확함">논리적이고 정확함</option>
-                    <option value="효율적이고 신속함">효율적이고 신속함</option>
-                    <option value="분석적이고 체계적임">분석적이고 체계적임</option>
-                    <option value="창의적이고 감각적임">창의적이고 감각적임</option>
-                    <option value="정확하고 신뢰할 수 있음">정확하고 신뢰할 수 있음</option>
-                    <option value="신중하고 전문적임">신중하고 전문적임</option>
-                    <option value="전략적이고 통찰력 있음">전략적이고 통찰력 있음</option>
+                    <option value="">?꾩껜</option>
+                    <option value="移쒖젅?섍퀬 瑗쇨세??>移쒖젅?섍퀬 瑗쇨세??/option>
+                    <option value="?쇰━?곸씠怨??뺥솗??>?쇰━?곸씠怨??뺥솗??/option>
+                    <option value="?⑥쑉?곸씠怨??좎냽??>?⑥쑉?곸씠怨??좎냽??/option>
+                    <option value="遺꾩꽍?곸씠怨?泥닿퀎?곸엫">遺꾩꽍?곸씠怨?泥닿퀎?곸엫</option>
+                    <option value="李쎌쓽?곸씠怨?媛먭컖?곸엫">李쎌쓽?곸씠怨?媛먭컖?곸엫</option>
+                    <option value="?뺥솗?섍퀬 ?좊ː?????덉쓬">?뺥솗?섍퀬 ?좊ː?????덉쓬</option>
+                    <option value="?좎쨷?섍퀬 ?꾨Ц?곸엫">?좎쨷?섍퀬 ?꾨Ц?곸엫</option>
+                    <option value="?꾨왂?곸씠怨??듭같???덉쓬">?꾨왂?곸씠怨??듭같???덉쓬</option>
                   </select>
                 </div>
               </div>
               
               <div className="mt-4 text-right">
                 <p className="text-sm text-gray-600">
-                  {filteredAssistants.length}명의 AI 비서가 조건에 맞습니다
+                  {filteredAssistants.length}紐낆쓽 AI 鍮꾩꽌媛 議곌굔??留욎뒿?덈떎
                 </p>
               </div>
             </motion.div>
           )}
           
-          {/* 성능 대시보드 */}
+          {/* ?깅뒫 ??쒕낫??*/}
           {showPerformance && (
             <motion.div 
               className="mt-6 p-6 bg-white rounded-xl shadow-md border border-gray-200 max-w-4xl mx-auto"
@@ -628,17 +639,17 @@ const AIVirtualAssistantSection = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <h3 className="font-medium text-gray-800 mb-4">AI 비서 성능 대시보드</h3>
+              <h3 className="font-medium text-gray-800 mb-4">AI 鍮꾩꽌 ?깅뒫 ??쒕낫??/h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">효율성</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">만족도</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업 완료</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">응답 시간</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?대쫫</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?⑥쑉??/th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">留뚯”??/th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?묒뾽 ?꾨즺</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?묐떟 ?쒓컙</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?곹깭</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -683,7 +694,7 @@ const AIVirtualAssistantSection = () => {
                             }`}
                           >
                             <Power className={`h-3 w-3 ${assistant.isActive ? 'text-green-500' : 'text-red-500'}`} />
-                            {assistant.isActive ? '활성' : '비활성'}
+                            {assistant.isActive ? '?쒖꽦' : '鍮꾪솢??}
                           </button>
                         </td>
                       </tr>
@@ -694,7 +705,7 @@ const AIVirtualAssistantSection = () => {
             </motion.div>
           )}
           
-          {/* 팀 구성 섹션 */}
+          {/* ? 援ъ꽦 ?뱀뀡 */}
           {showTeams && (
             <motion.div 
               className="mt-6 p-6 bg-white rounded-xl shadow-md border border-gray-200 max-w-4xl mx-auto"
@@ -703,10 +714,10 @@ const AIVirtualAssistantSection = () => {
               exit={{ opacity: 0, height: 0 }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-800">AI 비서 팀 구성</h3>
+                <h3 className="font-medium text-gray-800">AI 鍮꾩꽌 ? 援ъ꽦</h3>
                 <button className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
                   <Plus className="h-4 w-4" />
-                  팀 생성
+                  ? ?앹꽦
                 </button>
               </div>
               
@@ -715,20 +726,20 @@ const AIVirtualAssistantSection = () => {
                   type="text"
                   value={newTeam.name}
                   onChange={(e) => setNewTeam({...newTeam, name: e.target.value})}
-                  placeholder="팀 이름"
+                  placeholder="? ?대쫫"
                   className="p-2 border border-gray-300 rounded-md text-sm"
                 />
                 <input
                   type="text"
                   value={newTeam.purpose}
                   onChange={(e) => setNewTeam({...newTeam, purpose: e.target.value})}
-                  placeholder="팀 목적"
+                  placeholder="? 紐⑹쟻"
                   className="p-2 border border-gray-300 rounded-md text-sm"
                 />
               </div>
               
               <div className="mb-4">
-                <h4 className="font-medium text-gray-700 mb-2">팀원 선택</h4>
+                <h4 className="font-medium text-gray-700 mb-2">????좏깮</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {virtualAssistants.filter(a => a.isActive).map(assistant => (
                     <div 
@@ -765,11 +776,11 @@ const AIVirtualAssistantSection = () => {
                 disabled={!newTeam.name || !newTeam.purpose || newTeam.members.length === 0}
                 className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                팀 생성
+                ? ?앹꽦
               </button>
               
               <div className="mt-6">
-                <h4 className="font-medium text-gray-700 mb-3">기존 팀</h4>
+                <h4 className="font-medium text-gray-700 mb-3">湲곗〈 ?</h4>
                 <div className="space-y-4">
                   {teams.map(team => (
                     <div key={team.id} className="border border-gray-200 rounded-lg p-4">
@@ -780,7 +791,7 @@ const AIVirtualAssistantSection = () => {
                         </div>
                         <div className="flex gap-2">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            {team.members.length}명
+                            {team.members.length}紐?
                           </span>
                         </div>
                       </div>
@@ -808,7 +819,7 @@ const AIVirtualAssistantSection = () => {
             </motion.div>
           )}
           
-          {/* 워크플로우 섹션 */}
+          {/* ?뚰겕?뚮줈???뱀뀡 */}
           {showWorkflows && (
             <motion.div 
               className="mt-6 p-6 bg-white rounded-xl shadow-md border border-gray-200 max-w-4xl mx-auto"
@@ -817,10 +828,10 @@ const AIVirtualAssistantSection = () => {
               exit={{ opacity: 0, height: 0 }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-800">워크플로우 자동화</h3>
+                <h3 className="font-medium text-gray-800">?뚰겕?뚮줈???먮룞??/h3>
                 <button className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
                   <Zap className="h-4 w-4" />
-                  워크플로우 생성
+                  ?뚰겕?뚮줈???앹꽦
                 </button>
               </div>
               
@@ -829,26 +840,26 @@ const AIVirtualAssistantSection = () => {
                   type="text"
                   value={newWorkflow.name}
                   onChange={(e) => setNewWorkflow({...newWorkflow, name: e.target.value})}
-                  placeholder="워크플로우 이름"
+                  placeholder="?뚰겕?뚮줈???대쫫"
                   className="p-2 border border-gray-300 rounded-md text-sm"
                 />
                 <textarea
                   value={newWorkflow.description}
                   onChange={(e) => setNewWorkflow({...newWorkflow, description: e.target.value})}
-                  placeholder="워크플로우 설명"
+                  placeholder="?뚰겕?뚮줈???ㅻ챸"
                   className="p-2 border border-gray-300 rounded-md text-sm"
                   rows={2}
                 />
               </div>
               
               <div className="mb-6">
-                <h4 className="font-medium text-gray-700 mb-2">워크플로우 단계 추가</h4>
+                <h4 className="font-medium text-gray-700 mb-2">?뚰겕?뚮줈???④퀎 異붽?</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <select
                     className="p-2 border border-gray-300 rounded-md text-sm"
                     defaultValue=""
                   >
-                    <option value="" disabled>AI 비서 선택</option>
+                    <option value="" disabled>AI 鍮꾩꽌 ?좏깮</option>
                     {virtualAssistants.filter(a => a.isActive).map(assistant => (
                       <option key={assistant.id} value={assistant.id}>
                         {assistant.name} - {assistant.specialty.join(', ')}
@@ -858,18 +869,18 @@ const AIVirtualAssistantSection = () => {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="수행할 작업"
+                      placeholder="?섑뻾???묒뾽"
                       className="flex-1 p-2 border border-gray-300 rounded-md text-sm"
                     />
                     <button className="px-3 bg-blue-600 text-white rounded-md text-sm">
-                      추가
+                      異붽?
                     </button>
                   </div>
                 </div>
                 
                 {newWorkflow.steps.length > 0 && (
                   <div className="mt-4">
-                    <h5 className="font-medium text-gray-700 mb-2">추가된 단계</h5>
+                    <h5 className="font-medium text-gray-700 mb-2">異붽????④퀎</h5>
                     <div className="space-y-2">
                       {newWorkflow.steps.map((step, index) => {
                         const assistant = virtualAssistants.find(a => a.id === step.assistantId);
@@ -885,7 +896,7 @@ const AIVirtualAssistantSection = () => {
                               </div>
                             </div>
                             <button className="text-red-500 hover:text-red-700">
-                              삭제
+                              ??젣
                             </button>
                           </div>
                         );
@@ -900,11 +911,11 @@ const AIVirtualAssistantSection = () => {
                 disabled={!newWorkflow.name || !newWorkflow.description || newWorkflow.steps.length === 0}
                 className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                워크플로우 생성
+                ?뚰겕?뚮줈???앹꽦
               </button>
               
               <div className="mt-6">
-                <h4 className="font-medium text-gray-700 mb-3">기존 워크플로우</h4>
+                <h4 className="font-medium text-gray-700 mb-3">湲곗〈 ?뚰겕?뚮줈??/h4>
                 <div className="space-y-4">
                   {workflows.map(workflow => (
                     <div key={workflow.id} className="border border-gray-200 rounded-lg p-4">
@@ -917,11 +928,11 @@ const AIVirtualAssistantSection = () => {
                           <p className="text-sm text-gray-600">{workflow.description}</p>
                         </div>
                         <button className="text-blue-600 hover:text-blue-800 text-sm">
-                          실행
+                          ?ㅽ뻾
                         </button>
                       </div>
                       <div className="mt-3">
-                        <h6 className="font-medium text-gray-700 mb-2">워크플로우 단계:</h6>
+                        <h6 className="font-medium text-gray-700 mb-2">?뚰겕?뚮줈???④퀎:</h6>
                         <div className="space-y-2">
                           {workflow.steps.sort((a, b) => a.order - b.order).map((step, index) => {
                             const assistant = virtualAssistants.find(a => a.id === step.assistantId);
@@ -959,7 +970,7 @@ const AIVirtualAssistantSection = () => {
                                         onClick={() => setEditingWorkflowStep(null)}
                                         className="text-xs text-gray-500"
                                       >
-                                        취소
+                                        痍⑥냼
                                       </button>
                                     </div>
                                   ) : (
@@ -1000,7 +1011,7 @@ const AIVirtualAssistantSection = () => {
                 {!assistant.isActive && (
                   <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center z-10">
                     <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                      비활성화됨
+                      鍮꾪솢?깊솕??
                     </span>
                   </div>
                 )}
@@ -1019,7 +1030,7 @@ const AIVirtualAssistantSection = () => {
                         assistant.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'
                       }`}></div>
                       
-                      {/* 활성화/비활성화 토글 버튼 */}
+                      {/* ?쒖꽦??鍮꾪솢?깊솕 ?좉? 踰꾪듉 */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1043,10 +1054,10 @@ const AIVirtualAssistantSection = () => {
                           ? 'bg-pink-100 text-pink-800' 
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {assistant.gender === 'female' ? '여성' : '남성'}
+                        {assistant.gender === 'female' ? '?ъ꽦' : '?⑥꽦'}
                       </span>
                       <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                        AI 비서
+                        AI 鍮꾩꽌
                       </span>
                     </div>
                     
@@ -1055,10 +1066,10 @@ const AIVirtualAssistantSection = () => {
                       <span className="ml-1 text-sm text-gray-600">{assistant.rating}</span>
                     </div>
                     
-                    {/* 성능 지표 */}
+                    {/* ?깅뒫 吏??*/}
                     <div className="mt-4 w-full">
                       <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>효율성</span>
+                        <span>?⑥쑉??/span>
                         <span>{assistant.performance.efficiency}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -1069,7 +1080,7 @@ const AIVirtualAssistantSection = () => {
                       </div>
                       
                       <div className="flex justify-between text-xs text-gray-500 mt-2 mb-1">
-                        <span>만족도</span>
+                        <span>留뚯”??/span>
                         <span>{assistant.performance.satisfaction}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -1085,7 +1096,7 @@ const AIVirtualAssistantSection = () => {
             ))}
           </div>
 
-          {/* 페이징 컨트롤 */}
+          {/* ?섏씠吏?而⑦듃濡?*/}
           <div className="flex justify-center items-center mt-12 gap-4">
             <button
               onClick={goToPreviousPage}
@@ -1124,12 +1135,12 @@ const AIVirtualAssistantSection = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            AI 비서와 함께 일하는 스마트한 방식
+            AI 鍮꾩꽌? ?④퍡 ?쇳븯???ㅻ쭏?명븳 諛⑹떇
           </motion.div>
         </div>
       </div>
 
-      {/* AI 직원 상세 정보 모달 */}
+      {/* AI 吏곸썝 ?곸꽭 ?뺣낫 紐⑤떖 */}
       {selectedAssistant && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div 
@@ -1179,7 +1190,7 @@ const AIVirtualAssistantSection = () => {
                         ? 'bg-pink-100 text-pink-800' 
                         : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {selectedAssistant.gender === 'female' ? '여성' : '남성'}
+                      {selectedAssistant.gender === 'female' ? '?ъ꽦' : '?⑥꽦'}
                     </span>
                   </div>
                 </div>
@@ -1202,19 +1213,19 @@ const AIVirtualAssistantSection = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <h5 className="font-medium text-gray-800 mb-1">성격</h5>
+                      <h5 className="font-medium text-gray-800 mb-1">?깃꺽</h5>
                       <p className="text-gray-600">{selectedAssistant.personality}</p>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-800 mb-1">경험</h5>
+                      <h5 className="font-medium text-gray-800 mb-1">寃쏀뿕</h5>
                       <p className="text-gray-600">{selectedAssistant.experience}</p>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-800 mb-1">가용 시간</h5>
+                      <h5 className="font-medium text-gray-800 mb-1">媛???쒓컙</h5>
                       <p className="text-gray-600">{selectedAssistant.availability}</p>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-800 mb-1">연락 방법</h5>
+                      <h5 className="font-medium text-gray-800 mb-1">?곕씫 諛⑸쾿</h5>
                       <div className="flex flex-wrap gap-2">
                         {selectedAssistant.contactMethods.map((method, idx) => (
                           <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-sm">
@@ -1225,14 +1236,14 @@ const AIVirtualAssistantSection = () => {
                     </div>
                   </div>
                   
-                  {/* 성능 지표 */}
+                  {/* ?깅뒫 吏??*/}
                   <div className="mb-6">
-                    <h5 className="font-medium text-gray-800 mb-3">성능 지표</h5>
+                    <h5 className="font-medium text-gray-800 mb-3">?깅뒫 吏??/h5>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>작업 완료 수</span>
-                          <span className="font-medium">{selectedAssistant.performance.tasksCompleted.toLocaleString()}개</span>
+                          <span>?묒뾽 ?꾨즺 ??/span>
+                          <span className="font-medium">{selectedAssistant.performance.tasksCompleted.toLocaleString()}媛?/span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
@@ -1243,8 +1254,8 @@ const AIVirtualAssistantSection = () => {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>응답 시간</span>
-                          <span className="font-medium">{selectedAssistant.performance.responseTime}초</span>
+                          <span>?묐떟 ?쒓컙</span>
+                          <span className="font-medium">{selectedAssistant.performance.responseTime}珥?/span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
@@ -1257,7 +1268,7 @@ const AIVirtualAssistantSection = () => {
                   </div>
                   
                   <div className="mb-6">
-                    <h5 className="font-medium text-gray-800 mb-2">전문 분야</h5>
+                    <h5 className="font-medium text-gray-800 mb-2">?꾨Ц 遺꾩빞</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedAssistant.specialty.map((skill, idx) => (
                         <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
@@ -1270,29 +1281,29 @@ const AIVirtualAssistantSection = () => {
                   <div className="flex gap-3">
                     <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                       <MessageCircle className="h-4 w-4" />
-                      채팅 시작
+                      梨꾪똿 ?쒖옉
                     </button>
                     <button className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
                       <Settings className="h-4 w-4" />
-                      설정
+                      ?ㅼ젙
                     </button>
                     <button className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
                       <Phone className="h-4 w-4" />
-                      음성
+                      ?뚯꽦
                     </button>
                   </div>
                   
                   <div className="mt-4 flex justify-between">
                     <button className="flex items-center gap-1 text-red-500 hover:text-red-700">
                       <Heart className="h-4 w-4" />
-                      즐겨찾기
+                      利먭꺼李얘린
                     </button>
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       selectedAssistant.isActive
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {selectedAssistant.isActive ? '활성화됨' : '비활성화됨'}
+                      {selectedAssistant.isActive ? '?쒖꽦?붾맖' : '鍮꾪솢?깊솕??}
                     </span>
                   </div>
                 </div>
