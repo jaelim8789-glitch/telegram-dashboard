@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit";
+export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -50,6 +50,7 @@ export const TABS: TabDef[] = [
   { id: "apikeys", label: "API 키", shortLabel: "API", group: "settings" },
   { id: "audit", label: "활동 로그", shortLabel: "활동", group: "settings" },
   { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "settings" },
+  { id: "referral", label: "추천인", shortLabel: "추천", group: "settings" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";

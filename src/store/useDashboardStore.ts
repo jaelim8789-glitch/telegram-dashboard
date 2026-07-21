@@ -90,12 +90,12 @@ const LAST_TAB_KEY = "telemon-last-tab";
 let runtimeManagerSubscription: (() => void) | null = null;
 
 function loadLastTab(): TabId {
-  if (typeof localStorage === "undefined") return "dashboard" as TabId;
+  if (typeof localStorage === "undefined") return "myai" as TabId;
   try {
     const saved = localStorage.getItem(LAST_TAB_KEY);
     if (saved) return saved as TabId;
   } catch { }
-  return "dashboard" as TabId;
+  return "myai" as TabId;
 }
 
 function saveRecentRecipientSets(sets: string[][]): void {

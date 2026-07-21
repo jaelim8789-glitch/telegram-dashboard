@@ -26,7 +26,7 @@ function TabFallback() {
 }
 
 const MOBILE_ORDER: TabId[] = [
-  "dashboard", "send", "group", "log", "myai",
+  "myai", "send", "group",
 ];
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {

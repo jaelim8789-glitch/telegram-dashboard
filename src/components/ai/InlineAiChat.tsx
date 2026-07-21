@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send, Loader2, MessageSquare, Plus, Sparkles, Menu, Bot,
-  ChevronLeft, Trash2, Mic, MicOff, Clock, BarChart3, AlertTriangle, FileText,
+  ChevronLeft, Trash2, Mic, MicOff, Clock, BarChart3, AlertTriangle, FileText, CheckCircle,
+  PenLine, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
@@ -12,6 +13,7 @@ import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 import * as agentApi from "@/lib/agent-api";
 import type { ToolConfirmation } from "@/lib/agent-api";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -60,6 +62,11 @@ export function InlineAiChat() {
   const [showQuickPrompts, setShowQuickPrompts] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [broadcastSummary, setBroadcastSummary] = useState<{ sent: number; failed: number; scheduled: number } | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+  const voiceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressRef = useRef(false);
   const recognitionRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -188,6 +195,49 @@ export function InlineAiChat() {
     if (activeChatId && !loading) inputRef.current?.focus();
   }, [activeChatId, loading]);
 
+  // ── 발송현황 요약 카드 ──
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    fetch(`${BASE_URL}/api/ai/usage?days=1`, { headers: authHeaders() })
+      .then((r) => r.json().catch(() => ({})))
+      .then((data) => {
+        if (cancelled) return;
+        const features = data.features || {};
+        const chat = features.chat || {};
+        const broadcast = features.broadcast_assistant || {};
+        setBroadcastSummary({
+          sent: chat.requests || 0,
+          failed: broadcast.requests || 0,
+          scheduled: 0,
+        });
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setSummaryLoading(false); });
+
+    // Try to get actual broadcast stats from account
+    const accountId = typeof localStorage !== "undefined" ? localStorage.getItem("selectedAccountId") : null;
+    if (accountId) {
+      fetch(`${BASE_URL}/api/broadcasts?account_id=${accountId}&limit=50`, { headers: authHeaders() })
+        .then((r) => r.json().catch(() => ({})))
+        .then((data) => {
+          if (cancelled) return;
+          const list = Array.isArray(data) ? data : (data.broadcasts || []);
+          const sent = list.filter((b: any) => b.status === "sent").length;
+          const failed = list.filter((b: any) => b.status === "failed").length;
+          const scheduled = list.filter((b: any) => b.status === "pending" || b.status === "scheduled").length;
+          setBroadcastSummary({ sent, failed, scheduled });
+          // Set badge on send tab (failed + pending)
+          if (failed > 0 || scheduled > 0) {
+            useDashboardStore.getState().setTabBadge("send", failed + scheduled);
+          }
+        })
+        .catch(() => {});
+    }
+
+    return () => { cancelled = true; };
+  }, [activeAgentId]);
+
   async function handleNewChat() {
     if (!activeAgentId) return;
     try {
@@ -277,6 +327,59 @@ export function InlineAiChat() {
     sendMessageWithInput(input.trim());
   }
 
+  // ── Voice input (long-press → auto-send, short tap → fill text) ──
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          if (isLongPressRef.current) {
+            sendMessageWithInput(transcript);
+          } else {
+            setInput(transcript);
+          }
+        }
+      };
+      recognition.onerror = () => {
+        setIsListening(false);
+        isLongPressRef.current = false;
+        if (isLongPressRef.current) toast("error", "음성 인식 오류");
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+        isLongPressRef.current = false;
+      };
+      recognitionRef.current = recognition;
+    }
+  }, [toast]);
+
+  function handleVoicePointerDown() {
+    if (!recognitionRef.current || loading) return;
+    isLongPressRef.current = true;
+    voiceTimerRef.current = setTimeout(() => {
+      try { recognitionRef.current?.start(); } catch {}
+      setIsListening(true);
+    }, 200);
+  }
+
+  function handleVoicePointerUp() {
+    if (voiceTimerRef.current) clearTimeout(voiceTimerRef.current);
+    if (isListening && recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+    }
+    if (!isListening && voiceTimerRef.current) {
+      isLongPressRef.current = false;
+      try { recognitionRef.current?.start(); } catch {}
+      setIsListening(true);
+    }
+  }
+
   async function handleExecuteTool(messageId: string, toolName: string, payload: Record<string, unknown>) {
     await agentApi.executeToolAction(messageId, toolName, payload);
     if (activeChatId) {
@@ -327,7 +430,8 @@ export function InlineAiChat() {
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
   return (
-    <div className="flex flex-col h-full min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden relative">
+    <div className="relative h-full min-h-[400px]">
+    <div className="flex flex-col h-full min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden">
       {/* Agent selector bar */}
       <div className="flex items-center gap-1.5 border-b border-app-border px-3 py-2 overflow-x-auto scrollbar-thin shrink-0">
         {/* 채팅 목록 버튼 */}
@@ -457,6 +561,34 @@ export function InlineAiChat() {
         </>
       )}
 
+      {/* ── 발송현황 요약 카드 ── */}
+      {activeChatId && broadcastSummary && !summaryLoading && (
+        <div className="border-b border-app-border/40 bg-app-bg/30 px-3 py-2 shrink-0">
+          <div className="flex items-center gap-3 text-[11px]">
+            <span className="text-app-text-muted shrink-0">오늘</span>
+            <button
+              onClick={() => handleQuickPrompt("오늘 발송 현황 상세히 알려줘")}
+              className="flex items-center gap-1 text-app-success hover:underline"
+            >
+              <CheckCircle className="h-3 w-3" />{broadcastSummary.sent}건 성공
+            </button>
+            {broadcastSummary.failed > 0 && (
+              <button
+                onClick={() => handleQuickPrompt("실패한 발송 원인 분석해줘")}
+                className="flex items-center gap-1 text-app-danger hover:underline"
+              >
+                <AlertTriangle className="h-3 w-3" />{broadcastSummary.failed}건 실패
+              </button>
+            )}
+            {broadcastSummary.scheduled > 0 && (
+              <span className="flex items-center gap-1 text-app-text-muted">
+                <Clock className="h-3 w-3" />{broadcastSummary.scheduled}건 예약
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {!activeAgentId ? (
@@ -504,11 +636,51 @@ export function InlineAiChat() {
                 <InlineError className="max-w-md">{messagesError}</InlineError>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-8 text-app-text-muted">
-                <MessageSquare className="h-6 w-6 opacity-30" />
-                <p className="text-xs">메시지를 보내서 대화를 시작하세요</p>
-                {/* Quick prompts in empty state */}
-                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+              <div className="flex flex-col items-center gap-4 py-6">
+                {/* Welcome card */}
+                <div className="w-full max-w-sm rounded-2xl border border-app-primary/20 bg-gradient-to-br from-app-primary/5 to-app-bg p-5 text-center">
+                  <Bot className="h-10 w-10 text-app-primary mx-auto mb-2" />
+                  <p className="text-sm font-bold text-app-text">
+                    {activeAgent?.name || "AI"} 👋
+                  </p>
+                  <p className="text-xs text-app-text-muted mt-1">
+                    무엇을 도와드릴까요? 대화하듯 질문해보세요
+                  </p>
+                  {/* Broadcast status inline */}
+                  {broadcastSummary && (
+                    <div className="flex items-center justify-center gap-2 mt-3 text-[10px]">
+                      <span className="flex items-center gap-0.5 text-app-success">
+                        <CheckCircle className="h-3 w-3" />{broadcastSummary.sent}건 성공
+                      </span>
+                      {broadcastSummary.failed > 0 && (
+                        <button onClick={() => handleQuickPrompt("실패한 발송 원인 분석해줘")}
+                          className="flex items-center gap-0.5 text-app-danger hover:underline">
+                          <AlertTriangle className="h-3 w-3" />{broadcastSummary.failed}건 실패
+                        </button>
+                      )}
+                      {broadcastSummary.scheduled > 0 && (
+                        <span className="flex items-center gap-0.5 text-app-text-muted">
+                          <Clock className="h-3 w-3" />{broadcastSummary.scheduled}건 예약
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <button onClick={() => handleQuickPrompt("오늘 발송 현황 요약해줘")}
+                      className="rounded-full bg-app-primary/10 px-3 py-1.5 text-[11px] font-medium text-app-primary hover:bg-app-primary/20 transition-colors">
+                      📊 오늘 리포트
+                    </button>
+                    <button onClick={() => {
+                      useDashboardStore.getState().setActiveTab("send");
+                    }}
+                      className="rounded-full border border-app-border px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-text transition-colors">
+                      ✍️ 새 발송 작성
+                    </button>
+                  </div>
+                </div>
+                {/* Quick prompts */}
+                <p className="text-[10px] text-app-text-muted -mb-2">자주 묻는 질문</p>
+                <div className="flex flex-wrap justify-center gap-1.5">
                   {quickPrompts.map((qp) => (
                     <button
                       key={qp.label}
@@ -566,14 +738,14 @@ export function InlineAiChat() {
               <p className="text-xs font-semibold text-amber-700">
                 ⚡ {pendingConfirmation.label}
               </p>
-              {pendingConfirmation.arguments.message ? (
+              {pendingConfirmation.arguments && (pendingConfirmation.arguments as any).message ? (
                 <p className="text-[11px] text-app-text-muted mt-0.5 truncate">
-                  &ldquo;{String(pendingConfirmation.arguments.message).slice(0, 120)}&rdquo;
+                  &ldquo;{String((pendingConfirmation.arguments as any).message).slice(0, 120)}&rdquo;
                 </p>
               ) : null}
-              {pendingConfirmation.arguments.account_id ? (
+              {pendingConfirmation.arguments && (pendingConfirmation.arguments as any).account_id ? (
                 <p className="text-[10px] text-app-text-muted mt-0.5">
-                  계정: {String(pendingConfirmation.arguments.account_id).slice(0, 30)}
+                  계정: {String((pendingConfirmation.arguments as any).account_id).slice(0, 30)}
                 </p>
               ) : null}
             </div>
@@ -600,6 +772,34 @@ export function InlineAiChat() {
         </div>
       )}
 
+      {/* ── Send Preview Embed ── */}
+      {(() => {
+        const sendMsg = useDashboardStore.getState().sendMessage;
+        const sendGroups = useDashboardStore.getState().sendSelectedGroupIds;
+        const accounts = useDashboardStore.getState().accounts;
+        const selAcc = useDashboardStore.getState().selectedAccountId;
+        if (!sendMsg.trim() && sendGroups.length === 0) return null;
+        return (
+          <div className="border-t border-app-primary/20 bg-app-primary-muted/5 px-3 py-2 shrink-0">
+            <div className="flex items-center gap-2 text-[11px]">
+              <PenLine className="h-3.5 w-3.5 text-app-primary shrink-0" />
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-app-text">발송 준비 중</span>
+                {sendMsg.trim() && <span className="text-app-text-muted ml-1 truncate">&mdash; {sendMsg.slice(0, 30)}{sendMsg.length > 30 ? "..." : ""}</span>}
+              </div>
+              <span className="text-app-text-muted shrink-0">{sendGroups.length}명</span>
+              <button
+                type="button"
+                onClick={() => useDashboardStore.getState().setActiveTab("send")}
+                className="shrink-0 flex items-center gap-1 rounded-lg bg-app-primary/10 px-2 py-1 text-[11px] font-medium text-app-primary hover:bg-app-primary/20 transition-colors"
+              >
+                발송탭 <ExternalLink className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Chat input */}
       {activeChatId && (
         <div className="border-t border-app-border px-3 py-2 shrink-0">
@@ -619,18 +819,20 @@ export function InlineAiChat() {
             </div>
           )}
           <div className="flex gap-2">
-            {/* Mic button */}
+            {/* Mic button — long-press → auto-send, short tap → fill text */}
             {speechSupported && (
               <button
                 type="button"
-                onClick={toggleListening}
+                onPointerDown={handleVoicePointerDown}
+                onPointerUp={handleVoicePointerUp}
+                onPointerLeave={handleVoicePointerUp}
                 disabled={loading}
-                className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-xl border transition-all ${
+                className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-xl border transition-all select-none ${
                   isListening
                     ? "border-app-danger bg-app-danger/10 text-app-danger animate-pulse"
                     : "border-app-border bg-app-bg text-app-text-muted hover:border-app-primary/40 hover:text-app-text"
                 }`}
-                title={isListening ? "음성 인식 중지" : "음성 입력"}
+                title="길게 누르면 바로 전송, 짧게 누르면 텍스트 입력"
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </button>
@@ -648,6 +850,45 @@ export function InlineAiChat() {
               <Send className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+      )}
+    </div>
+
+      {/* ── FAB (Floating Action Button) ── */}
+      {activeChatId && messages.length > 0 && (
+        <div className="absolute bottom-28 right-4 z-20">
+          {fabOpen && (
+            <div className="flex flex-col gap-2 mb-2 animate-scale-in">
+              <button
+                onClick={() => { handleNewChat(); setFabOpen(false); }}
+                className="flex items-center gap-2 rounded-xl bg-app-card border border-app-border shadow-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors whitespace-nowrap"
+              >
+                <Plus className="h-3.5 w-3.5 text-app-primary" />
+                새 채팅
+              </button>
+              <button
+                onClick={() => {
+                  useDashboardStore.getState().setActiveTab("send");
+                  setFabOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-xl bg-app-card border border-app-border shadow-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors whitespace-nowrap"
+              >
+                <Send className="h-3.5 w-3.5 text-app-primary" />
+                발송탭 열기
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setFabOpen(!fabOpen)}
+            className={`flex items-center justify-center h-11 w-11 rounded-full shadow-lg transition-all ${
+              fabOpen
+                ? "bg-app-border rotate-45"
+                : "bg-app-primary text-white hover:opacity-90 active:scale-95"
+            }`}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
       )}
     </div>

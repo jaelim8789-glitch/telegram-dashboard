@@ -14,11 +14,11 @@ export interface GroupInsight {
 
 export function computeGroupInsights(groups: Group[]): GroupInsight[] {
   return groups.map((g) => {
-    const memberCount = g.member_count ?? 0;
-    const name = g.name ?? g.title ?? "알 수 없음";
+    const memberCount = g.participantsCount ?? 0;
+    const name = g.title ?? "알 수 없음";
 
-    const isChannel = g.is_channel ?? false;
-    const isMega = g.is_megagroup ?? false;
+    const isChannel = g.type === "channel";
+    const isMega = g.type === "megagroup";
 
     const memberTier = memberCount <= 50 ? "small" : memberCount <= 500 ? "medium" : memberCount <= 5000 ? "large" : "huge";
 
