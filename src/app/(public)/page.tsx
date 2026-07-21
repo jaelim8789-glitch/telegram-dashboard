@@ -15,6 +15,7 @@ import { NewFeaturesSection } from "@/components/landing/NewFeaturesSection";
 import { PricingPreview } from "@/components/landing/PricingPreview";
 import { FAQ } from "@/components/landing/FAQ";
 import { CtaSection } from "@/components/landing/CtaSection";
+import AIVirtualAssistantSection from "@/components/landing/AIVirtualAssistantSection";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -47,6 +48,8 @@ export default function HomePage() {
       <UseCasesSection />
       <SectionDivider />
       <NewFeaturesSection />
+      <SectionDivider />
+      <AIVirtualAssistantSection />
       <SectionDivider />
       <PricingPreview />
       <SectionDivider />
