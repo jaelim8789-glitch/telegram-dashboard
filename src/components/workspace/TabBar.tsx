@@ -13,6 +13,7 @@ import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
+import ErrorBoundary from '../ErrorBoundary';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
