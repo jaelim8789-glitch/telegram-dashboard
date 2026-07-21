@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import React, { Suspense, useCallback, useRef } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
@@ -11,6 +11,7 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
+import { Loader2, WifiOff } from "lucide-react";
 
 function TabFallback() {
   return (
@@ -65,16 +66,12 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const touchCurrent = useRef<{ x: number; y: number } | null>(null);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    touchCurrent.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    touchCurrent.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }, []);
+  const onTouchMove = useCallback((_e: React.TouchEvent) => {}, []);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchStart.current) return;
@@ -85,7 +82,6 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold =
       else onSwipeLeft();
     }
     touchStart.current = null;
-    touchCurrent.current = null;
   }, [onSwipeLeft, onSwipeRight, threshold]);
 
   return { onTouchStart, onTouchMove, onTouchEnd };
@@ -123,6 +119,109 @@ function useTabDirection() {
   }, []);
 }
 
+// ── Network status hook ──
+function useNetworkStatus() {
+  const [online, setOnline] = useState(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const go = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", go);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", go);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  return online;
+}
+
+// ── Reduced motion hook ──
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return reduced;
+}
+
+// ── Keyboard-aware viewport hook ──
+function useKeyboardAware(): number {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const vv = (window as any).visualViewport;
+    if (!vv) return;
+
+    function update() {
+      const diff = window.innerHeight - vv!.height;
+      setKeyboardHeight(Math.max(0, diff - 44)); // 44 = rough URL bar
+    }
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    update();
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return keyboardHeight;
+}
+
+// ── Pull-to-refresh hook ──
+function usePullToRefresh(
+  scrollRef: React.RefObject<HTMLDivElement | null>,
+  onRefresh: () => void,
+  enabled = true,
+) {
+  const [pulling, setPulling] = useState(false);
+  const [pullDist, setPullDist] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const THRESHOLD = 60;
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!enabled || !scrollRef.current) return;
+    if (scrollRef.current.scrollTop > 0) return;
+    touchStartY.current = e.touches[0].clientY;
+  }, [enabled]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!enabled || touchStartY.current === 0 || refreshing) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy > 5) {
+      setPulling(true);
+      setPullDist(Math.min(dy * 0.5, 100));
+    }
+  }, [enabled, refreshing]);
+
+  const onTouchEnd = useCallback((_e: React.TouchEvent) => {
+    if (!enabled) return;
+    if (pullDist > THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDist(0);
+      onRefresh();
+      setTimeout(() => { setRefreshing(false); setPulling(false); }, 1500);
+    } else {
+      setPulling(false);
+      setPullDist(0);
+    }
+    touchStartY.current = 0;
+  }, [enabled, pullDist, refreshing, onRefresh]);
+
+  return { pulling, pullDist, refreshing, onTouchStart, onTouchMove, onTouchEnd };
+}
+
 export function Workspace() {
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
@@ -130,6 +229,30 @@ export function Workspace() {
   const haptics = useHapticFeedback();
   const getDirection = useTabDirection();
   const direction = getDirection(activeTab);
+
+  const online = useNetworkStatus();
+  const reducedMotion = useReducedMotion();
+  const keyboardHeight = useKeyboardAware();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Pull-to-refresh callback — re-renders the current tab
+  const refreshKey = useRef(0);
+  const [, setRefreshTick] = useState(0);
+
+  const handleRefresh = useCallback(() => {
+    refreshKey.current += 1;
+    setRefreshTick(refreshKey.current);
+  }, []);
+
+  const pull = usePullToRefresh(scrollRef, handleRefresh, isMobile);
 
   const swipe = useSwipe(
     useCallback(() => {
@@ -148,31 +271,95 @@ export function Workspace() {
     }, [activeTab, setActiveTab, haptics]),
   );
 
+  const springCfg = reducedMotion
+    ? { duration: 0 }
+    : { x: { type: "spring" as const, stiffness: 380, damping: 30 }, opacity: { duration: 0.2 }, scale: { duration: 0.2 } };
+
   return (
-    <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <TabBar />
-      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4" {...swipe}>
-        <ScrollToTop />
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={activeTab}
-            custom={direction}
-            variants={tabVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: "spring", stiffness: 380, damping: 30 },
-              opacity: { duration: 0.2 },
-              scale: { duration: 0.2 },
-            }}
-          >
-            <ActiveTabContent />
-          </motion.div>
+    <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* ── Network offline strip ── */}
+        <AnimatePresence>
+          {!online && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="shrink-0 overflow-hidden bg-app-danger/10 border-b border-app-danger/20"
+            >
+              <div className="flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] font-medium text-app-danger">
+                <WifiOff className="h-3.5 w-3.5" />
+                오프라인 상태 — 네트워크 연결을 확인해주세요
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
-      </div>
-      <CommandPalette />
-      <OnboardingTour />
-    </main>
+
+        <TabBar />
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-4 md:pb-4"
+          style={{
+            paddingBottom: isMobile
+              ? `max(5rem, calc(5rem + ${keyboardHeight}px))`
+              : undefined,
+          }}
+          {...(isMobile
+            ? {
+                onTouchStart: (e: React.TouchEvent) => { swipe.onTouchStart(e); pull.onTouchStart(e); },
+                onTouchMove: (e: React.TouchEvent) => { swipe.onTouchMove(e); pull.onTouchMove(e); },
+                onTouchEnd: (e: React.TouchEvent) => { swipe.onTouchEnd(e); pull.onTouchEnd(e); },
+              }
+            : swipe
+          )}
+        >
+          {/* ── Pull-to-refresh indicator ── */}
+          {pull.pulling && (
+            <motion.div
+              className="flex items-center justify-center pb-2"
+              animate={{ opacity: pull.pullDist > 30 ? 1 : 0.5 }}
+            >
+              <motion.div
+                className="flex items-center gap-2 text-xs text-app-text-muted"
+                animate={{ scale: pull.pullDist > 50 ? 1.1 : 1 }}
+              >
+                {pull.refreshing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-app-primary" />
+                    새로고침 중...
+                  </>
+                ) : (
+                  <>
+                    <Loader2
+                      className="h-4 w-4 text-app-text-muted"
+                      style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}
+                    />
+                    {pull.pullDist > 50 ? "놓으면 새로고침" : "아래로 당겨서 새로고침"}
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+
+          <ScrollToTop />
+
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeTab}
+              custom={direction}
+              variants={tabVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={springCfg}
+            >
+              <ActiveTabContent key={`${activeTab}-${refreshKey.current}`} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <CommandPalette />
+        <OnboardingTour />
+      </main>
+    </MotionConfig>
   );
 }
