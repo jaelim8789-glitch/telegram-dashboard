@@ -1,73 +1,62 @@
 ﻿"use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { Suspense, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
-import { MyAiTab } from "@/components/workspace/tabs/MyAiTab";
-import { DashboardTab } from "@/components/workspace/tabs/DashboardTab";
-import { AccountRegisterTab } from "@/components/workspace/tabs/AccountRegisterTab";
-import { SendTab } from "@/components/workspace/tabs/SendTab";
-import { RecurringScheduleTab } from "@/components/workspace/tabs/RecurringScheduleTab";
-import { GroupTab } from "@/components/workspace/tabs/GroupTab";
-import { GroupSearchTab } from "@/components/workspace/tabs/GroupSearchTab";
-import { LinkInspectorTab } from "@/components/workspace/tabs/LinkInspectorTab";
-import { AutoReplyTab } from "@/components/workspace/tabs/AutoReplyTab";
-import { ProfileTab } from "@/components/workspace/tabs/ProfileTab";
-import { LogTab } from "@/components/workspace/tabs/LogTab";
-import { DeliveryAnalyticsTab } from "@/components/workspace/tabs/DeliveryAnalyticsTab";
-import { ChannelHubTab } from "@/components/workspace/tabs/ChannelHubTab";
-import { TemplateTab } from "@/components/workspace/tabs/TemplateTab";
-import { HealthTab } from "@/components/workspace/tabs/HealthTab";
-import { TeamTab } from "@/components/workspace/tabs/TeamTab";
-import { ReplyMacroTab } from "@/components/workspace/tabs/ReplyMacroTab";
-import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
-import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
-import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
-import { AiOperationsCenterTab } from "@/components/workspace/tabs/AiOperationsCenterTab";
-import { CampaignTab } from "@/components/workspace/tabs/CampaignTab";
-import { AiUsageTab } from "@/components/workspace/tabs/AiUsageTab";
-import { GuestBotTab } from "@/components/workspace/tabs/GuestBotTab";
-import { DraftsTab } from "@/components/workspace/tabs/DraftsTab";
-import StarsTab from "@/components/workspace/tabs/StarsTab";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
+
+function TabFallback() {
+  return (
+    <div className="space-y-3 p-4">
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-20 w-full rounded-xl" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-20 w-full rounded-xl" />
+    </div>
+  );
+}
 
 const MOBILE_ORDER: TabId[] = [
   "dashboard", "send", "group", "log", "myai",
 ];
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
-  dashboard: DashboardTab,
-  register: AccountRegisterTab,
-  send: SendTab,
-  scheduler: RecurringScheduleTab,
-  group: GroupTab,
-  groupsearch: GroupSearchTab,
-  linkinspector: LinkInspectorTab,
-  autoreply: AutoReplyTab,
-  replymacro: ReplyMacroTab,
-  campaigns: CampaignTab,
-  folders: React.lazy(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab }))),
-  templates: TemplateTab,
-  health: HealthTab,
-  myai: MyAiTab,
-  aireply: AiReplyAssistantTab,
-  aibroadcast: AiBroadcastAssistantTab,
-  aioperations: AiOperationsReportTab,
-  aiopscenter: AiOperationsCenterTab,
-  aiusage: AiUsageTab,
-  channelhub: ChannelHubTab,
-  team: TeamTab,
-  profile: ProfileTab,
-  log: LogTab,
-  deliveryanalytics: DeliveryAnalyticsTab,
-  guestbot: GuestBotTab,
-  drafts: DraftsTab,
-  triggers: React.lazy(() => import("@/components/workspace/tabs/TriggersTab").then(m => ({ default: m.TriggersTab }))),
-  stars: StarsTab,
+  dashboard: dynamic(() => import("@/components/workspace/tabs/DashboardTab").then(m => ({ default: m.DashboardTab })), { loading: TabFallback }),
+  register: dynamic(() => import("@/components/workspace/tabs/AccountRegisterTab").then(m => ({ default: m.AccountRegisterTab })), { loading: TabFallback }),
+  send: dynamic(() => import("@/components/workspace/tabs/SendTab").then(m => ({ default: m.SendTab })), { loading: TabFallback }),
+  scheduler: dynamic(() => import("@/components/workspace/tabs/RecurringScheduleTab").then(m => ({ default: m.RecurringScheduleTab })), { loading: TabFallback }),
+  group: dynamic(() => import("@/components/workspace/tabs/GroupTab").then(m => ({ default: m.GroupTab })), { loading: TabFallback }),
+  groupsearch: dynamic(() => import("@/components/workspace/tabs/GroupSearchTab").then(m => ({ default: m.GroupSearchTab })), { loading: TabFallback }),
+  linkinspector: dynamic(() => import("@/components/workspace/tabs/LinkInspectorTab").then(m => ({ default: m.LinkInspectorTab })), { loading: TabFallback }),
+  autoreply: dynamic(() => import("@/components/workspace/tabs/AutoReplyTab").then(m => ({ default: m.AutoReplyTab })), { loading: TabFallback }),
+  replymacro: dynamic(() => import("@/components/workspace/tabs/ReplyMacroTab").then(m => ({ default: m.ReplyMacroTab })), { loading: TabFallback }),
+  campaigns: dynamic(() => import("@/components/workspace/tabs/CampaignTab").then(m => ({ default: m.CampaignTab })), { loading: TabFallback }),
+  folders: dynamic(() => import("@/components/workspace/tabs/FoldersTab").then(m => ({ default: m.FoldersTab })), { loading: TabFallback }),
+  templates: dynamic(() => import("@/components/workspace/tabs/TemplateTab").then(m => ({ default: m.TemplateTab })), { loading: TabFallback }),
+  health: dynamic(() => import("@/components/workspace/tabs/HealthTab").then(m => ({ default: m.HealthTab })), { loading: TabFallback }),
+  myai: dynamic(() => import("@/components/workspace/tabs/MyAiTab").then(m => ({ default: m.MyAiTab })), { loading: TabFallback }),
+  aireply: dynamic(() => import("@/components/workspace/tabs/AiReplyAssistantTab").then(m => ({ default: m.AiReplyAssistantTab })), { loading: TabFallback }),
+  aibroadcast: dynamic(() => import("@/components/workspace/tabs/AiBroadcastAssistantTab").then(m => ({ default: m.AiBroadcastAssistantTab })), { loading: TabFallback }),
+  aioperations: dynamic(() => import("@/components/workspace/tabs/AiOperationsReportTab").then(m => ({ default: m.AiOperationsReportTab })), { loading: TabFallback }),
+  aiopscenter: dynamic(() => import("@/components/workspace/tabs/AiOperationsCenterTab").then(m => ({ default: m.AiOperationsCenterTab })), { loading: TabFallback }),
+  aiusage: dynamic(() => import("@/components/workspace/tabs/AiUsageTab").then(m => ({ default: m.AiUsageTab })), { loading: TabFallback }),
+  channelhub: dynamic(() => import("@/components/workspace/tabs/ChannelHubTab").then(m => ({ default: m.ChannelHubTab })), { loading: TabFallback }),
+  team: dynamic(() => import("@/components/workspace/tabs/TeamTab").then(m => ({ default: m.TeamTab })), { loading: TabFallback }),
+  profile: dynamic(() => import("@/components/workspace/tabs/ProfileTab").then(m => ({ default: m.ProfileTab })), { loading: TabFallback }),
+  log: dynamic(() => import("@/components/workspace/tabs/LogTab").then(m => ({ default: m.LogTab })), { loading: TabFallback }),
+  deliveryanalytics: dynamic(() => import("@/components/workspace/tabs/DeliveryAnalyticsTab").then(m => ({ default: m.DeliveryAnalyticsTab })), { loading: TabFallback }),
+  guestbot: dynamic(() => import("@/components/workspace/tabs/GuestBotTab").then(m => ({ default: m.GuestBotTab })), { loading: TabFallback }),
+  drafts: dynamic(() => import("@/components/workspace/tabs/DraftsTab").then(m => ({ default: m.DraftsTab })), { loading: TabFallback }),
+  triggers: dynamic(() => import("@/components/workspace/tabs/TriggersTab").then(m => ({ default: m.TriggersTab })), { loading: TabFallback }),
+  stars: dynamic(() => import("@/components/workspace/tabs/StarsTab"), { loading: TabFallback }),
 };
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
