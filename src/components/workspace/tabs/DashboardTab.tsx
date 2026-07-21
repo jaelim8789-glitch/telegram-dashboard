@@ -160,18 +160,25 @@ export function DashboardTab() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
+  const WIDGET_DEFAULTS: Record<string, boolean> = {
+    dailyDigest: true, realtimeMetrics: true, attention: true, recentFailures: true,
+    middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true,
+    healthTrend: true, usageChart: true, usageProgress: true,
+  };
+
+  const WIDGET_LABELS: Record<string, string> = {
+    dailyDigest: "오늘의 활동", realtimeMetrics: "실시간 메트릭", usageChart: "사용량 차트",
+    usageProgress: "사용량 한도", attention: "운영 주의 사항", recentFailures: "최근 발송 실패",
+    middlePanels: "예약/반복/건강 패널", recentActivity: "최근 활동", accountOverview: "계정 현황",
+    failureIntelligence: "실패 분석", healthTrend: "계정 건강 트렌드",
+  };
+
   // ── Widget visibility ──
   const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem("telemon-dashboard-widgets");
-      return saved ? JSON.parse(saved) : {
-        realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true,
-        recentActivity: true, accountOverview: true, failureIntelligence: true,
-        healthTrend: true, dailyDigest: true, usageChart: true, usageProgress: true,
-      };
-    } catch {
-      return { realtimeMetrics: true, attention: true, recentFailures: true, middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true, healthTrend: true, dailyDigest: true, usageChart: true, usageProgress: true };
-    }
+      return saved ? JSON.parse(saved) : { ...WIDGET_DEFAULTS };
+    } catch { return { ...WIDGET_DEFAULTS }; }
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
 
@@ -183,19 +190,37 @@ export function DashboardTab() {
     });
   };
 
-  const widgetKeys = [
-    { key: "dailyDigest", label: "오늘의 활동" },
-    { key: "realtimeMetrics", label: "실시간 메트릭" },
-    { key: "usageChart", label: "사용량 차트" },
-    { key: "usageProgress", label: "사용량 한도" },
-    { key: "attention", label: "운영 주의 사항" },
-    { key: "recentFailures", label: "최근 발송 실패" },
-    { key: "middlePanels", label: "예약/반복/건강 패널" },
-    { key: "recentActivity", label: "최근 활동" },
-    { key: "accountOverview", label: "계정 현황" },
-    { key: "failureIntelligence", label: "실패 분석" },
-    { key: "healthTrend", label: "계정 건강 트렌드" },
-  ];
+  // ── Widget order (drag-reorderable) ──
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("telemon-dashboard-widget-order");
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* noop */ }
+    return Object.keys(WIDGET_DEFAULTS);
+  });
+
+  const persistOrder = (order: string[]) => {
+    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(order)); } catch {}
+    setWidgetOrder(order);
+  };
+
+  const moveWidget = (key: string, direction: -1 | 1) => {
+    const idx = widgetOrder.indexOf(key);
+    if (idx < 0) return;
+    const target = idx + direction;
+    if (target < 0 || target >= widgetOrder.length) return;
+    const next = [...widgetOrder];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    persistOrder(next);
+  };
+
+  const dragWidgetRef = useRef<{ key: string; from: number } | null>(null);
+
+  // Widget keys in stored order
+  const widgetKeys = widgetOrder.filter((k) => k in WIDGET_LABELS).map((key) => ({ key, label: WIDGET_LABELS[key] }));
 
   const loadLogs = async () => {
     try { setLogs(await api.fetchLogs()); markError("logs", false); }
@@ -330,8 +355,13 @@ export function DashboardTab() {
     );
   }
 
+  const widgetIdx = (key: string): number => {
+    const idx = widgetOrder.indexOf(key);
+    return idx >= 0 ? idx * 10 + 10 : 999;
+  };
+
   return (
-    <div className="space-y-5 pb-8">
+    <div className="flex flex-col gap-5 pb-8">
       {/* ── Header Section ───────────────────────────────────── */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -360,11 +390,14 @@ export function DashboardTab() {
       </header>
 
       {/* ── Daily Digest ──────────────────────────── */}
-      {widgetVisibility.dailyDigest && (
-        <DailyDigest accounts={accounts} logs={logs} />
-      )}
+      <div key="dailyDigest" style={{ order: widgetIdx("dailyDigest") }}>
+        {widgetVisibility.dailyDigest && (
+          <DailyDigest accounts={accounts} logs={logs} />
+        )}
+      </div>
 
       {/* ── Real-time Metrics Row ──────────────── */}
+      <div key="realtimeMetrics" style={{ order: widgetIdx("realtimeMetrics") }}>
       {widgetVisibility.realtimeMetrics && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
@@ -436,6 +469,7 @@ export function DashboardTab() {
           </div>
         </div>
       )}
+      </div>
 
       {/* ── Operational Summary Hierarchy ───────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -484,6 +518,7 @@ export function DashboardTab() {
         </div>
       </div>
 
+      <div key="attention" style={{ order: widgetIdx("attention") }}>
       {/* ── Operational Attention Queue ─────────── */}
       {widgetVisibility.attention && hasAnyAttention && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
@@ -612,7 +647,9 @@ export function DashboardTab() {
           </div>
         </div>
       )}
+      </div>
 
+      <div key="recentFailures" style={{ order: widgetIdx("recentFailures") }}>
       {/* ── Recent Failures with retryable classification ── */}
       {widgetVisibility.recentFailures && recentFailures.length > 0 && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
@@ -660,7 +697,9 @@ export function DashboardTab() {
           </button>
         </div>
       )}
+      </div>
 
+      <div key="usageChart" style={{ order: Math.min(widgetIdx("usageChart"), widgetIdx("usageProgress")) }}>
       {/* ── Usage Chart & Usage Progress (side by side) ── */}
       {priorityVisible.progress && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -686,6 +725,7 @@ export function DashboardTab() {
           ) : null}
         </div>
       )}
+      </div>
 
       {/* ── Widget Customization ────────────────────────────── */}
       <div className="relative">
@@ -697,21 +737,55 @@ export function DashboardTab() {
           위젯 설정
         </button>
         {showWidgetSettings && (
-          <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
-            <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">표시할 위젯</p>
-            {widgetKeys.map((w) => (
-              <button
+          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
+            <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">위젯 순서 및 표시</p>
+            {widgetKeys.map((w, i) => (
+              <div
                 key={w.key}
-                onClick={() => toggleWidget(w.key)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors"
+                draggable
+                onDragStart={() => { dragWidgetRef.current = { key: w.key, from: i }; }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragWidgetRef.current && dragWidgetRef.current.key !== w.key) {
+                    const from = dragWidgetRef.current.from;
+                    const to = i;
+                    const next = [...widgetOrder];
+                    next.splice(from, 1);
+                    next.splice(to, 0, dragWidgetRef.current.key);
+                    persistOrder(next);
+                    dragWidgetRef.current.from = to;
+                  }
+                }}
+                onDragEnd={() => { dragWidgetRef.current = null; }}
+                className="flex items-center gap-1 rounded-lg px-1 py-1 text-xs text-app-text hover:bg-app-card-hover transition-colors group cursor-grab active:cursor-grabbing"
               >
-                {widgetVisibility[w.key] ? (
-                  <Eye className="h-3.5 w-3.5 text-app-primary shrink-0" />
-                ) : (
-                  <EyeOff className="h-3.5 w-3.5 text-app-text-subtle shrink-0" />
-                )}
-                <span className={widgetVisibility[w.key] ? "text-app-text" : "text-app-text-muted"}>{w.label}</span>
-              </button>
+                <span className="text-[10px] text-app-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0">⠿</span>
+                <button
+                  onClick={() => toggleWidget(w.key)}
+                  className="flex items-center gap-2 flex-1 px-1"
+                >
+                  {widgetVisibility[w.key] ? (
+                    <Eye className="h-3.5 w-3.5 text-app-primary shrink-0" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5 text-app-text-subtle shrink-0" />
+                  )}
+                  <span className={widgetVisibility[w.key] ? "text-app-text" : "text-app-text-muted"}>{w.label}</span>
+                </button>
+                <div className="flex shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); moveWidget(w.key, -1); }}
+                    disabled={i === 0}
+                    className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
+                    title="위로 이동"
+                  >↑</button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); moveWidget(w.key, 1); }}
+                    disabled={i === widgetKeys.length - 1}
+                    className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
+                    title="아래로 이동"
+                  >↓</button>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -745,6 +819,7 @@ export function DashboardTab() {
         </button>
       </div>
 
+      <div key="middlePanels" style={{ order: widgetIdx("middlePanels") }}>
       {/* ── Middle Section: 3 columns ────────────────────────── */}
       {widgetVisibility.middlePanels && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -886,7 +961,9 @@ export function DashboardTab() {
           </Panel>
         </div>
       )}
+      </div>
 
+      <div key="recentActivity" style={{ order: widgetIdx("recentActivity") }}>
       {/* ── Recent Activity ──────────────────── */}
       {widgetVisibility.recentActivity && (
         <Panel
@@ -945,7 +1022,9 @@ export function DashboardTab() {
           )}
         </Panel>
       )}
+      </div>
 
+      <div key="accountOverview" style={{ order: widgetIdx("accountOverview") }}>
       {/* ── Account Overview Table ──────────────────────────── */}
       {widgetVisibility.accountOverview && (
         <Panel
@@ -1017,7 +1096,9 @@ export function DashboardTab() {
           )}
         </Panel>
       )}
+      </div>
 
+      <div key="healthTrend" style={{ order: widgetIdx("healthTrend") }}>
       {/* ── Health Trend ──────────────────────────────────────── */}
       {widgetVisibility.healthTrend && healthItems.length > 0 && (
         <Panel
@@ -1082,7 +1163,9 @@ export function DashboardTab() {
           </div>
         </Panel>
       )}
+      </div>
 
+      <div key="failureIntelligence" style={{ order: widgetIdx("failureIntelligence") }}>
       {/* ── Failure Intelligence ─────────────────────────────── */}
       {widgetVisibility.failureIntelligence && failureTypes.length > 0 && (
         <Panel
@@ -1111,6 +1194,7 @@ export function DashboardTab() {
           </div>
         </Panel>
       )}
+      </div>
 
       {/* ── API errors banner — non-blocking ── */}
       {(errors.logs || errors.upcoming || errors.recurring || errors.overview) && (

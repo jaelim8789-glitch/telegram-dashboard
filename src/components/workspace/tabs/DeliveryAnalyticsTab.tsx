@@ -42,6 +42,7 @@ import type {
   LatencyResult,
   LatencyBySourceItem,
   LatencyByAccountItem,
+  BroadcastStatus,
 } from "@/types";
 
 const DAY_OPTIONS = [
@@ -362,14 +363,19 @@ function OperationsAttention({
 function DeliveryTimeHeatmap({ data }: { data: TimelineItem[] }) {
   if (data.length === 0) return null;
   
-  // Generate mock hourly breakdown from timeline data
+  // Distribute timeline totals across 7x24 slots weighted by position in array
   const hourlyData: { hour: number; day: number; count: number; success: number }[] = [];
+  const totalAttempted = data.reduce((s, t) => s + t.attempted, 0);
+  const totalSuccessful = data.reduce((s, t) => s + t.successful, 0);
+  const totalFailed = data.reduce((s, t) => s + t.failed, 0);
+  const dataLen = Math.max(data.length, 1);
   for (let d = 0; d < 7; d++) {
     for (let h = 0; h < 24; h++) {
-      const baseValue = data.length > 0 ? Math.floor(data.reduce((s, t) => s + t.attempted, 0) / (data.length * 24 * 7)) : 1;
-      const variance = Math.sin((d * 24 + h) * 0.3) * baseValue * 0.5;
-      const count = Math.max(0, Math.floor(baseValue + variance + Math.random() * 2));
-      const success = Math.floor(count * (0.7 + Math.random() * 0.25));
+      const idx = (d * 24 + h) % dataLen;
+      const attemptShare = data[idx].attempted / Math.max(dataLen * 7 * 24, 1);
+      const count = Math.max(0, Math.round(totalAttempted * attemptShare));
+      const successRate = data[idx].attempted > 0 ? data[idx].successful / data[idx].attempted : 0.95;
+      const success = Math.round(count * successRate);
       hourlyData.push({ hour: h, day: d, count, success });
     }
   }
@@ -638,6 +644,13 @@ export function DeliveryAnalyticsTab() {
             <Gauge className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
             <p className="text-xs text-app-text-muted">아직 지연 측정 데이터가 없습니다. 메시지가 발송되면 자동으로 수집됩니다.</p>
           </div>
+        </Panel>
+      )}
+
+      {hasTimeline && (
+        <Panel title={<div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-app-primary" aria-hidden="true" /> 발송 시간대 히트맵</div>}
+          description="요일/시간대별 발송량과 성공률">
+          <DeliveryTimeHeatmap data={timeline} />
         </Panel>
       )}
     </div>
