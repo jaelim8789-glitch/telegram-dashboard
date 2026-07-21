@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, MessageCircle, Settings, Phone, Filter, Heart, Star, Power, Activity, TrendingUp, Users, Target, CheckCircle, Clock, AlertTriangle, Plus, Users as UsersIcon, Workflow, Zap } from 'lucide-react';
+import LandingImage from '@/components/LandingImage';
 
 interface VirtualAssistant {
   id: number;
@@ -747,16 +748,10 @@ const AIVirtualAssistantSection = () => {
                       }}
                     >
                       <div className="w-12 h-12 rounded-full overflow-hidden mb-2">
-                        <img 
+                        <LandingImage 
                           src={assistant.avatar} 
-                          alt={assistant.name} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://placehold.co/150x150/${
-                              assistant.gender === 'female' ? 'ffcce6' : 'cce6ff'
-                            }/333?text=${assistant.name.charAt(0)}`
-                          }}
+                          alt={assistant.name}
+                          className="w-full h-full rounded-full"
                         />
                       </div>
                       <span className="text-sm">{assistant.name}</span>
@@ -795,16 +790,10 @@ const AIVirtualAssistantSection = () => {
                           return member ? (
                             <div key={memberId} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 text-sm">
                               <div className="w-6 h-6 rounded-full overflow-hidden">
-                                <img 
+                                <LandingImage 
                                   src={member.avatar} 
-                                  alt={member.name} 
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = `https://placehold.co/150x150/${
-                                      member.gender === 'female' ? 'ffcce6' : 'cce6ff'
-                                    }/333?text=${member.name.charAt(0)}`
-                                  }}
+                                  alt={member.name}
+                                  className="w-full h-full rounded-full"
                                 />
                               </div>
                               {member.name}
@@ -945,16 +934,10 @@ const AIVirtualAssistantSection = () => {
                                   {step.order}
                                 </span>
                                 <div className="w-8 h-8 rounded-full overflow-hidden">
-                                  <img 
-                                    src={assistant?.avatar} 
-                                    alt={assistant?.name} 
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = `https://placehold.co/150x150/${
-                                        assistant?.gender === 'female' ? 'ffcce6' : 'cce6ff'
-                                      }/333?text=${assistant?.name.charAt(0)}`
-                                    }}
+                                  <LandingImage 
+                                    src={assistant?.avatar || ''} 
+                                    alt={assistant?.name || ''}
+                                    className="w-full h-full rounded-full"
                                   />
                                 </div>
                                 <div className="flex-1">
@@ -1026,17 +1009,10 @@ const AIVirtualAssistantSection = () => {
                   <div className="flex flex-col items-center">
                     <div className="relative mb-4">
                       <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
-                        <img 
+                        <LandingImage 
                           src={assistant.avatar} 
-                          alt={assistant.name} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // 이미지 로드 실패 시 기본 이미지 표시
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://placehold.co/150x150/${
-                              assistant.gender === 'female' ? 'ffcce6' : 'cce6ff'
-                            }/333?text=${assistant.name.charAt(0)}`
-                          }}
+                          alt={assistant.name}
+                          className="w-full h-full rounded-full"
                         />
                       </div>
                       <div className={`absolute bottom-0 right-0 w-6 h-6 rounded-full border-2 border-white ${
@@ -1191,16 +1167,10 @@ const AIVirtualAssistantSection = () => {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-shrink-0">
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
-                    <img 
+                    <LandingImage 
                       src={selectedAssistant.avatar} 
-                      alt={selectedAssistant.name} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://placehold.co/150x150/${
-                          selectedAssistant.gender === 'female' ? 'ffcce6' : 'cce6ff'
-                        }/333?text=${selectedAssistant.name.charAt(0)}`
-                      }}
+                      alt={selectedAssistant.name}
+                      className="w-full h-full rounded-full"
                     />
                   </div>
                   <div className="mt-4 text-center">

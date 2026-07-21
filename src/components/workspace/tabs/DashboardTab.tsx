@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import {
-  Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, Download, MessageSquare,
-  RefreshCw, SendHorizonal, Users, XCircle,
+  Activity, AlertCircle, AlertTriangle, BarChart3, CheckCircle2, Clock, Download, Link, MessageSquare,
+  RefreshCw, Send, SendHorizonal, Users, XCircle,
   ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
   Gauge, Layers, Zap, Timer, Sparkles,
@@ -609,6 +609,42 @@ export function DashboardTab() {
           <DailyDigest accounts={accounts} logs={logs} />
         )}
       </div>
+
+      {/* ── Onboarding Wizard (0 accounts) ──────────── */}
+      {accounts.length === 0 && !accountsLoading && (
+        <Panel title="🚀 TeleMon 시작하기" className="border-app-primary/20 bg-app-primary-muted/5">
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-app-text-secondary">
+              TeleMon에 오신 것을 환영합니다! 시작하려면 Telegram 계정을 연결하세요.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { step: 1, title: "계정 연결", desc: "Telegram 계정을 TeleMon에 연결하세요", icon: Link, action: "계정 등록하기", tab: "register" },
+                { step: 2, title: "그룹 선택", desc: "관리할 그룹과 채널을 선택하세요", icon: Users, action: "그룹 관리", tab: "group" },
+                { step: 3, title: "첫 메시지 발송", desc: "AI의 도움을 받아 첫 발송을 시작하세요", icon: Send, action: "발송하기", tab: "send" },
+              ].map((item) => (
+                <div key={item.step} className="flex flex-col items-center text-center rounded-xl border border-app-border bg-app-card p-4 hover:border-app-primary/30 transition-colors cursor-pointer"
+                  onClick={() => setTab(item.tab)}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-app-primary/10 mb-3">
+                    <item.icon className="h-5 w-5 text-app-primary" />
+                  </div>
+                  <span className="text-[10px] font-bold text-app-primary mb-1">STEP {item.step}</span>
+                  <h4 className="text-sm font-semibold text-app-text">{item.title}</h4>
+                  <p className="text-xs text-app-text-muted mt-1 mb-3">{item.desc}</p>
+                  <span className="text-xs font-medium text-app-primary">{item.action} →</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-app-text-muted border-t border-app-border pt-3">
+              <AlertCircle className="h-3.5 w-3.5" />
+              도움이 필요하시면 support@telemon.online 으로 문의하세요
+            </div>
+          </div>
+        </Panel>
+      )}
 
       <section className="rounded-2xl border border-app-border bg-app-card p-4">
         <div className="flex items-center justify-between gap-2">

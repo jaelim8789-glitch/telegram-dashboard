@@ -4,6 +4,7 @@ import { useCountdown } from "@/lib/useRecurringCountdown";
 import { formatRelativeTime, formatDateTime, formatDuration } from "@/lib/formatTime";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/Badge";
+import { CountdownTimer } from "@/components/ui/CountdownTimer";
 import {
   isBroadcastInFlight, isRecurringActive, isRecurringBroadcast,
 } from "@/types";
@@ -35,6 +36,17 @@ function parseFailureAction(errorMessage: string | null): { hint: string; sugges
     }
   }
   return { hint: "재발송", suggestion: "재시도 후에도 문제가 지속되면 관리자에게 문의하세요." };
+}
+
+function extractRateLimitSeconds(errorMessage: string | null): number | null {
+  if (!errorMessage) return null;
+  const match = errorMessage.match(/다시\s*시도[^0-9]*?(\d+)\s*초/);
+  if (match) return parseInt(match[1], 10);
+  const altMatch = errorMessage.match(/초\s*후\s*다시\s*시도[^0-9]*?(\d+)/);
+  if (altMatch) return parseInt(altMatch[1], 10);
+  const secMatch = errorMessage.match(/(\d+)\s*초\s*후\s*다시\s*시도/);
+  if (secMatch) return parseInt(secMatch[1], 10);
+  return null;
 }
 
 interface HistoryRowProps {
@@ -77,6 +89,8 @@ export function HistoryRow({
   const countdown = useCountdown(recurring ? h.nextScheduledAt : null);
   const duration = formatDuration(h.scheduledAt || h.createdAt, h.sentAt);
   const failureInfo = parseFailureAction(h.errorMessage);
+  const rateLimitSeconds = extractRateLimitSeconds(h.errorMessage);
+  const isRateLimited = h.errorMessage?.includes("rate_limited") || h.errorMessage?.includes("초 후 다시 시도") || h.errorMessage?.includes("초 후 재시도") || h.errorMessage?.includes("속도 제한") || !!rateLimitSeconds;
 
   return (
     <div
@@ -166,6 +180,11 @@ export function HistoryRow({
               <FileWarning className="h-3 w-3" />
               <span className="truncate max-w-[160px]">{h.errorMessage}</span>
             </span>
+          )}
+
+          {/* Rate limit countdown */}
+          {isRateLimited && rateLimitSeconds && (
+            <CountdownTimer seconds={rateLimitSeconds} />
           )}
 
           {/* Inline buttons indicator */}

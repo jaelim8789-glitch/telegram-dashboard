@@ -6,15 +6,6 @@
  * inconsistent with) whatever the user picked in the ThemeToggle. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Playfair Display for headings */
-@import '@fontsource/playfair-display/400.css';
-@import '@fontsource/playfair-display/400-italic.css';
-@import '@fontsource/playfair-display/600.css';
-@import '@fontsource/playfair-display/600-italic.css';
-@import '@fontsource/playfair-display/700.css';
-@import '@fontsource/playfair-display/700-italic.css';
-@import '@fontsource/playfair-display/800.css';
-
 @theme {
   --color-accent: #b8a060;
   --color-accent-hover: #c8b070;

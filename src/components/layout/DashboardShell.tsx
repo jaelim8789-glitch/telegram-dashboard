@@ -152,6 +152,19 @@ export function DashboardShell() {
     }
   }, [accounts, notify, isSupported]);
 
+  // ── First-visit auto-redirect to dashboard with 0 accounts ──
+  useEffect(() => {
+    const HAS_VISITED_KEY = "telemon-has-visited";
+    if (typeof localStorage === "undefined") return;
+    try {
+      const hasVisited = localStorage.getItem(HAS_VISITED_KEY);
+      if (!hasVisited && accounts.length === 0 && !accountsLoading && activeTab !== "dashboard") {
+        localStorage.setItem(HAS_VISITED_KEY, "1");
+        setActiveTab("dashboard");
+      }
+    } catch {}
+  }, [accounts, accountsLoading]);
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-app-bg text-app-text">
       <NetworkStatus />

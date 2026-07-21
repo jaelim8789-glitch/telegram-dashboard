@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Loader2, Send, ShieldCheck } from "lucide-react";
 import * as api from "@/lib/api";
 import { setToken, setSessionToken, getSessionToken, getToken, clearToken, clearSessionToken } from "@/lib/auth";
@@ -220,13 +221,20 @@ export default function AdminLoginPage() {
 
         {/* 관리자 로그인 링크 (화면 하단 구석) */}
         {!showAdmin && (
-          <p className="mt-8 text-center">
+          <p className="mt-8 text-center space-y-1">
             <button
               onClick={() => setShowAdmin(true)}
               className="text-xs text-app-text-muted hover:text-app-primary underline underline-offset-2 transition-colors"
             >
               관리자 로그인
             </button>
+            <br />
+            <Link
+              href="/forgot-password"
+              className="text-xs text-app-text-muted hover:text-app-primary underline underline-offset-2 transition-colors"
+            >
+              비밀번호를 잊으셨나요?
+            </Link>
           </p>
         )}
       </div>

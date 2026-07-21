@@ -62,6 +62,7 @@ export function ProfileTab() {
   // Confirm dialogs
   const [resetSessionOpen, setResetSessionOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [resetSessionAccountId, setResetSessionAccountId] = useState<string | null>(null);
   const [deactivateAccountId, setDeactivateAccountId] = useState<string | null>(null);
 
@@ -171,9 +172,22 @@ export function ProfileTab() {
     }
   }, [deactivateAccountId, fetchAccounts, toast]);
 
-  const triggerResetSession = useCallback((acc: Account) => {
-    setResetSessionAccountId(acc.id);
-    setResetSessionOpen(true);
+  const handleDeleteAccount = useCallback(async () => {
+    try {
+      await api.request<{ message: string }>("/api/users/me", { method: "DELETE" });
+      import("@/lib/auth").then(({ clearAll }) => clearAll());
+      toast("success", "계정이 삭제되었습니다.");
+      setDeleteAccountOpen(false);
+      window.location.href = "/";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "계정 삭제에 실패했습니다.";
+      toast("error", msg);
+    }
+  }, [toast]);
+
+  const triggerDeactivate = useCallback((acc: Account) => {
+    setDeactivateAccountId(acc.id);
+    setDeactivateOpen(true);
   }, []);
 
   const triggerDeactivate = useCallback((acc: Account) => {
@@ -459,6 +473,31 @@ export function ProfileTab() {
         </div>
       </Panel>
 
+      {/* ── Account Deletion ── */}
+      {authMe?.role === "user" && (
+        <Panel title="계정 삭제" description="모든 데이터가 영구적으로 삭제됩니다">
+          <div className="flex flex-col gap-3 rounded-xl border border-app-danger/20 bg-app-danger-muted/30 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-app-danger" aria-hidden="true" />
+                <p className="text-sm font-medium text-app-text">계정 영구 삭제</p>
+              </div>
+              <p className="mt-0.5 text-xs text-app-text-muted">
+                계정을 삭제하면 모든 데이터(계정, API 키, 발송 내역, 메시지 로그 등)가 영구적으로 삭제되며 복구할 수 없습니다.
+              </p>
+            </div>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setDeleteAccountOpen(true)}
+              className="shrink-0"
+            >
+              계정 삭제
+            </Button>
+          </div>
+        </Panel>
+      )}
+
       {/* ── Data Backup ── */}
       <Panel title="데이터 백업" description="로컬 저장 데이터를 백업하고 복원합니다">
         <div className="flex flex-wrap items-center gap-3">
@@ -515,6 +554,17 @@ export function ProfileTab() {
           setDeactivateOpen(false);
           setDeactivateAccountId(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={deleteAccountOpen}
+        title="계정을 삭제할까요?"
+        description="정말로 계정을 삭제하시겠습니까? 모든 데이터가 영구적으로 삭제됩니다."
+        confirmLabel="계정 삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setDeleteAccountOpen(false)}
       />
     </div>
   );

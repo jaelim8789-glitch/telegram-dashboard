@@ -1,4 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display } from "next/font/google";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-heading",
+  display: "swap",
+});
 import { ToastProvider } from "@/components/ui/Toast";
 import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
 import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
@@ -46,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="ko" className={`h-full antialiased ${playfair.variable}`} suppressHydrationWarning>
       <head>
         {/* Sets data-theme on <html> synchronously before first paint, so the
             correct light/dark palette is already applied by the time CSS

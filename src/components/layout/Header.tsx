@@ -1,12 +1,13 @@
 "use client";
 
-import { ExternalLink, LogOut, Settings } from "lucide-react";
+import { ExternalLink, LogOut, Settings, HelpCircle, Mail, MessageCircle, BookOpen, FileText, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken, clearSessionToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { FullscreenToggle } from "@/components/ui/FullscreenToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useState, useRef, useEffect } from "react";
 
 function formatTrialRemaining(expiresAt: string | null): string | null {
   if (!expiresAt) return null;
@@ -26,6 +27,20 @@ export function Header() {
   const subscriptionStatus = useDashboardStore((s) => s.subscriptionStatus);
   const plan = useDashboardStore((s) => s.plan);
   const trialExpiresAt = useDashboardStore((s) => s.trialExpiresAt);
+  const [showHelpPanel, setShowHelpPanel] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (helpRef.current && !helpRef.current.contains(e.target as Node)) {
+        setShowHelpPanel(false);
+      }
+    }
+    if (showHelpPanel) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showHelpPanel]);
 
   const isTrialActive = plan === "free" && subscriptionStatus === "active" && trialExpiresAt;
   const isTrialExpired = plan === "free" && subscriptionStatus === "expired";
@@ -88,6 +103,49 @@ export function Header() {
         <FullscreenToggle />
 
         <ThemeToggle />
+
+        <div className="relative" ref={helpRef}>
+          <button
+            type="button"
+            onClick={() => setShowHelpPanel(!showHelpPanel)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+            title="도움말"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
+          {showHelpPanel && (
+            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-app-border bg-app-card shadow-lg p-4 space-y-3 z-50">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-app-text">도움말</span>
+                <button
+                  type="button"
+                  onClick={() => setShowHelpPanel(false)}
+                  className="flex h-6 w-6 items-center justify-center rounded text-app-text-muted hover:text-app-text transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="space-y-2 text-xs">
+                <a href="mailto:support@telemon.online" className="flex items-center gap-2 text-app-text-muted hover:text-app-text transition-colors">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span>지원 이메일: support@telemon.online</span>
+                </a>
+                <a href="https://t.me/telemon_support" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-app-text-muted hover:text-app-text transition-colors">
+                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>텔레그램: @telemon_support</span>
+                </a>
+                <Link href="/guide" className="flex items-center gap-2 text-app-text-muted hover:text-app-text transition-colors">
+                  <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                  <span>이용 가이드</span>
+                </Link>
+                <a href="https://api.telemon.online/docs" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-app-text-muted hover:text-app-text transition-colors">
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  <span>API 문서</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
 
         {role === "admin" && (
           <Link
