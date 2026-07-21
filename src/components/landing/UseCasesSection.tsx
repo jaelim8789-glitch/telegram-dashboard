@@ -29,16 +29,21 @@ const CASES = [
 
 export function UseCasesSection() {
   return (
-    <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8 py-12">
+    <section className="tm-section-bg-alt px-6 sm:px-6 lg:px-8 py-12 sm:py-12 luxury-section">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center max-w-xl mx-auto mb-12">
-          <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
-            활용 사례
-          </p>
-          <h2 className="section-heading text-2xl sm:text-3xl">
+        <div className="text-center max-w-xl mx-auto mb-10 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em]" style={{ color: "var(--color-accent)" }}>
+              활용 사례
+            </p>
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+          </div>
+          <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
             이렇게 <span style={{ color: "var(--color-accent)" }}>활용</span>하십시오
           </h2>
-          <p className="mt-3 text-sm editorial-body">TeleMon은 다양한 분야에서 사용됩니다.</p>
+          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">TeleMon은 다양한 분야에서 사용됩니다.</p>
+          <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">

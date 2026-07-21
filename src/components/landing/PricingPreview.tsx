@@ -30,14 +30,19 @@ const PLANS = [
 
 export function PricingPreview() {
   return (
-    <section className="tm-section-bg-alt px-4 sm:px-6 lg:px-8 py-12">
+    <section className="tm-section-bg-alt px-6 sm:px-6 lg:px-8 py-12 sm:py-12 luxury-section">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <p className="section-heading-luxury mb-3">요금제</p>
-          <h2 className="section-heading text-2xl sm:text-3xl">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+            <p className="section-heading-luxury mb-0">요금제</p>
+            <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
+          </div>
+          <h2 className="section-heading text-[1.375rem] sm:text-3xl luxury-section-title">
             당신에게 맞는 <span style={{ color: "var(--color-accent)" }}>요금제</span>
           </h2>
-          <p className="mt-3 text-sm editorial-body">필요한 만큼만 선택하세요.</p>
+          <p className="mt-2 sm:mt-3 text-xs sm:text-sm editorial-body luxury-section-desc">필요한 만큼만 선택하세요.</p>
+          <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
