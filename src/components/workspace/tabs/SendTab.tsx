@@ -285,6 +285,14 @@ export function SendTab() {
   const [autoRetryCount, setAutoRetryCount] = useState(3);
   const [autoRetryInterval, setAutoRetryInterval] = useState(5);
     const [deliveryPreset, setDeliveryPreset] = useState<DeliveryPreset>("balanced");
+  useEffect(() => {
+    // Delivery Preset → batchSize + delay 자동 매핑
+    switch (deliveryPreset) {
+      case "safe": setBatchSize(1); setNormalDelaySeconds(60); break;
+      case "balanced": setBatchSize(5); setNormalDelaySeconds(30); break;
+      case "fast": setBatchSize(10); setNormalDelaySeconds(5); break;
+    }
+  }, [deliveryPreset]);
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -304,6 +312,8 @@ export function SendTab() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
 
   const [batchRetrying, setBatchRetrying] = useState(false);
+  const [batchRetryDelay, setBatchRetryDelay] = useState(5);
+  const [dedupeNormalSend, setDedupeNormalSend] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
   const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
@@ -1106,6 +1116,8 @@ export function SendTab() {
   }, [account, history, message, selectedRecipientIds]);
 
   const spamScore = useMemo(() => computeSpamScore(message), [message]);
+  const spamBlocked = spamScore.score >= 70;
+  const riskBlocked = riskAnalysis.level === "danger";
   const tone = useMemo(() => analyzeTone(message), [message]);
   const viral = useMemo(() => computeViralScore(message), [message]);
 
@@ -1189,7 +1201,7 @@ export function SendTab() {
     );
   }
 
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval) && !spamBlocked && !riskBlocked;
 
   return (
     <div className="space-y-4 pb-20">
@@ -1512,11 +1524,31 @@ export function SendTab() {
             </div>
 
             {selectedRecipients.length > 0 && (
+              <>
               <RecipientReviewPanel
                 recipients={selectedRecipients}
                 onRemove={toggleGroup}
                 onClearAll={clearSendRecipients}
               />
+              {/* 그룹별 최적 발송 시간 */}
+              {(() => {
+                try {
+                  const { computeGroupInsights } = require("@/lib/groupInsights");
+                  const insights = computeGroupInsights(selectedRecipients as any);
+                  const times = [...new Set(insights.map((i: any) => i.bestPostingTime))].slice(0, 3);
+                  if (times.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 text-[10px] text-app-text-muted mt-1">
+                      <Clock className="h-3 w-3 text-app-primary" />
+                      <span>최적 발송 시간대:</span>
+                      {times.map((t: string) => (
+                        <span key={t} className="rounded-full bg-app-primary/10 px-2 py-0.5 text-[10px] font-medium text-app-primary">{t}</span>
+                      ))}
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+              </>
             )}
 
             {/* Variable quick-insert chips */}
@@ -1539,6 +1571,15 @@ export function SendTab() {
             <Field label="메시지 내용">
               <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
                 placeholder="발송할 메시지를 입력하세요." required />
+              <div className={cn("text-[10px] mt-1 flex items-center gap-1",
+                message.length > 4096 ? "text-app-danger font-semibold" :
+                message.length > 3500 ? "text-app-warning" :
+                "text-app-text-muted"
+              )}>
+                <span>{message.length.toLocaleString()} / 4,096자</span>
+                {message.length > 4096 && <span>— 초과분은 자동 절단됩니다</span>}
+                {message.length > 3500 && message.length <= 4096 && <span>— 곧 한도 도달</span>}
+              </div>
             </Field>
 
             {/* ── Message preview ( Telegram style ) ── */}
@@ -2015,7 +2056,17 @@ export function SendTab() {
                             <div>
                               <div className="text-xs font-medium text-app-text">{replyMacroActive ? "켜짐 — 자동 실행 중" : "꺼짐"}</div>
                               {replyMacroActive && <div className="text-[10px] text-app-text-subtle mt-0.5">이 계정의 모든 그룹에 자동 답장이 활성화됩니다</div>}
-                            </div>
+                      {deliveryMode === "bulk" && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <input type="checkbox" id="dedupeNormal" checked={dedupeNormalSend}
+                            onChange={(e) => setDedupeNormalSend(e.target.checked)}
+                            className="h-3.5 w-3.5 rounded border-app-border" />
+                          <label htmlFor="dedupeNormal" className="text-[10px] text-app-text-muted cursor-pointer select-none">
+                            최근 24시간 내 발송된 수신자 자동 제외
+                          </label>
+                        </div>
+                      )}
+                    </div>
                             <Button
                               type="button"
                               variant={replyMacroActive ? "secondary" : "primary"}
@@ -2193,11 +2244,19 @@ export function SendTab() {
         action={
           <div className="flex items-center gap-1.5">
             {selectedHistoryIds.size > 0 && (
-              <button onClick={handleBatchRetry} disabled={batchRetrying}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-danger hover:bg-app-danger-muted transition-colors disabled:opacity-50">
-                <RefreshCw className={`h-3.5 w-3.5 ${batchRetrying ? "animate-spin" : ""}`} />
-                {selectedHistoryIds.size}개 재발송
-              </button>
+              <div className="flex items-center gap-2">
+                <select value={batchRetryDelay} onChange={(e) => setBatchRetryDelay(Number(e.target.value))}
+                  className="rounded-lg border border-app-border bg-app-bg px-2 py-1 text-[10px] text-app-text">
+                  {[1, 3, 5, 10, 15, 30].map((s) => (
+                    <option key={s} value={s}>{s}초 간격</option>
+                  ))}
+                </select>
+                <button onClick={handleBatchRetry} disabled={batchRetrying}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-danger hover:bg-app-danger-muted transition-colors disabled:opacity-50">
+                  <RefreshCw className={`h-3.5 w-3.5 ${batchRetrying ? "animate-spin" : ""}`} />
+                  {selectedHistoryIds.size}개 재발송
+                </button>
+              </div>
             )}
             {history.length > 0 && (
               <button onClick={() => downloadLogsCsv(filteredHistory)}
@@ -2477,8 +2536,18 @@ export function SendTab() {
           <Button type="submit" form="send-form" variant="primary"
             className="rounded-full px-5 py-3 text-sm shadow-lg shadow-app-primary/30" disabled={!canSubmit}>
             <SendIcon className="h-4 w-4" />
-            {submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
+            {spamBlocked ? "스팸 차단됨" : riskBlocked ? "위험 차단됨" : submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
           </Button>
+          {spamBlocked && (
+            <p className="text-[10px] text-app-danger mt-1 text-center">
+              스팸 점수 {spamScore.score}/100 — 메시지 수정이 필요합니다
+            </p>
+          )}
+          {riskBlocked && (
+            <p className="text-[10px] text-app-danger mt-1 text-center">
+              발송 리스크 위험 — 문제 해결 후 재시도하세요
+            </p>
+          )}
         </ApiKeyGuard>
       </motion.div>
     </div>
