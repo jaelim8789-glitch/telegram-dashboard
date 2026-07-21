@@ -1,13 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { Bot, Send, Sparkles, Copy, Check, Loader2, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bot, Send, Sparkles, Copy, Check, Loader2, RefreshCw } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("access_token");
+  const sessionToken = localStorage.getItem("session_token");
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (sessionToken) headers["X-Session-Token"] = sessionToken;
+  return headers;
+}
+
+interface RecentMessage {
+  id: string;
+  chat_id: string;
+  chat_title?: string;
+  sender_name?: string;
+  text: string;
+  received_at: string;
+}
+
 export function AiReplyAssistantTab() {
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const [accountId, setAccountId] = useState("");
   const [chatTitle, setChatTitle] = useState("");
   const [incomingMessage, setIncomingMessage] = useState("");
@@ -17,6 +38,23 @@ export function AiReplyAssistantTab() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAccountId) return;
+    setRecentLoading(true);
+    fetch(`${BASE_URL}/api/bot/recent-messages?account_id=${selectedAccountId}&limit=10`, {
+      headers: authHeaders(),
+    })
+      .then((r) => r.json().catch(() => []))
+      .then((data) => {
+        setRecentMessages(Array.isArray(data) ? data : (data.messages || []));
+      })
+      .catch(() => {})
+      .finally(() => setRecentLoading(false));
+  }, [selectedAccountId]);
 
   const generateReply = async () => {
     if (!incomingMessage.trim() || loading) return;
@@ -29,7 +67,7 @@ export function AiReplyAssistantTab() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          account_id: accountId || "default",
+          account_id: accountId || selectedAccountId || "default",
           chat_id: "current",
           chat_title: chatTitle || undefined,
           incoming_message: incomingMessage,
@@ -57,6 +95,12 @@ export function AiReplyAssistantTab() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const selectRecentMessage = (msg: RecentMessage) => {
+    setChatTitle(msg.chat_title || msg.chat_id);
+    setIncomingMessage(msg.text);
+    setShowRecent(false);
+  };
+
   return (
     <AiSubTabLayout
       icon={<Bot className="h-5 w-5 text-app-primary" />}
@@ -64,14 +108,6 @@ export function AiReplyAssistantTab() {
       subtitle="문맥 기반 답장 추천"
       badge="NEW"
       error={error}
-      empty={!suggestedReply && !loading}
-      emptyFallback={
-        <>
-          <MessageSquare className="h-8 w-8 text-app-text-subtle mb-2" />
-          <p className="text-xs text-app-text-muted">왼쪽에서 메시지를 입력하고</p>
-          <p className="text-xs text-app-text-muted">AI 답장 추천을 받아보세요</p>
-        </>
-      }
     >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -79,9 +115,9 @@ export function AiReplyAssistantTab() {
         <Panel title="들어온 메시지" className="h-full">
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] font-medium text-app-text-muted">계정 ID (선택)</label>
-              <input type="text" value={accountId} onChange={e => setAccountId(e.target.value)}
-                placeholder="계정 ID (비워두면 기본값)"
+              <label className="text-[11px] font-medium text-app-text-muted">계정</label>
+              <input type="text" value={accountId || selectedAccountId || ""} onChange={e => setAccountId(e.target.value)}
+                placeholder={selectedAccountId ? `선택된 계정 (${selectedAccountId.slice(0, 8)}...)` : "계정 ID"}
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary"
               />
             </div>
@@ -92,6 +128,43 @@ export function AiReplyAssistantTab() {
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary"
               />
             </div>
+
+            {/* 최근 수신 메시지 */}
+            {recentMessages.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowRecent(!showRecent)}
+                  className="flex items-center gap-1.5 text-[11px] text-app-text-muted hover:text-app-primary transition-colors"
+                >
+                  <RefreshCw className={`h-3 w-3 ${recentLoading ? "animate-spin" : ""}`} />
+                  {showRecent ? "최근 메시지 숨기기" : `최근 수신 메시지 (${recentMessages.length})`}
+                </button>
+                {showRecent && (
+                  <div className="mt-1.5 max-h-32 overflow-y-auto space-y-1 border border-app-border/50 rounded-lg p-1.5 bg-app-bg/50">
+                    {recentMessages.map((msg) => (
+                      <button
+                        key={msg.id}
+                        type="button"
+                        onClick={() => selectRecentMessage(msg)}
+                        className="w-full text-left rounded-md px-2 py-1.5 hover:bg-app-card-hover transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-app-text truncate max-w-[200px]">
+                            {msg.sender_name || msg.chat_title || msg.chat_id}
+                          </span>
+                          <span className="text-[9px] text-app-text-muted shrink-0 ml-1">
+                            {msg.received_at ? new Date(msg.received_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-app-text-subtle truncate mt-0.5">{msg.text}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="text-[11px] font-medium text-app-text-muted">들어온 메시지</label>
               <textarea value={incomingMessage} onChange={e => setIncomingMessage(e.target.value)}

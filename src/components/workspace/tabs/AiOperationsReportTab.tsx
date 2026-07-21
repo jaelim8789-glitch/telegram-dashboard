@@ -104,14 +104,6 @@ export function AiOperationsReportTab() {
       badge="NEW"
       error={error}
       loading={loading && !currentReport}
-      empty={!currentReport && !loading}
-      emptyFallback={
-        <>
-          <TrendingUp className="h-12 w-12 text-app-text-subtle mb-3" />
-          <p className="text-sm font-medium text-app-text">AI 운영 리포트</p>
-          <p className="text-xs text-app-text-muted mt-1">운영 데이터를 분석한 인사이트 리포트를 제공합니다</p>
-        </>
-      }
     >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">

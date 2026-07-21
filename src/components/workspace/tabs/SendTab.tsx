@@ -2215,6 +2215,13 @@ export function SendTab() {
                 onCancelClick={handleCancelClick} onRetry={handleRetry}
                 onReuse={handleReuse}
                 onClone={handleClone}
+                onAiAnalyze={(b) => {
+                  useDashboardStore.getState().setActiveTab("myai");
+                  setTimeout(() => {
+                    const store = useDashboardStore.getState();
+                    store.setSendMessage(`이 발송이 실패한 이유를 분석해줘:\n에러: ${b.errorMessage || "알 수 없음"}\n메시지: ${b.message}`);
+                  }, 300);
+                }}
                 onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
                 selected={selectedHistoryIds.has(h.id)}
               />
@@ -2236,6 +2243,13 @@ export function SendTab() {
             onReuse={handleReuse}
             onClone={handleClone}
             onPauseResume={(b) => b.isRecurringPaused ? handleUnpauseRecurring(b) : handlePauseRecurring(b)}
+            onAiAnalyze={(b) => {
+              useDashboardStore.getState().setActiveTab("myai");
+              setTimeout(() => {
+                const store = useDashboardStore.getState();
+                store.setSendMessage(`이 발송이 실패한 이유를 분석해줘:\n에러: ${b.errorMessage || "알 수 없음"}\n메시지: ${b.message}`);
+              }, 300);
+            }}
             onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
             selected={selectedHistoryIds.has(h.id)}
           />

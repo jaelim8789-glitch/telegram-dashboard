@@ -214,7 +214,6 @@ export function TabBar() {
               paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
               borderTop: "1px solid var(--color-border)",
             }}
-            // Stop touch events from propagating to workspace swipe handler
             onTouchStart={(e) => e.stopPropagation()}
             onTouchEnd={(e) => e.stopPropagation()}
           >
@@ -229,6 +228,20 @@ export function TabBar() {
                   mobile
                 />
               ))}
+              {/* "더보기" 버튼 */}
+              {hasMoreTab && (
+                <button
+                  type="button"
+                  onClick={() => { haptics.light(); setMoreOpen(true); }}
+                  className={`flex flex-col gap-0.5 flex-1 min-h-[48px] min-w-[48px] py-1 items-center justify-center transition-all duration-200 relative ${
+                    moreOpen ? "text-app-primary" : "text-app-text-muted hover:text-app-text-secondary"
+                  }`}
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                  <span className="text-[10px] leading-none">더보기</span>
+                  <span className="absolute inset-1.5 rounded-xl transition-all duration-200 hover:bg-app-card-hover/50" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => { haptics.light(); setShowAccountPicker(true); }}

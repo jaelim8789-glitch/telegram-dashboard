@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, ExternalLink, Loader2, ChevronRight, Users, Flame, Gift, Award, Zap, ChevronDown, ChevronUp } from "lucide-react";
+import { Bot, MessageSquare, MessageCircle, Megaphone, BarChart3, Cpu, Gauge, Sparkles, Loader2, ChevronRight, Users, Flame, Zap, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { getTokenBalance, checkIn, getStreak, getQuests, updateQuestProgress, canAffordAiCall, getAiCallCost } from "@/lib/token-system";
+import { getTokenBalance, checkIn, getStreak, getQuests } from "@/lib/token-system";
 import { AiReplyAssistantTab } from "@/components/workspace/tabs/AiReplyAssistantTab";
 import { AiBroadcastAssistantTab } from "@/components/workspace/tabs/AiBroadcastAssistantTab";
 import { AiOperationsReportTab } from "@/components/workspace/tabs/AiOperationsReportTab";
@@ -16,14 +16,14 @@ import { InlineAiChat } from "@/components/ai/InlineAiChat";
 import * as agentApi from "@/lib/agent-api";
 
 const SUB_TABS = [
-  { id: "chat", label: "AI 대화", icon: MessageSquare, desc: "AI 운영 비서와 자유롭게 대화" },
-  { id: "reply", label: "AI 답장", icon: MessageCircle, desc: "스마트 답장 추천" },
-  { id: "broadcast", label: "AI 발송", icon: Megaphone, desc: "AI가 작성한 발송 메시지" },
-  { id: "contentstudio", label: "콘텐츠 스튜디오", icon: Sparkles, desc: "AI 콘텐츠 생성 & 예약 발송" },
-  { id: "operations", label: "AI 리포트", icon: BarChart3, desc: "운영 리포트 및 인사이트" },
-  { id: "opscenter", label: "AI 운영 센터", icon: Gauge, desc: "통합 운영 현황" },
-  { id: "usage", label: "AI 사용량", icon: Cpu, desc: "AI 기능 사용 통계" },
-  { id: "employee", label: "Employee Mode", icon: Users, desc: "그룹 AI 설정 및 예약 메시지" },
+  { id: "chat", label: "AI 대화", shortLabel: "대화", icon: MessageSquare, desc: "AI 운영 비서와 자유롭게 대화" },
+  { id: "reply", label: "AI 답장", shortLabel: "답장", icon: MessageCircle, desc: "스마트 답장 추천" },
+  { id: "broadcast", label: "AI 발송", shortLabel: "발송", icon: Megaphone, desc: "AI가 작성한 발송 메시지" },
+  { id: "contentstudio", label: "콘텐츠 스튜디오", shortLabel: "콘텐츠", icon: Sparkles, desc: "AI 콘텐츠 생성 & 예약 발송" },
+  { id: "operations", label: "AI 리포트", shortLabel: "리포트", icon: BarChart3, desc: "운영 리포트 및 인사이트" },
+  { id: "opscenter", label: "AI 운영 센터", shortLabel: "운영", icon: Gauge, desc: "통합 운영 현황" },
+  { id: "usage", label: "AI 사용량", shortLabel: "사용량", icon: Cpu, desc: "AI 기능 사용 통계" },
+  { id: "employee", label: "Employee Mode", shortLabel: "직원", icon: Users, desc: "그룹 AI 설정 및 예약 메시지" },
 ];
 
 export function MyAiTab() {
@@ -33,7 +33,17 @@ export function MyAiTab() {
   const [showReward, setShowReward] = useState(false);
   const [balance, setBalance] = useState(0);
   const [quests, setQuests] = useState(getQuests());
-  const [showInfoBar, setShowInfoBar] = useState(false);
+  const [showInfoBar, setShowInfoBar] = useState(() => {
+    try {
+      return localStorage.getItem("telemon-ai-infobar-open") !== "false";
+    } catch { return false; }
+  });
+
+  function toggleInfoBar() {
+    const next = !showInfoBar;
+    setShowInfoBar(next);
+    try { localStorage.setItem("telemon-ai-infobar-open", String(next)); } catch {}
+  }
 
   const refreshToken = useCallback(() => {
     setBalance(getTokenBalance());
@@ -63,7 +73,7 @@ export function MyAiTab() {
       {/* 상단 정보바 (접을 수 있음) */}
       <button
         type="button"
-        onClick={() => setShowInfoBar(!showInfoBar)}
+        onClick={toggleInfoBar}
         className="flex items-center justify-between rounded-xl border border-app-border/60 bg-app-card px-4 py-2.5 text-left transition-colors hover:bg-app-card-hover"
       >
         <div className="flex items-center gap-3">
@@ -118,17 +128,18 @@ export function MyAiTab() {
         </div>
       )}
 
-      {/* 서브탭 네비게이션 */}
-      <div className="flex flex-wrap gap-1.5">
+      {/* 서브탭 네비게이션 — 모바일 가로스크롤 */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-thin -mx-1 px-1">
         {SUB_TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveSub(tab.id)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+            className={`shrink-0 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
               activeSub === tab.id
                 ? "bg-app-primary text-white shadow-sm"
                 : "bg-app-card border border-app-border text-app-text-muted hover:bg-app-card-hover"
             }`}>
-            <tab.icon className="h-3.5 w-3.5" />
-            <span>{tab.label}</span>
+            <tab.icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.shortLabel ?? tab.label}</span>
           </button>
         ))}
       </div>
@@ -162,24 +173,6 @@ function ActiveContent({ sub }: { sub: string }) {
     default:
       return <AiChatRedirect />;
   }
-}
-
-const EXP_PER_LEVEL = 100;
-
-function AgentLevelBadge({ level, exp }: { level: number; exp: number }) {
-  const expToNext = EXP_PER_LEVEL * level;
-  const pct = Math.min(Math.round((exp / expToNext) * 100), 100);
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <span className="rounded bg-app-primary/10 px-1.5 py-0.5 font-semibold text-app-primary">
-        Lv.{level}
-      </span>
-      <div className="relative h-1.5 w-16 overflow-hidden rounded-full bg-app-border">
-        <div className="absolute inset-y-0 left-0 rounded-full bg-app-primary transition-all" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-[10px] text-app-text-muted">{exp}/{expToNext}</span>
-    </div>
-  );
 }
 
 function AiChatRedirect() {
