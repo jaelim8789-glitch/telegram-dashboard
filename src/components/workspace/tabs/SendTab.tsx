@@ -6,7 +6,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
   CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
-  ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload,
+  ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
@@ -192,6 +192,12 @@ export function SendTab() {
   const { recent, markUsed } = useRecentGroups();
   const { tagsByGroup, addTag } = useGroupTags();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  
+  // 모바일에서 전체 대화방 섹션 기본 접힘 상태
+  const [allGroupsExpanded, setAllGroupsExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth >= 768; // md breakpoint
+  });
 
   const [savedSendGroupIds, setSavedSendGroupIds] = useState<string[]>([]);
 
@@ -1390,53 +1396,70 @@ export function SendTab() {
               )}
 
               {!groupsLoading && groups.length > 0 && (
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="text-xs font-medium text-app-text-muted">전체 대화방</span>
-                  <span className="h-px flex-1 bg-app-border/50" />
-                  <span className="text-[10px] text-app-text-subtle">{visibleGroups.length}개</span>
-                </div>
-              )}
-
-              {groupsLoading && (
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
-                </div>
-              )}
-              {groupsError && <p className="text-xs text-app-danger">{groupsError}</p>}
-              {!groupsLoading && !groupsError && groups.length === 0 && (
-                <EmptyState icon={Users2} title="참여 중인 그룹/채널이 없습니다" />
-              )}
-              {!groupsLoading && visibleGroups.length > 0 && (
-                <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1">
-                  {filteredByTag.map((g) => {
-                    const selected = selectedRecipientIds.includes(g.id);
-                    return (
-                      <GroupSelectCard
-                        key={g.id}
-                        group={g}
-                        selected={selected}
-                        isFavorite={isFavorite(g.id)}
-                        isRecent={recent.includes(g.id)}
-                        tags={tagsByGroup[g.id] ?? []}
-                        onToggleSelect={toggleGroup}
-                        onToggleFavorite={toggleFavorite}
-                        onAddTag={handleAddTag}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-              {!groupsLoading && !groupsError && groups.length > 0 && visibleGroups.length === 0 && (
-                <div className="flex flex-col items-center gap-2 py-6 text-app-text-muted">
-                  <SearchX className="h-8 w-8" />
-                  <p className="text-sm">일치하는 그룹이 없습니다.</p>
+                <div className="mb-3">
                   <button
                     type="button"
-                    onClick={() => setSearch("")}
-                    className="text-xs text-app-primary hover:underline"
+                    onClick={() => setAllGroupsExpanded(!allGroupsExpanded)}
+                    className="mb-1.5 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-app-card-hover active:scale-[0.98]"
                   >
-                    검색 지우기
+                    <span className="text-xs font-medium text-app-text-muted">전체 대화방</span>
+                    <span className="h-px flex-1 bg-app-border/50" />
+                    <span className="text-[10px] text-app-text-subtle">{visibleGroups.length}개</span>
+                    {allGroupsExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-app-text-muted" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-app-text-muted" />
+                    )}
                   </button>
+
+                  {allGroupsExpanded && (
+                    <>
+                      {groupsLoading && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                        </div>
+                      )}
+                      {groupsError && <p className="text-xs text-app-danger">{groupsError}</p>}
+                      {!groupsLoading && !groupsError && groups.length === 0 && (
+                        <EmptyState icon={Users2} title="참여 중인 그룹/채널이 없습니다" />
+                      )}
+                      {!groupsLoading && visibleGroups.length > 0 && (
+                        <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 md:max-h-96">
+                          {filteredByTag.map((g) => {
+                            const selected = selectedRecipientIds.includes(g.id);
+                            return (
+                              <GroupSelectCard
+                                key={g.id}
+                                group={g}
+                                selected={selected}
+                                isFavorite={isFavorite(g.id)}
+                                isRecent={recent.includes(g.id)}
+                                tags={tagsByGroup[g.id] ?? []}
+                                onToggleSelect={toggleGroup}
+                                onToggleFavorite={toggleFavorite}
+                                onAddTag={handleAddTag}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                      {!groupsLoading && !groupsError && groups.length > 0 && visibleGroups.length === 0 && (
+                        <div className="flex flex-col items-center gap-2 py-6 text-app-text-muted">
+                          <SearchX className="h-8 w-8" />
+                          <p className="text-sm">일치하는 그룹이 없습니다.</p>
+                          <button
+                            type="button"
+                            onClick={() => setSearch("")}
+                            className="text-xs text-app-primary hover:underline"
+                          >
+                            검색 지우기
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
                 </div>
               )}
             </div>
