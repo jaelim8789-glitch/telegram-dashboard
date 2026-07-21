@@ -64,6 +64,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   referral: dynamic(() => import("@/components/workspace/tabs/ReferralTab").then(m => ({ default: m.ReferralTab })), { loading: TabFallback }),
   operator: dynamic(() => import("@/components/workspace/tabs/OperatorTab").then(m => ({ default: m.OperatorTab })), { loading: TabFallback }),
   styleprofile: dynamic(() => import("@/components/workspace/tabs/StyleProfileTab").then(m => ({ default: m.StyleProfileTab })), { loading: TabFallback }),
+  growthloop: dynamic(() => import("@/components/workspace/tabs/GrowthLoopTab").then(m => ({ default: m.GrowthLoopTab })), { loading: TabFallback }),
 };
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
