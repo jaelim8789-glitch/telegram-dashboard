@@ -1,7 +1,69 @@
-import * as api from './api';
-import type { Account, BroadcastStatus } from '@/types';
+/**
+ * Mini App 전용 API 함수 — Telegram Mini App 환경에 최적화.
+ */
 
-// ── 미니앱 전용 API 함수들 ──────────────────────────────────────────────────
+import { request } from './api';
+import type { BroadcastStatus } from '@/types';
+
+// ── Telegram initData 인증 ──────────────────────────────────────────
+
+export interface MiniAppAuthResult {
+  token: string;
+  session_token: string;
+  user: {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+  };
+}
+
+export async function authenticateMiniApp(initData: string): Promise<MiniAppAuthResult> {
+  return request<MiniAppAuthResult>('/api/auth/miniapp-login', {
+    method: 'POST',
+    body: JSON.stringify({ init_data: initData }),
+  });
+}
+
+// ── 토큰 잔액 ──────────────────────────────────────────────────────
+
+export async function fetchTokenBalance(): Promise<number> {
+  try {
+    const res = await request<{ balance: number }>('/api/user/token-balance');
+    return res.balance;
+  } catch {
+    return 0;
+  }
+}
+
+// ── 계정 건강 상태 ─────────────────────────────────────────────────
+
+export async function fetchAccountHealthScore(accountId: string): Promise<number> {
+  try {
+    const res = await request<{ health_score: number }>(`/api/accounts/${accountId}/health-score`);
+    return res.health_score;
+  } catch {
+    return 0;
+  }
+}
+
+export async function fetchAccountDetails(accountId: string): Promise<{ healthScore: number; lastActive: string }> {
+  try {
+    const [healthScore, account] = await Promise.all([
+      fetchAccountHealthScore(accountId),
+      request<{ last_activity: string | null }>(`/api/accounts/${accountId}/status`),
+    ]);
+    return {
+      healthScore,
+      lastActive: account.last_activity ?? new Date().toISOString(),
+    };
+  } catch {
+    return { healthScore: 0, lastActive: new Date().toISOString() };
+  }
+}
+
+// ── 최근 발송 내역 ──────────────────────────────────────────────────
 
 export interface RecentBroadcast {
   id: string;
@@ -13,131 +75,76 @@ export interface RecentBroadcast {
 
 export async function fetchRecentBroadcasts(): Promise<RecentBroadcast[]> {
   try {
-    // 최근 20개의 로그를 가져옴
-    const logs = await api.fetchLogs({ days: 1 });
-    
-    // 최근 5개만 반환 (시간 순으로 정렬)
-    return logs
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
-      .map(log => ({
-        id: log.id,
-        message: log.message.length > 50 ? log.message.substring(0, 50) + '...' : log.message,
-        status: log.status,
-        sentAt: log.sentAt || log.createdAt,
-        recipients: log.recipients.length
-      }));
-  } catch (error) {
-    console.error('Failed to fetch recent broadcasts:', error);
-    // 오류 발생 시 빈 배열 반환
+    const logs = await request<{ id: string; message: string; status: BroadcastStatus; sent_at: string; created_at: string; recipient_count: number }[]>('/api/logs/recent');
+    return logs.slice(0, 5).map((log) => ({
+      id: log.id,
+      message: log.message.length > 50 ? log.message.substring(0, 50) + '...' : log.message,
+      status: log.status,
+      sentAt: log.sent_at || log.created_at,
+      recipients: log.recipient_count,
+    }));
+  } catch {
     return [];
   }
 }
 
-// ── 토큰 잔액 조회 ──────────────────────────────────────────────────
+// ── 빠른 발송 ──────────────────────────────────────────────────────
 
-export async function fetchTokenBalance(): Promise<number> {
-  // 실제 API 엔드포인트가 존재하지 않기 때문에 더미 데이터 반환
-  // 실제 구현 시에는 백엔드에 새로운 엔드포인트를 추가해야 함
+export async function quickSendToTopGroups(accountId: string, message: string, groupLimit: number = 5): Promise<{ success: boolean; message: string; sentCount?: number }> {
   try {
-    // 실제 API 호출 예시:
-    // const response = await request<{ balance: number }>('/api/user/token-balance');
-    // return response.balance;
-    
-    // 현재는 더미 값 반환
-    return 1000;
-  } catch (error) {
-    console.error('Failed to fetch token balance:', error);
-    return 0;
-  }
-}
-
-// ── 계정 건강 상태 조회 ──────────────────────────────────────────────────
-
-export async function fetchAccountHealthScore(accountId: string): Promise<number> {
-  // 실제 API 엔드포인트가 존재하지 않기 때문에 더미 데이터 반환
-  // 실제 구현 시에는 백엔드에 새로운 엔드포인트를 추가해야 함
-  try {
-    // 실제 API 호출 예시:
-    // const response = await request<{ health_score: number }>(`/api/accounts/${accountId}/health-score`);
-    // return response.health_score;
-    
-    // 현재는 더미 값 반환 (80-100 사이의 랜덤 값)
-    return Math.floor(Math.random() * 21) + 80;
-  } catch (error) {
-    console.error('Failed to fetch account health score:', error);
-    return 95; // 기본값
-  }
-}
-
-// ── 계정별 상세 정보 조회 ──────────────────────────────────────────────────
-
-export async function fetchAccountDetails(accountId: string): Promise<{
-  healthScore: number;
-  lastActive: string;
-}> {
-  try {
-    const healthScore = await fetchAccountHealthScore(accountId);
-    // 더미 데이터로 lastActive 시간 설정
-    const now = new Date();
-    const randomMinutesAgo = Math.floor(Math.random() * 60);
-    now.setMinutes(now.getMinutes() - randomMinutesAgo);
-    
-    return {
-      healthScore,
-      lastActive: now.toISOString(),
-    };
-  } catch (error) {
-    console.error('Failed to fetch account details:', error);
-    return {
-      healthScore: 95,
-      lastActive: new Date().toISOString(),
-    };
-  }
-}
-
-// ── 빠른 발송 기능 ──────────────────────────────────────────────────
-
-export async function quickSendToTopGroups(
-  accountId: string, 
-  message: string,
-  groupLimit: number = 5
-): Promise<{
-  success: boolean;
-  message: string;
-  sentCount?: number;
-}> {
-  try {
-    // 계정의 그룹 목록 가져오기
-    const groups = await api.fetchGroups(accountId);
-    
-    // 상위 그룹 선택 (최대 groupLimit개)
+    const groups = await request<{ id: string }[]>(`/api/accounts/${accountId}/groups?page_size=${groupLimit}`);
+    if (groups.length === 0) return { success: false, message: '발송 가능한 그룹이 없습니다.' };
     const selectedGroups = groups.slice(0, groupLimit);
-    
-    if (selectedGroups.length === 0) {
-      return {
-        success: false,
-        message: '발송 가능한 그룹이 없습니다.'
-      };
-    }
-    
-    // 선택된 그룹에 메시지 발송
-    const broadcast = await api.sendToGroup({
-      accountId,
-      message,
-      groupIds: selectedGroups.map(g => g.id),
+    await request<{ id: string }>('/api/broadcast/send-group', {
+      method: 'POST',
+      body: JSON.stringify({ account_id: accountId, message, group_ids: selectedGroups.map((g) => g.id), delivery_mode: 'normal' }),
     });
-    
+    return { success: true, message: `${selectedGroups.length}개 그룹에 발송 완료!`, sentCount: selectedGroups.length };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : '발송에 실패했습니다.' };
+  }
+}
+
+// ── 미니앱 전용: 간략 대시보드 요약 ────────────────────────────────
+
+export interface MiniAppDashboardSummary {
+  activeAccounts: number;
+  todaySent: number;
+  successRate: number;
+  queueCount: number;
+  tokenBalance: number;
+}
+
+export async function fetchMiniAppDashboardSummary(): Promise<MiniAppDashboardSummary> {
+  try {
+    const [accounts, scheduler, tokens] = await Promise.all([
+      request<{ items: { status: string }[] }>('/api/accounts').then((res) => res.items ?? []),
+      request<{ due_broadcasts_count: number }>('/api/scheduler/status').catch(() => ({ due_broadcasts_count: 0 })),
+      fetchTokenBalance(),
+    ]);
+    const activeAccounts = accounts.filter((a) => a.status === 'active').length;
+    return { activeAccounts, todaySent: 0, successRate: 0, queueCount: scheduler.due_broadcasts_count, tokenBalance: tokens };
+  } catch {
+    return { activeAccounts: 0, todaySent: 0, successRate: 0, queueCount: 0, tokenBalance: 0 };
+  }
+}
+
+// ── 미니앱 전용: AI 채팅 요약 ───────────────────────────────────────
+
+export interface MiniAppAiSummary {
+  recentChats: { id: string; title: string; updatedAt: string }[];
+  totalMessages: number;
+}
+
+export async function fetchMiniAppAiSummary(): Promise<MiniAppAiSummary> {
+  try {
+    const agents = await request<{ id: string; name: string; total_messages: number }[]>('/api/ai/agents');
+    const totalMessages = agents.reduce((sum, a) => sum + a.total_messages, 0);
     return {
-      success: true,
-      message: `${selectedGroups.length}개 그룹에 발송 완료!`,
-      sentCount: selectedGroups.length
+      recentChats: agents.map((a) => ({ id: a.id, title: a.name, updatedAt: '' })),
+      totalMessages,
     };
-  } catch (error) {
-    console.error('Failed to quick send:', error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '발송에 실패했습니다.'
-    };
+  } catch {
+    return { recentChats: [], totalMessages: 0 };
   }
 }
