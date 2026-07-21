@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { QuickActionSheet } from "./QuickActionSheet";
-import { TABS, type TabDef } from "@/types";
+import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 
@@ -102,10 +102,13 @@ export function TabBar() {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const tabBadges = useDashboardStore((s) => s.tabBadges);
   const haptics = useHapticFeedback();
+  const accounts = useDashboardStore((s) => s.accounts);
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -178,6 +181,8 @@ export function TabBar() {
 
   // ── 모바일 ──
   if (isMobile) {
+    const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+    const accountLabel = selectedAccount ? getAccountDisplayName(selectedAccount).slice(0, 6) : "계정";
     return (
       <>
         <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-app-border/60 bg-app-surface/95 backdrop-blur-lg safe-area-bottom">
@@ -192,6 +197,13 @@ export function TabBar() {
                 mobile
               />
             ))}
+            <button
+              type="button"
+              onClick={() => { haptics.light(); setShowAccountPicker(true); }}
+              className="flex shrink-0 flex-col items-center gap-0.5 py-1.5 px-1 min-w-0 text-app-text-muted hover:text-app-text-secondary transition-colors"
+            >
+              <span className="text-[10px] leading-none">{accountLabel}</span>
+            </button>
             <QuickActionSheet />
           </div>
         </nav>
@@ -241,6 +253,55 @@ export function TabBar() {
                     </div>
                   </div>
                 ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showAccountPicker && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/40"
+                onClick={() => setShowAccountPicker(false)}
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                className="fixed bottom-16 left-0 right-0 z-50 max-h-[45vh] overflow-y-auto rounded-t-2xl bg-app-card border-t border-app-border/60 px-4 pb-6 pt-4"
+              >
+                <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
+                <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-2 px-1">계정 전환</p>
+                <div className="max-h-[35vh] overflow-y-auto space-y-1">
+                  {accounts.map((account) => {
+                    const isSelected = account.id === selectedAccountId;
+                    return (
+                      <button
+                        key={account.id}
+                        type="button"
+                        onClick={() => {
+                          haptics.light();
+                          useDashboardStore.getState().selectAccount(account.id);
+                          setShowAccountPicker(false);
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                          isSelected ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
+                        )}
+                      >
+                        <span className="text-sm font-medium truncate flex-1">{getAccountDisplayName(account)}</span>
+                        {isSelected && (
+                          <span className="text-[10px] font-semibold text-app-primary">선택됨</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </motion.div>
             </>
           )}
