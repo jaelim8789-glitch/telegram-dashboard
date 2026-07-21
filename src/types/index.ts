@@ -778,6 +778,7 @@ export interface TeleMonMemoryPeriod {
 
 export interface TeleMonMemoryTopPost {
   broadcast_id: string;
+  message_content: string;
   message_preview: string;
   attempted: number;
   successful: number;
