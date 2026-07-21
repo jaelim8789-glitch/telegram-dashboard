@@ -10,6 +10,7 @@ import {
   Gauge,
   CalendarDays,
   RefreshCw,
+  Sparkles,
   TrendingUp,
   TrendingDown,
   Users,
@@ -487,6 +488,39 @@ export function DeliveryAnalyticsTab() {
 
   const worstAccounts = useMemo(() => [...accts].sort((a, b) => a.success_rate - b.success_rate).slice(0, 3), [accts]);
 
+  const optimalRecommendation = useMemo(() => {
+    if (timeline.length <= 3) return "";
+    const hourBuckets: Record<number, { attempted: number; successful: number }> = {};
+    let hasHour = false;
+    for (const t of timeline) {
+      const d = new Date(t.period);
+      if (!isNaN(d.getTime())) {
+        hasHour = true;
+        const h = d.getHours();
+        if (!hourBuckets[h]) hourBuckets[h] = { attempted: 0, successful: 0 };
+        hourBuckets[h].attempted += t.attempted;
+        hourBuckets[h].successful += t.successful;
+      }
+    }
+    if (hasHour) {
+      const sorted = Object.entries(hourBuckets)
+        .map(([h, d]) => ({ hour: Number(h), rate: d.attempted > 0 ? (d.successful / d.attempted) * 100 : 0 }))
+        .sort((a, b) => b.rate - a.rate);
+      if (sorted.length === 0) return "";
+      const top = sorted[0];
+      const suffix = top.hour >= 12 ? "오후" : "오전";
+      const displayHour = top.hour > 12 ? top.hour - 12 : top.hour;
+      return `${suffix} ${displayHour}시 기준 성공률 ${Math.round(top.rate)}%로 가장 높습니다`;
+    }
+    const sorted = timeline
+      .filter((t) => t.attempted > 0)
+      .map((t) => ({ period: t.period, rate: (t.successful / t.attempted) * 100 }))
+      .sort((a, b) => b.rate - a.rate);
+    if (sorted.length === 0) return "";
+    const top = sorted[0];
+    return `기간 ${top.period} 성공률 ${Math.round(top.rate)}%로 가장 높습니다`;
+  }, [timeline]);
+
   const hasData = totalAttempted > 0;
   const hasFailures = failures.length > 0 && failedCount > 0;
   const hasAccounts = accts.length > 0;
@@ -616,6 +650,16 @@ export function DeliveryAnalyticsTab() {
       {!hasData && !loading && (
         <EmptyState icon={BarChart3} title="전달 데이터가 없습니다"
           description="선택한 기간에 전달 시도 기록이 없습니다. 계정을 통해 메시지를 발송하면 자동으로 기록됩니다." />
+      )}
+
+      {hasData && timeline.length > 3 && optimalRecommendation && (
+        <div key="optimalTime" className="rounded-xl border border-app-border bg-app-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-app-warning" aria-hidden="true" />
+            <span className="text-xs font-semibold text-app-text">최적 발송 시간대</span>
+          </div>
+          <p className="text-sm text-app-text">{optimalRecommendation}</p>
+        </div>
       )}
 
       {hasData && (

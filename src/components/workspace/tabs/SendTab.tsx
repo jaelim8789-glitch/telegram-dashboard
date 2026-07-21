@@ -53,6 +53,7 @@ import { STATUS_META } from "@/lib/statusMeta";
 import { Modal } from "@/components/ui/Modal";
 import { downloadLogsCsv } from "@/lib/exportCsv";
 import { useRouter } from "next/navigation";
+import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
 
 
 
@@ -1052,6 +1053,26 @@ export function SendTab() {
     return summary;
   }, [statusCounts]);
 
+  const riskAnalysis = useMemo(() => analyzeSendRisk(
+    account ?? null,
+    selectedRecipients,
+    history,
+    message,
+  ), [account, selectedRecipients, history, message]);
+
+  const successRatePrediction = useMemo(() => {
+    const accountLogs = history.filter((l) => l.accountId === account?.id);
+    const totalSent = accountLogs.length;
+    const succeeded = accountLogs.filter((l) => l.status === "sent").length;
+    const baseRate = totalSent > 0 ? (succeeded / totalSent) * 100 : 50;
+    const msgLen = message.trim().length;
+    const lengthFactor = msgLen === 0 ? 1 : msgLen <= 100 ? 1 : msgLen <= 500 ? 0.95 : msgLen <= 1000 ? 0.9 : msgLen <= 2000 ? 0.8 : 0.7;
+    const recCount = selectedRecipientIds.length;
+    const recipientFactor = recCount === 0 ? 1 : recCount <= 5 ? 0.98 : recCount <= 20 ? 0.95 : recCount <= 50 ? 0.9 : recCount <= 100 ? 0.85 : 0.75;
+    const predicted = Math.round(baseRate * lengthFactor * recipientFactor);
+    return Math.min(99, Math.max(1, predicted));
+  }, [account, history, message, selectedRecipientIds]);
+
   if (!account) {
     return (
       <Panel title="메시지 작성" description="발송을 시작하려면 계정을 선택하세요.">
@@ -1442,6 +1463,18 @@ export function SendTab() {
                 </div>
               )}
             </div>
+
+            {message.trim().length > 0 && account && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-card/30 px-2.5 py-1 text-xs w-fit">
+                <span className="text-app-text-muted">예상 성공률:</span>
+                <span className={cn(
+                  "font-semibold",
+                  successRatePrediction >= 80 ? "text-app-success" : successRatePrediction >= 50 ? "text-app-warning" : "text-app-danger",
+                )}>
+                  {successRatePrediction}%
+                </span>
+              </div>
+            )}
 
             {/* Template library toolbar */}
             {/* Template library toolbar */}
@@ -2129,6 +2162,30 @@ export function SendTab() {
           </div>
         </div>
       </Modal>
+
+      {riskAnalysis.level !== "safe" && (
+        <div className={cn(
+          "flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs",
+          riskLevelBg(riskAnalysis.level),
+          riskLevelColor(riskAnalysis.level),
+          riskAnalysis.level === "caution" ? "border-app-warning/20" : "border-app-danger/20",
+        )}>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="space-y-1">
+            <p className="font-medium">{riskLevelLabel(riskAnalysis.level)}: 발송 리스크 분석</p>
+            {riskAnalysis.reasons.length > 0 && (
+              <ul className="list-inside list-disc space-y-0.5 text-[11px] opacity-80">
+                {riskAnalysis.reasons.map((r, i) => <li key={i}>{r}</li>)}
+              </ul>
+            )}
+            {riskAnalysis.recommendations.length > 0 && (
+              <ul className="list-inside list-disc space-y-0.5 text-[11px] opacity-80">
+                {riskAnalysis.recommendations.map((r, i) => <li key={i}>→ {r}</li>)}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Send time estimate */}
       {estimatePreview && canSubmit && (
