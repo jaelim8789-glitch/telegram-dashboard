@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { computeGroupInsights } from "@/lib/groupInsights";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
   CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
+  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter, Lock,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -37,6 +39,7 @@ import {
 import { useDraftRestore, useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import {
   loadTemplates, saveTemplate as persistTemplate,
   deleteTemplate as removeTemplate,
@@ -125,6 +128,7 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
 
 
 export function SendTab() {
+  const haptics = useHapticFeedback();
   const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -1314,7 +1318,7 @@ export function SendTab() {
           </p>
           <div className="mt-4 flex gap-2">
             <Link href="/app/register" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="secondary" size="sm" className="w-full">
                 계정 등록으로 이동
               </Button>
             </Link>
@@ -1701,9 +1705,8 @@ export function SendTab() {
               {/* 그룹별 최적 발송 시간 */}
               {(() => {
                 try {
-                  const { computeGroupInsights } = require("@/lib/groupInsights");
-                  const insights = computeGroupInsights(selectedRecipients as any);
-                  const times = [...new Set(insights.map((i: any) => i.bestPostingTime))].slice(0, 3);
+                  const insights = computeGroupInsights(selectedRecipients);
+                  const times = [...new Set(insights.map((i) => i.bestPostingTime))].slice(0, 3);
                   if (times.length === 0) return null;
                   return (
                     <div className="flex items-center gap-1.5 text-[10px] text-app-text-muted mt-1">

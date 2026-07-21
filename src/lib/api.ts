@@ -2078,82 +2078,20 @@ function toReplyMacroLog(api: ApiReplyMacroLog): ReplyMacroLog {
   };
 }
 
-export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]> {
-  try {
-    const response = await fetchWithAuth(`/api/accounts/${accountId}/reply-macros`);
-    return response.map(toReplyMacro);
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로를 불러올 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
+function unauthenticatedAccountError(action: string, err: unknown): Error {
+  const status = err instanceof ApiError ? err.status : undefined;
+  if (status === 400 || status === 401 || status === 403) {
+    return new Error(`계정이 인증되지 않아 답장매크로를 ${action}할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.`);
   }
-}
-
-export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
-  try {
-    const response = await fetchWithAuth(`/api/accounts/${accountId}/reply-macros`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-    return toReplyMacro(response);
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로를 생성할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
-  }
-}
-
-export async function updateReplyMacro(accountId: string, macroId: string, updates: Partial<ReplyMacroInput>): Promise<ReplyMacro> {
-  try {
-    const response = await fetchWithAuth(`/api/accounts/${accountId}/reply-macros/${macroId}`, {
-      method: "PUT",
-      body: JSON.stringify(updates),
-    });
-    return toReplyMacro(response);
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로를 수정할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
-  }
-}
-
-export async function deleteReplyMacro(accountId: string, macroId: string): Promise<void> {
-  try {
-    await fetchWithAuth(`/api/accounts/${accountId}/reply-macros/${macroId}`, {
-      method: "DELETE",
-    });
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로를 삭제할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
-  }
-}
-
-export async function executeReplyMacro(accountId: string, macroId: string): Promise<any> {
-  try {
-    return await fetchWithAuth(`/api/accounts/${accountId}/reply-macros/${macroId}/execute`, {
-      method: "POST",
-    });
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로를 실행할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
-  }
+  return err instanceof Error ? err : new Error(String(err));
 }
 
 export async function fetchReplyMacroLogs(accountId: string, macroId: string): Promise<ReplyMacroLog[]> {
   try {
-    return await fetchWithAuth(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
-  } catch (error: any) {
-    if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
-      throw new Error('계정이 인증되지 않아 답장매크로 로그를 불러올 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.');
-    }
-    throw error;
+    const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
+    return logs.map(toReplyMacroLog);
+  } catch (err) {
+    throw unauthenticatedAccountError("로그를 불러오", err);
   }
 }
 
