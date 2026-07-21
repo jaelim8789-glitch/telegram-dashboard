@@ -487,6 +487,19 @@ function AdminDashboardContent() {
             </Link>
           </div>
         </Panel>
+
+        <Panel
+          accent="emerald"
+          title={<div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-emerald-400" />시스템 설정</div>}
+          description="워터마크 광고 문구 관리"
+        >
+          <div className="space-y-2 text-xs text-app-text-muted">
+            <p>무료 요금제 발송 시 하단에 자동 추가되는 광고 문구를 설정합니다.</p>
+            <Link href="/admin/settings">
+              <Button variant="primary" className="w-full">시스템 설정 바로가기</Button>
+            </Link>
+          </div>
+        </Panel>
       </div>
     </div>
   );
