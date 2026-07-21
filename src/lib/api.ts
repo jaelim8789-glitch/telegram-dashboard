@@ -468,6 +468,48 @@ export async function verifyTwoFactor(accountId: string, password: string): Prom
   return toAuthStepResult(result);
 }
 
+interface ApiSelfResetResult {
+  reset: boolean;
+  requires_2fa: boolean;
+  detail: string | null;
+}
+
+export interface SelfResetResult {
+  reset: boolean;
+  requiresTwoFactor: boolean;
+  detail: string | null;
+}
+
+function toSelfResetResult(api: ApiSelfResetResult): SelfResetResult {
+  return { reset: api.reset, requiresTwoFactor: api.requires_2fa, detail: api.detail };
+}
+
+// "이미 등록된 전화번호입니다" 셀프서비스 재등록 — 해당 번호의 Telegram 인증(+2FA)으로
+// 본인 확인 후 기존에 남아있던 계정 레코드를 정리한다.
+export async function selfResetSendCode(phone: string): Promise<SelfResetResult> {
+  const result = await request<ApiSelfResetResult>("/api/accounts/self-reset/send-code", {
+    method: "POST",
+    body: JSON.stringify({ phone }),
+  });
+  return toSelfResetResult(result);
+}
+
+export async function selfResetVerifyCode(phone: string, code: string): Promise<SelfResetResult> {
+  const result = await request<ApiSelfResetResult>("/api/accounts/self-reset/verify-code", {
+    method: "POST",
+    body: JSON.stringify({ phone, code }),
+  });
+  return toSelfResetResult(result);
+}
+
+export async function selfResetVerifyTwoFactor(phone: string, password: string): Promise<SelfResetResult> {
+  const result = await request<ApiSelfResetResult>("/api/accounts/self-reset/verify-2fa", {
+    method: "POST",
+    body: JSON.stringify({ phone, password }),
+  });
+  return toSelfResetResult(result);
+}
+
 export async function getAuthStatus(accountId: string): Promise<AuthStepResult> {
   const result = await request<ApiAuthStepResult>(`/api/accounts/${accountId}/status`);
   return toAuthStepResult(result);

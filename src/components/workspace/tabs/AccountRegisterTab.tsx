@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { BulkAccountImport } from "@/components/workspace/tabs/register/BulkAccountImport";
 import { AccountRecoveryWizard } from "@/components/workspace/tabs/AccountRecoveryWizard";
+import { SelfResetModal } from "@/components/workspace/tabs/register/SelfResetModal";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { AuthFlowMode, AccountHealthItem } from "@/types";
@@ -91,6 +92,8 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
   const [showPassword, setShowPassword] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [phoneConflict, setPhoneConflict] = useState(false);
+  const [showSelfReset, setShowSelfReset] = useState(false);
 
   const codeInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -191,21 +194,12 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
     }
   }
 
-  async function handleSubmitForm(e: FormEvent) {
-    e.preventDefault();
-    if (submitting) return;
-
-    const phoneError = validatePhone(phone);
-    if (phoneError) {
-      setFieldErrors({ phone: phoneError });
-      return;
-    }
-    setFieldErrors({});
-
+  async function submitRegistration() {
     setSubmitting(true);
     setError(null);
     setSuccessMessage(null);
     setInfoMessage(null);
+    setPhoneConflict(false);
     try {
       const account = await registerAccount({ phone: phone.trim(), name: name.trim() || undefined });
       setAccountId(account.id);
@@ -216,9 +210,30 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
     } catch (err) {
       const msg = err instanceof Error ? err.message : "계정 등록에 실패했습니다.";
       setError(msg);
+      if (err instanceof api.ApiError && err.status === 409) {
+        setPhoneConflict(true);
+      }
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleSubmitForm(e: FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      setFieldErrors({ phone: phoneError });
+      return;
+    }
+    setFieldErrors({});
+    await submitRegistration();
+  }
+
+  function handleSelfResetComplete() {
+    setShowSelfReset(false);
+    void submitRegistration();
   }
 
   async function handleSubmitCode(e: FormEvent) {
@@ -314,7 +329,9 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
             error={error}
             successMessage={successMessage}
             fieldErrors={fieldErrors}
-            onPhoneChange={(v) => { setPhone(v); setFieldErrors((p) => ({ ...p, phone: undefined })); }}
+            phoneConflict={phoneConflict}
+            onRequestSelfReset={() => setShowSelfReset(true)}
+            onPhoneChange={(v) => { setPhone(v); setFieldErrors((p) => ({ ...p, phone: undefined })); setPhoneConflict(false); }}
             onNameChange={(v) => setName(v)}
             onSubmit={handleSubmitForm}
             onReset={resetAll}
@@ -323,6 +340,12 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
         <div className="border-t border-app-border pt-5">
           <CsvImportPanel />
         </div>
+        <SelfResetModal
+          open={showSelfReset}
+          phone={phone.trim()}
+          onClose={() => setShowSelfReset(false)}
+          onResetComplete={handleSelfResetComplete}
+        />
       </div>
     );
   }
@@ -983,6 +1006,8 @@ interface NewRegistrationFormProps {
   error: string | null;
   successMessage: string | null;
   fieldErrors: { phone?: string; code?: string; password?: string };
+  phoneConflict?: boolean;
+  onRequestSelfReset?: () => void;
   onPhoneChange: (value: string) => void;
   onNameChange: (value: string) => void;
   onSubmit: (e: FormEvent) => Promise<void>;
@@ -990,7 +1015,7 @@ interface NewRegistrationFormProps {
 }
 
 export function NewRegistrationForm({
-  phone, name, submitting, error, successMessage, fieldErrors,
+  phone, name, submitting, error, successMessage, fieldErrors, phoneConflict, onRequestSelfReset,
   onPhoneChange, onNameChange, onSubmit, onReset,
 }: NewRegistrationFormProps) {
   return (
@@ -1026,6 +1051,16 @@ export function NewRegistrationForm({
         </div>
 
         {error && <InlineError className="mt-3">{error}</InlineError>}
+        {phoneConflict && onRequestSelfReset && (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-app-warning/20 bg-app-warning-muted px-3 py-2.5">
+            <p className="text-xs text-app-warning">
+              이 번호가 본인 소유라면 인증 후 직접 초기화할 수 있습니다.
+            </p>
+            <Button type="button" variant="secondary" size="sm" onClick={onRequestSelfReset} disabled={submitting}>
+              이 번호로 재등록하기
+            </Button>
+          </div>
+        )}
         {successMessage && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
