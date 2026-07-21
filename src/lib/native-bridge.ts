@@ -22,7 +22,7 @@ export async function registerNativePush() {
     const perm = await PushNotifications.requestPermissions();
     if (perm.receive !== "granted") return false;
     await PushNotifications.register();
-    PushNotifications.addListener("pushRegistration", (token) => {
+    PushNotifications.addListener("registration", (token: { value: string }) => {
       fetch("/api/push/register-device", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,8 +65,8 @@ export async function nativeShare(title: string, text: string, url?: string) {
 export async function setStatusBarStyle(style: "light" | "dark") {
   if (!isNative()) return;
   try {
-    const { StatusBar } = await import("@capacitor/status-bar");
-    await StatusBar.setStyle({ style: style === "dark" ? "DARK" : "LIGHT" });
+    const { StatusBar, Style } = await import("@capacitor/status-bar");
+    await StatusBar.setStyle({ style: style === "dark" ? Style.Dark : Style.Light });
   } catch {}
 }
 
@@ -75,6 +75,7 @@ export async function setStatusBarStyle(style: "light" | "dark") {
 export async function setNativeBadge(count: number) {
   if (!isNative()) return;
   try {
+    // @ts-expect-error — @capacitor/badge is an optional native dependency, not always installed
     const { Badge } = await import("@capacitor/badge");
     if (count > 0) await Badge.set({ badge: count });
     else await Badge.clear();
@@ -96,6 +97,6 @@ export async function readNativeFile(path: string): Promise<string | null> {
   try {
     const { Filesystem, Directory } = await import("@capacitor/filesystem");
     const result = await Filesystem.readFile({ path, directory: Directory.Documents });
-    return result.data;
+    return typeof result.data === "string" ? result.data : null;
   } catch { return null; }
 }

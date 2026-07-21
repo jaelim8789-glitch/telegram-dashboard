@@ -14,7 +14,6 @@ const ERROR_MAP: Record<string, string> = {
   "already exists": "이미 존재합니다",
   "invalid": "입력값이 올바르지 않습니다",
   "required": "필수 항목이 비어있습니다",
-  "not found": "데이터를 찾을 수 없습니다",
   "expired": "만료되었습니다. 새로고침 후 다시 시도해주세요",
   "token": "토큰이 유효하지 않습니다",
   "permission": "권한이 없습니다",
