@@ -1,6 +1,12 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
+const RESOLVE_KEY_HINT: Record<string, HTMLInputElement["enterKeyHint"]> = {
+  search: "search",
+  email: "send",
+  url: "go",
+};
+
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
 }
@@ -14,11 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
        type === "url" ? "url" :
        type === "search" ? "search" :
        "text");
-    const resolvedEnterKeyHint: HTMLInputElement["enterKeyHint"] = enterKeyHint ??
-      (type === "search" ? "search" :
-       type === "email" ? "send" :
-       type === "url" ? "go" :
-       "done") as HTMLInputElement["enterKeyHint"];
+    const resolvedEnterKeyHint = enterKeyHint ?? (RESOLVE_KEY_HINT[type ?? ""] ?? "done" as HTMLInputElement["enterKeyHint"]);
 
     return (
       <input

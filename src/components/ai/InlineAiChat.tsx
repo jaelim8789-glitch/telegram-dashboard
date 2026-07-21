@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send, Loader2, MessageSquare, Plus, Sparkles, Menu, Bot,
+  ChevronLeft, Trash2, Mic, MicOff, Clock, BarChart3, AlertTriangle, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
@@ -54,6 +55,12 @@ export function InlineAiChat() {
   const [newAgentRole, setNewAgentRole] = useState("marketing");
   const [newAgentPrompt, setNewAgentPrompt] = useState("");
   const [creatingAgent, setCreatingAgent] = useState(false);
+  const [chatPanelOpen, setChatPanelOpen] = useState(false);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [showQuickPrompts, setShowQuickPrompts] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -187,14 +194,47 @@ export function InlineAiChat() {
       const c = await agentApi.createChat(activeAgentId);
       setChats((prev) => [c, ...prev]);
       setActiveChatId(c.id);
+      setChatPanelOpen(false);
     } catch {}
   }
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  async function handleDeleteChat(chatId: string) {
+    setDeletingChatId(chatId);
+    try {
+      await agentApi.deleteChat(chatId);
+      setChats((prev) => prev.filter((c) => c.id !== chatId));
+      if (activeChatId === chatId) {
+        const remaining = chats.filter((c) => c.id !== chatId);
+        setActiveChatId(remaining[0]?.id ?? null);
+      }
+    } catch {
+      toast("error", "채팅 삭제 실패");
+    } finally {
+      setDeletingChatId(null);
+    }
+  }
+
+  function handleSelectChat(chatId: string) {
+    setActiveChatId(chatId);
+    setChatPanelOpen(false);
+  }
+
+  // ── Quick prompts ──
+  const quickPrompts = [
+    { icon: BarChart3, label: "오늘 발송현황", text: "오늘 발송 현황을 요약해줘" },
+    { icon: AlertTriangle, label: "실패한 발송", text: "최근 실패한 발송 내역과 원인을 알려줘" },
+    { icon: FileText, label: "최근 로그", text: "최근 24시간 발송 로그를 분석해줘" },
+    { icon: MessageSquare, label: "답장 추천", text: "오늘 들어온 메시지에 대한 답장을 추천해줘" },
+    { icon: Clock, label: "예약 현황", text: "현재 예약된 발송 목록을 보여줘" },
+  ];
+
+  function handleQuickPrompt(text: string) {
+    sendMessageWithInput(text);
+  }
+
+  function sendMessageWithInput(text: string) {
     if (!text || !activeChatId || loading) return;
     setInput("");
-
     const userMsg: StreamMessage = { role: "user", content: text, tokensUsed: 0 };
     setMessages((prev) => [...prev, userMsg as agentApi.AgentMessage]);
     setLoading(true);
@@ -202,27 +242,18 @@ export function InlineAiChat() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ content: text }),
-        signal: controller.signal,
-      });
-
+    fetch(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ content: text }),
+      signal: controller.signal,
+    }).then(async (res) => {
       if (!res.ok) {
         setStreamMsg({ role: "agent", content: "서버 오류가 발생했습니다.", tokensUsed: 0 });
-        setLoading(false);
         return;
       }
-
       const data = await res.json();
-
-      // Handle tool confirmation
-      if (data.pending_confirmation) {
-        setPendingConfirmation(data.pending_confirmation);
-      }
-
+      if (data.pending_confirmation) setPendingConfirmation(data.pending_confirmation);
       if (data.level_up && data.new_level) {
         toast("success", `🎉 Lv.${data.new_level} 달성!`, {
           description: `${data.exp_gained || 0} EXP를 획득했습니다.`,
@@ -230,18 +261,21 @@ export function InlineAiChat() {
         });
         agentApi.fetchAgents().then(setAgents).catch(() => {});
       }
-
-      const msgs = await agentApi.fetchChatMessages(activeChatId);
+      const msgs = await agentApi.fetchChatMessages(activeChatId!);
       setMessages(msgs);
       setStreamMsg(null);
-    } catch (err) {
+    }).catch((err) => {
       if ((err as DOMException)?.name === "AbortError") return;
       setStreamMsg({ role: "agent", content: "네트워크 오류가 발생했습니다.", tokensUsed: 0 });
-    } finally {
+    }).finally(() => {
       setLoading(false);
       abortRef.current = null;
-    }
-  }, [input, activeChatId, loading, toast]);
+    });
+  }
+
+  function sendMessage() {
+    sendMessageWithInput(input.trim());
+  }
 
   async function handleExecuteTool(messageId: string, toolName: string, payload: Record<string, unknown>) {
     await agentApi.executeToolAction(messageId, toolName, payload);
@@ -293,9 +327,19 @@ export function InlineAiChat() {
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
   return (
-    <div className="flex flex-col h-full min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden">
+    <div className="flex flex-col h-full min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden relative">
       {/* Agent selector bar */}
       <div className="flex items-center gap-1.5 border-b border-app-border px-3 py-2 overflow-x-auto scrollbar-thin shrink-0">
+        {/* 채팅 목록 버튼 */}
+        {activeAgentId && chats.length > 0 && (
+          <button
+            onClick={() => setChatPanelOpen(true)}
+            className="shrink-0 flex items-center justify-center h-7 w-7 rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+            title="대화 목록"
+          >
+            <Menu className="h-3.5 w-3.5" />
+          </button>
+        )}
         {agentsLoading ? (
           <div className="flex gap-1.5">
             {[1, 2].map((i) => (
@@ -333,6 +377,85 @@ export function InlineAiChat() {
           </>
         )}
       </div>
+
+      {/* ── Chat List Side Panel (left slide-in overlay) ── */}
+      {chatPanelOpen && (
+        <>
+          <div className="absolute inset-0 z-20 bg-black/30" onClick={() => setChatPanelOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 z-30 w-64 max-w-[80vw] bg-app-card border-r border-app-border flex flex-col shadow-xl transition-transform duration-300" style={{ transform: "translateX(0)" }}>
+            <div className="flex items-center justify-between border-b border-app-border px-3 py-2.5 shrink-0">
+              <button
+                onClick={() => setChatPanelOpen(false)}
+                className="flex items-center gap-1 text-xs text-app-text-muted hover:text-app-text transition-colors"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                닫기
+              </button>
+              <button
+                onClick={handleNewChat}
+                className="flex items-center gap-1 rounded-lg bg-app-primary px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
+              >
+                <Plus className="h-3 w-3" /> 새 채팅
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {chatsLoading ? (
+                <div className="space-y-1 p-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : chats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-app-text-muted">
+                  <MessageSquare className="h-6 w-6 opacity-30" />
+                  <p className="text-[11px]">대화 기록이 없습니다</p>
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {chats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer transition-colors group ${
+                        activeChatId === chat.id
+                          ? "bg-app-primary/10 border border-app-primary/20"
+                          : "hover:bg-app-card-hover border border-transparent"
+                      }`}
+                    >
+                      <button
+                        onClick={() => handleSelectChat(chat.id)}
+                        className="flex-1 text-left min-w-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${activeChatId === chat.id ? "text-app-primary" : "text-app-text-muted"}`} />
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-app-text">
+                              {chat.title || "새 대화"}
+                            </p>
+                            <p className="text-[10px] text-app-text-muted">
+                              {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat.id); }}
+                        disabled={deletingChatId === chat.id}
+                        className="shrink-0 opacity-0 group-hover:opacity-100 p-1 rounded text-app-text-muted hover:text-app-danger hover:bg-app-danger/10 transition-all disabled:opacity-50"
+                      >
+                        {deletingChatId === chat.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
@@ -381,9 +504,22 @@ export function InlineAiChat() {
                 <InlineError className="max-w-md">{messagesError}</InlineError>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-8 text-app-text-muted">
+              <div className="flex flex-col items-center gap-3 py-8 text-app-text-muted">
                 <MessageSquare className="h-6 w-6 opacity-30" />
                 <p className="text-xs">메시지를 보내서 대화를 시작하세요</p>
+                {/* Quick prompts in empty state */}
+                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                  {quickPrompts.map((qp) => (
+                    <button
+                      key={qp.label}
+                      onClick={() => handleQuickPrompt(qp.text)}
+                      className="inline-flex items-center gap-1 rounded-full border border-app-border/60 bg-app-card-hover px-2.5 py-1 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors"
+                    >
+                      <qp.icon className="h-3 w-3" />
+                      {qp.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               messages.map((m) => (
@@ -466,8 +602,39 @@ export function InlineAiChat() {
 
       {/* Chat input */}
       {activeChatId && (
-        <div className="border-t border-app-border px-3 py-2.5 shrink-0">
+        <div className="border-t border-app-border px-3 py-2 shrink-0">
+          {/* Quick prompts row */}
+          {messages.length > 0 && (
+            <div className="flex gap-1 mb-2 overflow-x-auto scrollbar-thin">
+              {quickPrompts.map((qp) => (
+                <button
+                  key={qp.label}
+                  onClick={() => handleQuickPrompt(qp.text)}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-full border border-app-border/60 px-2 py-1 text-[10px] text-app-text-muted hover:border-app-primary/30 hover:text-app-primary transition-colors"
+                >
+                  <qp.icon className="h-3 w-3" />
+                  {qp.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
+            {/* Mic button */}
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleListening}
+                disabled={loading}
+                className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-xl border transition-all ${
+                  isListening
+                    ? "border-app-danger bg-app-danger/10 text-app-danger animate-pulse"
+                    : "border-app-border bg-app-bg text-app-text-muted hover:border-app-primary/40 hover:text-app-text"
+                }`}
+                title={isListening ? "음성 인식 중지" : "음성 입력"}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </button>
+            )}
             <input
               ref={inputRef}
               value={input}
