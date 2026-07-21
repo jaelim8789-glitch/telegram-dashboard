@@ -41,6 +41,7 @@
     "node_modules",
     "TeleMon",
     ".kilo",
-    "telegram-dashboard-backend"
+    "telegram-dashboard-backend",
+    "src/components/landing/AIVirtualAssistantSection.tsx"
   ]
 }
