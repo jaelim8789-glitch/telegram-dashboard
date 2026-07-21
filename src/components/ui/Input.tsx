@@ -1,7 +1,9 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-const RESOLVE_KEY_HINT: Record<string, HTMLInputElement["enterKeyHint"]> = {
+type EnterKeyHint = InputHTMLAttributes<HTMLInputElement>["enterKeyHint"];
+
+const RESOLVE_KEY_HINT: Record<string, EnterKeyHint> = {
   search: "search",
   email: "send",
   url: "go",
@@ -9,18 +11,19 @@ const RESOLVE_KEY_HINT: Record<string, HTMLInputElement["enterKeyHint"]> = {
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
+  autoCorrect?: string;
+  autoCapitalize?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, error, inputMode, enterKeyHint, autoCorrect, autoCapitalize, type, ...props }, ref) => {
-    // Smart defaults for mobile keyboard optimization
     const resolvedInputMode = inputMode ??
       (type === "number" || type === "tel" ? "numeric" :
        type === "email" ? "email" :
        type === "url" ? "url" :
        type === "search" ? "search" :
        "text");
-    const resolvedEnterKeyHint = enterKeyHint ?? (RESOLVE_KEY_HINT[type ?? ""] ?? "done" as HTMLInputElement["enterKeyHint"]);
+    const resolvedEnterKeyHint = enterKeyHint ?? RESOLVE_KEY_HINT[type ?? ""] ?? "done";
 
     return (
       <input

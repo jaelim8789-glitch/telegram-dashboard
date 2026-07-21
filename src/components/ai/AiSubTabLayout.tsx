@@ -75,12 +75,12 @@ export function AiSubTabLayout({
 
       {/* ── Empty / Content ────────────────────────────────────── */}
       {!loading && !error && empty && emptyFallback && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-8 text-center">
           {emptyFallback}
         </div>
       )}
 
-      {!loading && !error && !empty && children}
+      {!loading && !error && children}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete,
   FileWarning, Hourglass, RefreshCw, RotateCcw,
   Users2, XCircle, ExternalLink, ArrowUp,
-  Play, Pause,
+  Play, Pause, Bot,
 } from "lucide-react";
 
 import { STATUS_META } from "@/lib/statusMeta";
@@ -46,6 +46,7 @@ interface HistoryRowProps {
   onReuse: (b: Broadcast) => void;
   onClone: (b: Broadcast) => void;
   onPauseResume?: (b: Broadcast) => void;
+  onAiAnalyze?: (b: Broadcast) => void;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }
@@ -59,6 +60,7 @@ export function HistoryRow({
   onReuse,
   onClone,
   onPauseResume,
+  onAiAnalyze,
   selected,
   onToggleSelect,
 }: HistoryRowProps) {
@@ -291,15 +293,27 @@ export function HistoryRow({
         )}
 
         {isFailed && (
-          <button
-            type="button"
-            onClick={() => onRetry(h)}
-            disabled={retrying === h.id}
-            title="재발송"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
-          >
-            <RotateCcw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onRetry(h)}
+              disabled={retrying === h.id}
+              title="재발송"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
+            </button>
+            {onAiAnalyze && (
+              <button
+                type="button"
+                onClick={() => onAiAnalyze(h)}
+                title="AI 분석"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-app-primary transition-colors hover:bg-app-primary/10"
+              >
+                <Bot className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
