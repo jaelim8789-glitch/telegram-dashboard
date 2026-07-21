@@ -283,7 +283,7 @@ export default function SignupPage() {
               <h2 className="text-lg font-semibold text-app-text">요금제 선택</h2>
               <div className="space-y-3">
                 {[
-                  { id: "free", name: "Free Trial", price: "무료 (3일)", desc: "⏱ 약 1분이면 완료 · 3일 무료" },
+                  { id: "free", name: "Free Plan", price: "무료", desc: "완전 무료 · 모든 기능 사용 가능" },
                   { id: "pro", name: "Pro", price: "$100/월", desc: "10개 계정, 예약 & 반복 발송, 발송 로그 & 전달 분석" },
                   { id: "team", name: "Team", price: "$199/분기", desc: "20개 계정, 예약 & 반복 발송, 계정 건강 모니터링" },
                 ].map((p) => (
@@ -297,7 +297,7 @@ export default function SignupPage() {
                     </div>
                     <p className="mt-1 text-xs text-app-text-secondary">{p.desc}</p>
                     {p.id === "free" && selectedPlan === p.id && (
-                        <p className="mt-2 text-xs text-app-text-subtle">🔑 3일 동안 모든 기능을 제한 없이 사용할 수 있습니다. 결제 정보가 필요하지 않습니다.</p>
+                        <p className="mt-2 text-xs text-app-text-subtle">✅ 완전 무료로 모든 기능을 사용할 수 있습니다. 발송 시 워터마크 광고가 포함됩니다.</p>
                     )}
                   </button>
                 ))}
@@ -308,7 +308,7 @@ export default function SignupPage() {
                 } else {
                   router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
-              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}</Button>
+              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 완전 무료" : "다음"}</Button>
             </div>
           )}
 

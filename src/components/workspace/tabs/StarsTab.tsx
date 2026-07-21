@@ -165,7 +165,7 @@ export default function StarsTab() {
           stars_balance: me.stars_balance,
         });
       })
-      .catch(() => {})
+      .catch(() => { toast("error", "구독 정보 로드 실패"); })
       .finally(() => setAuthLoading(false));
   }, [toast]);
 
@@ -223,7 +223,7 @@ export default function StarsTab() {
         trial_expires_at: me.trial_expires_at,
         stars_balance: me.stars_balance,
       });
-    } catch { /* ignore */ }
+    } catch { toast("error", "구독 상태 새로고침 실패"); }
     setAuthLoading(false);
   }, []);
 
@@ -272,7 +272,7 @@ export default function StarsTab() {
     const { plan, status, trial_expires_at, stars_balance } = subscriptionStatus;
     const isActive = status === "active" || status === "trial";
     const isTrial = status === "trial" || (status === "active" && !!trial_expires_at);
-    const planLabel = PLAN_LABELS[plan?.toLowerCase() ?? ""] || plan || "Free";
+    const planLabel = PLAN_LABELS[plan?.toLowerCase() ?? ""] || plan || "Free Plan";
 
     return (
       <motion.div
@@ -300,11 +300,11 @@ export default function StarsTab() {
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-emerald-500/10 text-emerald-600"
+                      ? "bg-emerald-500/10 text-emerald-500"
                       : "bg-amber-500/10 text-amber-600"
                   }`}
                 >
-                  {isActive ? (isTrial ? "체험 중" : "활성") : "비활성"}
+                  {isActive ? (isTrial ? "무료 사용중" : "활성") : "비활성"}
                 </span>
               </div>
               <p className="text-xs text-app-text-muted mt-0.5">
