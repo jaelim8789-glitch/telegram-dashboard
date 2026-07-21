@@ -16,11 +16,27 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
 
+    // A new service worker taking control (self.clients.claim() in sw.js)
+    // means a new deploy has activated for this tab. Reload once so the
+    // page picks up the fresh JS/HTML instead of running on stale code
+    // indefinitely — without this, users only get the new build after a
+    // manual hard refresh or clearing site data.
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
+      reloaded = true;
+      window.location.reload();
+    });
+
     const timer = setTimeout(async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
+
+        // New deploys change sw.js's byte content (CACHE_NAME bump etc.),
+        // so ask the browser to check for an update on every load.
+        registration.update().catch(() => {});
 
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
