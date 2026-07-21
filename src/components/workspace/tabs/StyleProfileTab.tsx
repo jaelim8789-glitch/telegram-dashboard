@@ -352,7 +352,7 @@ export function StyleProfileTab() {
                 </button>
               </div>
               <p className="text-[10px] text-app-text-muted mt-2">
-                이 프롬프트를 AI 발송이나 콘텐츠 스튜디오에서 "스타일 참조"로 활용하면 동일한 톤으로 작성합니다
+                이 프롬프트를 AI 발송이나 콘텐츠 스튜디오에서 &quot;스타일 참조&quot;로 활용하면 동일한 톤으로 작성합니다
               </p>
             </Panel>
           )}
