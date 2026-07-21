@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
@@ -8,6 +8,7 @@ import {
 import { TrendingUp } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ChartTooltip } from "@/components/ui/ChartTooltip";
 import { cn } from "@/lib/cn";
 import type { TimelineItem } from "@/types";
 
@@ -22,34 +23,6 @@ const COLORS: Record<string, string> = {
 };
 
 const BAR_RADIUS: [number, number, number, number] = [3, 3, 0, 0];
-
-interface TooltipPayloadItem {
-  name: string;
-  value: number;
-  color: string;
-  dataKey: string;
-}
-
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayloadItem[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  const total = payload.reduce((sum, p) => sum + (p.value ?? 0), 0);
-  return (
-    <div className="rounded-xl border border-app-border bg-app-surface px-3 py-2 shadow-xl" role="tooltip">
-      <p className="text-xs font-medium text-app-text mb-1">{label}</p>
-      {payload.map((p) => (
-        <div key={p.name} className="flex items-center gap-2 text-[11px]">
-          <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: p.color }} />
-          <span className="text-app-text-muted capitalize">{p.name}</span>
-          <span className="font-medium tabular-nums text-app-text ml-auto">{p.value?.toLocaleString() ?? 0}</span>
-        </div>
-      ))}
-      <div className="mt-1 pt-1 border-t border-app-border flex items-center justify-between text-[11px]">
-        <span className="text-app-text-muted">합계</span>
-        <span className="font-semibold tabular-nums text-app-text">{total.toLocaleString()}</span>
-      </div>
-    </div>
-  );
-}
 
 interface LegendPayloadItem {
   value: string;
@@ -173,7 +146,11 @@ export function UsageChartWidget({ timeline, loading }: UsageChartWidgetProps) {
               tickLine={false}
               width={32}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--app-card-hover, #f3f4f6)", opacity: 0.5 }} />
+            <Tooltip
+              content={<ChartTooltip />}
+              cursor={{ fill: "var(--app-card-hover, #f3f4f6)", opacity: 0.5 }}
+              wrapperStyle={{ touchAction: "auto" }}
+            />
             <Legend content={<CustomLegend />} />
             <Bar
               dataKey="successful"

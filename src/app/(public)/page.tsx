@@ -25,8 +25,8 @@ export default function HomePage() {
       <HeroSection />
       <MarqueeTrust />
       
-      <section className="tm-section-bg py-12 sm:py-16 px-6 sm:px-6 lg:px-8 luxury-section">
-        <div className="mx-auto max-w-6xl">
+      <section className="tm-section-bg py-12 sm:py-16 px-4 sm:px-6 lg:px-8 luxury-section"> {/* px-4로 모바일 여백 조정 */}
+        <div className="mx-auto max-w-6xl w-full"> {/* w-full 추가 */}
           <CoreFeatures />
         </div>
       </section>
@@ -35,8 +35,8 @@ export default function HomePage() {
       <OperationalStatus />
       <SectionDivider />
       
-      <section className="tm-section-bg py-12 sm:py-16 px-6 sm:px-6 lg:px-8 luxury-section">
-        <div className="mx-auto max-w-6xl">
+      <section className="tm-section-bg py-12 sm:py-16 px-4 sm:px-6 lg:px-8 luxury-section"> {/* px-4로 모바일 여백 조정 */}
+        <div className="mx-auto max-w-6xl w-full"> {/* w-full 추가 */}
           <RealTimeDashboard />
         </div>
       </section>
@@ -45,8 +45,8 @@ export default function HomePage() {
       <HowItWorksSection />
       <SectionDivider />
       
-      <section className="tm-section-bg-alt py-12 sm:py-16 px-6 sm:px-6 lg:px-8 luxury-section">
-        <div className="mx-auto max-w-6xl">
+      <section className="tm-section-bg-alt py-12 sm:py-16 px-4 sm:px-6 lg:px-8 luxury-section"> {/* px-4로 모바일 여백 조정 */}
+        <div className="mx-auto max-w-6xl w-full"> {/* w-full 추가 */}
           <WhyChooseTeleMon />
         </div>
       </section>

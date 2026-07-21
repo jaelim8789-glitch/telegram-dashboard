@@ -29,7 +29,7 @@ const REASONS = [
 
 export function WhyChooseTeleMon() {
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl w-full"> {/* w-full 추가 */}
       <div className="text-center max-w-xl mx-auto mb-10 sm:mb-12">
         <div className="flex items-center justify-center gap-2 mb-3">
           <div className="h-px w-6 bg-[var(--color-accent)] opacity-50" />
@@ -45,8 +45,8 @@ export function WhyChooseTeleMon() {
         <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-8"> {/* 모바일에서는 단일 열로 변경 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {REASONS.map((reason, i) => {
             const Icon = reason.icon;
             return (
@@ -56,13 +56,13 @@ export function WhyChooseTeleMon() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-5 sm:p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center" // padding 조정
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
               >
                 {/* 상단 우측 TM 배지 */}
-                <div className="absolute -top-2.5 right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
+                <div className="absolute -top-2.5 right-3 sm:right-4 h-5 w-5 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-[8px] font-bold text-[var(--color-bg)] shadow-sm">
                   TM
                 </div>
 
@@ -70,8 +70,8 @@ export function WhyChooseTeleMon() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{reason.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{reason.desc}</p>
+                <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--color-text)" }}>{reason.title}</h3>
+                <p className="text-xs sm:text-sm leading-relaxed text-center" style={{ color: "var(--color-text-secondary)" }}>{reason.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
@@ -80,13 +80,13 @@ export function WhyChooseTeleMon() {
           })}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"> {/* 간격 조정 */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
             style={{
               background: "var(--color-card)",
             }}
@@ -106,7 +106,7 @@ export function WhyChooseTeleMon() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
             style={{
               background: "var(--color-card)",
             }}
@@ -126,7 +126,7 @@ export function WhyChooseTeleMon() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.9 }}
-            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
             style={{
               background: "var(--color-card)",
             }}
@@ -146,7 +146,7 @@ export function WhyChooseTeleMon() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1.0 }}
-            className="relative rounded-xl overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
+            className="relative rounded-lg overflow-hidden border border-[var(--color-accent-border)] shadow-lg aspect-square"
             style={{
               background: "var(--color-card)",
             }}

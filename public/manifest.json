@@ -6,9 +6,12 @@
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#bfa260",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "categories": ["business", "communication", "productivity"],
   "lang": "ko-KR",
+  "prefer_related_applications": false,
+  "display_override": ["standalone", "browser"],
+  "edge_side_panel": {},
   "icons": [
     {
       "src": "/icons/icon-192.svg",
@@ -23,19 +26,18 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192.svg",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.svg",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "대시보드",
@@ -55,6 +57,32 @@
       "short_name": "발송",
       "description": "새 메시지 발송",
       "url": "/app?tab=send",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "그룹",
+      "short_name": "그룹",
+      "description": "그룹 관리",
+      "url": "/app?tab=group",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "short_name": "AI",
+      "description": "AI 어시스턴트",
+      "url": "/app?tab=myai",
       "icons": [
         {
           "src": "/icons/icon-192.png",
