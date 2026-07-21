@@ -526,6 +526,34 @@ function UsersContent() {
     return "normal";
   }
 
+  function exportFilteredUsersCsv() {
+    const rows = [
+      ["phone", "is_active", "plan", "subscription_status", "account_count", "stars_balance", "risk", "created_at", "last_login", "trial_expires_at"],
+      ...filteredUsers.map((u) => [
+        u.phone,
+        u.isActive ? "true" : "false",
+        u.plan ?? "",
+        u.subscriptionStatus ?? "",
+        String(u.accountCount),
+        String(u.starsBalance),
+        getRiskLevel(u),
+        u.createdAt,
+        u.lastLogin ?? "",
+        u.trialExpiresAt ?? "",
+      ]),
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `admin-users-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center justify-between">
@@ -600,6 +628,7 @@ function UsersContent() {
             <span>리스크 후보 {riskUsers}명</span>
             <span>선택 {selectedIds.length}명</span>
             <Button size="sm" variant="ghost" onClick={resetFilters}>필터 초기화</Button>
+            <Button size="sm" variant="secondary" onClick={exportFilteredUsersCsv} disabled={filteredUsers.length === 0}>CSV 내보내기</Button>
             <Button size="sm" variant="secondary" onClick={() => runBulkToggle(true)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 활성화</Button>
             <Button size="sm" variant="danger" onClick={() => requestHighRiskAction({ kind: "bulk_deactivate" })} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>선택 일괄 비활성화</Button>
           </div>

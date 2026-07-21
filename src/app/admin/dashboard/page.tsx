@@ -23,6 +23,7 @@ import * as api from "@/lib/api";
 export const dynamic = "force-dynamic";
 
 const REFRESH_INTERVAL_MS = 30_000;
+const TREND_WINDOW = 20;
 
 // ─── Health breakdown config ──────────────────────────────────────
 
@@ -78,6 +79,8 @@ function AdminDashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [secondsToRefresh, setSecondsToRefresh] = useState(REFRESH_INTERVAL_MS / 1000);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [failureRateTrend, setFailureRateTrend] = useState<number[]>([]);
+  const [healthyTrend, setHealthyTrend] = useState<number[]>([]);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function load() {
@@ -100,6 +103,8 @@ function AdminDashboardContent() {
     try {
       const data = await api.fetchAdminDashboardStatus();
       setStatus(data);
+      setFailureRateTrend((prev) => [...prev.slice(-(TREND_WINDOW - 1)), data.broadcasts.failure_rate]);
+      setHealthyTrend((prev) => [...prev.slice(-(TREND_WINDOW - 1)), data.accounts.total > 0 ? Math.round((data.accounts.healthy / data.accounts.total) * 100) : 0]);
       setLastUpdated(new Date());
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : "상태 데이터를 불러오지 못했습니다.");
@@ -133,7 +138,43 @@ function AdminDashboardContent() {
 
   const activeUsers = users.filter((u) => u.isActive);
   const activeKeys = keys.filter((k) => k.isActive ?? true);
+  const paidUsers = users.filter((u) => (u.plan ?? "free") !== "free");
+  const churnCandidates = users.filter((u) => !u.isActive || !!(u.subscriptionStatus && u.subscriptionStatus !== "active"));
+  const noAccountUsers = users.filter((u) => u.accountCount === 0);
+  const averageAccountsPerUser = users.length > 0 ? users.reduce((sum, u) => sum + u.accountCount, 0) / users.length : 0;
   const statusColor = getStatusColor(status, !!statusError);
+
+  const conversionRate = users.length > 0 ? Math.round((paidUsers.length / users.length) * 100) : 0;
+  const churnRiskRate = users.length > 0 ? Math.round((churnCandidates.length / users.length) * 100) : 0;
+
+  function downloadKpiSnapshotCsv() {
+    const rows = [
+      ["metric", "value"],
+      ["users_total", String(users.length)],
+      ["users_paid", String(paidUsers.length)],
+      ["conversion_rate_percent", String(conversionRate)],
+      ["churn_candidates", String(churnCandidates.length)],
+      ["churn_risk_rate_percent", String(churnRiskRate)],
+      ["users_without_accounts", String(noAccountUsers.length)],
+      ["avg_accounts_per_user", averageAccountsPerUser.toFixed(2)],
+      ["api_keys_total", String(keys.length)],
+      ["api_keys_active", String(activeKeys.length)],
+      ["account_healthy", String(status?.accounts.healthy ?? 0)],
+      ["account_unhealthy", String(status?.accounts.unhealthy ?? 0)],
+      ["broadcast_failure_rate_24h", String(status?.broadcasts.failure_rate ?? 0)],
+      ["updated_at", new Date().toISOString()],
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `admin-kpi-snapshot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   // Account health breakdown values from status
   const breakdownValues: Record<string, number> = status ? {
@@ -174,6 +215,58 @@ function AdminDashboardContent() {
           </Button>
         </div>
       </div>
+
+      <Panel
+        accent="teal"
+        title={<div className="flex items-center gap-2"><Layers className="h-4 w-4 text-teal-400" /> KPI 인사이트</div>}
+        description="전환율, 이탈 리스크, 활동성 지표를 빠르게 확인합니다."
+        action={<Button size="sm" onClick={downloadKpiSnapshotCsv}>KPI CSV 내보내기</Button>}
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard icon={<Sparkles className="h-4 w-4" />} label="유료 전환율" value={`${conversionRate}%`} sub={`${paidUsers.length}/${users.length}명`} accent={conversionRate >= 25 ? "emerald" : "amber"} />
+          <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="이탈 리스크" value={`${churnRiskRate}%`} sub={`${churnCandidates.length}명`} accent={churnRiskRate >= 35 ? "rose" : "amber"} />
+          <StatCard icon={<Users className="h-4 w-4" />} label="무계정 사용자" value={noAccountUsers.length} sub={users.length > 0 ? `${Math.round((noAccountUsers.length / users.length) * 100)}%` : "0%"} accent="violet" />
+          <StatCard icon={<Activity className="h-4 w-4" />} label="평균 계정 수" value={averageAccountsPerUser.toFixed(1)} sub="사용자당" accent="indigo" />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-app-border bg-app-bg p-3">
+            <p className="text-xs font-medium text-app-text">실패율 트렌드</p>
+            <div className="mt-2 flex h-14 items-end gap-1">
+              {failureRateTrend.length === 0 ? (
+                <p className="text-xs text-app-text-muted">데이터 수집 중...</p>
+              ) : (
+                failureRateTrend.map((v, i) => (
+                  <div
+                    key={`fr-${i}`}
+                    className={cn("w-full rounded-t", v > 10 ? "bg-rose-500" : v > 5 ? "bg-amber-500" : "bg-emerald-500")}
+                    style={{ height: `${Math.max(6, Math.min(56, v * 4 + 6))}px` }}
+                    title={`${v}%`}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-app-border bg-app-bg p-3">
+            <p className="text-xs font-medium text-app-text">건강 계정 비율 트렌드</p>
+            <div className="mt-2 flex h-14 items-end gap-1">
+              {healthyTrend.length === 0 ? (
+                <p className="text-xs text-app-text-muted">데이터 수집 중...</p>
+              ) : (
+                healthyTrend.map((v, i) => (
+                  <div
+                    key={`healthy-${i}`}
+                    className={cn("w-full rounded-t", v >= 80 ? "bg-emerald-500" : v >= 60 ? "bg-amber-500" : "bg-rose-500")}
+                    style={{ height: `${Math.max(6, Math.min(56, v * 0.5 + 6))}px` }}
+                    title={`${v}%`}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </Panel>
 
       {(error || statusError) && (
         <InlineError title="데이터 로드 실패" action={
