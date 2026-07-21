@@ -79,9 +79,50 @@ export function DashboardShell() {
 
   // Edge swipe: left edge → sidebar, right edge → inspector
   useEdgeSwipe(
-    useCallback(() => { haptics.medium(); setInspectorOpen(true); setSidebarOpen(false); }, [haptics]),
-    useCallback(() => { haptics.medium(); setSidebarOpen(true); setInspectorOpen(false); }, [haptics]),
+    useCallback(() => { 
+      haptics.medium(); 
+      if (!sidebarOpen && !inspectorOpen) {
+        setInspectorOpen(true);
+      } else if (inspectorOpen) {
+        setInspectorOpen(false);
+      }
+      setSidebarOpen(false); 
+    }, [haptics, sidebarOpen, inspectorOpen]),
+    useCallback(() => { 
+      haptics.medium(); 
+      if (!sidebarOpen && !inspectorOpen) {
+        setSidebarOpen(true);
+      } else if (sidebarOpen) {
+        setSidebarOpen(false);
+      }
+      setInspectorOpen(false); 
+    }, [haptics, sidebarOpen, inspectorOpen]),
   );
+
+  // Close sidebar/inspector when swiping in the opposite direction
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    function handleSwipeLeft() {
+      if (sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    }
+    
+    function handleSwipeRight() {
+      if (inspectorOpen) {
+        setInspectorOpen(false);
+      }
+    }
+    
+    if (sidebarOpen || inspectorOpen) {
+      useEdgeSwipe(handleSwipeLeft, handleSwipeRight);
+    }
+    
+    return () => {
+      useEdgeSwipe(() => {}, () => {});
+    };
+  }, [sidebarOpen, inspectorOpen, haptics]);
 
   // "?" key opens cheatsheet (only when not typing in an input)
   useEffect(() => {
@@ -192,13 +233,25 @@ export function DashboardShell() {
           id="dashboard-sidebar"
           role="complementary"
           aria-label="계정 목록"
-          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
+          className={`${sidebarOpen ? "fixed inset-y-0 left-0 z-40 flex w-full max-w-xs transform-gpu flex-col transition-all duration-300 ease-in-out sm:static sm:z-auto sm:w-auto sm:translate-x-0" : "-translate-x-full sm:translate-x-0"} fixed inset-y-0 left-0 z-40 flex w-full max-w-xs transform-gpu flex-col transition-all duration-300 ease-in-out sm:static sm:z-auto sm:w-auto sm:flex`}
         >
           {sidebarOpen && (
-            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-0 bg-black/50 sm:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           )}
-          <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`}>
-            <Sidebar />
+          <div className="relative z-10 flex h-full flex-col overflow-hidden bg-app-surface sm:block">
+            <div className="flex items-center justify-between border-b border-app-border px-4 py-3 sm:hidden">
+              <h2 className="text-sm font-medium">계정 목록</h2>
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="rounded-lg p-1 hover:bg-app-card"
+                aria-label="사이드바 닫기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              <Sidebar />
+            </div>
           </div>
         </div>
         <Workspace />
@@ -207,13 +260,25 @@ export function DashboardShell() {
           id="dashboard-inspector"
           role="complementary"
           aria-label="인스펙터"
-          className={`${inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
+          className={`${inspectorOpen ? "fixed inset-y-0 right-0 z-50 flex w-full max-w-md transform-gpu flex-col transition-all duration-300 ease-in-out sm:static sm:z-auto sm:w-auto sm:translate-x-0" : "translate-x-full sm:translate-x-0"} fixed inset-y-0 right-0 z-50 flex w-full max-w-md transform-gpu flex-col transition-all duration-300 ease-in-out sm:static sm:z-auto sm:w-auto sm:flex`}
         >
           {inspectorOpen && (
-            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
+            <div className="fixed inset-0 bg-black/50 sm:hidden backdrop-blur-sm" onClick={() => setInspectorOpen(false)} />
           )}
-          <div className={`relative z-10 ${inspectorOpen ? "block" : "hidden"} sm:block`}>
-            <Inspector />
+          <div className="relative z-10 flex h-full flex-col overflow-hidden bg-app-surface sm:block">
+            <div className="flex items-center justify-between border-b border-app-border px-4 py-3 sm:hidden">
+              <h2 className="text-sm font-medium">인스펙터</h2>
+              <button 
+                onClick={() => setInspectorOpen(false)}
+                className="rounded-lg p-1 hover:bg-app-card"
+                aria-label="인스펙터 닫기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              <Inspector />
+            </div>
           </div>
         </div>
       </div>
