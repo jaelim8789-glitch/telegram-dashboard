@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -204,6 +205,20 @@ function LogRow({
                 </button>
               )}
               </>)}
+              {!isFailed && !isSending && (
+                <button
+                  type="button"
+                  onClick={() => onEditResend(log)}
+                  aria-label="편집 후 재발송"
+                  title="편집 후 재발송"
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-lg transition-colors active:scale-95",
+                    "text-app-text-muted hover:bg-app-card-hover hover:text-app-primary",
+                  )}
+                >
+                  <SendHorizonal className="h-4 w-4" />
+                </button>
+              )}
             </div>
         </div>
 
@@ -460,6 +475,21 @@ export function LogTab() {
     return { total, sent, failed, inFlight };
   }, [logs]);
 
+  const dailyChartData = useMemo(() => {
+    const dayMap = new Map<string, { date: string; sent: number; failed: number; pending: number }>();
+    for (const log of logs) {
+      const key = localDateKey(log.createdAt);
+      const entry = dayMap.get(key) ?? { date: key, sent: 0, failed: 0, pending: 0 };
+      if (log.status === "sent") entry.sent++;
+      else if (log.status === "failed") entry.failed++;
+      else entry.pending++;
+      dayMap.set(key, entry);
+    }
+    return Array.from(dayMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-14);
+  }, [logs]);
+
   const bulkTargets = useMemo(() => {
     if (!bulkAction) return [];
     return selectedLogs.filter((log) => {
@@ -539,6 +569,33 @@ export function LogTab() {
         </div>
       }
     >
+      {/* ── Daily trend chart ── */}
+      {dailyChartData.length > 1 && (
+        <div className="mb-4 rounded-xl border border-app-border bg-app-card p-3">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-app-text-muted">
+            <BarChart3 className="h-3.5 w-3.5" />
+            일별 발송 추이 (최근 {dailyChartData.length}일)
+          </div>
+          <div className="h-28">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyChartData} barGap={2}>
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "var(--color-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-card)" }}
+                  formatter={(value, name) => [
+                    value, name === "sent" ? "완료" : name === "failed" ? "실패" : "대기"
+                  ]}
+                />
+                <Bar dataKey="sent" fill="var(--color-success)" radius={[2, 2, 0, 0]} stackId="a" />
+                <Bar dataKey="failed" fill="var(--color-danger)" radius={[2, 2, 0, 0]} stackId="a" />
+                <Bar dataKey="pending" fill="var(--color-text-subtle)" radius={[2, 2, 0, 0]} stackId="a" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* ── Unified filter bar ── */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-sm">

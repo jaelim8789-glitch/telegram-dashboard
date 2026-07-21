@@ -1,41 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  UserPlus,
-  Send,
-  Users,
-  Search,
-  CalendarClock,
-  Bot,
-  Zap,
-  User,
-  FileText,
-  BarChart3,
-  Globe,
-  Folder,
-  Command,
-  Plus,
-  ArrowRight,
+  LayoutDashboard, UserPlus, Send, Users, Search, CalendarClock, Bot, Zap, User, FileText, BarChart3, Globe, Folder, Command, Plus, ArrowRight, MessageSquare, Loader2, Hash, PanelTop,
 } from "lucide-react";
-import { TABS, type TabId } from "@/types";
+import { TABS, type TabId, getAccountDisplayName, type Group, type Broadcast } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
+import * as api from "@/lib/api";
+import type { MessageTemplate } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
-interface PaletteCommand {
-  id: string;
-  label: string;
-  keywords: string[];
-  icon: ComponentType<{ className?: string }>;
-  tabId?: TabId;
-  action?: () => void;
-}
-
-const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
   register: UserPlus,
   send: Send,
@@ -51,18 +29,38 @@ const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   log: FileText,
 };
 
+interface SearchItem {
+  id: string;
+  label: string;
+  description?: string;
+  icon: React.ReactNode;
+  category: "navigation" | "account" | "group" | "template" | "broadcast" | "action";
+  action: () => void;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  navigation: "네비게이션",
+  account: "계정",
+  group: "그룹",
+  template: "템플릿",
+  broadcast: "발송 기록",
+  action: "빠른 액션",
+};
+
+const CATEGORY_ORDER = ["navigation", "action", "account", "group", "template", "broadcast"];
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
 }
 
-function buildCommands(
-  setActiveTab: (tab: TabId) => void,
-  addRecent: (id: string) => void,
-  close: () => void,
-): PaletteCommand[] {
+function NavIcon({ tabId }: { tabId: string }) {
+  const Icon = NAV_ICONS[tabId] ?? ArrowRight;
+  return <Icon className="h-4 w-4" />;
+}
+
+function buildNavActions(setActiveTab: (tab: TabId) => void, close: () => void): SearchItem[] {
   const navigate = (tabId: TabId) => {
-    addRecent(tabId);
     setActiveTab(tabId);
     close();
   };
@@ -71,53 +69,78 @@ function buildCommands(
     ...TABS.map((tab) => ({
       id: `nav:${tab.id}`,
       label: tab.label,
-      keywords: [tab.label, tab.id, tab.group === "send" ? "발송" : tab.group === "ai" ? "AI" : tab.group === "dashboard" ? "대시보드" : tab.group === "ops" ? "운영" : tab.group === "settings" ? "설정" : "신규"],
-      icon: NAV_ICONS[tab.id] ?? ArrowRight,
-      tabId: tab.id,
+      icon: <NavIcon tabId={tab.id} />,
+      category: "navigation" as const,
+      action: () => navigate(tab.id),
     })),
-    {
-      id: "action:new-broadcast",
-      label: "새 발송",
-      keywords: ["새 발송", "new", "broadcast", "send", "작성"],
-      icon: Plus,
-      action: () => navigate("send"),
-    },
-    {
-      id: "action:find-groups",
-      label: "그룹 검색",
-      keywords: ["그룹 검색", "find", "search", "group", "discovery"],
-      icon: Search,
-      action: () => navigate("groupsearch"),
-    },
-    {
-      id: "action:add-account",
-      label: "계정 등록",
-      keywords: ["계정 등록", "add", "account", "register", "new account"],
-      icon: UserPlus,
-      action: () => navigate("register"),
-    },
-    {
-      id: "action:view-failed",
-      label: "실패한 발송 보기",
-      keywords: ["실패", "failed", "fail", "error", "broadcast", "발송 실패"],
-      icon: FileText,
-      action: () => navigate("log"),
-    },
-    {
-      id: "action:open-scheduler",
-      label: "스케줄러 열기",
-      keywords: ["스케줄러", "scheduler", "schedule", "recurring", "반복"],
-      icon: CalendarClock,
-      action: () => navigate("scheduler"),
-    },
-    {
-      id: "action:delivery-analytics",
-      label: "전달 분석",
-      keywords: ["전달 분석", "analytics", "delivery", "통계", "분석"],
-      icon: BarChart3,
-      action: () => navigate("deliveryanalytics"),
-    },
+    { id: "action:new-broadcast", label: "새 발송", icon: <Plus className="h-4 w-4" />, category: "action" as const, action: () => navigate("send") },
+    { id: "action:find-groups", label: "그룹 검색", icon: <Search className="h-4 w-4" />, category: "action" as const, action: () => navigate("groupsearch") },
+    { id: "action:add-account", label: "계정 등록", icon: <UserPlus className="h-4 w-4" />, category: "action" as const, action: () => navigate("register") },
+    { id: "action:view-failed", label: "실패한 발송 보기", icon: <FileText className="h-4 w-4" />, category: "action" as const, action: () => navigate("log") },
+    { id: "action:open-scheduler", label: "스케줄러 열기", icon: <CalendarClock className="h-4 w-4" />, category: "action" as const, action: () => navigate("scheduler") },
+    { id: "action:delivery-analytics", label: "전달 분석", icon: <BarChart3 className="h-4 w-4" />, category: "action" as const, action: () => navigate("deliveryanalytics") },
   ];
+}
+
+function buildAccountItems(accounts: ReturnType<typeof useDashboardStore.getState>["accounts"], selectAccount: (id: string) => void, setActiveTab: (tab: TabId) => void, close: () => void): SearchItem[] {
+  return accounts.map((a) => ({
+    id: `account-${a.id}`,
+    label: getAccountDisplayName(a),
+    description: a.status === "active" ? "활성" : a.status,
+    icon: <User className="h-4 w-4" />,
+    category: "account" as const,
+    action: () => { selectAccount(a.id); setActiveTab("send"); close(); },
+  }));
+}
+
+function buildGroupItems(groups: Group[], selectAccount: (id: string) => void, setActiveTab: (tab: TabId) => void, close: () => void): SearchItem[] {
+  return groups.map((g) => ({
+    id: `group-${g.id}`,
+    label: g.title,
+    description: `${g.type === "channel" ? "채널" : "그룹"} · ${g.participantsCount ?? "?"}명`,
+    icon: <Hash className="h-4 w-4" />,
+    category: "group" as const,
+    action: () => { setActiveTab("send"); close(); },
+  }));
+}
+
+function buildTemplateItems(templates: MessageTemplate[]): SearchItem[] {
+  return templates.map((t) => ({
+    id: `template-${t.id}`,
+    label: t.name,
+    description: t.content.length > 60 ? t.content.slice(0, 60) + "..." : t.content,
+    icon: <MessageSquare className="h-4 w-4" />,
+    category: "template" as const,
+    action: () => {
+      const store = useDashboardStore.getState();
+      store.setSendMessage(t.content);
+      store.setActiveTab("send");
+      useCommandPaletteStore.getState().setOpen(false);
+    },
+  }));
+}
+
+function buildBroadcastItems(broadcasts: Broadcast[]): SearchItem[] {
+  return broadcasts.map((b) => ({
+    id: `broadcast-${b.id}`,
+    label: b.message.length > 50 ? b.message.slice(0, 50) + "..." : b.message,
+    description: b.status === "sent" ? "완료" : b.status === "failed" ? "실패" : b.status === "sending" ? "발송 중" : b.status === "pending" ? "대기 중" : "취소됨",
+    icon: <Send className="h-4 w-4" />,
+    category: "broadcast" as const,
+    action: () => {
+      const store = useDashboardStore.getState();
+      store.reuseBroadcast(b);
+      useCommandPaletteStore.getState().setOpen(false);
+    },
+  }));
+}
+
+const LOCAL_CATEGORIES = new Set(["navigation", "action", "account", "group"]);
+
+function matchesQuery(item: SearchItem, q: string): boolean {
+  if (item.label.toLowerCase().includes(q)) return true;
+  if (item.description?.toLowerCase().includes(q)) return true;
+  return false;
 }
 
 export function CommandPalette() {
@@ -128,15 +151,20 @@ export function CommandPalette() {
   const recent = useCommandPaletteStore((state) => state.recent);
   const addRecent = useCommandPaletteStore((state) => state.addRecent);
   const setActiveTab = useDashboardStore((state) => state.setActiveTab);
+  const accounts = useDashboardStore((state) => state.accounts);
+  const groups = useDashboardStore((state) => state.sendGroups);
+  const selectAccount = useDashboardStore((state) => state.selectAccount);
 
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+  const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     function handler(event: KeyboardEvent) {
@@ -145,13 +173,11 @@ export function CommandPalette() {
         event.preventDefault();
         toggle();
       }
-
       if (event.key === "Escape" && open) {
         event.preventDefault();
         setOpen(false);
       }
     }
-
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, setOpen, toggle]);
@@ -160,75 +186,136 @@ export function CommandPalette() {
     if (open) {
       setQuery("");
       setActiveIdx(0);
+      setTemplates([]);
+      setBroadcasts([]);
+      setSearching(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [open]);
 
-  const commands = useMemo(
-    () => buildCommands(setActiveTab, addRecent, () => setOpen(false)),
-    [addRecent, setActiveTab, setOpen],
-  );
+  // Debounced remote search for templates + broadcasts
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setTemplates([]);
+      setBroadcasts([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const [templateRes, logsRes] = await Promise.allSettled([
+          api.fetchTemplates("default", { search: q, limit: 5 }),
+          api.fetchLogs({ days: 30 }),
+        ]);
+        if (templateRes.status === "fulfilled") {
+          setTemplates(templateRes.value.items);
+        }
+        if (logsRes.status === "fulfilled") {
+          const qLower = q.toLowerCase();
+          const filtered = logsRes.value.filter((log) =>
+            log.message.toLowerCase().includes(qLower) ||
+            log.status.toLowerCase().includes(qLower) ||
+            (log.errorMessage ?? "").toLowerCase().includes(qLower)
+          );
+          setBroadcasts(filtered.slice(0, 5));
+        }
+      } catch {
+        // noop
+      }
+      setSearching(false);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
 
-  const filtered = useMemo(() => {
-    const trimmed = query.trim();
-    if (!trimmed) return commands;
-    const q = trimmed.toLowerCase();
-    return commands.filter(
-      (command) =>
-        command.label.toLowerCase().includes(q) ||
-        command.keywords.some((keyword) => keyword.toLowerCase().includes(q)),
-    );
-  }, [commands, query]);
+  const localItems = useMemo(() => {
+    const items: SearchItem[] = [];
+    items.push(...buildNavActions(setActiveTab, () => setOpen(false)));
+    items.push(...buildAccountItems(accounts, selectAccount, setActiveTab, () => setOpen(false)));
+    if (groups) {
+      items.push(...buildGroupItems(groups, selectAccount, setActiveTab, () => setOpen(false)));
+    }
+    return items;
+  }, [accounts, groups, selectAccount, setActiveTab, setOpen]);
 
-  const recentCommands = useMemo(() => {
-    if (query.trim()) return null;
-    if (recent.length === 0) return null;
-    return recent
-      .map((id) => commands.find((command) => command.id === id))
-      .filter((command): command is PaletteCommand => command != null);
-  }, [commands, query, recent]);
+  const remoteItems = useMemo(() => {
+    const items: SearchItem[] = [];
+    items.push(...buildTemplateItems(templates));
+    items.push(...buildBroadcastItems(broadcasts));
+    return items;
+  }, [templates, broadcasts]);
 
-  const displayCommands = recentCommands ?? filtered;
-  const displayLabel = recentCommands && query.trim() === "" ? "최근 사용" : null;
-  const safeIdx = Math.min(activeIdx, Math.max(0, displayCommands.length - 1));
+  // Combine and filter
+  const allFiltered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return { local: localItems, remote: [] as SearchItem[], grouped: false };
+    const local = localItems.filter((item) => matchesQuery(item, q));
+    const remote = remoteItems.filter((item) => matchesQuery(item, q));
+    return { local, remote, grouped: q.length > 0 };
+  }, [localItems, remoteItems, query]);
+
+  const displayCommands = useMemo(() => {
+    const { local, remote } = allFiltered;
+    if (!query.trim()) {
+      // Show recent first, then all local
+      if (recent.length > 0) {
+        const recentItems = recent
+          .map((id) => [...local, ...remote].find((c) => c.id === id))
+          .filter((item): item is SearchItem => item != null);
+        if (recentItems.length > 0) return { items: recentItems, label: "최근 사용" };
+      }
+      return { items: local, label: null };
+    }
+    const combined = [...local, ...remote];
+    return { items: combined, label: null };
+  }, [allFiltered, query, recent]);
+
+  // Grouped display for search results
+  const groupedResults = useMemo(() => {
+    if (!query.trim()) return null;
+    const { local, remote } = allFiltered;
+    const grouped = new Map<string, SearchItem[]>();
+    for (const item of [...local, ...remote]) {
+      const existing = grouped.get(item.category) ?? [];
+      existing.push(item);
+      grouped.set(item.category, existing);
+    }
+    return grouped;
+  }, [allFiltered, query]);
+
+  const flatItems = displayCommands.items;
+  const safeIdx = Math.min(activeIdx, Math.max(0, flatItems.length - 1));
 
   useEffect(() => {
-    if (activeIdx !== safeIdx) {
-      setActiveIdx(safeIdx);
-    }
+    if (activeIdx !== safeIdx) setActiveIdx(safeIdx);
   }, [activeIdx, safeIdx]);
 
   const execute = useCallback(
-    (command: PaletteCommand) => {
-      addRecent(command.id);
-      if (command.tabId) {
-        setActiveTab(command.tabId);
-      }
-      command.action?.();
-      setOpen(false);
+    (item: SearchItem) => {
+      addRecent(item.id);
+      item.action();
     },
-    [addRecent, setActiveTab, setOpen],
+    [addRecent],
   );
 
   function handleKeyDown(event: ReactKeyboardEvent) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIdx((current) => Math.min(current + 1, displayCommands.length - 1));
+      setActiveIdx((current) => Math.min(current + 1, flatItems.length - 1));
       return;
     }
-
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIdx((current) => Math.max(current - 1, 0));
       return;
     }
-
     if (event.key === "Enter") {
       event.preventDefault();
-      if (displayCommands[safeIdx]) execute(displayCommands[safeIdx]);
+      if (flatItems[safeIdx]) execute(flatItems[safeIdx]);
       return;
     }
-
     if (event.key === "Escape") {
       event.preventDefault();
       setOpen(false);
@@ -236,11 +323,13 @@ export function CommandPalette() {
   }
 
   useEffect(() => {
-    const el = listRef.current?.children[safeIdx] as HTMLElement | undefined;
+    const el = listRef.current?.querySelector(`[data-idx="${safeIdx}"]`) as HTMLElement | undefined;
     el?.scrollIntoView({ block: "nearest" });
   }, [safeIdx]);
 
   if (!mounted) return null;
+
+  const showGrouped = groupedResults && query.trim().length > 0;
 
   return createPortal(
     <AnimatePresence>
@@ -255,7 +344,6 @@ export function CommandPalette() {
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -263,10 +351,11 @@ export function CommandPalette() {
             transition={{ duration: 0.12, ease: "easeOut" }}
             role="dialog"
             aria-modal="true"
-            aria-label="명령 팔레트"
-            className="relative flex w-[90vw] max-w-[520px] flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl shadow-black/20"
+            aria-label="슈퍼 검색"
+            className="relative flex w-[90vw] max-w-[560px] flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl shadow-black/20"
             onKeyDown={handleKeyDown}
           >
+            {/* Search input */}
             <div className="flex items-center gap-2 border-b border-app-border px-4 py-3">
               <Search className="h-4 w-4 shrink-0 text-app-text-muted" aria-hidden="true" />
               <input
@@ -276,63 +365,120 @@ export function CommandPalette() {
                   setQuery(event.target.value);
                   setActiveIdx(0);
                 }}
-                placeholder="명령을 검색하세요…"
+                placeholder="계정 · 그룹 · 템플릿 · 발송 기록 · 메뉴 통합 검색..."
                 className="min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none placeholder:text-app-text-subtle"
-                aria-label="명령 검색"
+                aria-label="통합 검색"
               />
+              {searching && <Loader2 className="h-4 w-4 animate-spin text-app-text-muted" />}
               <kbd className="hidden shrink-0 items-center gap-0.5 rounded-md border border-app-border bg-app-card-hover px-1.5 py-0.5 text-[10px] font-medium text-app-text-subtle sm:flex">
                 <Command className="h-2.5 w-2.5" />K
               </kbd>
             </div>
 
+            {/* Results */}
             <div
               ref={listRef}
-              className="max-h-[50vh] overflow-y-auto px-2 py-2"
+              className="max-h-[55vh] overflow-y-auto px-2 py-2"
               role="listbox"
-              aria-label={displayLabel ?? "명령 목록"}
+              aria-label="검색 결과"
             >
-              {displayLabel && displayCommands.length > 0 && (
+              {/* Recent label */}
+              {displayCommands.label && flatItems.length > 0 && (
                 <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-subtle">
-                  {displayLabel}
+                  {displayCommands.label}
                 </div>
               )}
 
-              {displayCommands.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
+              {/* Empty state */}
+              {flatItems.length === 0 && !searching && (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Search className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-                  <p className="text-xs text-app-text-muted">일치하는 명령이 없습니다</p>
+                  <p className="text-xs text-app-text-muted">일치하는 항목이 없습니다</p>
                   <p className="mt-0.5 text-[10px] text-app-text-subtle">다른 키워드로 검색해보세요</p>
                 </div>
               )}
 
-              {displayCommands.map((command, index) => {
-                const selected = index === safeIdx;
-                const Icon = command.icon;
-                return (
-                  <button
-                    key={command.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => execute(command)}
-                    onMouseEnter={() => setActiveIdx(index)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-                      selected ? "bg-app-primary/10 text-app-primary" : "text-app-text hover:bg-app-card-hover",
-                    )}
-                  >
-                    <Icon className={cn("h-4 w-4 shrink-0", selected ? "text-app-primary" : "text-app-text-muted")} aria-hidden="true" />
-                    <span className="flex-1 truncate">{command.label}</span>
-                    {command.tabId && !selected && (
-                      <span className="shrink-0 text-[10px] text-app-text-subtle">
-                        {TABS.find((tab) => tab.id === command.tabId)?.group === "send" ? "발송" : TABS.find((tab) => tab.id === command.tabId)?.group === "ai" ? "AI" : TABS.find((tab) => tab.id === command.tabId)?.group === "dashboard" ? "대시보드" : TABS.find((tab) => tab.id === command.tabId)?.group === "ops" ? "운영" : TABS.find((tab) => tab.id === command.tabId)?.group === "settings" ? "설정" : "신규"}
+              {/* Searching state */}
+              {flatItems.length === 0 && searching && (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <Loader2 className="mb-2 h-6 w-6 animate-spin text-app-text-muted" />
+                  <p className="text-xs text-app-text-muted">검색 중...</p>
+                </div>
+              )}
+
+              {/* Grouped results */}
+              {showGrouped ? (
+                Array.from(groupedResults.entries())
+                  .filter(([, items]) => items.length > 0)
+                  .sort(([a], [b]) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b))
+                  .map(([category, items]) => (
+                    <div key={category} className="mb-2">
+                      <div className="mb-0.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-subtle">
+                        {CATEGORY_LABELS[category] ?? category}
+                      </div>
+                      {items.map((item) => {
+                        const idx = flatItems.indexOf(item);
+                        const selected = idx === safeIdx;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            data-idx={idx}
+                            onClick={() => execute(item)}
+                            onMouseEnter={() => setActiveIdx(idx)}
+                            className={cn(
+                              "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                              selected ? "bg-app-primary/10 text-app-primary" : "text-app-text hover:bg-app-card-hover",
+                            )}
+                          >
+                            <span className={cn("flex shrink-0 items-center", selected ? "text-app-primary" : "text-app-text-muted")}>
+                              {item.icon}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <span className="block truncate font-medium">{item.label}</span>
+                              {item.description && (
+                                <span className="block truncate text-[11px] text-app-text-muted">{item.description}</span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))
+              ) : (
+                /* Flat list (recent or no query) */
+                flatItems.map((item, index) => {
+                  const selected = index === safeIdx;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      data-idx={index}
+                      onClick={() => execute(item)}
+                      onMouseEnter={() => setActiveIdx(index)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                        selected ? "bg-app-primary/10 text-app-primary" : "text-app-text hover:bg-app-card-hover",
+                      )}
+                    >
+                      <span className={cn("flex shrink-0 items-center", selected ? "text-app-primary" : "text-app-text-muted")}>
+                        {item.icon}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
+                      <span className="flex-1 truncate font-medium">{item.label}</span>
+                      {item.description && !selected && (
+                        <span className="shrink-0 text-[10px] text-app-text-subtle">{item.description}</span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
+            {/* Footer */}
             <div className="hidden items-center gap-3 border-t border-app-border px-4 py-2 sm:flex">
               <div className="flex items-center gap-1.5 text-[10px] text-app-text-subtle">
                 <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">↑↓</kbd>
@@ -346,12 +492,12 @@ export function CommandPalette() {
                 <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">Esc</kbd>
                 <span>닫기</span>
               </div>
-              <div className="ml-auto flex items-center gap-1.5 text-[10px] text-app-text-subtle">
-                <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">
-                  <Command className="mr-0.5 inline h-2 w-2" />K
-                </kbd>
-                <span>열기</span>
-              </div>
+              {searching && (
+                <div className="ml-auto flex items-center gap-1.5 text-[10px] text-app-text-muted">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>검색 중...</span>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -367,9 +513,9 @@ export function CommandPaletteTrigger() {
     <button
       type="button"
       onClick={toggle}
-      aria-label="명령 팔레트 열기"
+      aria-label="슈퍼 검색 열기"
       className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text sm:min-h-8 sm:min-w-8"
-      title="명령 팔레트 (⌘K)"
+      title="슈퍼 검색 (⌘K)"
     >
       <Command className="h-4 w-4" aria-hidden="true" />
     </button>

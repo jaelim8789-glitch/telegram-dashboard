@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Plus, Search, Star, Trash2, Edit3, Copy, X,
-  Grid3X3, List, MessageSquare, AlertCircle,
+  Grid3X3, List, MessageSquare, AlertCircle, Clock, History,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Input } from "@/components/ui/Input";
@@ -15,6 +15,45 @@ import * as api from "@/lib/api";
 import type { MessageTemplate } from "@/lib/api";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+
+const VERSIONS_KEY = "telemon-template-versions";
+const MAX_VERSIONS = 10;
+
+interface VersionEntry {
+  id: string;
+  templateId: string;
+  name: string;
+  content: string;
+  category: string;
+  variables: string;
+  savedAt: string;
+}
+
+function loadVersions(templateId: string): VersionEntry[] {
+  try {
+    const raw = localStorage.getItem(VERSIONS_KEY);
+    if (!raw) return [];
+    const all: VersionEntry[] = JSON.parse(raw);
+    return all.filter((v) => v.templateId === templateId).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  } catch { return []; }
+}
+
+function saveVersion(template: MessageTemplate): void {
+  try {
+    const raw = localStorage.getItem(VERSIONS_KEY);
+    const all: VersionEntry[] = raw ? JSON.parse(raw) : [];
+    all.push({ id: crypto.randomUUID(), templateId: template.id, name: template.name, content: template.content, category: template.category, variables: template.variables, savedAt: new Date().toISOString() });
+    // Keep only MAX_VERSIONS per template
+    const grouped = new Map<string, VersionEntry[]>();
+    for (const v of all) {
+      const arr = grouped.get(v.templateId) ?? [];
+      arr.push(v);
+      grouped.set(v.templateId, arr);
+    }
+    const trimmed = Array.from(grouped.values()).flatMap((arr) => arr.sort((a, b) => b.savedAt.localeCompare(a.savedAt)).slice(0, MAX_VERSIONS));
+    localStorage.setItem(VERSIONS_KEY, JSON.stringify(trimmed));
+  } catch { /* noop */ }
+}
 
 const CATEGORIES = [
   { value: "", label: "전체" },
@@ -42,6 +81,7 @@ function TemplateCard({
   onToggleFavorite,
   onCopyContent,
   onInsert,
+  onShowVersions,
 }: {
   template: MessageTemplate;
   onEdit: () => void;
@@ -49,6 +89,7 @@ function TemplateCard({
   onToggleFavorite: () => void;
   onCopyContent: () => void;
   onInsert?: () => void;
+  onShowVersions?: () => void;
 }) {
   const parsedVars = useMemo(() => {
     try {
@@ -108,6 +149,15 @@ function TemplateCard({
         >
           <Edit3 className="h-3 w-3" /> 수정
         </button>
+        {onShowVersions && (
+          <button
+            onClick={onShowVersions}
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+            title="버전 기록"
+          >
+            <History className="h-3 w-3" /> 기록
+          </button>
+        )}
         <button
           onClick={onToggleFavorite}
           className={cn(
@@ -268,6 +318,7 @@ export function TemplateTab() {
 
   // Confirm dialog
   const [deleteTarget, setDeleteTarget] = useState<MessageTemplate | null>(null);
+  const [versionTarget, setVersionTarget] = useState<MessageTemplate | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
 
   useFocusTrap(editorRef, showEditor, () => setShowEditor(false));
@@ -316,6 +367,7 @@ export function TemplateTab() {
     setSaving(true);
     try {
       if (editingTemplate) {
+        saveVersion(editingTemplate);
         const updated = await api.updateTemplate(tenantId, editingTemplate.id, data);
         setTemplates((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         toast("success", "템플릿이 수정되었습니다.");
@@ -368,6 +420,19 @@ export function TemplateTab() {
     const store = useDashboardStore.getState();
     store.setSendMessage(template.content);
     store.setActiveTab("send");
+  };
+
+  const handleRestoreVersion = async (version: VersionEntry) => {
+    try {
+      const updated = await api.updateTemplate(tenantId, version.templateId, {
+        name: version.name, content: version.content, category: version.category, variables: JSON.parse(version.variables) as string[],
+      });
+      setTemplates((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      setVersionTarget(null);
+      toast("success", `"${version.name}" 이전 버전으로 복원했습니다.`);
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "복원에 실패했습니다.");
+    }
   };
 
   return (
@@ -511,6 +576,7 @@ export function TemplateTab() {
               onToggleFavorite={() => handleToggleFavorite(t)}
               onCopyContent={() => handleCopyContent(t.content)}
               onInsert={() => handleInsertIntoBroadcast(t)}
+              onShowVersions={() => setVersionTarget(t)}
             />
           ))}
         </div>
@@ -558,6 +624,52 @@ export function TemplateTab() {
         <p className="text-center text-[11px] text-app-text-muted">
           총 {total}개 템플릿
         </p>
+      )}
+
+      {/* Version History Modal */}
+      {versionTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setVersionTarget(null)}>
+          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-5 shadow-xl max-h-[70dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-app-text flex items-center gap-2">
+                <History className="h-4 w-4" /> "{versionTarget.name}" 버전 기록
+              </h3>
+              <button onClick={() => setVersionTarget(null)} aria-label="닫기" className="text-app-text-muted hover:text-app-text">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {(() => {
+              const versions = loadVersions(versionTarget.id);
+              if (versions.length === 0) return (
+                <div className="flex flex-col items-center py-8 text-center">
+                  <History className="mb-2 h-6 w-6 text-app-text-subtle" />
+                  <p className="text-xs text-app-text-muted">저장된 이전 버전이 없습니다.</p>
+                </div>
+              );
+              return (
+                <div className="space-y-2">
+                  {versions.map((v, i) => (
+                    <div key={v.id} className="rounded-xl border border-app-border bg-app-bg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-app-text-muted flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {new Date(v.savedAt).toLocaleString("ko-KR", { hour12: false })}
+                        </span>
+                        {i === 0 && <span className="text-[10px] text-app-info font-medium">가장 최근</span>}
+                      </div>
+                      <p className="line-clamp-2 text-xs text-app-text-secondary">{v.content}</p>
+                      <button
+                        onClick={() => handleRestoreVersion(v)}
+                        className="mt-2 flex items-center gap-1 rounded-lg bg-app-card-hover px-2 py-1 text-[10px] font-medium text-app-text hover:bg-app-primary/10 hover:text-app-primary transition-colors"
+                      >
+                        <History className="h-3 w-3" /> 이 버전으로 복원
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation */}
