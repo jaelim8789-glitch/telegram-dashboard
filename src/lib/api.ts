@@ -1221,6 +1221,67 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
   return result.api_key;
 }
 
+export interface AdminTokenTopUpResult {
+  userId: string;
+  amount: number;
+  newBalance: number;
+}
+
+export async function adminTopUpTokens(userId: string, amount: number, memo?: string): Promise<AdminTokenTopUpResult> {
+  const result = await request<{ user_id: string; amount: number; new_balance: number }>(`/api/admin/users/${userId}/topup-tokens`, {
+    method: "POST",
+    body: JSON.stringify({ amount, memo: memo ?? null }),
+  });
+  return {
+    userId: result.user_id,
+    amount: result.amount,
+    newBalance: result.new_balance,
+  };
+}
+
+export interface AdminBillingUpdateInput {
+  plan?: "free" | "pro" | "team";
+  subscriptionStatus?: "active" | "inactive" | "pending" | "past_due" | "canceled";
+  trialExpiresAt?: string;
+  extendTrialDays?: number;
+}
+
+export interface AdminBillingUpdateResult {
+  userId: string;
+  tenantId: string;
+  phone: string;
+  plan: string;
+  subscriptionStatus: string;
+  trialExpiresAt: string | null;
+}
+
+export async function adminUpdateUserBilling(userId: string, input: AdminBillingUpdateInput): Promise<AdminBillingUpdateResult> {
+  const body: Record<string, unknown> = {};
+  if (input.plan) body.plan = input.plan;
+  if (input.subscriptionStatus) body.subscription_status = input.subscriptionStatus;
+  if (input.trialExpiresAt) body.trial_expires_at = input.trialExpiresAt;
+  if (typeof input.extendTrialDays === "number") body.extend_trial_days = input.extendTrialDays;
+  const result = await request<{
+    user_id: string;
+    tenant_id: string;
+    phone: string;
+    plan: string;
+    subscription_status: string;
+    trial_expires_at: string | null;
+  }>(`/api/admin/users/${userId}/billing`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return {
+    userId: result.user_id,
+    tenantId: result.tenant_id,
+    phone: result.phone,
+    plan: result.plan,
+    subscriptionStatus: result.subscription_status,
+    trialExpiresAt: result.trial_expires_at,
+  };
+}
+
 // === Admin Dashboard Status ===
 
 export interface AdminDashboardUserStats {
