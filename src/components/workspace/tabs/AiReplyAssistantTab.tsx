@@ -5,6 +5,7 @@ import { Bot, Send, Sparkles, Copy, Check, Loader2, MessageSquare } from "lucide
 import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function AiReplyAssistantTab() {
   const [accountId, setAccountId] = useState("");
@@ -136,8 +137,13 @@ export function AiReplyAssistantTab() {
                   {copied ? "복사됨" : "복사"}
                 </button>
                 <button
+                  type="button"
+                  onClick={() => {
+                    useDashboardStore.getState().setSendMessage(suggestedReply);
+                    useDashboardStore.getState().setActiveTab("send");
+                  }}
                   className="flex items-center gap-1.5 rounded-lg bg-app-primary px-3 py-1.5 text-xs text-white hover:bg-app-primary-hover transition-colors">
-                  <Send className="h-3.5 w-3.5" /> 전송 (준비 중)
+                  <Send className="h-3.5 w-3.5" /> 발송탭으로 보내기
                 </button>
               </div>
             </div>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Sparkles, Copy, Check, Loader2, SendHorizontal, FileText } from "lucide-react";
+import { Bot, Sparkles, Copy, Check, Loader2, SendHorizontal, FileText, Send } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function AiBroadcastAssistantTab() {
   const [purpose, setPurpose] = useState("");
