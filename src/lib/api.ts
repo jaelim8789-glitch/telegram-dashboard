@@ -1213,6 +1213,19 @@ export async function adminDeleteUserByPhone(phone: string): Promise<{ deleted: 
 
 export interface AdminReferralCommission {
   id: string;
+  referrerId: string;
+  referredId: string;
+  paymentId: string;
+  amountCents: number;
+  rate: number;
+  status: string;
+  paymentTxId: string | null;
+  paidAt: string | null;
+  createdAt: string | null;
+}
+
+interface ApiAdminReferralCommission {
+  id: string;
   referrer_id: string;
   referred_id: string;
   payment_id: string;
@@ -1227,8 +1240,110 @@ export interface AdminReferralCommission {
 /** Admin: list referral commissions, optionally filtered by status */
 export async function fetchAdminReferralCommissions(status?: string): Promise<AdminReferralCommission[]> {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  const result = await request<{ items: AdminReferralCommission[] }>(`/api/admin/referral/commissions${query}`);
-  return result.items;
+  const result = await request<{ items: ApiAdminReferralCommission[] }>(`/api/admin/referral/commissions${query}`);
+  return result.items.map((c) => ({
+    id: c.id,
+    referrerId: c.referrer_id,
+    referredId: c.referred_id,
+    paymentId: c.payment_id,
+    amountCents: c.amount_cents,
+    rate: c.rate,
+    status: c.status,
+    paymentTxId: c.payment_tx_id,
+    paidAt: c.paid_at,
+    createdAt: c.created_at,
+  }));
+}
+
+/** Admin: manually top up a user's token balance */
+export async function adminTopUpTokens(userId: string, amount: number, memo?: string): Promise<{ newBalance: number }> {
+  const result = await request<{ user_id: string; amount: number; new_balance: number }>(
+    `/api/admin/users/${encodeURIComponent(userId)}/topup-tokens`,
+    { method: "POST", body: JSON.stringify({ amount, memo }) },
+  );
+  return { newBalance: result.new_balance };
+}
+
+export interface AdminAuditLog {
+  id: string;
+  adminUsername: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  targetPhone: string | null;
+  detail: string | null;
+  memo: string | null;
+  result: string;
+  createdAt: string;
+}
+
+interface ApiAdminAuditLog {
+  id: string;
+  admin_username: string;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  target_phone: string | null;
+  detail: string | null;
+  memo: string | null;
+  result: string;
+  created_at: string;
+}
+
+/** Admin: list recent admin audit log entries */
+export async function fetchAdminAuditLogs(limit = 50, action?: string): Promise<AdminAuditLog[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (action) params.set("action", action);
+  const result = await request<{ items: ApiAdminAuditLog[] }>(`/api/admin/audit-logs?${params.toString()}`);
+  return result.items.map((r) => ({
+    id: r.id,
+    adminUsername: r.admin_username,
+    action: r.action,
+    targetType: r.target_type,
+    targetId: r.target_id,
+    targetPhone: r.target_phone,
+    detail: r.detail,
+    memo: r.memo,
+    result: r.result,
+    createdAt: r.created_at,
+  }));
+}
+
+export interface AdminBillingUpdateInput {
+  plan?: "free" | "pro" | "team";
+  subscriptionStatus?: "active" | "inactive" | "pending" | "past_due" | "canceled";
+  trialExpiresAt?: string;
+  extendTrialDays?: number;
+}
+
+export interface AdminBillingUpdateResult {
+  userId: string;
+  tenantId: string;
+  phone: string;
+  plan: string;
+  subscriptionStatus: string;
+  trialExpiresAt: string | null;
+}
+
+/** Admin: update a user's plan/subscription/trial */
+export async function adminUpdateUserBilling(userId: string, input: AdminBillingUpdateInput): Promise<AdminBillingUpdateResult> {
+  const body: Record<string, unknown> = {};
+  if (input.plan) body.plan = input.plan;
+  if (input.subscriptionStatus) body.subscription_status = input.subscriptionStatus;
+  if (input.trialExpiresAt) body.trial_expires_at = input.trialExpiresAt;
+  if (input.extendTrialDays) body.extend_trial_days = input.extendTrialDays;
+  const result = await request<{
+    user_id: string; tenant_id: string; phone: string; plan: string;
+    subscription_status: string; trial_expires_at: string | null;
+  }>(`/api/admin/users/${encodeURIComponent(userId)}/billing`, { method: "PATCH", body: JSON.stringify(body) });
+  return {
+    userId: result.user_id,
+    tenantId: result.tenant_id,
+    phone: result.phone,
+    plan: result.plan,
+    subscriptionStatus: result.subscription_status,
+    trialExpiresAt: result.trial_expires_at,
+  };
 }
 
 /** Admin: approve a referral commission for payout, optionally recording the payment tx id */
