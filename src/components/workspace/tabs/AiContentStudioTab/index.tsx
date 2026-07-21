@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   Sparkles, Copy, Check, Loader2, CalendarDays, SendHorizontal,
-  Bot, FileText, AlertCircle, ChevronDown, ChevronUp, ExternalLink,
+  Bot, AlertCircle, ChevronDown, ChevronUp, ExternalLink,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
@@ -222,15 +222,6 @@ export function AiContentStudioTab() {
       subtitle="AI 콘텐츠 생성 & 예약 발송"
       badge="NEW"
       error={error}
-      empty={!selectedType && !generated && !generating}
-      emptyFallback={
-        <>
-          <FileText className="h-10 w-10 text-app-text-subtle mb-3" />
-          <p className="text-sm font-medium text-app-text">AI가 콘텐츠를 생성해드립니다</p>
-          <p className="text-xs text-app-text-muted mt-1">콘텐츠 타입을 선택하고</p>
-          <p className="text-xs text-app-text-muted">원하는 메시지를 만들어보세요</p>
-        </>
-      }
     >
       <div className="space-y-4">
         {/* ── Step 1: Content Type Selection ──────────────────────────── */}

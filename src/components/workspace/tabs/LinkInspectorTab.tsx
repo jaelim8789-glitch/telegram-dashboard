@@ -313,7 +313,12 @@ export function LinkInspectorTab() {
   const queueHasActive = queueItems.some((it) => it.status === "queued" || it.status === "processing");
 
   async function handleInspect() {
-    if (!selectedAccountId || pastedLinks.length === 0 || inspecting) return;
+    if (!selectedAccountId) {
+      setError("계정을 선택해주세요.");
+      return;
+    }
+    
+    if (pastedLinks.length === 0 || inspecting) return;
     setInspecting(true);
     setError(null);
     setJoinResults(null);

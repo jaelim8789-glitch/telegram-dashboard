@@ -40,18 +40,21 @@ const FEATURE_ICONS: Record<string, React.ReactNode> = {
 
 export function AiUsageTab() {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [todayUsage, setTodayUsage] = useState<UsageSummary | null>(null);
   const [limits, setLimits] = useState<PlanLimit[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [usageRes, limitsRes] = await Promise.all([
+        const [usageRes, limitsRes, todayRes] = await Promise.all([
           fetch("/api/ai/usage?days=30"),
           fetch("/api/ai/plan-limits"),
+          fetch("/api/ai/usage?days=1"),
         ]);
         if (usageRes.ok) setUsage(await usageRes.json());
         if (limitsRes.ok) setLimits(await limitsRes.json());
+        if (todayRes.ok) setTodayUsage(await todayRes.json());
       } catch {} finally { setLoading(false); }
     };
     load();
@@ -64,6 +67,17 @@ export function AiUsageTab() {
       subtitle="최근 30일 기준"
       loading={loading}
     >
+      {/* 오늘 사용량 배지 */}
+      {todayUsage && (
+        <div className="flex items-center gap-2 rounded-xl border border-app-primary/20 bg-app-primary/5 px-3 py-2">
+          <Activity className="h-4 w-4 text-app-primary" />
+          <span className="text-xs font-semibold text-app-text">오늘 사용량</span>
+          <span className="text-xs text-app-text-muted">
+            요청 {todayUsage.total_requests}회 · 토큰 {todayUsage.total_tokens.toLocaleString()} · 크레딧 {todayUsage.total_credits}
+          </span>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-app-border bg-app-card p-3">

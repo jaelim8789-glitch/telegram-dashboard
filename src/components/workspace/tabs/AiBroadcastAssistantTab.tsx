@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Sparkles, Copy, Check, Loader2, SendHorizontal, FileText, Send } from "lucide-react";
+import { Bot, Sparkles, Copy, Check, Loader2, Send, Users } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function AiBroadcastAssistantTab() {
+  const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
+  const groups = useDashboardStore((s) => s.sendGroups);
+  const selectedRecipients = groups.filter((g) => selectedIds.includes(g.id));
   const [purpose, setPurpose] = useState("");
   const [targetDescription, setTargetDescription] = useState("");
   const [tone, setTone] = useState("professional");
@@ -60,15 +63,6 @@ export function AiBroadcastAssistantTab() {
       subtitle="AI 메시지 생성 & A/B 테스트"
       badge="NEW"
       error={error}
-      empty={!result && !loading}
-      emptyFallback={
-        <>
-          <FileText className="h-10 w-10 text-app-text-subtle mb-3" />
-          <p className="text-sm font-medium text-app-text">AI가 메시지를 생성해드립니다</p>
-          <p className="text-xs text-app-text-muted mt-1">목적과 대상을 입력하고</p>
-          <p className="text-xs text-app-text-muted">최적의 마케팅 메시지를 받아보세요</p>
-        </>
-      }
     >
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -89,6 +83,27 @@ export function AiBroadcastAssistantTab() {
                 placeholder="예: 30대 직장인, 소상공인"
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary"
               />
+            </div>
+            {/* 선택된 수신자 표시 */}
+            <div>
+              <label className="text-[11px] font-medium text-app-text-muted">대상 그룹</label>
+              {selectedRecipients.length > 0 ? (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {selectedRecipients.slice(0, 5).map((g) => (
+                    <span key={g.id} className="inline-flex items-center gap-1 rounded-full border border-app-border/60 bg-app-card-hover px-2 py-0.5 text-[10px] text-app-text">
+                      <Users className="h-3 w-3" />
+                      {g.title?.slice(0, 12) || g.id.slice(0, 8)}
+                    </span>
+                  ))}
+                  {selectedRecipients.length > 5 && (
+                    <span className="text-[10px] text-app-text-muted">+{selectedRecipients.length - 5}개</span>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-1 text-[10px] text-app-text-muted">
+                  발송탭에서 수신자 그룹을 먼저 선택하세요
+                </p>
+              )}
             </div>
             <div>
               <label className="text-[11px] font-medium text-app-text-muted">톤</label>
@@ -136,6 +151,17 @@ export function AiBroadcastAssistantTab() {
                     className="flex items-center gap-1.5 rounded-lg border border-app-border px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors">
                     {copiedMessage === "main" ? <Check className="h-3.5 w-3.5 text-app-success" /> : <Copy className="h-3.5 w-3.5" />}
                     {copiedMessage === "main" ? "복사됨" : "복사"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const store = useDashboardStore.getState();
+                      store.setSendMessage(result.message);
+                      store.setActiveTab("send");
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg bg-app-primary px-3 py-1.5 text-xs text-white hover:bg-app-primary-hover transition-colors"
+                  >
+                    <Send className="h-3.5 w-3.5" /> 발송탭으로 보내기{selectedRecipients.length > 0 ? ` (${selectedRecipients.length}명)` : ""}
                   </button>
                 </div>
               </Panel>
