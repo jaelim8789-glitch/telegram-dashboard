@@ -12,8 +12,33 @@ import {
 import { requestAiReply } from '@/lib/api'; // AI 콘텐츠 생성을 위한 API
 import * as api from '@/lib/api'; // 발송을 위한 API
 
+const STORAGE_KEY = "autonomous_growth_loops";
+
+function loadLoops(): Map<string, AutonomousGrowthLoop> {
+  if (typeof window === "undefined") return new Map();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const map = new Map<string, AutonomousGrowthLoop>();
+      Object.entries(parsed).forEach(([k, v]) => map.set(k, v as AutonomousGrowthLoop));
+      return map;
+    }
+  } catch {}
+  return new Map();
+}
+
+function saveLoops(loops: Map<string, AutonomousGrowthLoop>) {
+  if (typeof window === "undefined") return;
+  try {
+    const obj: Record<string, AutonomousGrowthLoop> = {};
+    loops.forEach((v, k) => { obj[k] = v; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  } catch {}
+}
+
 class AutonomousGrowthManager {
-  private loops: Map<string, AutonomousGrowthLoop> = new Map();
+  private loops: Map<string, AutonomousGrowthLoop> = loadLoops();
   private activeTimers: Map<string, NodeJS.Timeout> = new Map();
 
   /**
@@ -41,6 +66,7 @@ class AutonomousGrowthManager {
     };
 
     this.loops.set(loopId, newLoop);
+    saveLoops(this.loops);
     return newLoop;
   }
 
@@ -63,6 +89,7 @@ class AutonomousGrowthManager {
     loop.status = 'running';
     loop.updatedAt = new Date();
     this.loops.set(loopId, loop);
+    saveLoops(this.loops);
 
     // 루프 실행
     this.executeLoop(loopId);
@@ -88,6 +115,7 @@ class AutonomousGrowthManager {
     loop.status = 'paused';
     loop.updatedAt = new Date();
     this.loops.set(loopId, loop);
+    saveLoops(this.loops);
 
     // 실행 중인 타이머 정리
     if (this.activeTimers.has(loopId)) {
@@ -111,6 +139,7 @@ class AutonomousGrowthManager {
     loop.status = 'idle';
     loop.updatedAt = new Date();
     this.loops.set(loopId, loop);
+    saveLoops(this.loops);
 
     // 실행 중인 타이머 정리
     if (this.activeTimers.has(loopId)) {
@@ -146,6 +175,7 @@ class AutonomousGrowthManager {
       loop.status = 'failed';
       loop.updatedAt = new Date();
       this.loops.set(loopId, loop);
+      saveLoops(this.loops);
     }
   }
 
@@ -188,6 +218,7 @@ class AutonomousGrowthManager {
     }
 
     this.loops.set(loopId, loop);
+    saveLoops(this.loops);
   }
 
   /**

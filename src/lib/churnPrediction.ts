@@ -14,9 +14,13 @@ export function predictMemberChurn(
     const reasons: string[] = [];
     let penalty = 0;
 
-    const lastActiveDays = m.lastActiveDays ?? Math.floor(Math.random() * 60);
-    const messageCount = m.messageCount ?? Math.floor(Math.random() * 20);
-    const joinDays = m.joinDays ?? Math.floor(Math.random() * 365);
+    const lastActiveDays = m.lastActiveDays ?? null;
+    const messageCount = m.messageCount ?? null;
+    const joinDays = m.joinDays ?? null;
+
+    if (lastActiveDays === null || messageCount === null || joinDays === null) {
+      return { memberId: m.id, displayName: m.name || m.id.slice(0, 8), riskScore: 50, riskLevel: "medium" as const, reasons: ["데이터 부족으로 정확한 예측이 불가능합니다"], retentionTip: "데이터가 충분히 쌓이면 분석이 가능합니다." };
+    }
 
     if (lastActiveDays > 30) {
       penalty += 35;

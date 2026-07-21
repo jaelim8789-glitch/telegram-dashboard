@@ -44,6 +44,7 @@ export function AiReplyAssistantTab() {
   const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
+  const [replyLength, setReplyLength] = useState<"short" | "medium" | "long">("medium");
 
   useEffect(() => {
     if (!selectedAccountId) return;
@@ -75,6 +76,7 @@ export function AiReplyAssistantTab() {
           chat_title: chatTitle || undefined,
           incoming_message: incomingMessage,
           use_memory: true,
+          length: replyLength,
         }),
       });
 
@@ -200,6 +202,17 @@ export function AiReplyAssistantTab() {
                 {reason && (
                   <span className="text-[10px] text-app-text-muted truncate">{reason}</span>
                 )}
+              </div>
+
+              <div className="flex items-center gap-1 rounded-lg border border-app-border bg-app-card/50 p-0.5">
+                {(["short", "medium", "long"] as const).map((l) => (
+                  <button key={l} onClick={() => setReplyLength(l)}
+                    className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                      replyLength === l ? "bg-app-primary text-white" : "text-app-text-muted hover:text-app-text"
+                    }`}>
+                    {l === "short" ? "짧게" : l === "medium" ? "보통" : "길게"}
+                  </button>
+                ))}
               </div>
 
               <div className="rounded-xl border border-app-border bg-app-bg p-3">

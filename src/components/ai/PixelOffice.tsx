@@ -16,6 +16,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useStore as useWorkspaceStore } from "@/store/useWorkspaceStore";
 import { OfficeWhiteboard } from "./OfficeWhiteboard";
 import { OfficeTV } from "./OfficeTV";
+import { useNightMode } from "@/lib/useNightMode";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -471,6 +472,18 @@ export function PixelOffice() {
   const min = officeTime % 60;
   const timeStr = `${hour.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
   const isNight = hour < 7 || hour >= 19;
+  const isNightMode = useNightMode();
+  const actualNight = isNightMode || isNight;
+
+  // Night mode employee behavior
+  useEffect(() => {
+    if (!actualNight || hour < 21) return;
+    setEmployees((prev) => prev.map((emp) => ({
+      ...emp,
+      status: Math.random() < 0.7 ? "working" : "coffee",
+      stress: Math.min(100, emp.stress + 2),
+    })));
+  }, [actualNight, hour]);
 
   const weatherIcons: Record<string, string> = { sunny: "☀️", rainy: "🌧️", snowy: "❄️", cloudy: "☁️" };
   const weatherEffects: Record<string, string> = { sunny: "bg-yellow-500/10 text-yellow-400", rainy: "bg-blue-500/10 text-blue-400", snowy: "bg-white/10 text-white/60", cloudy: "bg-gray-500/10 text-gray-400" };
@@ -489,7 +502,7 @@ export function PixelOffice() {
         <div className="flex items-center gap-2">
           <div className={cn(
             "rounded-full px-2.5 py-1 text-[10px] font-mono font-bold flex items-center gap-1",
-            isNight ? "bg-indigo-500/20 text-indigo-400" : "bg-yellow-500/20 text-yellow-500"
+            actualNight ? "bg-indigo-500/20 text-indigo-400" : "bg-yellow-500/20 text-yellow-500"
           )}>
             <Clock className="h-3 w-3" />
             {timeStr}
@@ -511,11 +524,11 @@ export function PixelOffice() {
         {/* Sky gradient */}
         <div className={cn(
           "absolute inset-0 transition-colors duration-1000",
-          isNight ? "bg-[#0f0f1a]" : "bg-gradient-to-b from-[#1a1a2e] via-[#1e1e35] to-[#252540]"
+          actualNight ? "bg-[#0f0f1a]" : "bg-gradient-to-b from-[#1a1a2e] via-[#1e1e35] to-[#252540]"
         )} />
 
         {/* Stars at night */}
-        {isNight && Array.from({ length: 20 }).map((_, i) => (
+        {actualNight && Array.from({ length: 20 }).map((_, i) => (
           <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse" style={{
             top: `${Math.random() * 40}%`,
             left: `${Math.random() * 100}%`,
@@ -533,6 +546,35 @@ export function PixelOffice() {
           <div key={i} className="absolute h-1.5 w-1.5 rounded-full bg-white/40 animate-snow"
             style={{ left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s` }} />
         ))}
+
+        {/* 야근모드 특수 효과 */}
+        {actualNight && hour >= 21 && (
+          <>
+            {/* 모니터 불빛 효과 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none" />
+            {/* 로파이 BGM 텍스트 */}
+            <div className="absolute bottom-2 left-2 text-[7px] text-white/20 flex items-center gap-1 z-20">
+              🎵 lofi hip hop radio
+            </div>
+            {/* 별 더 많이 */}
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse"
+                style={{ top: `${Math.random() * 40}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, opacity: Math.random() * 0.5 + 0.3 }}
+              />
+            ))}
+          </>
+        )}
+
+        {/* 야근 환영 메시지 */}
+        {actualNight && hour >= 21 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 px-3 py-1.5 text-center"
+          >
+            <p className="text-[9px] text-purple-300/80">
+              🌙 야근 중... {new Date().getHours()}시 {new Date().getMinutes()}분 — 오늘도 수고하셨어요! ☕
+            </p>
+          </motion.div>
+        )}
 
         {/* Office building frame */}
         <div className="relative z-10 p-3">
@@ -566,7 +608,7 @@ export function PixelOffice() {
                     {type === "cafeteria" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60">🍽️</span>}
                     {type === "coffee" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60">☕</span>}
                     {type === "plant" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60">🌿</span>}
-                    {type === "window" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60" style={{color: isNight ? "#4488ff60" : "#88ccff60"}}>▣</span>}
+                    {type === "window" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60" style={{color: actualNight ? "#4488ff60" : "#88ccff60"}}>▣</span>}
                     {type === "manager" && <span className="absolute inset-0 flex items-center justify-center text-[10px] opacity-60">🏆</span>}
                     {type === "door" && <span className="absolute inset-0 flex items-center justify-center text-[11px] opacity-50">🚪</span>}
                   </div>
@@ -791,6 +833,11 @@ export function PixelOffice() {
       <style>{`
   @keyframes rain { 0% { transform: translateY(-10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(400px); opacity: 0; } }
   @keyframes snow { 0% { transform: translateY(-10px) rotate(0deg); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(400px) rotate(360deg); opacity: 0; } }
+  @keyframes screenFlicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.97; }
+  }
+  .night-mode-screen { animation: screenFlicker 4s ease-in-out infinite; }
   .animate-rain { animation: rain 1s linear infinite; }
   .animate-snow { animation: snow 3s linear infinite; }
 `}</style>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { LayoutDashboard, ArrowRight, CheckCircle2, AlertTriangle, Clock, Activity, Users, RefreshCw } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId, type DeliveryOverview } from "@/types";
 import { getToken } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -18,6 +19,7 @@ function authHeaders(): Record<string, string> {
 }
 
 export function DashboardOverview() {
+  const { toast } = useToast();
   const navigateToFeature = useDashboardStore((s) => s.navigateToFeature);
   const accounts = useDashboardStore((s) => s.accounts);
   const [overview, setOverview] = useState<DeliveryOverview | null>(null);
@@ -33,7 +35,7 @@ export function DashboardOverview() {
         const data = await res.json();
         setOverview(data);
       }
-    } catch {} finally {
+    } catch { toast("error", "통계를 불러오지 못했습니다."); } finally {
       setLoading(false);
     }
   }, []);

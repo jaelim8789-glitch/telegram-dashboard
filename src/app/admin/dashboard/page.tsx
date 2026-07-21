@@ -7,7 +7,7 @@ import {
   Activity, HeadphonesIcon, KeyRound, LogOut, RefreshCw,
   Shield, Users, XCircle, AlertTriangle, HeartPulse,
   Ban, Clock, WifiOff, Plug, HelpCircle, Layers,
-  CheckCircle2, ChevronRight, Sparkles, Settings2,
+  CheckCircle2, ChevronRight, Sparkles, Settings2, Download,
 } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";

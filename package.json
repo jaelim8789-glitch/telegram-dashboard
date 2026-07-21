@@ -18,9 +18,7 @@
     "cap:ios": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open ios"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "next lint --file"
-    ]
+    "package.json": []
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

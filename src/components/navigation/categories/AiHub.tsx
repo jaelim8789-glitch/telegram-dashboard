@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { MessageSquare, MessageCircle, Megaphone, Sparkles, BarChart3, Cpu, Gauge, Users, FileText, TrendingUp, ArrowRight, Bot } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId } from "@/types";
 import { cn } from "@/lib/cn";
 import * as agentApi from "@/lib/agent-api";
@@ -22,6 +23,7 @@ const FEATURE_META: Record<string, { icon: React.ComponentType<{ className?: str
 };
 
 export function AiHub() {
+  const { toast } = useToast();
   const navigateToChat = useDashboardStore((s) => s.navigateToChat);
   const navigateToFeature = useDashboardStore((s) => s.navigateToFeature);
   const [agentCount, setAgentCount] = useState(0);
@@ -33,7 +35,7 @@ export function AiHub() {
       const agents = await agentApi.fetchAgents();
       setAgentCount(agents.length);
       setAgentTotalLevel(agents.reduce((s, a) => s + a.level, 0));
-    } catch {} finally {
+    } catch { toast("error", "Agent 정보를 불러오지 못했습니다."); } finally {
       setLoading(false);
     }
   }, []);

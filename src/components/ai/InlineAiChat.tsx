@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 import { getToken, getSessionToken } from "@/lib/auth";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import * as agentApi from "@/lib/agent-api";
 import type { ToolConfirmation } from "@/lib/agent-api";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -199,48 +200,55 @@ export function InlineAiChat() {
     if (activeChatId && !loading) inputRef.current?.focus();
   }, [activeChatId, loading]);
 
+  const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+
   // ── 발송현황 요약 카드 ──
   useEffect(() => {
     let cancelled = false;
+    let currentAccountId = selectedAccountId;
     setSummaryLoading(true);
-    fetch(`${BASE_URL}/api/ai/usage?days=1`, { headers: authHeaders() })
-      .then((r) => r.json().catch(() => ({})))
-      .then((data) => {
-        if (cancelled) return;
-        const features = data.features || {};
-        const chat = features.chat || {};
-        const broadcast = features.broadcast_assistant || {};
-        setBroadcastSummary({
-          sent: chat.requests || 0,
-          failed: broadcast.requests || 0,
-          scheduled: 0,
-        });
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setSummaryLoading(false); });
 
-    // Try to get actual broadcast stats from account
-    const accountId = typeof localStorage !== "undefined" ? localStorage.getItem("selectedAccountId") : null;
-    if (accountId) {
-      fetch(`${BASE_URL}/api/broadcasts?account_id=${accountId}&limit=50`, { headers: authHeaders() })
+    Promise.all([
+      fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers: authHeaders() })
         .then((r) => r.json().catch(() => ({})))
-        .then((data) => {
-          if (cancelled) return;
-          const list = Array.isArray(data) ? data : (data.broadcasts || []);
-          const sent = list.filter((b: any) => b.status === "sent").length;
-          const failed = list.filter((b: any) => b.status === "failed").length;
-          const scheduled = list.filter((b: any) => b.status === "pending" || b.status === "scheduled").length;
-          setBroadcastSummary({ sent, failed, scheduled });
-          // Set badge on send tab (failed + pending)
-          if (failed > 0 || scheduled > 0) {
-            useDashboardStore.getState().setTabBadge("send", failed + scheduled);
-          }
-        })
-        .catch(() => {});
-    }
+        .then((data) => ({ kind: "usage" as const, data }))
+        .catch(() => ({ kind: "usage" as const, data: {} })),
+      selectedAccountId
+        ? fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: authHeaders() })
+            .then((r) => r.json().catch(() => ({})))
+            .then((data) => ({ kind: "broadcast" as const, data }))
+            .catch(() => ({ kind: "broadcast" as const, data: {} }))
+        : Promise.resolve({ kind: "broadcast" as const, data: {} }),
+    ]).then((results) => {
+      if (cancelled) return;
+
+      const usageData = results.find((r) => r.kind === "usage")?.data || {};
+      const broadcastData = results.find((r) => r.kind === "broadcast")?.data || {};
+
+      const features = usageData.features || {};
+      const chat = features.chat || {};
+      const broadcast = features.broadcast_assistant || {};
+
+      const list = Array.isArray(broadcastData) ? broadcastData : (broadcastData.broadcasts || []);
+      const sent = list.filter((b: any) => b.status === "sent").length;
+      const failed = list.filter((b: any) => b.status === "failed").length;
+      const scheduled = list.filter((b: any) => b.status === "pending" || b.status === "scheduled").length;
+
+      setBroadcastSummary({
+        sent: sent || chat.requests || 0,
+        failed: failed || broadcast.requests || 0,
+        scheduled,
+      });
+
+      if (failed > 0 || scheduled > 0) {
+        useDashboardStore.getState().setTabBadge("send", failed + scheduled);
+      }
+    }).catch(() => {}).finally(() => {
+      if (!cancelled) setSummaryLoading(false);
+    });
 
     return () => { cancelled = true; };
-  }, [activeAgentId]);
+  }, [activeAgentId, selectedAccountId]);
 
   async function handleNewChat() {
     if (!activeAgentId) return;
@@ -296,7 +304,7 @@ export function InlineAiChat() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    fetch(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
+    fetchWithTimeout(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ content: text }),
@@ -489,7 +497,7 @@ export function InlineAiChat() {
       {/* ── Chat List Side Panel (left slide-in overlay) ── */}
       {chatPanelOpen && (
         <>
-          <div className="absolute inset-0 z-20 bg-black/30" onClick={() => setChatPanelOpen(false)} />
+          <div className="absolute inset-0 z-20 bg-black/30" onClick={() => setChatPanelOpen(false)} onKeyDown={(e) => { if (e.key === "Escape") setChatPanelOpen(false); }} tabIndex={-1} />
           <div className="absolute left-0 top-0 bottom-0 z-30 w-64 max-w-[80vw] bg-app-card border-r border-app-border flex flex-col shadow-xl transition-transform duration-300" style={{ transform: "translateX(0)", paddingLeft: "env(safe-area-inset-left, 0px)" }}>
             <div className="flex items-center justify-between border-b border-app-border px-3 py-2.5 shrink-0">
               <button

@@ -2,8 +2,19 @@
 
 import { useCallback } from "react";
 
+function isHapticEnabled(): boolean {
+  if (typeof localStorage === "undefined") return true;
+  return localStorage.getItem("telemon-haptic-enabled") !== "false";
+}
+
+export function setHapticEnabled(enabled: boolean) {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem("telemon-haptic-enabled", String(enabled));
+}
+
 export function useHapticFeedback() {
   const vibrate = useCallback((pattern: number | number[] = 10) => {
+    if (!isHapticEnabled()) return;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(pattern);
     }

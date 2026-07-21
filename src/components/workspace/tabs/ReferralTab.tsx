@@ -216,7 +216,9 @@ export function ReferralTab() {
             <div className="rounded-xl border border-app-border bg-app-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-app-text">내 추천 링크</h3>
-                <Badge tone="info">총판 전용</Badge>
+                <button type="button" className="cursor-pointer" onClick={() => useDashboardStore.getState().setActiveTab("profile")}>
+                  <Badge tone="info">총판 전용</Badge>
+                </button>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -280,11 +282,15 @@ export function ReferralTab() {
                     </p>
                   </div>
                 </div>
-                <Badge 
-                  tone={commission.status === 'paid' ? 'success' : 'warning'}
+                <button
+                  type="button"
+                  className="cursor-pointer"
+                  onClick={() => useDashboardStore.getState().setActiveTab("log")}
                 >
-                  {commission.status === 'paid' ? '지급 완료' : '대기 중'}
-                </Badge>
+                  <Badge tone={commission.status === 'paid' ? 'success' : 'warning'}>
+                    {commission.status === 'paid' ? '지급 완료' : '대기 중'}
+                  </Badge>
+                </button>
               </motion.div>
             ))}
           </div>
