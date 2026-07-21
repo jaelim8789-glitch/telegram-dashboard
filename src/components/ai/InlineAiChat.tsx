@@ -277,6 +277,13 @@ export function InlineAiChat() {
     sendMessageWithInput(input.trim());
   }
 
+  // speechSupported is never set to true yet (no SpeechRecognition wiring committed),
+  // so this button never actually renders — stub keeps the file compiling until
+  // voice input lands for real.
+  function toggleListening() {
+    setIsListening((prev) => !prev);
+  }
+
   async function handleExecuteTool(messageId: string, toolName: string, payload: Record<string, unknown>) {
     await agentApi.executeToolAction(messageId, toolName, payload);
     if (activeChatId) {

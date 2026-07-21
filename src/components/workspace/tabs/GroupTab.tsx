@@ -183,11 +183,11 @@ export function GroupTab() {
   const totalMembers = useMemo(() => groups.reduce((s, g) => s + (g.participantsCount ?? 0), 0), [groups]);
   const favoriteCount = useMemo(() => groups.filter((g) => isFavorite(g.id)).length, [groups, isFavorite]);
   const classifiedGroups = useMemo(() => classifyGroups(groups), [groups]);
-  const classifiedMap = useMemo(() => new Map(classifiedGroups.map((cg) => [cg.id, cg])), [classifiedGroups]);
+  const classifiedMap = useMemo(() => new Map(classifiedGroups.map((cg) => [cg.group.id, cg])), [classifiedGroups]);
   const groupInsights = useMemo(() => computeGroupInsights(groups), [groups]);
   const overallEngagement = useMemo(() => computeOverallEngagement(groupInsights), [groupInsights]);
   const churnPredictions = useMemo(
-    () => predictMemberChurn(groups.map((g) => ({ id: g.id, name: g.title, member_count: g.participantsCount ?? 0, type: g.type }))),
+    () => predictMemberChurn(groups.map((g) => ({ id: g.id, name: g.title, lastActiveDays: undefined, messageCount: g.participantsCount ?? 0, joinDays: undefined }))),
     [groups],
   );
 
@@ -281,24 +281,27 @@ export function GroupTab() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-app-border bg-app-card p-3">
             <div className="text-xs text-app-text-muted">전체 활동 점수</div>
-            <div className="mt-1 text-xl font-bold text-app-text">{overallEngagement ?? '-'}</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{overallEngagement.avgScore}</div>
           </div>
           <div className="rounded-xl border border-app-border bg-app-card p-3">
             <div className="text-xs text-app-text-muted">최적 발송 시간</div>
-            <div className="mt-1 text-xl font-bold text-app-text">{groupInsights?.bestPostingTime ?? '-'}</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{overallEngagement.bestTimeWindow}</div>
           </div>
           <div className="rounded-xl border border-app-border bg-app-card p-3">
             <div className="text-xs text-app-text-muted">가장 흔한 카테고리</div>
-            <div className="mt-1 text-xl font-bold text-app-text">{groupInsights?.mostCommonCategory ?? '-'}</div>
+            <div className="mt-1 text-xl font-bold text-app-text">{overallEngagement.bestCategory}</div>
           </div>
           <div className="rounded-xl border border-app-border bg-app-card p-3">
             <div className="text-xs text-app-text-muted">티어별 그룹 수</div>
             <div className="mt-1 text-sm text-app-text">
-              {groupInsights?.groupCountByTier ? (
-                Object.entries(groupInsights.groupCountByTier).map(([tier, count]) => (
-                  <span key={tier} className="mr-2">{tier}: {count}</span>
-                ))
-              ) : '-'}
+              {Object.entries(
+                groupInsights.reduce<Record<string, number>>((acc, g) => {
+                  acc[g.memberTier] = (acc[g.memberTier] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              ).map(([tier, count]) => (
+                <span key={tier} className="mr-2">{tier}: {count}</span>
+              ))}
             </div>
           </div>
         </div>
@@ -312,9 +315,9 @@ export function GroupTab() {
       >
         <div className="space-y-1">
           {churnPredictions.slice(0, 5).map((p) => (
-            <div key={p.id} className="flex items-center justify-between rounded-lg border border-app-border bg-app-card px-3 py-2">
-              <span className="text-sm text-app-text">{p.name}</span>
-              <Badge className={cn(churnColor(p.risk), churnBg(p.risk))}>{p.risk}</Badge>
+            <div key={p.memberId} className="flex items-center justify-between rounded-lg border border-app-border bg-app-card px-3 py-2">
+              <span className="text-sm text-app-text">{p.displayName}</span>
+              <Badge className={cn(churnColor(p.riskLevel), churnBg(p.riskLevel))}>{p.riskLevel}</Badge>
             </div>
           ))}
         </div>

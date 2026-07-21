@@ -1460,8 +1460,6 @@ export function SendTab() {
                   )}
                 </div>
               )}
-                </div>
-              )}
             </div>
 
             {selectedRecipients.length > 0 && (

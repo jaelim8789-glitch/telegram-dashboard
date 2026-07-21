@@ -53,7 +53,7 @@ function estimateActivityLevel(memberCount: number): ClassifiedGroup["activityLe
 }
 
 export function classifyGroup(group: Group): ClassifiedGroup {
-  const name = group.name ?? group.title ?? "";
+  const name = group.title ?? "";
 
   let bestCategory: GroupCategory = "unknown";
   let bestScore = 0;
@@ -68,14 +68,14 @@ export function classifyGroup(group: Group): ClassifiedGroup {
   }
 
   const tags: string[] = [];
-  if (group.is_channel) tags.push("채널");
-  else if (group.is_megagroup) tags.push("슈퍼그룹");
+  if (group.type === "channel") tags.push("채널");
+  else if (group.type === "megagroup") tags.push("슈퍼그룹");
   else tags.push("일반그룹");
 
-  if (group.member_count != null) {
-    tags.push(`멤버 ${group.member_count}`);
-    if (group.member_count > 1000) tags.push("대규모");
-    else if (group.member_count > 100) tags.push("중규모");
+  if (group.participantsCount != null) {
+    tags.push(`멤버 ${group.participantsCount}`);
+    if (group.participantsCount > 1000) tags.push("대규모");
+    else if (group.participantsCount > 100) tags.push("중규모");
     else tags.push("소규모");
   }
 
@@ -93,8 +93,8 @@ export function classifyGroup(group: Group): ClassifiedGroup {
     category: bestCategory,
     confidence: bestScore > 0 ? Math.min(bestScore + 30, 95) : 20,
     tags,
-    memberTier: estimateMemberTier(group.member_count ?? 0),
-    activityLevel: estimateActivityLevel(group.member_count ?? 0),
+    memberTier: estimateMemberTier(group.participantsCount ?? 0),
+    activityLevel: estimateActivityLevel(group.participantsCount ?? 0),
   };
 }
 
