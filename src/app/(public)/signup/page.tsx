@@ -45,8 +45,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tgLoggingIn, setTgLoggingIn] = useState(false);
-  const [termsAgreed, setTermsAgreed] = useState(false);
-  const [termsError, setTermsError] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tokenRef = useRef<string | null>(null);
 
@@ -285,7 +283,7 @@ export default function SignupPage() {
               <h2 className="text-lg font-semibold text-app-text">요금제 선택</h2>
               <div className="space-y-3">
                 {[
-                  { id: "free", name: "Free Plan", price: "무료", desc: "완전 무료 · 모든 기능 사용 가능" },
+                  { id: "free", name: "Free Trial", price: "무료 (3일)", desc: "⏱ 약 1분이면 완료 · 3일 무료" },
                   { id: "pro", name: "Pro", price: "$100/월", desc: "10개 계정, 예약 & 반복 발송, 발송 로그 & 전달 분석" },
                   { id: "team", name: "Team", price: "$199/분기", desc: "20개 계정, 예약 & 반복 발송, 계정 건강 모니터링" },
                 ].map((p) => (
@@ -299,7 +297,7 @@ export default function SignupPage() {
                     </div>
                     <p className="mt-1 text-xs text-app-text-secondary">{p.desc}</p>
                     {p.id === "free" && selectedPlan === p.id && (
-                        <p className="mt-2 text-xs text-app-text-subtle">✅ 완전 무료로 모든 기능을 사용할 수 있습니다. 발송 시 워터마크 광고가 포함됩니다.</p>
+                        <p className="mt-2 text-xs text-app-text-subtle">🔑 3일 동안 모든 기능을 제한 없이 사용할 수 있습니다. 결제 정보가 필요하지 않습니다.</p>
                     )}
                   </button>
                 ))}
@@ -310,7 +308,7 @@ export default function SignupPage() {
                 } else {
                   router.push(`/get-api-key?plan=${selectedPlan}`);
                 }
-              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 완전 무료" : "다음"}</Button>
+              } } className="w-full h-12 rounded-xl text-sm font-semibold">{selectedPlan === "free" ? "1분 인증 시작 · 3일 무료" : "다음"}</Button>
             </div>
           )}
 
@@ -451,41 +449,8 @@ export default function SignupPage() {
                   )}
                 </>
               )}
-
-              <div className={`rounded-xl border ${termsError ? "border-red-500" : "border-app-border"} bg-app-card/50 p-3`}>
-                <label className="flex cursor-pointer items-start gap-2 text-left">
-                  <input
-                    type="checkbox"
-                    checked={termsAgreed}
-                    onChange={(e) => { setTermsAgreed(e.target.checked); setTermsError(false); }}
-                    className="mt-0.5 h-4 w-4 rounded border-app-border text-app-primary focus:ring-app-primary/30 cursor-pointer"
-                  />
-                  <span className="text-xs text-app-text-muted leading-relaxed">
-                    <span className={termsError ? "text-red-500 font-medium" : ""}>
-                      이용약관 및 개인정보처리방침에 동의합니다
-                    </span>
-                    {" "}
-                    <Link href="/terms" className="text-app-primary hover:underline">이용약관</Link>
-                    {" · "}
-                    <Link href="/privacy" className="text-app-primary hover:underline">개인정보처리방침</Link>
-                  </span>
-                </label>
-                {termsError && (
-                  <p className="mt-1 text-xs text-red-500">계속하려면 이용약관 및 개인정보처리방침에 동의해야 합니다.</p>
-                )}
-              </div>
-
-              <div className="space-y-3 pt-0">
-                <Link
-                  href={`${SITE.app}/admin/login`}
-                  className={`btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10 ${!termsAgreed ? "pointer-events-none opacity-50" : ""}`}
-                  onClick={(e) => {
-                    if (!termsAgreed) {
-                      e.preventDefault();
-                      setTermsError(true);
-                    }
-                  }}
-                >
+              <div className="space-y-3 pt-2">
+                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">
                   대시보드로 이동
                 </Link>
                 <Link href="/pricing" className="block text-sm text-app-text-muted hover:text-app-text transition-colors">요금제 업그레이드</Link>

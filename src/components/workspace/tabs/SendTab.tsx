@@ -1,17 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { computeGroupInsights } from "@/lib/groupInsights";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
   CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
-  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter, Lock,
+  Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
   ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getToken } from "@/lib/auth";
+import { computeGroupInsights } from "@/lib/groupInsights";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -39,7 +38,6 @@ import {
 import { useDraftRestore, useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
-import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import {
   loadTemplates, saveTemplate as persistTemplate,
   deleteTemplate as removeTemplate,
@@ -128,7 +126,6 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
 
 
 export function SendTab() {
-  const haptics = useHapticFeedback();
   const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -153,9 +150,6 @@ export function SendTab() {
   const imageFile = useDashboardStore((s) => s.sendImageFile);
   const setImageFile = useDashboardStore((s) => s.setSendImageFile);
   const plan = useDashboardStore((s) => s.plan);
-  const sendProgress = useDashboardStore((s) => s.sendProgress);
-  const setSendProgress = useDashboardStore((s) => s.setSendProgress);
-  const clearSendProgress = useDashboardStore((s) => s.clearSendProgress);
   const imageObjectUrl = useMemo(() => imageFile ? URL.createObjectURL(imageFile) : null, [imageFile]);
   useEffect(() => {
     return () => { if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl); };
@@ -302,7 +296,6 @@ export function SendTab() {
   }, [deliveryPreset]);
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
-  const [previewRecipientIdx, setPreviewRecipientIdx] = useState(0);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
@@ -314,7 +307,6 @@ export function SendTab() {
   const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
-  const [showSendSuccess, setShowSendSuccess] = useState(false);
   const [recentSets, setRecentSets] = useState<string[][]>([]);
   const [estimatePreview, setEstimatePreview] = useState<{ estimated_seconds: number; estimated_minutes: number; readable: string } | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -323,8 +315,6 @@ export function SendTab() {
   const [batchRetrying, setBatchRetrying] = useState(false);
   const [batchRetryDelay, setBatchRetryDelay] = useState(5);
   const [dedupeNormalSend, setDedupeNormalSend] = useState(false);
-  const [subTab, setSubTab] = useState<"compose" | "history">("compose");
-  const [deliveryExpanded, setDeliveryExpanded] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
   const reuseNotice = useDashboardStore((s) => s.reuseNotice);
   const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
@@ -414,16 +404,9 @@ export function SendTab() {
   function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
     const groupById = new Map(groups.map((group) => [group.id, group]));
     const next: Group[] = [];
-    const seenIds = new Set<string>();
     for (const id of selectedIds) {
       const group = groupById.get(id);
       if (!group) continue;
-      const dupKey = `${group.id}:${group.title}`;
-      if (seenIds.has(dupKey)) {
-        toastRef.current("warning", `중복된 그룹이 감지되었습니다: ${group.title}`);
-        continue;
-      }
-      seenIds.add(dupKey);
       next.push(group);
     }
     return next;
@@ -453,8 +436,6 @@ export function SendTab() {
   }, [selectedAccountId, selectedRecipientIds.length, message.trim(), deliveryMode, normalDelaySeconds]);
 
   const { toast } = useToast();
-  const toastRef = useRef(toast);
-  toastRef.current = toast;
 
   const handleClone = useCallback((b: Broadcast) => {
     reuseBroadcast(b);
@@ -655,26 +636,6 @@ export function SendTab() {
     pollTimer.current = setTimeout(() => { pollInFlightBroadcasts(selectedAccountId); }, POLL_INTERVAL_MS);
     return () => { if (pollTimer.current) clearTimeout(pollTimer.current); };
   }, [history, selectedAccountId]);
-
-  const sendProgressPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (sendProgressPollRef.current) { clearTimeout(sendProgressPollRef.current); sendProgressPollRef.current = null; }
-    if (!sendProgress || sendProgress.status === "sent" || sendProgress.status === "failed" || sendProgress.status === "cancelled") return;
-    sendProgressPollRef.current = setTimeout(async () => {
-      try {
-        const b = await api.fetchBroadcast(sendProgress.broadcastId);
-        setSendProgress({
-          broadcastId: sendProgress.broadcastId,
-          total: sendProgress.total,
-          succeeded: b.status === "sent" ? sendProgress.total : 0,
-          failed: b.status === "failed" ? sendProgress.total : 0,
-          status: b.status,
-        });
-      } catch { /* silent */ }
-    }, POLL_INTERVAL_MS);
-    return () => { if (sendProgressPollRef.current) clearTimeout(sendProgressPollRef.current); };
-  }, [sendProgress]);
 
   // 30s background polling independent of in-flight status.
   useEffect(() => {
@@ -1004,7 +965,6 @@ export function SendTab() {
           : undefined,
       });
       api.clearIdempotencyKey();
-      setSendProgress({ broadcastId: created.id, total: effectiveRecipients.length, succeeded: 0, failed: 0, status: created.status });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
@@ -1038,8 +998,6 @@ export function SendTab() {
       setInlineButtons([]);
       setSearch("");
       await loadHistory(selectedAccountId);
-      setShowSendSuccess(true);
-      setTimeout(() => setShowSendSuccess(false), 5000);
     } catch (err) {
       if (err instanceof api.ApiError && err.isNetworkError) {
         setSubmitError("발송 상태를 확인할 수 없습니다. 로그 탭에서 확인하거나 잠시 후 다시 시도하세요.");
@@ -1164,17 +1122,6 @@ export function SendTab() {
   const tone = useMemo(() => analyzeTone(message), [message]);
   const viral = useMemo(() => computeViralScore(message), [message]);
 
-  const scheduledCountByDay = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const h of history) {
-      if (h.status === "pending" && h.scheduledAt) {
-        const day = h.scheduledAt.slice(0, 10);
-        counts[day] = (counts[day] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }, [history]);
-
   // 재시도로 살아날 가능성이 있는 실패 항목(네트워크/속도제한류)만 골라 일괄 선택할 수 있게 함
   const recoverableFailedIds = useMemo(
     () => history
@@ -1198,54 +1145,30 @@ export function SendTab() {
 
   useEffect(() => {
     if (!selectedAccountId) return;
-    
-    // 계정 상태 확인 후 활성 상태일 때만 답장매크로 정보 가져오기
-    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-    if (currentAccount?.status !== 'active') {
-      setReplyMacroActive(false);
-      setReplyMacroMessage('');
-      setReplyMacroLoading(false);
-      return;
-    }
-    
     setReplyMacroLoading(true);
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
       headers: authHeaders(),
     })
-      .then(async (r) => {
-        if (r.status === 400 || r.status === 401 || r.status === 403) {
-          // 인증 관련 에러 처리
-          const errorData = await r.json();
-          console.warn('답장매크로 인증 에러:', errorData.detail);
-          setReplyMacroActive(false);
-          setReplyMacroMessage('');
-          return { is_active: false, message_content: '' };
-        }
-        return r.json();
-      })
+      .then((r) => r.json())
       .then((data) => {
-        setReplyMacroActive(!!data?.is_active);
-        setReplyMacroMessage(data?.message_content || '');
+        setReplyMacroActive(!!data.is_active);
+        setReplyMacroMessage(data.message_content || "");
       })
-      .catch((error) => {
-        console.error('답장매크로 정보 가져오기 실패:', error);
-        setReplyMacroActive(false);
-        setReplyMacroMessage('');
-      })
+      .catch(() => {})
       .finally(() => setReplyMacroLoading(false));
-  }, [selectedAccountId, accounts]);
+  }, [selectedAccountId]);
+
+  function handleSelectRecoverableFailures() {
+    if (recoverableFailedIds.length === 0) {
+      toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
+      return;
+    }
+    setSelectedHistoryIds(new Set(recoverableFailedIds));
+    toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
+  }
 
   async function saveReplyMacroToggle(nextActive: boolean) {
     if (!selectedAccountId || replyMacroSaving) return;
-    
-    // 계정 상태 확인
-    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-    if (currentAccount?.status !== 'active') {
-      toast("error", "계정이 인증되지 않아 답장매크로를 사용할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
-      setReplyMacroActive(false);
-      return;
-    }
-    
     setReplyMacroSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
@@ -1253,14 +1176,6 @@ export function SendTab() {
         headers: authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: replyMacroMessage }),
       });
-      
-      if (res.status === 400 || res.status === 401 || res.status === 403) {
-        const errorData = await res.json();
-        toast("error", errorData.detail || "계정 인증이 필요합니다. 먼저 계정 등록에서 Telegram 인증을 완료해주세요.");
-        setReplyMacroActive(false);
-        return;
-      }
-      
       const data = await res.json();
       if (!res.ok) {
         toast("error", data.detail || "저장 실패");
@@ -1272,21 +1187,11 @@ export function SendTab() {
       } else {
         toast("success", "랜덤 답장 꺼짐");
       }
-    } catch (error) {
-      console.error('답장매크로 토글 에러:', error);
-      toast("error", "네트워크 오류가 발생했습니다. 다시 시도해주세요.");
+    } catch {
+      toast("error", "네트워크 오류");
     } finally {
       setReplyMacroSaving(false);
     }
-  }
-
-  function handleSelectRecoverableFailures() {
-    if (recoverableFailedIds.length === 0) {
-      toast("info", "복구형 실패(네트워크/속도제한) 항목이 없습니다.");
-      return;
-    }
-    setSelectedHistoryIds(new Set(recoverableFailedIds));
-    toast("success", `${recoverableFailedIds.length}개 복구형 실패 항목을 선택했습니다.`);
   }
 
   if (!account) {
@@ -1297,72 +1202,10 @@ export function SendTab() {
     );
   }
 
-  // 계정 상태 확인 - 인증되지 않은 계정은 발송 불가
-  if (account.status !== 'active') {
-    return (
-      <Panel 
-        title="메시지 작성" 
-        description={`${account.name ?? account.phone} · ${account.status === 'inactive' ? '비활성화' : account.status === 'banned' ? '차단됨' : '알 수 없는 상태'}`}
-      >
-        <div className="rounded-2xl border border-app-warning/30 bg-app-warning-muted p-5 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-app-warning/20">
-            <Lock className="h-6 w-6 text-app-warning" />
-          </div>
-          <h3 className="mt-3 text-lg font-semibold text-app-text">계정 인증 필요</h3>
-          <p className="mt-1 text-sm text-app-text-secondary">
-            이 계정은 현재 {account.status === 'inactive' ? '비활성화' : 
-            account.status === 'banned' ? '차단' : '알 수 없는'} 상태입니다.
-          </p>
-          <p className="mt-2 text-xs text-app-text-subtle">
-            메시지를 발송하려면 계정 등록에서 Telegram 인증을 완료해야 합니다.
-          </p>
-          <div className="mt-4 flex gap-2">
-            <Link href="/app/register" className="flex-1">
-              <Button variant="secondary" size="sm" className="w-full">
-                계정 등록으로 이동
-              </Button>
-            </Link>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => {
-                // 왼쪽 사이드바에서 다른 계정 선택 유도
-                toast("info", "왼쪽 사이드바에서 다른 인증된 계정을 선택해주세요.");
-              }}
-            >
-              다른 계정 선택
-            </Button>
-          </div>
-        </div>
-      </Panel>
-    );
-  }
-
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval) && !spamBlocked && !riskBlocked;
 
   return (
     <div className="space-y-4 pb-20">
-      {/* ── Sub Tab Bar ── */}
-      <div className="flex gap-1.5 sticky top-0 z-10 bg-app-bg/90 backdrop-blur-sm py-2 -mx-1 px-1">
-        {[
-          { id: "compose" as const, label: "✍️ 작성", count: selectedRecipientIds.length },
-          { id: "history" as const, label: "📋 히스토리", count: history.length },
-        ].map((t) => (
-          <button key={t.id} onClick={() => { setSubTab(t.id); haptics.light(); }}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-              subTab === t.id
-                ? "bg-app-primary text-white shadow-sm"
-                : "bg-app-card border border-app-border text-app-text-muted hover:bg-app-card-hover"
-            }`}>
-            {t.label}
-            {t.count > 0 && (
-              <span className={subTab === t.id ? "text-white/70" : "text-app-text-muted"}>{t.count}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {subTab === "compose" && (<>
       {/* ── Compose Panel ── */}
       <Panel
         title={
@@ -1383,20 +1226,6 @@ export function SendTab() {
           </div>
         )}
         <form id="send-form" onSubmit={handleSubmit}>
-          {showSendSuccess && (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border border-app-success/30 bg-app-success-muted px-3 py-2.5 text-xs text-app-success">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="flex-1">발송 요청 완료! 발송 이력에서 진행 상황을 확인하세요.</span>
-              <button
-                type="button"
-                onClick={() => setShowSendSuccess(false)}
-                className="shrink-0 rounded-full p-0.5 text-app-success/60 hover:text-app-success transition-colors"
-                aria-label="닫기"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
           <div className="space-y-4">
             {/* ── Smart Selection Bar ── */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-app-border bg-app-card/50 px-3 py-2 text-xs">
@@ -1542,7 +1371,7 @@ export function SendTab() {
                 </div>
               )}
 
-            {deliveryMode === "bulk" && deliveryExpanded && (
+              {deliveryMode === "bulk" && (
                 <p className="mb-2 text-xs text-app-text-muted">한 번에 모든 방에 전송합니다.</p>
               )}
 
@@ -1705,8 +1534,8 @@ export function SendTab() {
               {/* 그룹별 최적 발송 시간 */}
               {(() => {
                 try {
-                  const insights = computeGroupInsights(selectedRecipients);
-                  const times = [...new Set(insights.map((i) => i.bestPostingTime))].slice(0, 3);
+                  const insights = computeGroupInsights(selectedRecipients as any);
+                  const times = [...new Set(insights.map((i: any) => i.bestPostingTime as string))].slice(0, 3) as string[];
                   if (times.length === 0) return null;
                   return (
                     <div className="flex items-center gap-1.5 text-[10px] text-app-text-muted mt-1">
@@ -1755,30 +1584,14 @@ export function SendTab() {
 
             {/* ── Message preview ( Telegram style ) ── */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                {selectedRecipients.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-medium text-app-text-muted whitespace-nowrap">수신자 미리보기:</label>
-                    <select
-                      value={previewRecipientIdx}
-                      onChange={(e) => setPreviewRecipientIdx(Number(e.target.value))}
-                      className="w-full rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text focus:outline-none focus:ring-1 focus:ring-app-primary"
-                    >
-                      {selectedRecipients.map((r, i) => (
-                        <option key={r.id} value={i}>{r.title}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <MessagePreview
-                  message={message}
-                  recipientCount={selectedRecipientIds.length}
-                  accountPhone={account?.phone}
-                  groupName={selectedRecipients[previewRecipientIdx]?.title}
-                  imagePreviewUrl={imageObjectUrl}
-                  plan={plan}
-                />
-              </div>
+              <MessagePreview
+                message={message}
+                recipientCount={selectedRecipientIds.length}
+                accountPhone={account?.phone}
+                groupName={selectedRecipients[0]?.title}
+                imagePreviewUrl={imageObjectUrl}
+                plan={plan}
+              />
               {message.trim() && TEMPLATE_VARIABLES.some((v) => message.includes(v.key)) && (
                 <div className="rounded-xl border border-app-info/15 bg-app-info-muted/5 px-3 py-2 self-start">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-info mb-1">
@@ -1787,19 +1600,19 @@ export function SendTab() {
                   </div>
                   <div className="whitespace-pre-wrap break-words rounded-lg border border-app-border/50 bg-app-card/50 px-3 py-2 text-sm leading-relaxed text-app-text">
                   {previewTemplate(message, {
-                    name: selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹",
+                    name: selectedRecipients[0]?.title ?? "샘플 그룹",
                     phone: account?.phone ?? "010-0000-0000",
                     count: selectedRecipientIds.length || 10,
                     date: new Date().toISOString().slice(0, 10),
                     time: new Date().toTimeString().slice(0, 5),
                     sender: account?.name || account?.phone || "[발신자]",
-                    groupTitle: selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹",
+                    groupTitle: selectedRecipients[0]?.title ?? "샘플 그룹",
                   })}
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
                     {TEMPLATE_VARIABLES.filter((v) => message.includes(v.key)).map((v) => {
                       let sample = "";
-                      if (v.key === "{{name}}") sample = selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹";
+                      if (v.key === "{{name}}") sample = selectedRecipients[0]?.title ?? "샘플 그룹";
                       else if (v.key === "{{phone}}") sample = account?.phone ?? "010-0000-0000";
                       else if (v.key === "{{count}}") sample = String(selectedRecipientIds.length || 10);
                       return (
@@ -2134,17 +1947,6 @@ export function SendTab() {
                         required={isScheduled}
                         className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                     </Field>
-                    {scheduledAtLocal && (() => {
-                      const day = scheduledAtLocal.slice(0, 10);
-                      const sameDayCount = scheduledCountByDay[day] ?? 0;
-                      if (sameDayCount === 0) return null;
-                      return (
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-app-warning">
-                          <AlertTriangle className="h-3 w-3 shrink-0" />
-                          <span>이미 {sameDayCount}건의 예약 발송이 있습니다</span>
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
               </div>
@@ -2180,15 +1982,9 @@ export function SendTab() {
 
             {/* Delivery Mode Selector */}
             <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                <label className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-medium text-app-text">
-                    <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
-                    발송 방식
-                  </span>
-                  <button type="button" onClick={() => setDeliveryExpanded(!deliveryExpanded)}
-                    className="text-[10px] text-app-text-muted hover:text-app-text transition-colors">
-                    {deliveryExpanded ? "▲ 접기" : "▼ 고급 설정"}
-                  </button>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
+                  <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
+                  발송 방식
                 </label>
                 <div className="flex flex-col gap-2">
                   <label className="flex items-start gap-2.5 rounded-lg border border-app-success/30 bg-app-success-muted/10 p-2.5 cursor-pointer hover:border-app-success/60 transition-colors">
@@ -2199,7 +1995,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">일반 발송</div>
                         <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
                       </div>
-                      {deliveryMode === "normal" && deliveryExpanded ? (
+                      {deliveryMode === "normal" ? (
                         <div className="mt-1.5 space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-app-text-muted">방마다</span>
@@ -2265,7 +2061,7 @@ export function SendTab() {
                         <Badge tone="danger" className="text-[9px] px-1.5 py-0">위험</Badge>
                       </div>
                       <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
-                      {deliveryMode === "bulk" && deliveryExpanded && (
+                      {deliveryMode === "bulk" && (
                         <div className="mt-2 flex items-center gap-1.5">
                           <input type="checkbox" id="dedupeNormal" checked={dedupeNormalSend}
                             onChange={(e) => setDedupeNormalSend(e.target.checked)}
@@ -2330,46 +2126,9 @@ export function SendTab() {
               </button>
             </div>
           )}
-          {sendProgress && (
-            <div className="mt-3 rounded-xl border border-app-primary/30 bg-app-primary/5 px-3 py-2.5">
-              <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="text-app-text-muted">
-                  발송 진행률 ({sendProgress.succeeded}/{sendProgress.total})
-                </span>
-                <button
-                  type="button"
-                  onClick={clearSendProgress}
-                  className="rounded-full p-0.5 text-app-text-subtle hover:text-app-text transition-colors"
-                  aria-label="닫기"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-app-bg">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    sendProgress.status === "sent" ? "bg-app-success" :
-                    sendProgress.status === "failed" ? "bg-app-danger" :
-                    sendProgress.status === "cancelled" ? "bg-app-warning" :
-                    "bg-app-primary"
-                  )}
-                  style={{ width: `${sendProgress.total > 0 ? Math.round((sendProgress.succeeded / sendProgress.total) * 100) : 0}%` }}
-                />
-              </div>
-              <div className="mt-1 text-[10px] text-app-text-subtle">
-                {sendProgress.status === "sent" ? "발송 완료" :
-                 sendProgress.status === "failed" ? "발송 실패" :
-                 sendProgress.status === "cancelled" ? "취소됨" :
-                 "발송 진행 중"}
-              </div>
-            </div>
-          )}
         </form>
       </Panel>
-      </>)}
 
-      {subTab === "history" && (<>
       {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
       {distributionBatchId && distributionSiblings.length > 0 && (
         <Panel
@@ -2405,7 +2164,6 @@ export function SendTab() {
           <div className="space-y-2">
             {distributionSiblings.map((sib) => {
               const meta = STATUS_META[sib.broadcast.status];
-              const isFailed = sib.broadcast.status === "failed";
               const groupCount = sib.broadcast.recipients.length;
               return (
                 <div
@@ -2418,23 +2176,10 @@ export function SendTab() {
                     </div>
                     <div className="text-[11px] text-app-text-muted">{groupCount}개 그룹 배정</div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {isFailed && (
-                      <button
-                        type="button"
-                        onClick={() => handleRetry(sib.broadcast)}
-                        disabled={retrying === sib.broadcast.id}
-                        className="flex items-center gap-1 rounded-lg border border-app-border bg-app-card px-2 py-1 text-[11px] text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className={cn("h-3 w-3", retrying === sib.broadcast.id && "animate-spin")} />
-                        재시도
-                      </button>
-                    )}
-                    <Badge tone={meta.tone} className="gap-1">
-                      <meta.icon className="h-3 w-3" />
-                      {meta.label}
-                    </Badge>
-                  </div>
+                  <Badge tone={meta.tone} className="shrink-0 gap-1">
+                    <meta.icon className="h-3 w-3" />
+                    {meta.label}
+                  </Badge>
                 </div>
               );
             })}
@@ -2766,7 +2511,6 @@ export function SendTab() {
           )}
         </ApiKeyGuard>
       </motion.div>
-      </>)}
     </div>
   );
 }

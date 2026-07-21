@@ -44,6 +44,7 @@ const INSPECTOR_CONTENT: Record<string, React.ComponentType<any>> = {
   operator: DashboardInspector,
   styleprofile: DashboardInspector,
   growthloop: DashboardInspector,
+  fortune: DashboardInspector,
   sendhub: DashboardInspector,
 };
 

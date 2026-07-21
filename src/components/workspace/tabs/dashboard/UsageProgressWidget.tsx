@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
-import { MessageSquare, Bot, Users, Sparkles, Zap, AlertTriangle, Info } from "lucide-react";
+import { MessageSquare, Bot, Users, Sparkles, Zap } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/cn";
@@ -85,7 +84,7 @@ export function UsageProgressWidget({
             사용량 한도
           </div>
         }
-        description={isFree ? "Free Plan" : `${planId === "pro" ? "Pro" : "Team"} 플랜`}
+        description={isFree ? "Free 플랜" : `${planId === "pro" ? "Pro" : "Team"} 플랜`}
       >
         <div className="space-y-3" aria-busy="true">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -107,58 +106,65 @@ export function UsageProgressWidget({
           사용량 한도
         </div>
       }
-      description={isFree ? "Free Plan" : `${planId === "pro" ? "Pro" : "Team"} 플랜`}
+      description={`${(planId === "free" ? "Free" : planId === "pro" ? "Pro" : "Team").toUpperCase()}${nearLimitItems.length > 0 ? ` · ${nearLimitItems.length}개 항목 임박` : ""}`}
     >
-      <div className="space-y-4">
-        {usageItems.map((item, idx) => {
+      <div className="space-y-3">
+        {usageItems.map((item) => {
           const percent = getLimitPercent(item.used, item.limit);
-          const variant = getLimitVariant(percent);
-          const formattedUsed = formatLimitValue(item.used);
-          const formattedLimit = formatLimitValue(item.limit);
-
+          const variant = getLimitVariant(percent) as "success" | "warning" | "danger";
+          const nearLimit = percent >= 70;
           return (
-            <div key={idx} className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-app-text-secondary">
+            <div key={item.label} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-app-text">
                   {item.icon}
                   <span>{item.label}</span>
                 </div>
-                <span className="font-medium tabular-nums">
-                  {formattedUsed} / {formattedLimit}
-                </span>
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <span className={cn(
+                    "tabular-nums font-medium",
+                    variant === "danger" && "text-app-danger",
+                    variant === "warning" && "text-app-warning",
+                    variant === "success" && "text-app-text"
+                  )}>
+                    {formatLimitValue(item.used)}
+                  </span>
+                  <span className="text-app-text-subtle">
+                    / {formatLimitValue(item.limit)}
+                  </span>
+                  {nearLimit && (
+                    <span className={cn(
+                      "text-[10px] font-medium",
+                      variant === "danger" ? "text-app-danger" : "text-app-warning"
+                    )}>
+                      {percent}%
+                    </span>
+                  )}
+                </div>
               </div>
-              <ProgressBar value={percent} variant={variant} />
+              <ProgressBar
+                value={item.used}
+                max={item.limit}
+                size="sm"
+                variant={variant}
+                animated
+              />
             </div>
           );
         })}
+
+        {isFree && (
+          <div className="mt-2 rounded-xl border border-app-primary/20 bg-app-primary-muted/10 p-2.5">
+            <p className="text-[11px] font-medium text-app-primary flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Pro로 업그레이드
+            </p>
+            <p className="text-[10px] text-app-text-muted mt-0.5">
+              계정 10개, 월 50,000건 발송, 이미지 첨부 및 예약 발송 지원
+            </p>
+          </div>
+        )}
       </div>
-
-      {nearLimitItems.length > 0 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-600">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 pt-0.5" />
-          <div>
-            {nearLimitItems.map((item, idx) => (
-              <div key={idx}>
-                {item.label} 사용량이 곧 한도에 도달합니다.{" "}
-                <Link href="/pricing" className="underline">
-                  업그레이드
-                </Link>
-                를 고려해보세요.
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {isFree && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-blue-500/10 p-3 text-xs text-blue-600">
-          <Info className="h-3.5 w-3.5 shrink-0 pt-0.5" />
-          <div>
-            무료 플랜입니다. <Link href="/pricing" className="underline">업그레이드</Link>하시면 
-            더 많은 기능과 높은 한도를 이용할 수 있으며, 발송 시 워터마크 광고가 제거됩니다.
-          </div>
-        </div>
-      )}
     </Panel>
   );
 }

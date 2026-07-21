@@ -19,8 +19,6 @@ import {
   Users,
   ArrowLeft,
   XCircle,
-  Info,
-  KeyRound,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input } from "@/components/ui/Field";
@@ -328,36 +326,6 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
     // Show both new registration and re-auth panels side by side
     return (
       <div className="space-y-5 pb-8">
-        {/* 설명 패널 추가 */}
-        <div className="rounded-2xl border border-app-border bg-app-card p-5">
-          <h3 className="font-semibold text-app-text flex items-center gap-2">
-            <Info className="h-4 w-4" /> API 키 vs 텔레그램 인증
-          </h3>
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <KeyRound className="h-4 w-4 mt-0.5 text-app-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-app-text">API 키</p>
-                  <p className="text-app-text-secondary">TeleMon 시스템에 로그인/접근하기 위한 키</p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <Smartphone className="h-4 w-4 mt-0.5 text-app-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-app-text">텔레그램 계정 인증</p>
-                  <p className="text-app-text-secondary">발송에 쓰는 전화번호가 텔레그램에 로그인 완료된 상태</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-app-text-subtle">
-            답장매크로(랜덤리플라이)는 텔레그램 계정으로 메시지를 보내야 하므로, 계정이 텔레그램 인증이 완료된 상태여야 합니다.
-          </p>
-        </div>
-
         <AccountRecoveryWizard />
         <ReAuthPanel
           healthItems={healthItems ?? []}

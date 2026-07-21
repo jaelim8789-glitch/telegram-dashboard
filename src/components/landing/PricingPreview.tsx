@@ -6,20 +6,14 @@ import { ArrowRight, CheckCircle2, Star } from "lucide-react";
 
 const PLANS = [
   {
-    name: "Free Plan", price: "무료",
-    features: ["1개 계정 연결", "자동 응답 기능", "메시지 발송", "기본 발송 로그", "무료 플랜", "발송 시 워터마크 광고 포함"],
+    name: "Free Trial", price: "무료",
+    features: ["1개 계정 연결", "자동 응답 기능", "메시지 발송", "기본 발송 로그"],
     href: "/signup", cta: "무료 시작", popular: false,
   },
   {
-    name: "Pro", price: "$29/월",
+    name: "Pro", price: "$100/월",
     features: ["10개 계정 연결", "예약 & 반복 발송", "이미지 첨부 발송", "발송 로그 & 전달 분석", "계정 건강 모니터링"],
-    href: "/pricing", cta: "Pro 시작", popular: false,
-  },
-  {
-    name: "AI Premium", price: "$99/월",
-    badge: "나만의 AI",
-    features: ["3개 커스텀 AI 에이전트", "목적 템플릿 선택 가능", "사실상 무제한 AI 토큰", "웹 검색/마케팅/분석 에이전트", "우선 고객 지원"],
-    href: "/pricing", cta: "AI Premium 시작", popular: true,
+    href: "/pricing", cta: "Pro 시작", popular: true,
   },
   {
     name: "Team", price: "$199/분기",
@@ -51,7 +45,7 @@ export function PricingPreview() {
           <div className="h-px w-16 mx-auto mt-5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
           {PLANS.map((plan, i) => (
             <motion.div
               key={plan.name}
@@ -77,12 +71,12 @@ export function PricingPreview() {
                 TM
               </div>
 
-              {/* 금속 리본 배지 (BEST VALUE or 나만의 AI) */}
+              {/* 금속 리본 배지 (Most popular) */}
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
                   <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-gold-deep)] px-5 py-1 text-[10px] font-bold text-[var(--color-accent-contrast)] shadow-lg uppercase tracking-wider">
                     <Star className="h-3 w-3 fill-current" />
-                    {(plan as any).badge || "BEST VALUE"}
+                    BEST VALUE
                   </div>
                 </div>
               )}
