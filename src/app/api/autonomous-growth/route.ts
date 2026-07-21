@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server';
 import { autonomousGrowthManager } from '@/lib/autonomous-growth-manager';
 import { AutonomousGrowthLoop } from '@/types/autonomous-growth';
 
+const PUT_IDEMPOTENCY_MS = 5000;
+const lastPutAction = new Map<string, { action: string; timestamp: number }>();
+
 export async function POST(request: NextRequest) {
   try {
     const { goal, userId } = await request.json();
@@ -82,6 +85,17 @@ export async function PUT(request: NextRequest) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    const key = `${loopId}:${action}`;
+    const prev = lastPutAction.get(key);
+    const now = Date.now();
+    if (prev && prev.action === action && (now - prev.timestamp) < PUT_IDEMPOTENCY_MS) {
+      return new Response(
+        JSON.stringify({ success: true, message: `Loop ${action} already processed` }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    lastPutAction.set(key, { action, timestamp: now });
 
     let result = false;
     switch (action) {

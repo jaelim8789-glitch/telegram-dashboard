@@ -221,6 +221,34 @@ export function HistoryRow({
             <span className="text-app-text-muted">{failureInfo.suggestion}</span>
           </div>
         )}
+
+        {/* Post-send delivery analytics */}
+        {(isSent || isFailed) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px]">
+            {isSent ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-success/10 px-1.5 py-0.5 text-app-success">
+                <CheckCircle2 className="h-3 w-3" />
+                100% 전송 성공
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-danger/10 px-1.5 py-0.5 text-app-danger">
+                <XCircle className="h-3 w-3" />
+                전송 실패
+              </span>
+            )}
+            {h.recipients.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-app-card-hover px-1.5 py-0.5 text-app-text-muted">
+                <Users2 className="h-3 w-3" />
+                {h.recipients.length} 대상
+              </span>
+            )}
+            {isFailed && h.errorMessage && (
+              <span className="truncate max-w-[200px] text-app-text-subtle" title={h.errorMessage}>
+                — {h.errorMessage}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Action buttons */}

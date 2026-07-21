@@ -2313,8 +2313,6 @@ export async function fetchAiSessions(search?: string): Promise<AiSession[]> {
   return request<AiSession[]>(`/api/ai/sessions${qs}`);
 }
 
-}
-
 export async function deleteAiSession(sessionId: string): Promise<void> {
   await request<void>(`/api/ai/sessions/${sessionId}`, { method: "DELETE" });
 }

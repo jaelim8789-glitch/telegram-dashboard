@@ -298,6 +298,7 @@ export function SendTab() {
   }, [deliveryPreset]);
   const [inlineButtons, setInlineButtons] = useState<{ label: string; url: string }[]>([]);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [previewRecipientIdx, setPreviewRecipientIdx] = useState(0);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
@@ -309,6 +310,7 @@ export function SendTab() {
   const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
+  const [showSendSuccess, setShowSendSuccess] = useState(false);
   const [recentSets, setRecentSets] = useState<string[][]>([]);
   const [estimatePreview, setEstimatePreview] = useState<{ estimated_seconds: number; estimated_minutes: number; readable: string } | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -412,7 +414,7 @@ export function SendTab() {
       if (!group) continue;
       const dupKey = `${group.id}:${group.title}`;
       if (seenIds.has(dupKey)) {
-        useDashboardStore.getState().setSubmitError(`중복된 그룹이 감지되었습니다: ${group.title} (ID: ${group.id})`);
+        toastRef.current("warning", `중복된 그룹이 감지되었습니다: ${group.title}`);
         continue;
       }
       seenIds.add(dupKey);
@@ -445,6 +447,8 @@ export function SendTab() {
   }, [selectedAccountId, selectedRecipientIds.length, message.trim(), deliveryMode, normalDelaySeconds]);
 
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   const handleClone = useCallback((b: Broadcast) => {
     reuseBroadcast(b);
@@ -1028,6 +1032,8 @@ export function SendTab() {
       setInlineButtons([]);
       setSearch("");
       await loadHistory(selectedAccountId);
+      setShowSendSuccess(true);
+      setTimeout(() => setShowSendSuccess(false), 5000);
     } catch (err) {
       if (err instanceof api.ApiError && err.isNetworkError) {
         setSubmitError("발송 상태를 확인할 수 없습니다. 로그 탭에서 확인하거나 잠시 후 다시 시도하세요.");
@@ -1151,6 +1157,17 @@ export function SendTab() {
   const riskBlocked = riskAnalysis.level === "danger";
   const tone = useMemo(() => analyzeTone(message), [message]);
   const viral = useMemo(() => computeViralScore(message), [message]);
+
+  const scheduledCountByDay = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const h of history) {
+      if (h.status === "pending" && h.scheduledAt) {
+        const day = h.scheduledAt.slice(0, 10);
+        counts[day] = (counts[day] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [history]);
 
   // 재시도로 살아날 가능성이 있는 실패 항목(네트워크/속도제한류)만 골라 일괄 선택할 수 있게 함
   const recoverableFailedIds = useMemo(
@@ -1339,6 +1356,20 @@ export function SendTab() {
           </div>
         )}
         <form id="send-form" onSubmit={handleSubmit}>
+          {showSendSuccess && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-app-success/30 bg-app-success-muted px-3 py-2.5 text-xs text-app-success">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="flex-1">발송 요청 완료! 발송 이력에서 진행 상황을 확인하세요.</span>
+              <button
+                type="button"
+                onClick={() => setShowSendSuccess(false)}
+                className="shrink-0 rounded-full p-0.5 text-app-success/60 hover:text-app-success transition-colors"
+                aria-label="닫기"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           <div className="space-y-4">
             {/* ── Smart Selection Bar ── */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-app-border bg-app-card/50 px-3 py-2 text-xs">
@@ -1698,14 +1729,30 @@ export function SendTab() {
 
             {/* ── Message preview ( Telegram style ) ── */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <MessagePreview
-                message={message}
-                recipientCount={selectedRecipientIds.length}
-                accountPhone={account?.phone}
-                groupName={selectedRecipients[0]?.title}
-                imagePreviewUrl={imageObjectUrl}
-                plan={plan}
-              />
+              <div className="flex flex-col gap-2">
+                {selectedRecipients.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-medium text-app-text-muted whitespace-nowrap">수신자 미리보기:</label>
+                    <select
+                      value={previewRecipientIdx}
+                      onChange={(e) => setPreviewRecipientIdx(Number(e.target.value))}
+                      className="w-full rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text focus:outline-none focus:ring-1 focus:ring-app-primary"
+                    >
+                      {selectedRecipients.map((r, i) => (
+                        <option key={r.id} value={i}>{r.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <MessagePreview
+                  message={message}
+                  recipientCount={selectedRecipientIds.length}
+                  accountPhone={account?.phone}
+                  groupName={selectedRecipients[previewRecipientIdx]?.title}
+                  imagePreviewUrl={imageObjectUrl}
+                  plan={plan}
+                />
+              </div>
               {message.trim() && TEMPLATE_VARIABLES.some((v) => message.includes(v.key)) && (
                 <div className="rounded-xl border border-app-info/15 bg-app-info-muted/5 px-3 py-2 self-start">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-info mb-1">
@@ -1714,19 +1761,19 @@ export function SendTab() {
                   </div>
                   <div className="whitespace-pre-wrap break-words rounded-lg border border-app-border/50 bg-app-card/50 px-3 py-2 text-sm leading-relaxed text-app-text">
                   {previewTemplate(message, {
-                    name: selectedRecipients[0]?.title ?? "샘플 그룹",
+                    name: selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹",
                     phone: account?.phone ?? "010-0000-0000",
                     count: selectedRecipientIds.length || 10,
                     date: new Date().toISOString().slice(0, 10),
                     time: new Date().toTimeString().slice(0, 5),
                     sender: account?.name || account?.phone || "[발신자]",
-                    groupTitle: selectedRecipients[0]?.title ?? "샘플 그룹",
+                    groupTitle: selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹",
                   })}
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
                     {TEMPLATE_VARIABLES.filter((v) => message.includes(v.key)).map((v) => {
                       let sample = "";
-                      if (v.key === "{{name}}") sample = selectedRecipients[0]?.title ?? "샘플 그룹";
+                      if (v.key === "{{name}}") sample = selectedRecipients[previewRecipientIdx]?.title ?? "샘플 그룹";
                       else if (v.key === "{{phone}}") sample = account?.phone ?? "010-0000-0000";
                       else if (v.key === "{{count}}") sample = String(selectedRecipientIds.length || 10);
                       return (
@@ -2061,6 +2108,17 @@ export function SendTab() {
                         required={isScheduled}
                         className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
                     </Field>
+                    {scheduledAtLocal && (() => {
+                      const day = scheduledAtLocal.slice(0, 10);
+                      const sameDayCount = scheduledCountByDay[day] ?? 0;
+                      if (sameDayCount === 0) return null;
+                      return (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-app-warning">
+                          <AlertTriangle className="h-3 w-3 shrink-0" />
+                          <span>이미 {sameDayCount}건의 예약 발송이 있습니다</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
