@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 import * as agentApi from "@/lib/agent-api";
+import type { ToolConfirmation } from "@/lib/agent-api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -38,11 +39,14 @@ export function InlineAiChat() {
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [chats, setChats] = useState<agentApi.AgentChat[]>([]);
   const [chatsLoading, setChatsLoading] = useState(false);
+  const [autoChatCreating, setAutoChatCreating] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<agentApi.AgentMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const [streamMsg, setStreamMsg] = useState<StreamMessage | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<ToolConfirmation | null>(null);
+  const [confirmingTool, setConfirmingTool] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showNewAgentModal, setShowNewAgentModal] = useState(false);
@@ -68,6 +72,70 @@ export function InlineAiChat() {
   }, []);
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
+
+  // ── Auto-init: create default agent + chat on first visit ──────
+  useEffect(() => {
+    if (agentsLoading || agentsError) return;
+    // Already have an active chat — nothing to do
+    if (activeChatId) return;
+
+    let cancelled = false;
+
+    async function autoInit() {
+      let agentId: string | null = null;
+
+      // 1. If no agents exist, create a default "나만의 AI" agent
+      if (agents.length === 0) {
+        try {
+          const defaultAgent = await agentApi.createAgent({
+            name: "나만의 AI",
+            role: "assistant",
+            systemPrompt:
+              "너는 TeleMon의 AI 비서 '나만의 AI'야. 사용자를 친절하게 도와주고, " +
+              "TeleMon 플랫폼(텔레그램 마케팅 자동화)에 관한 질문에 전문적으로 답변해줘. " +
+              "한국어로 응답하고, 필요할 때 이모지를 적절히 사용해.",
+          });
+          if (cancelled) return;
+          setAgents((prev) => [defaultAgent, ...prev]);
+          agentId = defaultAgent.id;
+        } catch {
+          // Agent creation failed — show empty state
+          return;
+        }
+      } else {
+        agentId = agents[0].id;
+      }
+
+      if (!agentId || cancelled) return;
+      setActiveAgentId(agentId);
+
+      // 2. Fetch existing chats for this agent
+      try {
+        setAutoChatCreating(true);
+        const existingChats = await agentApi.fetchChats(agentId);
+        if (cancelled) return;
+
+        if (existingChats.length > 0) {
+          // Use the most recent chat
+          setChats(existingChats);
+          setActiveChatId(existingChats[0].id);
+        } else {
+          // 3. No chats — create one automatically
+          const newChat = await agentApi.createChat(agentId);
+          if (cancelled) return;
+          setChats([newChat]);
+          setActiveChatId(newChat.id);
+        }
+      } catch {
+        // Chat fetch/create failed — user can still click "새 채팅"
+      } finally {
+        if (!cancelled) setAutoChatCreating(false);
+      }
+    }
+
+    autoInit();
+    return () => { cancelled = true; };
+  }, [agents, agentsLoading, agentsError, activeChatId]);
 
   useEffect(() => {
     if (!activeAgentId) {
@@ -150,6 +218,11 @@ export function InlineAiChat() {
 
       const data = await res.json();
 
+      // Handle tool confirmation
+      if (data.pending_confirmation) {
+        setPendingConfirmation(data.pending_confirmation);
+      }
+
       if (data.level_up && data.new_level) {
         toast("success", `🎉 Lv.${data.new_level} 달성!`, {
           description: `${data.exp_gained || 0} EXP를 획득했습니다.`,
@@ -184,6 +257,38 @@ export function InlineAiChat() {
       sendMessage();
     }
   }
+
+  async function handleConfirmTool() {
+    if (!pendingConfirmation || !activeChatId) return;
+    setConfirmingTool(true);
+    try {
+      const result = await agentApi.confirmTool(
+        activeChatId,
+        pendingConfirmation.tool_name,
+        pendingConfirmation.arguments,
+      );
+      // Reload messages
+      const msgs = await agentApi.fetchChatMessages(activeChatId);
+      setMessages(msgs);
+      toast("success", `✅ ${pendingConfirmation.label} 실행 완료`, {
+        description: typeof result.result === "object"
+          ? JSON.stringify(result.result, null, 2).slice(0, 200)
+          : "",
+      });
+    } catch (err) {
+      toast("error", "실행 실패", {
+        description: err instanceof Error ? err.message : "알 수 없는 오류",
+      });
+    } finally {
+      setPendingConfirmation(null);
+      setConfirmingTool(false);
+    }
+  }
+
+  function handleCancelConfirmation() {
+    setPendingConfirmation(null);
+  }
+
 
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
@@ -241,13 +346,22 @@ export function InlineAiChat() {
           </div>
         ) : !activeChatId ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-app-text-muted">
-            <MessageSquare className="h-8 w-8 opacity-30" />
-            <p className="text-xs">
-              <span className="font-medium text-app-text">{activeAgent?.name}</span> 👋
-            </p>
-            <Button variant="primary" size="sm" onClick={handleNewChat}>
-              <Plus className="h-3 w-3" /> 새 채팅
-            </Button>
+            {autoChatCreating ? (
+              <>
+                <Loader2 className="h-6 w-6 animate-spin text-app-primary" />
+                <p className="text-xs">채팅 준비 중...</p>
+              </>
+            ) : (
+              <>
+                <MessageSquare className="h-8 w-8 opacity-30" />
+                <p className="text-xs">
+                  <span className="font-medium text-app-text">{activeAgent?.name}</span> 👋
+                </p>
+                <Button variant="primary" size="sm" onClick={handleNewChat}>
+                  <Plus className="h-3 w-3" /> 새 채팅
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -304,6 +418,51 @@ export function InlineAiChat() {
           </div>
         )}
       </div>
+
+      {/* Tool Confirmation Banner */}
+      {pendingConfirmation && (
+        <div className="border-t border-amber-500/30 bg-amber-500/5 px-3 py-2.5 shrink-0 animate-slide-up">
+          <div className="flex items-start gap-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-700">
+                ⚡ {pendingConfirmation.label}
+              </p>
+              {pendingConfirmation.arguments.message ? (
+                <p className="text-[11px] text-app-text-muted mt-0.5 truncate">
+                  &ldquo;{String(pendingConfirmation.arguments.message).slice(0, 120)}&rdquo;
+                </p>
+              ) : null}
+              {pendingConfirmation.arguments.account_id ? (
+                <p className="text-[10px] text-app-text-muted mt-0.5">
+                  계정: {String(pendingConfirmation.arguments.account_id).slice(0, 30)}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleCancelConfirmation}
+                disabled={confirmingTool}
+                className="rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmTool}
+                disabled={confirmingTool}
+                className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                {confirmingTool ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                실행
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat input */}
       {activeChatId && (

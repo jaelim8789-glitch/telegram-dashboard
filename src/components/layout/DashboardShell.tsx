@@ -2,6 +2,43 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
+
+function useEdgeSwipe(
+  onSwipeLeft: () => void,
+  onSwipeRight: () => void,
+  edgeThreshold = 30,
+  swipeThreshold = 60,
+) {
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      const x = e.touches[0].clientX;
+      const w = window.innerWidth;
+      if (x > edgeThreshold && x < w - edgeThreshold) return;
+      touchStart.current = { x, y: e.touches[0].clientY };
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      if (!touchStart.current) return;
+      const dx = e.changedTouches[0].clientX - touchStart.current.x;
+      const dy = e.changedTouches[0].clientY - touchStart.current.y;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > swipeThreshold) {
+        if (dx > 0) onSwipeRight();
+        else onSwipeLeft();
+      }
+      touchStart.current = null;
+    }
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [onSwipeLeft, onSwipeRight, edgeThreshold, swipeThreshold]);
+}
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
@@ -30,6 +67,12 @@ export function DashboardShell() {
     setInspectorOpen((v) => !v);
     setSidebarOpen(false);
   }, []);
+
+  // Edge swipe: left edge → sidebar, right edge → inspector
+  useEdgeSwipe(
+    useCallback(() => { setInspectorOpen(true); setSidebarOpen(false); }, []),
+    useCallback(() => { setSidebarOpen(true); setInspectorOpen(false); }, []),
+  );
 
   // "?" key opens cheatsheet (only when not typing in an input)
   useEffect(() => {

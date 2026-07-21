@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div className={cn("overflow-x-auto responsive-table", className)}>
       <table className="w-full text-sm">{children}</table>
     </div>
   );
@@ -26,7 +26,7 @@ export function TableBody({ children, className }: { children: ReactNode; classN
 
 export function TableRow({ children, className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={cn("text-app-text transition-colors hover:bg-app-card-hover/50", className)} {...props}>
+    <tr className={cn("text-app-text transition-colors hover:bg-app-card-hover/50 table-row-card", className)} {...props}>
       {children}
     </tr>
   );
