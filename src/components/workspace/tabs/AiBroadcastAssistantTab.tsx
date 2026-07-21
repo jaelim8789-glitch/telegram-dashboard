@@ -6,8 +6,10 @@ import { Panel } from "@/components/ui/Panel";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { getToken } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 export function AiBroadcastAssistantTab() {
+  const { toast } = useToast();
   const selectedIds = useDashboardStore((s) => s.sendSelectedGroupIds);
   const groups = useDashboardStore((s) => s.sendGroups);
   const selectedRecipients = groups.filter((g) => selectedIds.includes(g.id));
@@ -34,7 +36,7 @@ export function AiBroadcastAssistantTab() {
     })
       .then((r) => r.json().catch(() => []))
       .then((d) => setStyleProfiles(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch(() => { toast("error", "스타일 프로필 로드 실패"); });
   }, []);
 
   const generateMessage = async () => {
@@ -90,16 +92,16 @@ export function AiBroadcastAssistantTab() {
         <Panel title="메시지 설정" className="lg:col-span-1">
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] font-medium text-app-text-muted">발송 목적 *</label>
-              <textarea value={purpose} onChange={e => setPurpose(e.target.value)}
+              <label htmlFor="ai-broadcast-purpose" className="text-[11px] font-medium text-app-text-muted">발송 목적 *</label>
+              <textarea id="ai-broadcast-purpose" value={purpose} onChange={e => setPurpose(e.target.value)}
                 placeholder="예: 신규 서비스 런칭 홍보, VIP 고객 감사 이벤트 안내"
                 rows={3}
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary resize-none"
               />
             </div>
             <div>
-              <label className="text-[11px] font-medium text-app-text-muted">대상 설명 (선택)</label>
-              <input type="text" value={targetDescription} onChange={e => setTargetDescription(e.target.value)}
+              <label htmlFor="ai-broadcast-target" className="text-[11px] font-medium text-app-text-muted">대상 설명 (선택)</label>
+              <input id="ai-broadcast-target" type="text" value={targetDescription} onChange={e => setTargetDescription(e.target.value)}
                 placeholder="예: 30대 직장인, 소상공인"
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary"
               />
@@ -126,8 +128,8 @@ export function AiBroadcastAssistantTab() {
               )}
             </div>
             <div>
-              <label className="text-[11px] font-medium text-app-text-muted">톤</label>
-              <select value={tone} onChange={e => setTone(e.target.value)}
+              <label htmlFor="ai-broadcast-tone" className="text-[11px] font-medium text-app-text-muted">톤</label>
+              <select id="ai-broadcast-tone" value={tone} onChange={e => setTone(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text focus:outline-none focus:border-app-primary">
                 <option value="professional">전문적인</option>
                 <option value="friendly">친근한</option>
@@ -151,8 +153,8 @@ export function AiBroadcastAssistantTab() {
               </div>
             )}
             <div>
-              <label className="text-[11px] font-medium text-app-text-muted">언어</label>
-              <select value={language} onChange={e => setLanguage(e.target.value)}
+              <label htmlFor="ai-broadcast-lang" className="text-[11px] font-medium text-app-text-muted">언어</label>
+              <select id="ai-broadcast-lang" value={language} onChange={e => setLanguage(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text focus:outline-none focus:border-app-primary">
                 <option value="ko">한국어</option>
                 <option value="en">English</option>
@@ -182,7 +184,7 @@ export function AiBroadcastAssistantTab() {
                   <div className="rounded-xl border border-app-primary/20 bg-app-primary-muted/10 p-3">
                     <p className="text-xs text-app-text whitespace-pre-wrap">{result.message}</p>
                   </div>
-                  <button onClick={() => copyText(result.message, "main")}
+                  <button onClick={() => copyText(result.message, "main")} aria-label="메인 메시지 복사"
                     className="flex items-center gap-1.5 rounded-lg border border-app-border px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors">
                     {copiedMessage === "main" ? <Check className="h-3.5 w-3.5 text-app-success" /> : <Copy className="h-3.5 w-3.5" />}
                     {copiedMessage === "main" ? "복사됨" : "복사"}
@@ -207,7 +209,7 @@ export function AiBroadcastAssistantTab() {
                     <div className="rounded-xl border border-app-border bg-app-bg p-3">
                       <p className="text-xs text-app-text whitespace-pre-wrap">{result.variant_a}</p>
                     </div>
-                    <button onClick={() => copyText(result.variant_a!, "a")}
+                    <button onClick={() => copyText(result.variant_a!, "a")} aria-label="Variant A 복사"
                       className="flex items-center gap-1.5 rounded-lg border border-app-border px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover transition-colors">
                       {copiedMessage === "a" ? <Check className="h-3.5 w-3.5 text-app-success" /> : <Copy className="h-3.5 w-3.5" />}
                       {copiedMessage === "a" ? "복사됨" : "복사"}

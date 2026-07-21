@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Account, Broadcast, Group, TabId } from "@/types";
+import type { Account, Broadcast, Group, NavView, TabGroup, TabId } from "@/types";
 import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 
@@ -25,6 +25,9 @@ function dedupeRecipientIds(ids: string[], validIds?: Set<string>): string[] {
 
 type DashboardStateValue = {
   activeTab: TabId;
+  navView: NavView;
+  navCategory: TabGroup | null;
+  navFeature: TabId | null;
   mobileFocusMode: boolean;
   role: "admin" | "user" | "api_key" | null;
   subscriptionStatus: string | null;
@@ -46,6 +49,9 @@ type DashboardStateValue = {
 
 export const INITIAL_STATE: DashboardStateValue = {
   activeTab: loadLastTab(),
+  navView: "chat",
+  navCategory: null,
+  navFeature: null,
   mobileFocusMode: false,
   role: null,
   subscriptionStatus: null,
@@ -67,6 +73,10 @@ export const INITIAL_STATE: DashboardStateValue = {
 
 interface DashboardState extends DashboardStateValue {
   setActiveTab: (tab: TabId) => void;
+  navigateToChat: () => void;
+  navigateToCategory: (category: TabGroup) => void;
+  navigateToFeature: (tabId: TabId) => void;
+  navigateBack: () => void;
   setMobileFocusMode: (enabled: boolean) => void;
   setRole: (role: "admin" | "user" | "api_key" | null) => void;
   setSubscription: (status: string | null, plan: string | null, trialExpiresAt: string | null) => void;
@@ -147,18 +157,32 @@ const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get
     runtimeManagerSubscription?.();
     runtimeManagerSubscription = null;
     RuntimeManager.getInstance().destroy();
-    set({ ...INITIAL_STATE });
+    set({ ...INITIAL_STATE, navView: "chat", navCategory: null, navFeature: null });
   },
 
   setActiveTab: (tab) => {
     try { localStorage.setItem(LAST_TAB_KEY, tab); } catch { }
-    // Debounce double-tap: ignore if same tab within 300ms
     const now = Date.now();
     const lastSwitch = (window as any).__lastTabSwitch;
     if (lastSwitch && now - lastSwitch < 300 && tab === (window as any).__lastTabId) return;
     (window as any).__lastTabSwitch = now;
     (window as any).__lastTabId = tab;
-    set({ activeTab: tab });
+    set({ activeTab: tab, navView: "feature", navFeature: tab });
+  },
+
+  navigateToChat: () => set({ navView: "chat", navCategory: null, navFeature: null }),
+  navigateToCategory: (category) => set({ navView: "category", navCategory: category, navFeature: null }),
+  navigateToFeature: (tabId) => {
+    try { localStorage.setItem(LAST_TAB_KEY, tabId); } catch { }
+    set({ navView: "feature", navFeature: tabId, activeTab: tabId });
+  },
+  navigateBack: () => {
+    const state = get();
+    if (state.navView === "feature") {
+      set({ navView: "category", navFeature: null });
+    } else if (state.navView === "category") {
+      set({ navView: "chat", navCategory: null });
+    }
   },
 
   setMobileFocusMode: (enabled) => set({ mobileFocusMode: enabled }),

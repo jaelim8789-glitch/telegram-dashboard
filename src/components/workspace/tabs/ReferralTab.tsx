@@ -77,8 +77,9 @@ export function ReferralTab() {
             console.log("Referral code not available yet");
           }
         }
-      } catch (err: any) {
-        setError(err.message || "사용자 정보를 불러오는데 실패했습니다.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "사용자 정보를 불러오는데 실패했습니다.";
+        setError(msg);
         console.error("Error fetching referral data:", err);
       } finally {
         setLoading(false);
@@ -113,9 +114,10 @@ export function ReferralTab() {
       } else {
         toast("error", "총판 등록 실패", { description: result.message || "총판 등록에 실패했습니다." });
       }
-    } catch (err: any) {
-      setError(err.message || "총판 등록에 실패했습니다.");
-      toast("error", "총판 등록 실패", { description: err.message || "총판 등록에 실패했습니다." });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "총판 등록에 실패했습니다.";
+      setError(msg);
+      toast("error", "총판 등록 실패", { description: msg });
     } finally {
       setRegistering(false);
     }

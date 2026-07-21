@@ -10,6 +10,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { getToken } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -57,6 +58,7 @@ const EMOJI_LABELS: Record<string, string> = {
 };
 
 export function StyleProfileTab() {
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [sourceText, setSourceText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -75,7 +77,7 @@ export function StyleProfileTab() {
     try {
       const res = await fetch(`${BASE_URL}/api/style-profiles`, { headers: authHeaders() });
       if (res.ok) setProfiles(await res.json());
-    } catch { }
+    } catch { toast("error", "스타일 프로필 로드 실패"); }
     finally { setLoading(false); }
   }
 
@@ -116,7 +118,7 @@ export function StyleProfileTab() {
       });
       setProfiles((prev) => prev.filter((p) => p.id !== id));
       if (selectedProfile?.id === id) setSelectedProfile(null);
-    } catch { }
+    } catch { toast("error", "스타일 프로필 삭제 실패"); }
     finally { setDeletingId(null); }
   }
 

@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, Plus, RefreshCw, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, Globe, Plus, RefreshCw, Trash2, XCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
@@ -129,9 +131,7 @@ export function WebhookSettingsTab({ tenantId }: WebhookSettingsTabProps) {
         {/* URL List */}
         <div className="space-y-2">
           {urls.length === 0 && !loading && (
-            <div className="rounded-xl border border-dashed border-app-border px-4 py-6 text-center text-sm text-app-text-muted">
-              등록된 웹훅 URL이 없습니다. 아래에 URL을 추가하세요.
-            </div>
+            <EmptyState icon={Globe} title="등록된 웹훅 URL이 없습니다" description="아래에 URL을 추가하세요." />
           )}
           {urls.map((url, i) => (
             <div

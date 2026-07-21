@@ -36,6 +36,27 @@ const PLANS = [
     ],
     href: "/get-api-key",
     cta: "전문가용 시작",
+    popular: false,
+  },
+  {
+    name: "AI Premium",
+    badge: "나만의 AI",
+    price: "99",
+    period: "월",
+    features: [
+      "최대 3개 커스텀 AI 에이전트 생성",
+      "에이전트 생성 시 목적 템플릿 선택",
+      "사실상 무제한 AI 토큰*",
+      "웹 검색 & 요약 에이전트",
+      "마케팅 카피라이팅 에이전트",
+      "데이터 분석 & 보고서 에이전트",
+      "고객 응대 자동화 에이전트",
+      "5개 계정 연결",
+      "예약 & 반복 발송",
+      "우선 고객 지원",
+    ],
+    href: "/get-api-key?plan=ai_premium",
+    cta: "AI Premium 시작",
     popular: true,
   },
   {
@@ -75,7 +96,7 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
+          <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
@@ -86,8 +107,8 @@ export default function PricingPage() {
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-app-primary px-5 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap">
-                    가장 인기
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap">
+                    {(plan as any).badge || "가장 인기"}
                   </div>
                 )}
                 <h3 className="text-xl font-bold text-app-text">{plan.name}</h3>
@@ -123,6 +144,11 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+
+          {/* Footnote */}
+          <p className="mt-8 text-center text-[10px] text-app-text-subtle max-w-2xl mx-auto">
+            * AI Premium 요금제는 월 10만 토큰 소프트 캡이 적용되나, 일반 사용 환경에서 도달하기 어려운 수준으로 사실상 무제한에 가깝게 사용 가능합니다.
+          </p>
 
           <div className="mt-16 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-app-text">

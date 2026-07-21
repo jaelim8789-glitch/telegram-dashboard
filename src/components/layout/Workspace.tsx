@@ -3,15 +3,26 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
-import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { TabBar } from "@/components/workspace/TabBar";
+import { CategoryStrip } from "@/components/navigation/CategoryStrip";
+import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
 import { Loader2, WifiOff } from "lucide-react";
+
+const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
+  loading: () => (
+    <div className="space-y-3 p-4">
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-20 w-full rounded-xl" />
+    </div>
+  ),
+});
 
 function TabFallback() {
   return (
@@ -25,10 +36,6 @@ function TabFallback() {
     </div>
   );
 }
-
-const MOBILE_ORDER: TabId[] = [
-  "myai", "send", "group",
-];
 
 const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   dashboard: dynamic(() => import("@/components/workspace/tabs/DashboardTab").then(m => ({ default: m.DashboardTab })), { loading: TabFallback }),
@@ -66,61 +73,6 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   styleprofile: dynamic(() => import("@/components/workspace/tabs/StyleProfileTab").then(m => ({ default: m.StyleProfileTab })), { loading: TabFallback }),
   growthloop: dynamic(() => import("@/components/workspace/tabs/GrowthLoopTab").then(m => ({ default: m.GrowthLoopTab })), { loading: TabFallback }),
 };
-
-function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }, []);
-
-  const onTouchMove = useCallback((_e: React.TouchEvent) => {}, []);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
-    const dx = e.changedTouches[0].clientX - touchStart.current.x;
-    const dy = e.changedTouches[0].clientY - touchStart.current.y;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
-      if (dx > 0) onSwipeRight();
-      else onSwipeLeft();
-    }
-    touchStart.current = null;
-  }, [onSwipeLeft, onSwipeRight, threshold]);
-
-  return { onTouchStart, onTouchMove, onTouchEnd };
-}
-
-// Direction-aware tab transition variants (iOS style push/pop)
-const tabVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 80 : -80,
-    opacity: 0,
-    scale: 0.97,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 80 : -80,
-    opacity: 0,
-    scale: 0.97,
-  }),
-};
-
-function useTabDirection() {
-  const prevRef = useRef<string | null>(null);
-  return useCallback((tab: string) => {
-    const prev = prevRef.current;
-    prevRef.current = tab;
-    if (prev === null) return 0;
-    const prevIdx = MOBILE_ORDER.indexOf(prev as TabId);
-    const currIdx = MOBILE_ORDER.indexOf(tab as TabId);
-    if (prevIdx === -1 || currIdx === -1) return 0;
-    return currIdx - prevIdx;
-  }, []);
-}
 
 // ── Network status hook ──
 function useNetworkStatus() {
@@ -167,7 +119,7 @@ function useKeyboardAware(): number {
 
     function update() {
       const diff = window.innerHeight - vv!.height;
-      setKeyboardHeight(Math.max(0, diff - 44)); // 44 = rough URL bar
+      setKeyboardHeight(Math.max(0, diff - 44));
     }
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
@@ -225,13 +177,26 @@ function usePullToRefresh(
   return { pulling, pullDist, refreshing, onTouchStart, onTouchMove, onTouchEnd };
 }
 
+const viewVariants = {
+  enter: () => ({
+    x: 40,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: () => ({
+    x: -40,
+    opacity: 0,
+  }),
+};
+
 export function Workspace() {
+  const navView = useDashboardStore((s) => s.navView);
+  const navCategory = useDashboardStore((s) => s.navCategory);
+  const navFeature = useDashboardStore((s) => s.navFeature);
   const activeTab = useDashboardStore((s) => s.activeTab);
-  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
-  const ActiveTabContent = TAB_CONTENT[activeTab];
-  const haptics = useHapticFeedback();
-  const getDirection = useTabDirection();
-  const direction = getDirection(activeTab);
 
   const online = useNetworkStatus();
   const reducedMotion = useReducedMotion();
@@ -246,7 +211,6 @@ export function Workspace() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Pull-to-refresh callback — re-renders the current tab
   const refreshKey = useRef(0);
   const [, setRefreshTick] = useState(0);
 
@@ -257,26 +221,30 @@ export function Workspace() {
 
   const pull = usePullToRefresh(scrollRef, handleRefresh, isMobile);
 
-  const swipe = useSwipe(
-    useCallback(() => {
-      const idx = MOBILE_ORDER.indexOf(activeTab);
-      if (idx < MOBILE_ORDER.length - 1) {
-        haptics.selection();
-        setActiveTab(MOBILE_ORDER[idx + 1]);
-      }
-    }, [activeTab, setActiveTab, haptics]),
-    useCallback(() => {
-      const idx = MOBILE_ORDER.indexOf(activeTab);
-      if (idx > 0) {
-        haptics.selection();
-        setActiveTab(MOBILE_ORDER[idx - 1]);
-      }
-    }, [activeTab, setActiveTab, haptics]),
-  );
-
   const springCfg = reducedMotion
     ? { duration: 0 }
-    : { x: { type: "spring" as const, stiffness: 380, damping: 30 }, opacity: { duration: 0.2 }, scale: { duration: 0.2 } };
+    : { x: { type: "spring" as const, stiffness: 380, damping: 30 }, opacity: { duration: 0.2 } };
+
+  const viewKey = navView === "feature" ? navFeature || activeTab : navView === "category" ? `category-${navCategory}` : "chat";
+
+  function renderContent() {
+    if (navView === "chat") {
+      return <InlineAiChat key={`chat-${refreshKey.current}`} />;
+    }
+
+    if (navView === "category" && navCategory) {
+      return <CategoryDashboard category={navCategory} key={`category-${navCategory}-${refreshKey.current}`} />;
+    }
+
+    if (navView === "feature" && navFeature) {
+      const FeatureContent = TAB_CONTENT[navFeature];
+      if (FeatureContent) {
+        return <FeatureContent key={`${navFeature}-${refreshKey.current}`} />;
+      }
+    }
+
+    return null;
+  }
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
@@ -298,7 +266,7 @@ export function Workspace() {
           )}
         </AnimatePresence>
 
-        <TabBar />
+        <CategoryStrip />
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-4 md:pb-4"
@@ -309,12 +277,11 @@ export function Workspace() {
           }}
           {...(isMobile
             ? {
-                onTouchStart: (e: React.TouchEvent) => { swipe.onTouchStart(e); pull.onTouchStart(e); },
-                onTouchMove: (e: React.TouchEvent) => { swipe.onTouchMove(e); pull.onTouchMove(e); },
-                onTouchEnd: (e: React.TouchEvent) => { swipe.onTouchEnd(e); pull.onTouchEnd(e); },
+                onTouchStart: pull.onTouchStart,
+                onTouchMove: pull.onTouchMove,
+                onTouchEnd: pull.onTouchEnd,
               }
-            : swipe
-          )}
+            : {})}
         >
           {/* ── Pull-to-refresh indicator ── */}
           {pull.pulling && (
@@ -346,17 +313,16 @@ export function Workspace() {
 
           <ScrollToTop />
 
-          <AnimatePresence mode="wait" custom={direction}>
+          <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab}
-              custom={direction}
-              variants={tabVariants}
+              key={viewKey}
+              variants={viewVariants}
               initial="enter"
               animate="center"
               exit="exit"
               transition={springCfg}
             >
-              <ActiveTabContent key={`${activeTab}-${refreshKey.current}`} />
+              {renderContent()}
             </motion.div>
           </AnimatePresence>
         </div>

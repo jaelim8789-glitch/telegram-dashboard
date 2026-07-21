@@ -2,7 +2,7 @@
  * Plan limit definitions — matches telegram-dashboard-backend/app/core/plans.py
  * Single source of truth for frontend usage dashboard.
  */
-export type PlanId = "free" | "pro" | "team";
+export type PlanId = "free" | "pro" | "team" | "ai_premium";
 
 export interface PlanLimits {
   maxAccounts: number;
@@ -16,6 +16,8 @@ export interface PlanLimits {
   canSchedule: boolean;
   canAttachImages: boolean;
   canExportData: boolean;
+  maxAiAgents?: number;  // Custom AI agents limit (Premium tier)
+  monthlyAiTokenLimit?: number;  // AI token soft cap
 }
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
@@ -57,6 +59,21 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     canSchedule: true,
     canAttachImages: true,
     canExportData: true,
+  },
+  ai_premium: {
+    maxAccounts: 5,
+    maxAutoReplyRules: 50,
+    maxReplyMacros: 30,
+    monthlyMessageLimit: 50000,
+    monthlyAutoReplyLimit: 50000,
+    monthlyAiChatLimit: 100_000,  // 100K — soft cap, marketed as "virtually unlimited"
+    cooldownMinimumMinutes: 0,
+    canBroadcast: true,
+    canSchedule: true,
+    canAttachImages: true,
+    canExportData: true,
+    maxAiAgents: 3,  // 2~3 custom AI agents
+    monthlyAiTokenLimit: 100_000,  // 100K token soft cap
   },
 };
 

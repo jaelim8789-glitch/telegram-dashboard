@@ -43,10 +43,12 @@ export const useStore = create<WorkspaceStore>((set, get) => ({
     })
     .then(response => response.json())
     .then(() => {
-      // 로컬 상태 업데이트
       get().updateGrowthLoop(loopId, { status: 'running', updatedAt: new Date() });
     })
-    .catch(error => console.error('Failed to start growth loop:', error));
+    .catch(error => {
+      console.error('Failed to start growth loop:', error);
+      get().updateGrowthLoop(loopId, { status: 'idle', updatedAt: new Date() });
+    });
   },
   
   pauseGrowthLoop: (loopId) => {
@@ -59,7 +61,10 @@ export const useStore = create<WorkspaceStore>((set, get) => ({
     .then(() => {
       get().updateGrowthLoop(loopId, { status: 'paused', updatedAt: new Date() });
     })
-    .catch(error => console.error('Failed to pause growth loop:', error));
+    .catch(error => {
+      console.error('Failed to pause growth loop:', error);
+      get().updateGrowthLoop(loopId, { status: 'running', updatedAt: new Date() });
+    });
   },
   
   stopGrowthLoop: (loopId) => {
@@ -72,6 +77,9 @@ export const useStore = create<WorkspaceStore>((set, get) => ({
     .then(() => {
       get().updateGrowthLoop(loopId, { status: 'idle', updatedAt: new Date() });
     })
-    .catch(error => console.error('Failed to stop growth loop:', error));
+    .catch(error => {
+      console.error('Failed to stop growth loop:', error);
+      get().updateGrowthLoop(loopId, { status: 'running', updatedAt: new Date() });
+    });
   },
 }));
