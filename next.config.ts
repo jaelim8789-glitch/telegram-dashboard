@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   // Security: prevent information leakage via X-Powered-By header
   poweredByHeader: false,
 
+  // Asset CDN prefix — set NEXT_PUBLIC_ASSET_PREFIX=https://cdn.telemon.online in production
+  assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
+
   // Explicit React strict mode (Next.js default, made explicit for clarity)
   reactStrictMode: true,
 
