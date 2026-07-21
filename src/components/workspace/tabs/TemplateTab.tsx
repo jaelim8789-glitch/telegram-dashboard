@@ -15,6 +15,7 @@ import * as api from "@/lib/api";
 import type { MessageTemplate } from "@/lib/api";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { SYSTEM_VARIABLES } from "@/lib/templateVariables";
 
 const VERSIONS_KEY = "telemon-template-versions";
 const MAX_VERSIONS = 10;
@@ -230,6 +231,24 @@ function TemplateEditor({
     setTestValues({});
   }, [content]);
 
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const [showSystemVars, setShowSystemVars] = useState(false);
+
+  const insertSystemVariable = (key: string) => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const varText = `{{${key}}}`;
+    const newContent = content.slice(0, start) + varText + content.slice(end);
+    setContent(newContent);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const pos = start + varText.length;
+      textarea.setSelectionRange(pos, pos);
+    });
+  };
+
   const handleSave = () => {
     if (!name.trim() || !content.trim()) return;
     const variables = variablesStr
@@ -272,6 +291,7 @@ function TemplateEditor({
           </span>
         </label>
         <textarea
+          ref={contentRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={6}
@@ -351,6 +371,42 @@ function TemplateEditor({
           placeholder="예: 이름, 연락처, 날짜"
           className="w-full"
         />
+      </div>
+
+      <div className="border-t border-app-border/50 pt-4 mt-4">
+        <button
+          type="button"
+          onClick={() => setShowSystemVars(!showSystemVars)}
+          className="flex items-center gap-1.5 text-xs font-medium text-app-text-muted hover:text-app-text transition-colors"
+        >
+          <svg
+            className={`h-3 w-3 transition-transform ${showSystemVars ? "rotate-90" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          시스템 변수
+          <span className="text-app-text-subtle font-normal">({SYSTEM_VARIABLES.length}개)</span>
+        </button>
+        {showSystemVars && (
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {SYSTEM_VARIABLES.map((sv) => (
+              <button
+                key={sv.key}
+                type="button"
+                onClick={() => insertSystemVariable(sv.key)}
+                className="group relative rounded-lg border border-app-border bg-app-card-hover px-2.5 py-2 text-left text-[11px] font-mono text-app-text hover:border-app-primary/40 hover:bg-app-primary/5 transition-colors"
+                title={`${sv.description} (예: ${sv.example})`}
+              >
+                <span>{`{{${sv.key}}}`}</span>
+                <span className="block text-[9px] text-app-text-subtle font-sans truncate">{sv.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

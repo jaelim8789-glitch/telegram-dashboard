@@ -25,6 +25,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { BulkAccountImport } from "@/components/workspace/tabs/register/BulkAccountImport";
+import { AccountRecoveryWizard } from "@/components/workspace/tabs/AccountRecoveryWizard";
 import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { AuthFlowMode, AccountHealthItem } from "@/types";
@@ -299,6 +300,7 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
     // Show both new registration and re-auth panels side by side
     return (
       <div className="space-y-5 pb-8">
+        <AccountRecoveryWizard />
         <ReAuthPanel
           healthItems={healthItems ?? []}
           onStartReAuth={handleStartReAuth}
@@ -327,6 +329,7 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
 
   return (
     <div className="space-y-5 pb-8">
+      <AccountRecoveryWizard />
       {/* Step Progress — only visible during ongoing auth flow (code/2fa/done) */}
       {step !== "form" && (
       <div className="flex items-center justify-center gap-0">

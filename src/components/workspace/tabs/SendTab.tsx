@@ -33,6 +33,7 @@ import {
   type Broadcast, type BroadcastStatus, type Group, type GroupType, type GroupFolder,
   type DistributionSibling,
 } from "@/types";
+import { useDraftRestore, useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -178,6 +179,9 @@ export function SendTab() {
   }, [setImageFile]);
 
   const clearSendDraft = useDashboardStore((s) => s.clearSendDraft);
+
+  useDraftRestore();
+  const { clearDraft } = useAutoSaveDraft();
 
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
   const { recent, markUsed } = useRecentGroups();
@@ -941,6 +945,7 @@ export function SendTab() {
 
       clearSendDraft();
       clearPersistedDraft();
+      clearDraft();
       setIsScheduled(false); setScheduledAtLocal("");
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal"); setNormalDelaySeconds(60);
@@ -2137,6 +2142,9 @@ export function SendTab() {
           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
           <span>예상 시간 계산 중...</span>
         </div>
+      )}
+      {message.trim().length > 0 && (
+        <p className="text-right text-[10px] text-app-text-subtle -mb-1.5">임시 저장됨</p>
       )}
       {/* Floating submit button */}
       <motion.div
