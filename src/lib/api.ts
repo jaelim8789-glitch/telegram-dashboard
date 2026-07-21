@@ -1211,6 +1211,34 @@ export async function adminDeleteUserByPhone(phone: string): Promise<{ deleted: 
   return request(`/api/admin/users/by-phone/${encodeURIComponent(phone)}`, { method: "DELETE" });
 }
 
+export interface AdminReferralCommission {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  payment_id: string;
+  amount_cents: number;
+  rate: number;
+  status: string;
+  payment_tx_id: string | null;
+  paid_at: string | null;
+  created_at: string | null;
+}
+
+/** Admin: list referral commissions, optionally filtered by status */
+export async function fetchAdminReferralCommissions(status?: string): Promise<AdminReferralCommission[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const result = await request<{ items: AdminReferralCommission[] }>(`/api/admin/referral/commissions${query}`);
+  return result.items;
+}
+
+/** Admin: approve a referral commission for payout, optionally recording the payment tx id */
+export async function approveAdminReferralCommission(commissionId: string, paymentTxId?: string): Promise<void> {
+  await request(`/api/admin/referral/commissions/${encodeURIComponent(commissionId)}/approve`, {
+    method: "POST",
+    body: JSON.stringify(paymentTxId ? { payment_tx_id: paymentTxId } : {}),
+  });
+}
+
 export async function reissueUserApiKey(id: string, memo?: string): Promise<string> {
   const body: Record<string, unknown> = {};
   if (memo) body.memo = memo;
@@ -1219,162 +1247,6 @@ export async function reissueUserApiKey(id: string, memo?: string): Promise<stri
     body: JSON.stringify(body),
   });
   return result.api_key;
-}
-
-export interface AdminTokenTopUpResult {
-  userId: string;
-  amount: number;
-  newBalance: number;
-}
-
-export async function adminTopUpTokens(userId: string, amount: number, memo?: string): Promise<AdminTokenTopUpResult> {
-  const result = await request<{ user_id: string; amount: number; new_balance: number }>(`/api/admin/users/${userId}/topup-tokens`, {
-    method: "POST",
-    body: JSON.stringify({ amount, memo: memo ?? null }),
-  });
-  return {
-    userId: result.user_id,
-    amount: result.amount,
-    newBalance: result.new_balance,
-  };
-}
-
-export interface AdminBillingUpdateInput {
-  plan?: "free" | "pro" | "team";
-  subscriptionStatus?: "active" | "inactive" | "pending" | "past_due" | "canceled";
-  trialExpiresAt?: string;
-  extendTrialDays?: number;
-}
-
-export interface AdminBillingUpdateResult {
-  userId: string;
-  tenantId: string;
-  phone: string;
-  plan: string;
-  subscriptionStatus: string;
-  trialExpiresAt: string | null;
-}
-
-export async function adminUpdateUserBilling(userId: string, input: AdminBillingUpdateInput): Promise<AdminBillingUpdateResult> {
-  const body: Record<string, unknown> = {};
-  if (input.plan) body.plan = input.plan;
-  if (input.subscriptionStatus) body.subscription_status = input.subscriptionStatus;
-  if (input.trialExpiresAt) body.trial_expires_at = input.trialExpiresAt;
-  if (typeof input.extendTrialDays === "number") body.extend_trial_days = input.extendTrialDays;
-  const result = await request<{
-    user_id: string;
-    tenant_id: string;
-    phone: string;
-    plan: string;
-    subscription_status: string;
-    trial_expires_at: string | null;
-  }>(`/api/admin/users/${userId}/billing`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  return {
-    userId: result.user_id,
-    tenantId: result.tenant_id,
-    phone: result.phone,
-    plan: result.plan,
-    subscriptionStatus: result.subscription_status,
-    trialExpiresAt: result.trial_expires_at,
-  };
-}
-
-export interface AdminAuditLog {
-  id: string;
-  adminUsername: string;
-  action: string;
-  targetType: string;
-  targetId: string | null;
-  targetPhone: string | null;
-  detail: string | null;
-  memo: string | null;
-  result: string;
-  createdAt: string;
-}
-
-export async function fetchAdminAuditLogs(limit = 50, action?: string): Promise<AdminAuditLog[]> {
-  const qs = new URLSearchParams();
-  qs.set("limit", String(limit));
-  if (action) qs.set("action", action);
-  const result = await request<{
-    items: Array<{
-      id: string;
-      admin_username: string;
-      action: string;
-      target_type: string;
-      target_id: string | null;
-      target_phone: string | null;
-      detail: string | null;
-      memo: string | null;
-      result: string;
-      created_at: string;
-    }>;
-  }>(`/api/admin/audit-logs?${qs.toString()}`);
-  return result.items.map((item) => ({
-    id: item.id,
-    adminUsername: item.admin_username,
-    action: item.action,
-    targetType: item.target_type,
-    targetId: item.target_id,
-    targetPhone: item.target_phone,
-    detail: item.detail,
-    memo: item.memo,
-    result: item.result,
-    createdAt: item.created_at,
-  }));
-}
-
-export interface AdminReferralCommission {
-  id: string;
-  referrerId: string;
-  referredId: string;
-  paymentId: string | null;
-  amountCents: number;
-  rate: number;
-  status: string;
-  paymentTxId: string | null;
-  paidAt: string | null;
-  createdAt: string | null;
-}
-
-export async function fetchAdminReferralCommissions(status?: string): Promise<AdminReferralCommission[]> {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  const result = await request<{
-    items: Array<{
-      id: string;
-      referrer_id: string;
-      referred_id: string;
-      payment_id: string | null;
-      amount_cents: number;
-      rate: number;
-      status: string;
-      payment_tx_id: string | null;
-      paid_at: string | null;
-      created_at: string | null;
-    }>;
-  }>(`/api/admin/referral/commissions${qs}`);
-  return result.items.map((item) => ({
-    id: item.id,
-    referrerId: item.referrer_id,
-    referredId: item.referred_id,
-    paymentId: item.payment_id,
-    amountCents: item.amount_cents,
-    rate: item.rate,
-    status: item.status,
-    paymentTxId: item.payment_tx_id,
-    paidAt: item.paid_at,
-    createdAt: item.created_at,
-  }));
-}
-
-export async function approveAdminReferralCommission(commissionId: string, paymentTxId?: string): Promise<void> {
-  await request(`/api/admin/referral/commissions/${commissionId}/approve`, {
-    method: "POST",
-    body: JSON.stringify({ payment_tx_id: paymentTxId ?? null }),
-  });
 }
 
 // === Admin Dashboard Status ===
