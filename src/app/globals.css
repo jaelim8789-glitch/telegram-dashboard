@@ -961,6 +961,31 @@ body.modal-open {
   background-color: var(--color-app-text-subtle);
 }
 
+/* ── Luxury gold scrollbar (site-wide, desktop only) ── */
+@media (hover: hover) and (pointer: fine) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent-border) transparent;
+  }
+  html::-webkit-scrollbar {
+    width: 8px;
+  }
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--color-accent), var(--color-gold-deep));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent-hover);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+}
+
 /* Subtle sheen used on the marketing header/hero — restrained, theme-aware
    (the accent-glow token already differs slightly light vs. dark). Doesn't
    set position itself: both current consumers (a `fixed` header, a
