@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
+import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
+import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
@@ -518,18 +520,22 @@ export function InlineAiChat() {
               ) : (
                 <div className="p-2 space-y-1">
                   {chats.map((chat) => (
-                    <div
+                    <SwipeableRow
                       key={chat.id}
-                      className={`flex items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer transition-colors group ${
+                      rightActions={[{
+                        label: "삭제", color: "bg-app-danger",
+                        icon: <Trash2 className="h-4 w-4" />,
+                        onAction: () => handleDeleteChat(chat.id),
+                      }]}
+                    >
+                    <button
+                      onClick={() => handleSelectChat(chat.id)}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer transition-colors group w-full text-left ${
                         activeChatId === chat.id
                           ? "bg-app-primary/10 border border-app-primary/20"
                           : "hover:bg-app-card-hover border border-transparent"
                       }`}
                     >
-                      <button
-                        onClick={() => handleSelectChat(chat.id)}
-                        className="flex-1 text-left min-w-0"
-                      >
                         <div className="flex items-center gap-2">
                           <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${activeChatId === chat.id ? "text-app-primary" : "text-app-text-muted"}`} />
                           <div className="min-w-0">
@@ -553,7 +559,8 @@ export function InlineAiChat() {
                           <Trash2 className="h-3 w-3" />
                         )}
                       </button>
-                    </div>
+                    </button>
+                    </SwipeableRow>
                   ))}
                 </div>
               )}
