@@ -406,9 +406,16 @@ export function SendTab() {
   function normalizeSelectedRecipients(groups: Group[], selectedIds: string[]): Group[] {
     const groupById = new Map(groups.map((group) => [group.id, group]));
     const next: Group[] = [];
+    const seenIds = new Set<string>();
     for (const id of selectedIds) {
       const group = groupById.get(id);
       if (!group) continue;
+      const dupKey = `${group.id}:${group.title}`;
+      if (seenIds.has(dupKey)) {
+        useDashboardStore.getState().setSubmitError(`중복된 그룹이 감지되었습니다: ${group.title} (ID: ${group.id})`);
+        continue;
+      }
+      seenIds.add(dupKey);
       next.push(group);
     }
     return next;
@@ -638,6 +645,26 @@ export function SendTab() {
     pollTimer.current = setTimeout(() => { pollInFlightBroadcasts(selectedAccountId); }, POLL_INTERVAL_MS);
     return () => { if (pollTimer.current) clearTimeout(pollTimer.current); };
   }, [history, selectedAccountId]);
+
+  const sendProgressPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (sendProgressPollRef.current) { clearTimeout(sendProgressPollRef.current); sendProgressPollRef.current = null; }
+    if (!sendProgress || sendProgress.status === "sent" || sendProgress.status === "failed" || sendProgress.status === "cancelled") return;
+    sendProgressPollRef.current = setTimeout(async () => {
+      try {
+        const b = await api.fetchBroadcast(sendProgress.broadcastId);
+        setSendProgress({
+          broadcastId: sendProgress.broadcastId,
+          total: sendProgress.total,
+          succeeded: b.status === "sent" ? sendProgress.total : 0,
+          failed: b.status === "failed" ? sendProgress.total : 0,
+          status: b.status,
+        });
+      } catch { /* silent */ }
+    }, POLL_INTERVAL_MS);
+    return () => { if (sendProgressPollRef.current) clearTimeout(sendProgressPollRef.current); };
+  }, [sendProgress]);
 
   // 30s background polling independent of in-flight status.
   useEffect(() => {
@@ -967,6 +994,7 @@ export function SendTab() {
           : undefined,
       });
       api.clearIdempotencyKey();
+      setSendProgress({ broadcastId: created.id, total: effectiveRecipients.length, succeeded: 0, failed: 0, status: created.status });
       markUsed(selectedRecipientIds);
       addRecentRecipientSet(selectedRecipientIds);
       setRecentSets(getRecentRecipientSets().slice(0, 3));
@@ -1246,7 +1274,48 @@ export function SendTab() {
     );
   }
 
-  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval) && !spamBlocked && !riskBlocked;
+  // 계정 상태 확인 - 인증되지 않은 계정은 발송 불가
+  if (account.status !== 'active') {
+    return (
+      <Panel 
+        title="메시지 작성" 
+        description={`${account.name ?? account.phone} · ${account.status === 'inactive' ? '비활성화' : account.status === 'banned' ? '차단됨' : '알 수 없는 상태'}`}
+      >
+        <div className="rounded-2xl border border-app-warning/30 bg-app-warning-muted p-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-app-warning/20">
+            <Lock className="h-6 w-6 text-app-warning" />
+          </div>
+          <h3 className="mt-3 text-lg font-semibold text-app-text">계정 인증 필요</h3>
+          <p className="mt-1 text-sm text-app-text-secondary">
+            이 계정은 현재 {account.status === 'inactive' ? '비활성화' : 
+            account.status === 'banned' ? '차단' : '알 수 없는'} 상태입니다.
+          </p>
+          <p className="mt-2 text-xs text-app-text-subtle">
+            메시지를 발송하려면 계정 등록에서 Telegram 인증을 완료해야 합니다.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <Link href="/app/register" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                계정 등록으로 이동
+              </Button>
+            </Link>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => {
+                // 왼쪽 사이드바에서 다른 계정 선택 유도
+                toast("info", "왼쪽 사이드바에서 다른 인증된 계정을 선택해주세요.");
+              }}
+            >
+              다른 계정 선택
+            </Button>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
+  const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval);
 
   return (
     <div className="space-y-4 pb-20">
@@ -2171,6 +2240,41 @@ export function SendTab() {
               </button>
             </div>
           )}
+          {sendProgress && (
+            <div className="mt-3 rounded-xl border border-app-primary/30 bg-app-primary/5 px-3 py-2.5">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="text-app-text-muted">
+                  발송 진행률 ({sendProgress.succeeded}/{sendProgress.total})
+                </span>
+                <button
+                  type="button"
+                  onClick={clearSendProgress}
+                  className="rounded-full p-0.5 text-app-text-subtle hover:text-app-text transition-colors"
+                  aria-label="닫기"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-app-bg">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    sendProgress.status === "sent" ? "bg-app-success" :
+                    sendProgress.status === "failed" ? "bg-app-danger" :
+                    sendProgress.status === "cancelled" ? "bg-app-warning" :
+                    "bg-app-primary"
+                  )}
+                  style={{ width: `${sendProgress.total > 0 ? Math.round((sendProgress.succeeded / sendProgress.total) * 100) : 0}%` }}
+                />
+              </div>
+              <div className="mt-1 text-[10px] text-app-text-subtle">
+                {sendProgress.status === "sent" ? "발송 완료" :
+                 sendProgress.status === "failed" ? "발송 실패" :
+                 sendProgress.status === "cancelled" ? "취소됨" :
+                 "발송 진행 중"}
+              </div>
+            </div>
+          )}
         </form>
       </Panel>
 
@@ -2209,6 +2313,7 @@ export function SendTab() {
           <div className="space-y-2">
             {distributionSiblings.map((sib) => {
               const meta = STATUS_META[sib.broadcast.status];
+              const isFailed = sib.broadcast.status === "failed";
               const groupCount = sib.broadcast.recipients.length;
               return (
                 <div
@@ -2221,10 +2326,23 @@ export function SendTab() {
                     </div>
                     <div className="text-[11px] text-app-text-muted">{groupCount}개 그룹 배정</div>
                   </div>
-                  <Badge tone={meta.tone} className="shrink-0 gap-1">
-                    <meta.icon className="h-3 w-3" />
-                    {meta.label}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isFailed && (
+                      <button
+                        type="button"
+                        onClick={() => handleRetry(sib.broadcast)}
+                        disabled={retrying === sib.broadcast.id}
+                        className="flex items-center gap-1 rounded-lg border border-app-border bg-app-card px-2 py-1 text-[11px] text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className={cn("h-3 w-3", retrying === sib.broadcast.id && "animate-spin")} />
+                        재시도
+                      </button>
+                    )}
+                    <Badge tone={meta.tone} className="gap-1">
+                      <meta.icon className="h-3 w-3" />
+                      {meta.label}
+                    </Badge>
+                  </div>
                 </div>
               );
             })}
