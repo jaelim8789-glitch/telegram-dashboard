@@ -1507,14 +1507,14 @@ export function SendTab() {
                 <div className="rounded-lg border border-app-border bg-app-card p-2.5">
                   <div className="mb-1 text-[10px] font-medium text-app-text-muted">메시지 톤 분석</div>
                   <div className="mb-1 flex flex-wrap items-center gap-1">
-                    {tone.primary && (
-                      <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold", toneBg(tone.primary), toneColor(tone.primary))}>
-                        {toneLabel(tone.primary)}
+                    {tone.primaryTone && (
+                      <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold", toneBg(tone.primaryTone), toneColor(tone.primaryTone))}>
+                        {toneLabel(tone.primaryTone)}
                       </span>
                     )}
-                    {tone.secondary && (
+                    {tone.secondaryTone && (
                       <span className="inline-block rounded-full bg-app-card-hover px-1.5 py-0.5 text-[10px] text-app-text-muted">
-                        {toneLabel(tone.secondary)}
+                        {toneLabel(tone.secondaryTone)}
                       </span>
                     )}
                   </div>
@@ -1525,13 +1525,13 @@ export function SendTab() {
                 <div className="rounded-lg border border-app-border bg-app-card p-2.5">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-[10px] font-medium text-app-text-muted">바이럴 스코어</span>
-                    <span className={cn("text-xs font-bold tabular-nums", viralColor(viral.score))}>
-                      {viralLabel(viral.score)}
+                    <span className={cn("text-xs font-bold tabular-nums", viralColor(viral.level))}>
+                      {viralLabel(viral.level)}
                     </span>
                   </div>
                   <div className="mb-1.5 h-1.5 w-full overflow-hidden rounded-full bg-app-bg">
                     <div
-                      className={cn("h-full rounded-full transition-all", viralBg(viral.score))}
+                      className={cn("h-full rounded-full transition-all", viralBg(viral.level))}
                       style={{ width: `${viral.score}%` }}
                     />
                   </div>
