@@ -104,6 +104,8 @@ function LogRow({
   const hasTiming = isSent && duration;
   const [expanded, setExpanded] = useState(false);
   const [retryConfirmOpen, setRetryConfirmOpen] = useState(false);
+  const [swipeActionsOpen, setSwipeActionsOpen] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const hasFailureInfo = isFailed && log.failureInfo != null;
   const accountExists = accounts.some((a) => a.id === log.accountId);
@@ -111,10 +113,27 @@ function LogRow({
   const sendNowLocked = sendingNow === log.id;
   const showRetryButton = accountExists && canRetryFromFailureInfo(log);
 
+  function handleTouchStart(e: React.TouchEvent) {
+    if (e.touches.length !== 1) return;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStartRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) <= Math.abs(dy) || Math.abs(dx) < 56) return;
+    if (dx < 0) setSwipeActionsOpen(true);
+    if (dx > 0) setSwipeActionsOpen(false);
+  }
+
   return (
     <>
       {/* ── Collapsed row ── */}
       <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         className={cn(
           "rounded-xl border transition-all",
           isFailed && !expanded && "border-app-danger/20 bg-app-danger-muted/20",
@@ -244,7 +263,31 @@ function LogRow({
             </span>
           )}
           {recurring && <span className="hidden lg:inline">{intervalLabel(log.recurringIntervalMinutes)}</span>}
+          <span className="ml-auto text-[10px] text-app-text-subtle/80 sm:hidden">좌로 밀어 빠른 작업</span>
         </div>
+
+        {swipeActionsOpen && (
+          <div className="border-t border-app-border/70 bg-app-card/60 px-3 py-2 sm:hidden">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <Button variant="secondary" size="sm" onClick={() => onSendNow(log)} disabled={sendNowLocked}>
+                <Play className="h-3.5 w-3.5" /> 즉시 발송
+              </Button>
+              {!isFailed && !isSending && (
+                <Button variant="ghost" size="sm" onClick={() => onEditResend(log)}>
+                  <SendHorizonal className="h-3.5 w-3.5" /> 재사용
+                </Button>
+              )}
+              {showRetryButton && (
+                <Button variant="danger" size="sm" onClick={() => setRetryConfirmOpen(true)} disabled={retryLocked}>
+                  <RotateCcw className="h-3.5 w-3.5" /> 재시도
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setSwipeActionsOpen(false)}>
+                닫기
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expanded failure detail */}
