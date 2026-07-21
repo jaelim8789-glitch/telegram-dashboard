@@ -54,6 +54,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
       type="button"
       onClick={onSelect}
       aria-current={active ? "page" : undefined}
+      data-tour={`nav-${tab.id}`}
       className={cn(
         "focus-ring relative flex items-center justify-center transition-colors",
         mobile

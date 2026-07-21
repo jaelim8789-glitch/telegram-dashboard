@@ -214,6 +214,22 @@ function TemplateEditor({
     }
   });
 
+  const [showPreview, setShowPreview] = useState(false);
+  const [testValues, setTestValues] = useState<Record<string, string>>({});
+  const extractedVars = useMemo(() => {
+    const regex = /\{\{(\w+)\}\}/g;
+    const vars = new Set<string>();
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      vars.add(match[1]);
+    }
+    return Array.from(vars);
+  }, [content]);
+
+  useEffect(() => {
+    setTestValues({});
+  }, [content]);
+
   const handleSave = () => {
     if (!name.trim() || !content.trim()) return;
     const variables = variablesStr
@@ -263,6 +279,66 @@ function TemplateEditor({
           placeholder="메시지 내용을 입력하세요..."
         />
       </div>
+
+      <button
+        type="button"
+        onClick={() => setShowPreview(!showPreview)}
+        className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+      >
+        {showPreview ? "미리보기 숨기기" : "미리보기"}
+      </button>
+
+      {showPreview && (
+        <div className="space-y-3 rounded-xl border border-app-border bg-app-bg p-3">
+          {extractedVars.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-medium text-app-text-muted">변수 테스트 값</label>
+              <div className="flex flex-wrap gap-2">
+                {extractedVars.map((v) => (
+                  <div key={v} className="flex items-center gap-1.5">
+                    <code className="text-[10px] text-app-info font-mono">{`{{${v}}}`}</code>
+                    <Input
+                      value={testValues[v] ?? ""}
+                      onChange={(e) => setTestValues((prev) => ({ ...prev, [v]: e.target.value }))}
+                      placeholder="값 입력"
+                      className="w-28 h-7 text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="text-[10px] font-medium text-app-text-muted">미리보기</label>
+            <div className="mt-1 whitespace-pre-wrap rounded-lg border border-app-border/50 bg-app-surface p-3 text-xs text-app-text leading-relaxed">
+              {(() => {
+                const regex = /\{\{(\w+)\}\}/g;
+                const parts = [];
+                let lastIndex = 0;
+                let match;
+                let idx = 0;
+                while ((match = regex.exec(content)) !== null) {
+                  if (match.index > lastIndex) {
+                    parts.push(<span key={idx++}>{content.slice(lastIndex, match.index)}</span>);
+                  }
+                  const varName = match[1];
+                  const testValue = testValues[varName] ?? "";
+                  parts.push(
+                    <span key={idx++} className="bg-app-primary/20 rounded px-0.5">
+                      {testValue || `{{${varName}}}`}
+                    </span>
+                  );
+                  lastIndex = regex.lastIndex;
+                }
+                if (lastIndex < content.length) {
+                  parts.push(<span key={idx++}>{content.slice(lastIndex)}</span>);
+                }
+                return parts.length > 0 ? parts : content;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-xs font-medium text-app-text">

@@ -25,17 +25,10 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToAISection = () => {
-    const aiSection = document.getElementById('ai-operational-status');
-    if (aiSection) {
-      aiSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <section
       ref={ref}
-      className="tm-section-bg relative min-h-[90vh] sm:min-h-[80vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 satin-overlay luxury-hero" // px-4로 모바일 여백 조정
+      className="tm-section-bg relative min-h-[90vh] sm:min-h-[80vh] flex items-center justify-center overflow-hidden px-6 sm:px-6 lg:px-8 satin-overlay luxury-hero"
     >
       {/* Parallax background layers */}
       <div
@@ -117,7 +110,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-[1.5rem] sm:text-6xl lg:text-7xl font-bold luxury-hero-title" // 모바일 텍스트 크기 조정
+          className="text-[2rem] sm:text-6xl lg:text-7xl font-bold luxury-hero-title"
           style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.03em" }}
         >
           {t("hero.title1")}
@@ -131,7 +124,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4 }}
-          className="mt-4 sm:mt-6 text-sm max-w-2xl mx-auto luxury-hero-subtitle" // 모바일 텍스트 크기 조정
+          className="mt-4 sm:mt-6 text-sm sm:text-lg max-w-2xl mx-auto luxury-hero-subtitle"
           style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-body)", lineHeight: 1.7 }}
         >
           {t("hero.subtitle")}
@@ -152,7 +145,7 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.65 }}
           className="mt-6 sm:mt-10 max-w-lg mx-auto px-4"
         >
-          <p className="italic-script text-[10px] sm:text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+          <p className="italic-script text-[11px] sm:text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             &ldquo;{t("hero.quote")}&rdquo;
           </p>
         </motion.div>
@@ -178,23 +171,6 @@ export function HeroSection() {
           </Link>
         </motion.div>
       </div>
-
-      {/* 나만의 AI 카드 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 1.0 }}
-        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2" // 모바일 하단 여백 조정
-      >
-        <button
-          onClick={scrollToAISection}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-accent-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:bg-[var(--color-accent-light)] transition-all duration-300 shadow-lg hover:shadow-xl text-xs" // 텍스트 크기 조정
-        >
-          <Sparkles className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
-          <span className="font-medium">나만의 AI</span>
-          <ArrowRight className="h-3 w-3" style={{ color: "var(--color-accent)" }} />
-        </button>
-      </motion.div>
 
       {/* Scroll indicator */}
       <div className="scroll-indicator">

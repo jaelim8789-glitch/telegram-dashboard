@@ -8,7 +8,8 @@
 | AI Function Calling 실제 시나리오 테스트 | Cline | 진행중 | app/api/ai_tools.py 등 | "발송현황", "그룹A 발송" 시나리오 확인 후 커밋 예정 |
 | 런칭 전 최종 점검 (결제3종/로그인3종/테넌트격리/마이그레이션) | Kiro | 진행중 | - | 완료되면 "런칭 준비 완료" 보고 예정 |
 | 모바일 최적화(10항목) + P0/P1 기능 | OpenCode | 푸시완료 | `mobile: 전면적 모바일 최적화 및 UX 개선`, `feat: P0/P1 모바일 개선 및 신규 기능 추가` | |
-| 모바일 최적화 2차 (13항목) — 가상스크롤/번들분할/IndexedDB/터치피드백/CLS/키보드 | OpenCode | 진행중 | - | VirtualList, db.ts, next/dynamic 전환, iOS 키보드 대응, Skeleton CLS, 터치 CSS |
+| 모바일 최적화 2차 (13항목) — 가상스크롤/번들분할/IndexedDB/터치피드백/CLS/키보드 | OpenCode | 푸시완료 | 720bca2 | VirtualList, db.ts, next/dynamic 전환, iOS 키보드 대응, Skeleton CLS, 터치 CSS |
+| 추가 개선 13항목 — 일괄작업/템플릿프리뷰/속도제어/드래그드롭/내보내기/온보딩투어/계정알림/다중필터/기간비교/프로필/API키/활동로그/실패분석 | OpenCode | 진행중 | - | LogTab batch/filter/failure, SendTab throttle/dragdrop, TemplateTab preview, DashboardTab export/profiles, ApiKeyManagerTab, ActivityAuditTab, OnboardingTour, DeliveryAnalytics period comparison |
 | 슈퍼 검색 (Command+K 통합검색) + 중복 CommandPalette 제거 | OpenCode | 커밋완료 | - | layout.tsx에 중복 렌더링된 구버전 CommandPalette 제거. 계정/그룹/템플릿/발송기록/메뉴 통합 검색, API 디바운스 검색, 카테고리 그룹화 |
 | telegram_id BigInteger 마이그레이션 | Kiro | 푸시완료 | 커밋 미상 (user.py + alembic e1a2b3c4d5e6) | VPS 배포 대기 중 |
 | DashboardShell.tsx containerRef 중복선언 수정 | Claude(조율) | 푸시완료 | 604c759 | |

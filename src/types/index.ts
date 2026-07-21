@@ -1,4 +1,4 @@
-﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars";
+﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -48,6 +48,8 @@ export const TABS: TabDef[] = [
   { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "settings" },
   { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "settings" },
   { id: "folders", label: "폴더", group: "settings" },
+  { id: "apikeys", label: "API 키", shortLabel: "API", group: "settings" },
+  { id: "audit", label: "활동 로그", shortLabel: "활동", group: "settings" },
   { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "settings" },
 ];
 

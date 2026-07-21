@@ -6,7 +6,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
   CalendarDays,  Hourglass, MessageSquare, Pause, Play, RefreshCw, RotateCcw, Search, SearchX, Users, X,
   Send as SendIcon, Users2, XCircle, MessageCircle, Megaphone, Filter,
-  ExternalLink, Plus, Trash2, ArrowUp, ArrowDown,
+  ExternalLink, Plus, Trash2, ArrowUp, ArrowDown, Upload,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Panel } from "@/components/ui/Panel";
@@ -143,6 +143,40 @@ export function SendTab() {
   useEffect(() => {
     return () => { if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl); };
   }, [imageObjectUrl]);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+    setDragError(null);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      setDragError("지원하지 않는 파일 형식입니다. JPEG, PNG, WebP, GIF만 가능합니다.");
+      return;
+    }
+    setDragError(null);
+    setImageFile(file);
+  }, [setImageFile]);
+
   const clearSendDraft = useDashboardStore((s) => s.clearSendDraft);
 
   const { isFavorite, toggleFavorite } = useFavoriteGroups();
@@ -218,6 +252,8 @@ export function SendTab() {
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
   const [deliveryMode, setDeliveryMode] = useState<"normal" | "cycle" | "bulk" | "reply">("normal");
   const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
+  const [dragOver, setDragOver] = useState(false);
+  const [dragError, setDragError] = useState<string | null>(null);
   const [batchSize, setBatchSize] = useState<number>(1);
   const [replyMacroEnabled, setReplyMacroEnabled] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState("");
@@ -386,6 +422,7 @@ export function SendTab() {
   const isInitialMount = useRef(true);
   const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Recent recipient sets ──
   useEffect(() => {
@@ -1507,11 +1544,70 @@ export function SendTab() {
 
             <InlineButtonBuilder buttons={inlineButtons} onChange={setInlineButtons} />
 
-            {/* Image / Video */}
+            {/* Image / Video — Drag & Drop */}
             <Field label="이미지 또는 영상 (선택)">
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
+              <div
+                className={cn(
+                  "relative rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                  dragOver
+                    ? "border-app-primary bg-app-primary/5"
+                    : "border-app-border bg-app-card/30 hover:border-app-border-strong",
+                  imageObjectUrl ? "p-2" : "p-4",
+                )}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+                  onChange={(e) => {
+                    setDragError(null);
+                    setImageFile(e.target.files?.[0] ?? null);
+                  }}
+                  className="hidden"
+                />
+                {dragOver ? (
+                  <div className="flex flex-col items-center gap-2 py-4 text-app-primary">
+                    <Upload className="h-6 w-6" />
+                    <span className="text-sm font-medium">파일을 여기에 놓으세요</span>
+                  </div>
+                ) : imageObjectUrl ? (
+                  <div className="relative">
+                    <img
+                      src={imageObjectUrl}
+                      alt="첨부 이미지"
+                      className="max-h-40 w-full rounded-lg object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImageFile(null);
+                      }}
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      title="이미지 제거"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="mt-1 text-center text-[11px] text-app-text-subtle">
+                      클릭하거나 파일을 끌어다 놓아 교체
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 py-4 text-app-text-muted">
+                    <Upload className="h-5 w-5" />
+                    <span className="text-xs">파일을 끌어다 놓거나 클릭하여 선택</span>
+                    <span className="text-[10px] text-app-text-subtle">JPEG, PNG, WebP, GIF, MP4, MOV, AVI, MKV</span>
+                  </div>
+                )}
+                {dragError && (
+                  <p className="mt-2 text-xs text-app-danger">{dragError}</p>
+                )}
+              </div>
             </Field>
 
             {/* Auto-retry on failure */}
@@ -1671,6 +1767,33 @@ export function SendTab() {
                   </label>
               </div>
             </div>
+
+            {deliveryMode === "normal" && (
+              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
+                  <Hourglass className="h-3.5 w-3.5 text-app-text-muted" />
+                  발송 간격
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="1"
+                    max="60"
+                    step="1"
+                    value={normalDelaySeconds}
+                    onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
+                    className="flex-1 accent-app-primary cursor-pointer"
+                  />
+                  <span className="w-12 text-right text-sm font-medium text-app-text tabular-nums">
+                    {normalDelaySeconds}초
+                  </span>
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-app-text-subtle">
+                  <span>1초</span>
+                  <span>60초</span>
+                </div>
+              </div>
+            )}
 
             {/* "답장매크로" (답장으로 보내기) toggle + 중복 제거 */}
             <div className="flex items-center gap-3 flex-wrap">

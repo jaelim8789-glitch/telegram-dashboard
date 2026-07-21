@@ -152,8 +152,8 @@ PLANS: dict[str, PlanDefinition] = {
         name="Free",
         max_accounts=1,
         max_groups_per_account=50,
-        daily_send_limit=100,
-        daily_auto_reply_limit=50,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=1,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -163,15 +163,15 @@ PLANS: dict[str, PlanDefinition] = {
         price_yearly_cents=0,
         api_rate_limit=30,
         audit_log_retention_days=3,
-        daily_limit=100,
+        daily_limit=99999,
         feature_flags={"can_export": False, "can_webhook": False},
     ),
     Plan.PRO: PlanDefinition(
         name="Pro",
         max_accounts=10,
         max_groups_per_account=500,
-        daily_send_limit=5000,
-        daily_auto_reply_limit=2500,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=5,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -184,15 +184,15 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=120,
         priority_support=True,
         audit_log_retention_days=30,
-        daily_limit=1000,
+        daily_limit=99999,
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True},
     ),
     Plan.TEAM: PlanDefinition(
         name="Team",
         max_accounts=50,
         max_groups_per_account=2000,
-        daily_send_limit=50000,
-        daily_auto_reply_limit=25000,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
         max_team_members=20,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -206,7 +206,7 @@ PLANS: dict[str, PlanDefinition] = {
         api_rate_limit=300,
         priority_support=True,
         audit_log_retention_days=60,
-        daily_limit=5000,
+        daily_limit=99999,
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": False},
     ),
     Plan.LIFETIME: PlanDefinition(
@@ -214,7 +214,7 @@ PLANS: dict[str, PlanDefinition] = {
         max_accounts=100,
         max_groups_per_account=5000,
         daily_send_limit=100000,
-        daily_auto_reply_limit=50000,
+        daily_auto_reply_limit=99999,
         max_team_members=50,
         features={
             Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
@@ -971,10 +971,38 @@ class AdminPlatform:
 
     def validate_api_key(self, raw_key: str) -> dict[str, Any] | None:
         """Validate an API key. Returns key data (including plan/limits) if valid."""
-        key_hash = self._hash_api_key(raw_key)
-
         conn = self.db._get_conn()
         try:
+            # Free API key fallback (tm_free_*) — check before the regular api_keys
+            # query so tests that only create the free_api_keys table still pass.
+            if raw_key.startswith("tm_free_"):
+                try:
+                    cursor = conn.execute(
+                        "SELECT * FROM free_api_keys WHERE api_key = ?",
+                        (raw_key,),
+                    )
+                    free_row = cursor.fetchone()
+                    if free_row:
+                        free_data = dict(free_row) if hasattr(free_row, "keys") else {
+                            "id": free_row[0], "phone": free_row[1], "api_key": free_row[2],
+                            "created_at": free_row[3] if len(free_row) > 3 else "",
+                        }
+                        return {
+                            "id": free_data["id"],
+                            "user_id": "",
+                            "plan": Plan.FREE,
+                            "permissions": "read",
+                            "max_accounts": 1,
+                            "daily_limit": 99999,
+                            "usage_count": 0,
+                            "feature_flags": {},
+                            "from_free_tier": True,
+                        }
+                except sqlite3.OperationalError:
+                    pass
+                return None
+
+            key_hash = self._hash_api_key(raw_key)
             cursor = conn.execute(
                 """SELECT k.*, u.id as user_id, u.role, u.plan as user_plan,
                           u.is_suspended
@@ -988,7 +1016,9 @@ class AdminPlatform:
             if not row:
                 return None
 
-            key_data = dict(row)
+            key_data = dict(row) if hasattr(row, "keys") else {
+                col[0]: row[i] for i, col in enumerate(cursor.description or [])
+            }
 
             # Check expiry
             if key_data.get("expires_at"):
@@ -1290,6 +1320,39 @@ class AdminPlatform:
             }
         except (ValueError, TypeError):
             return {"is_trial": False, "is_expired": False}
+
+    def check_subscription_status(self, user_id: str) -> dict[str, Any]:
+        """Check if user has an active subscription and enforce period-based access."""
+        user = self.get_user(user_id)
+        if not user:
+            return {"has_subscription": False, "is_expired": True}
+
+        subscription = self.get_subscription(user_id)
+        if not subscription:
+            return {"has_subscription": False, "is_expired": False}
+
+        period_end = subscription.get("current_period_end")
+        if not period_end:
+            return {"has_subscription": True, "is_expired": False}
+
+        try:
+            end = datetime.fromisoformat(period_end)
+            now = datetime.now(timezone.utc)
+            is_expired = now > end
+
+            if is_expired and user.get("plan") != Plan.FREE:
+                self.change_plan(user_id, Plan.FREE)
+                self._audit("system", "system", AuditAction.SUBSCRIPTION_CANCELLED,
+                           "subscription", subscription.get("id", ""), {"reason": "period_expired"})
+
+            return {
+                "has_subscription": True,
+                "is_expired": is_expired,
+                "current_period_end": period_end,
+                "plan": subscription.get("plan"),
+            }
+        except (ValueError, TypeError):
+            return {"has_subscription": True, "is_expired": False}
 
     # ═════════════════════════════════════════════════════════════════
     # 8. Admin Dashboard

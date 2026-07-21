@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play, BarChart3 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play, BarChart3, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -41,7 +41,7 @@ const FILTER_LABEL: Record<HistoryFilter, string> = {
 
 import { formatTimestamp, formatDuration } from "@/lib/formatTime";
 
-type BulkAction = "retry" | "send_now" | "cancel";
+type BulkAction = "retry" | "send_now" | "cancel" | "delete";
 
 function canRetryFromFailureInfo(log: Broadcast): boolean {
   if (log.status !== "failed" || !log.failureInfo) return false;
@@ -84,7 +84,7 @@ function LogRow({
   accountLabel: (id: string) => string;
   accounts: { id: string; name: string | null; phone: string }[];
   selected: boolean;
-  onToggleSelect: (id: string) => void;
+  onToggleSelect: (id: string, e?: MouseEvent) => void;
   onRetry: (b: Broadcast) => void;
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
@@ -128,7 +128,7 @@ function LogRow({
         <div className="flex items-center gap-2 px-3 py-2.5">
           <button
             type="button"
-            onClick={() => onToggleSelect(log.id)}
+            onClick={(e) => onToggleSelect(log.id, e)}
             className={cn(
               "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors",
               selected ? "border-app-primary bg-app-primary text-white" : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
@@ -317,6 +317,11 @@ export function LogTab() {
   const [dateFilter, setDateFilter] = useState("");
   const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [failurePieCollapsed, setFailurePieCollapsed] = useState(false);
+  const lastClickedIdx = useRef<number | null>(null);
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
 
@@ -350,6 +355,9 @@ export function LogTab() {
     setStatusPillFilter("all");
     setSearchQuery("");
     setDateFilter("");
+    setDateStart("");
+    setDateEnd("");
+    setTemplateSearch("");
     setSelectedLogIds(new Set());
   }, [accountFilter, load]);
 
@@ -432,13 +440,18 @@ export function LogTab() {
 
   const visibleLogs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const tmpl = templateSearch.trim().toLowerCase();
     return logs.filter((log) => {
       if (statusPillFilter !== "all" && log.status !== statusPillFilter) return false;
-      if (dateFilter && localDateKey(log.createdAt) !== dateFilter) return false;
+      const dateKey = localDateKey(log.createdAt);
+      if (dateStart && dateKey < dateStart) return false;
+      if (dateEnd && dateKey > dateEnd) return false;
+      if (dateFilter && dateKey !== dateFilter) return false;
+      if (tmpl && !log.message.toLowerCase().includes(tmpl)) return false;
       const accountName = accountLabel(log.accountId);
       return matchesLogQuery(log, query, accountName);
     });
-  }, [accountLabel, dateFilter, logs, searchQuery, statusPillFilter]);
+  }, [accountLabel, dateFilter, dateStart, dateEnd, logs, searchQuery, statusPillFilter, templateSearch]);
 
   const selectedLogs = useMemo(
     () => logs.filter((log) => selectedLogIds.has(log.id)),
@@ -475,6 +488,21 @@ export function LogTab() {
     return { total, sent, failed, inFlight };
   }, [logs]);
 
+  const failureBreakdown = useMemo(() => {
+    const failedLogs = logs.filter((l) => l.status === "failed");
+    const catMap = new Map<string, number>();
+    for (const log of failedLogs) {
+      const reason = (log.failureInfo?.category || log.errorMessage || "알 수 없는 오류").trim();
+      if (!reason) continue;
+      catMap.set(reason, (catMap.get(reason) || 0) + 1);
+    }
+    const total = failedLogs.length;
+    return Array.from(catMap.entries())
+      .map(([reason, count]) => ({ reason, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [logs]);
+
   const dailyChartData = useMemo(() => {
     const dayMap = new Map<string, { date: string; sent: number; failed: number; pending: number }>();
     for (const log of logs) {
@@ -495,6 +523,7 @@ export function LogTab() {
     return selectedLogs.filter((log) => {
       if (bulkAction === "retry") return canRetryFromFailureInfo(log);
       if (bulkAction === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      if (bulkAction === "delete") return true;
       return isRecurringActive(log) && log.status !== "cancelled";
     });
   }, [bulkAction, selectedLogs]);
@@ -505,6 +534,7 @@ export function LogTab() {
     const targets = selectedLogs.filter((log) => {
       if (action === "retry") return canRetryFromFailureInfo(log);
       if (action === "send_now") return log.status !== "sent" && log.status !== "cancelled";
+      if (action === "delete") return true;
       return isRecurringActive(log) && log.status !== "cancelled";
     });
 
@@ -518,18 +548,27 @@ export function LogTab() {
     let successCount = 0;
     const failures: string[] = [];
 
-    for (const log of targets) {
+    if (action === "delete") {
       try {
-        if (action === "retry") {
-          await api.retryBroadcast(log.id);
-        } else if (action === "send_now") {
-          await api.sendNowBroadcast(log.id);
-        } else {
-          await api.cancelRecurringBroadcast(log.id);
-        }
-        successCount += 1;
+        await api.deleteBroadcasts(targets.map(l => l.id));
+        successCount = targets.length;
       } catch (err) {
-        failures.push(err instanceof Error ? err.message : log.id);
+        failures.push(err instanceof Error ? err.message : "삭제 실패");
+      }
+    } else {
+      for (const log of targets) {
+        try {
+          if (action === "retry") {
+            await api.retryBroadcast(log.id);
+          } else if (action === "send_now") {
+            await api.sendNowBroadcast(log.id);
+          } else {
+            await api.cancelRecurringBroadcast(log.id);
+          }
+          successCount += 1;
+        } catch (err) {
+          failures.push(err instanceof Error ? err.message : log.id);
+        }
       }
     }
 
@@ -593,6 +632,43 @@ export function LogTab() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {/* ── Failure reason breakdown ── */}
+      {summaryStats.failed > 0 && failureBreakdown.length > 0 && (
+        <div className="mb-4 rounded-xl border border-app-border bg-app-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFailurePieCollapsed(!failurePieCollapsed)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-app-text-muted hover:text-app-text transition-colors"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 text-app-danger" />
+            <span>실패 원인 분석</span>
+            <span className="ml-auto text-[10px] text-app-text-subtle">{failurePieCollapsed ? "펼치기" : "접기"}</span>
+          </button>
+          {!failurePieCollapsed && (
+            <div className="px-3 pb-3 space-y-2">
+              {failureBreakdown.map((item) => (
+                <div key={item.reason} className="flex items-center gap-2 text-[11px]">
+                  <span className="w-2/5 truncate text-app-text-muted" title={item.reason}>{item.reason}</span>
+                  <div className="flex-1 h-4 rounded-full bg-app-bg overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${item.pct}%`,
+                        backgroundColor: item.reason.includes("인증") || item.reason.toLowerCase().includes("auth")
+                          ? "var(--color-warning)"
+                          : "var(--color-danger)",
+                      }}
+                    />
+                  </div>
+                  <span className="w-12 text-right font-mono tabular-nums text-app-text-subtle">{item.count}건</span>
+                  <span className="w-10 text-right font-mono tabular-nums text-app-text-subtle">{item.pct}%</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -697,22 +773,29 @@ export function LogTab() {
 
       {selectedLogIds.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-xs">
-          <span className="font-medium text-app-text">{selectedLogIds.size} selected</span>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set(visibleLogs.map((log) => log.id)))}>
-            Select visible
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLogIds(new Set())}>
-            Clear
+          <span className="font-medium text-app-text">{selectedLogIds.size}건 선택</span>
+          <Button variant="ghost" size="sm" onClick={() => {
+            if (selectedLogIds.size === filteredLogs.length) {
+              setSelectedLogIds(new Set());
+            } else {
+              setSelectedLogIds(new Set(filteredLogs.map((log) => log.id)));
+            }
+          }}>
+            {selectedLogIds.size === filteredLogs.length ? "선택 해제" : "전체 선택"}
           </Button>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setBulkAction("retry")} disabled={selectedLogs.every((log) => !canRetryFromFailureInfo(log))}>
-              Retry selected
+              재발송
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setBulkAction("send_now")} disabled={selectedLogs.every((log) => log.status === "sent" || log.status === "cancelled")}>
-              Send now
+              즉시 발송
             </Button>
             <Button variant="danger" size="sm" onClick={() => setBulkAction("cancel")} disabled={selectedLogs.every((log) => !isRecurringActive(log))}>
-              Cancel recurring
+              반복 취소
+            </Button>
+            <Button variant="danger" size="sm" onClick={() => setBulkAction("delete")} disabled={selectedLogs.length === 0}>
+              <Trash2 className="h-3.5 w-3.5" />
+              선택 삭제
             </Button>
           </div>
         </div>
@@ -739,6 +822,39 @@ export function LogTab() {
           })}
         </div>
       )}
+
+      {/* ── Advanced filter bar ── */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2.5">
+        <input
+          type="date"
+          value={dateStart}
+          onChange={(e) => setDateStart(e.target.value)}
+          className="h-7 rounded-lg border border-app-border bg-app-bg px-2 text-xs text-app-text outline-none focus:border-app-primary w-32"
+          aria-label="시작 날짜"
+        />
+        <span className="text-[10px] text-app-text-subtle">~</span>
+        <input
+          type="date"
+          value={dateEnd}
+          onChange={(e) => setDateEnd(e.target.value)}
+          className="h-7 rounded-lg border border-app-border bg-app-bg px-2 text-xs text-app-text outline-none focus:border-app-primary w-32"
+          aria-label="종료 날짜"
+        />
+        <input
+          value={templateSearch}
+          onChange={(e) => setTemplateSearch(e.target.value)}
+          placeholder="템플릿/내용 검색"
+          className="h-7 rounded-lg border border-app-border bg-app-bg px-2 text-xs text-app-text outline-none focus:border-app-primary w-40 placeholder:text-app-text-subtle"
+          aria-label="템플릿 검색"
+        />
+        <button
+          type="button"
+          onClick={() => { setDateStart(""); setDateEnd(""); setTemplateSearch(""); setSearchQuery(""); setAccountFilter(""); setStatusPillFilter("all"); }}
+          className="h-7 rounded-lg px-2.5 text-[11px] font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors border border-app-border"
+        >
+          필터 초기화
+        </button>
+      </div>
 
       {/* ── Hide inactive toggle ── */}
       <div className="mb-3 flex items-center gap-2 pb-1 border-b border-app-border/50">
@@ -805,12 +921,28 @@ export function LogTab() {
               accountLabel={accountLabel}
               accounts={accounts}
               selected={selectedLogIds.has(log.id)}
-              onToggleSelect={(id) => {
-                setSelectedLogIds((current) => {
-                  const next = new Set(current);
-                  if (next.has(id)) next.delete(id); else next.add(id);
-                  return next;
-                });
+               onToggleSelect={(id, e) => {
+                if (e?.shiftKey && lastClickedIdx.current !== null) {
+                  const currentIdx = filteredLogs.findIndex((l) => l.id === id);
+                  if (currentIdx === -1) return;
+                  const start = Math.min(lastClickedIdx.current, currentIdx);
+                  const end = Math.max(lastClickedIdx.current, currentIdx);
+                  setSelectedLogIds((prev) => {
+                    const next = new Set(prev);
+                    for (let i = start; i <= end; i++) {
+                      next.add(filteredLogs[i].id);
+                    }
+                    return next;
+                  });
+                  lastClickedIdx.current = currentIdx;
+                } else {
+                  setSelectedLogIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    return next;
+                  });
+                  lastClickedIdx.current = filteredLogs.findIndex((l) => l.id === id);
+                }
               }}
               onRetry={handleRetry}
               onEditResend={handleEditResend}
@@ -843,10 +975,10 @@ export function LogTab() {
 
       <ConfirmDialog
         open={bulkAction !== null}
-        title={bulkAction === "retry" ? "Retry selected" : bulkAction === "send_now" ? "Send now selected" : "Cancel recurring selected"}
-        description={`${bulkTargets.length} item(s) will be processed.`}
-        variant={bulkAction === "cancel" ? "danger" : "default"}
-        confirmLabel={bulkAction === "cancel" ? "Cancel" : "Run"}
+        title={bulkAction === "retry" ? "선택 항목 재발송" : bulkAction === "send_now" ? "선택 항목 즉시 발송" : bulkAction === "delete" ? "선택 항목 삭제" : "선택 항목 반복 취소"}
+        description={bulkAction === "delete" ? `${bulkTargets.length}건을 삭제합니다. 복구할 수 없습니다.` : `${bulkTargets.length}건을 처리합니다.`}
+        variant={bulkAction === "cancel" || bulkAction === "delete" ? "danger" : "default"}
+        confirmLabel={bulkAction === "delete" ? "삭제" : bulkAction === "cancel" ? "취소" : "실행"}
         onConfirm={async () => {
           if (bulkAction) await handleBulkAction(bulkAction);
         }}

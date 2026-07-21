@@ -11,6 +11,7 @@ import {
   CalendarDays,
   RefreshCw,
   TrendingUp,
+  TrendingDown,
   Users,
   XCircle,
   Zap,
@@ -31,6 +32,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
 import { fmt, formatRelativeTime } from "@/lib/formatTime";
+import { exportCSV } from "@/lib/exportUtils";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type {
@@ -553,6 +555,63 @@ export function DeliveryAnalyticsTab() {
       )}
 
       <SummaryHierarchy summary={summary ?? null} logical={logical ?? null} days={days} />
+
+      {/* ── 기간 비교 (#9) ── */}
+      {hasData && summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <TrendingUp className="h-3.5 w-3.5 text-app-info" />
+              총 시도
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-text">{fmt(summary.total_attempted)}</div>
+            <div className="text-[10px] text-app-text-subtle">{days}일 기준</div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <CheckCircle2 className="h-3.5 w-3.5 text-app-success" />
+              성공
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-success">{fmt(summary.successful)}</div>
+            <div className={cn("text-[10px] flex items-center gap-0.5",
+              summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger"
+            )}>
+              {summary.success_rate >= 90 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {summary.success_rate.toFixed(1)}%
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <XCircle className="h-3.5 w-3.5 text-app-danger" />
+              실패
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-danger">{fmt(summary.failed)}</div>
+            <div className="text-[10px] text-app-text-subtle">
+              {summary.total_attempted > 0 ? `실패율 ${((summary.failed / summary.total_attempted) * 100).toFixed(1)}%` : "데이터 없음"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-app-border bg-app-card p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
+              <BarChart3 className="h-3.5 w-3.5 text-app-primary" />
+              일평균
+            </div>
+            <div className="mt-1 text-lg font-bold tabular-nums text-app-text">
+              {fmt(Math.round(summary.total_attempted / Math.max(days, 1)))}
+            </div>
+            <div className="text-[10px] text-app-text-subtle">
+              성공 {fmt(Math.round(summary.successful / Math.max(days, 1)))}/일
+            </div>
+            <button onClick={() => exportCSV(
+              ["기간","시도","성공","실패","성공률"],
+              timeline.map(t => [t.period, String(t.attempted), String(t.successful), String(t.failed), t.attempted > 0 ? `${((t.successful / t.attempted) * 100).toFixed(1)}%` : "0%"]),
+              `delivery-timeline-${days}d`
+            )}
+              className="mt-1.5 text-[9px] text-app-text-subtle hover:text-app-primary transition-colors">
+              CSV 내보내기
+            </button>
+          </div>
+        </div>
+      )}
 
       {!hasData && !loading && (
         <EmptyState icon={BarChart3} title="전달 데이터가 없습니다"

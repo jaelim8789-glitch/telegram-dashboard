@@ -8,6 +8,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
+import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { TabId } from "@/types";
 
@@ -57,6 +58,8 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   drafts: dynamic(() => import("@/components/workspace/tabs/DraftsTab").then(m => ({ default: m.DraftsTab })), { loading: TabFallback }),
   triggers: dynamic(() => import("@/components/workspace/tabs/TriggersTab").then(m => ({ default: m.TriggersTab })), { loading: TabFallback }),
   stars: dynamic(() => import("@/components/workspace/tabs/StarsTab"), { loading: TabFallback }),
+  apikeys: dynamic(() => import("@/components/workspace/tabs/ApiKeyManagerTab").then(m => ({ default: m.ApiKeyManagerTab })), { loading: TabFallback }),
+  audit: dynamic(() => import("@/components/workspace/tabs/ActivityAuditTab").then(m => ({ default: m.ActivityAuditTab })), { loading: TabFallback }),
 };
 
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void, threshold = 60) {
@@ -121,6 +124,7 @@ export function Workspace() {
         </AnimatePresence>
       </div>
       <CommandPalette />
+      <OnboardingTour />
     </main>
   );
 }
