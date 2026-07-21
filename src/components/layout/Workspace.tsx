@@ -178,20 +178,28 @@ function usePullToRefresh(
   return { pulling, pullDist, refreshing, onTouchStart, onTouchMove, onTouchEnd };
 }
 
+function navDepth(view: typeof navView): number {
+  if (view === "feature") return 2;
+  if (view === "category") return 1;
+  return 0;
+}
+
 const viewVariants = {
-  enter: () => ({
-    x: 40,
+  enter: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
     opacity: 0,
   }),
   center: {
     x: 0,
     opacity: 1,
   },
-  exit: () => ({
-    x: -40,
+  exit: (direction: number) => ({
+    x: direction < 0 ? 60 : -60,
     opacity: 0,
   }),
 };
+
+const PRELOAD_TABS: TabId[] = ["send", "group", "myai"];
 
 export function Workspace() {
   const navView = useDashboardStore((s) => s.navView);
@@ -199,11 +207,29 @@ export function Workspace() {
   const navFeature = useDashboardStore((s) => s.navFeature);
   const activeTab = useDashboardStore((s) => s.activeTab);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      PRELOAD_TABS.forEach((id) => {
+        const loader = TAB_CONTENT[id] as any;
+        if (loader?.preload) loader.preload();
+      });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const online = useNetworkStatus();
   const reducedMotion = useReducedMotion();
   const keyboardHeight = useKeyboardAware();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  const prevDepth = useRef(navDepth(navView));
+
+  useEffect(() => {
+    prevDepth.current = navDepth(navView);
+  }, [navView]);
+
+  const direction = navDepth(navView) - prevDepth.current;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -224,7 +250,7 @@ export function Workspace() {
 
   const springCfg = reducedMotion
     ? { duration: 0 }
-    : { x: { type: "spring" as const, stiffness: 380, damping: 30 }, opacity: { duration: 0.2 } };
+    : { x: { type: "spring" as const, stiffness: 380, damping: 30 }, opacity: { duration: 0.15 } };
 
   const viewKey = navView === "feature" ? navFeature || activeTab : navView === "category" ? `category-${navCategory}` : "chat";
 
@@ -314,9 +340,10 @@ export function Workspace() {
 
           <ScrollToTop />
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={viewKey}
+              custom={direction}
               variants={viewVariants}
               initial="enter"
               animate="center"

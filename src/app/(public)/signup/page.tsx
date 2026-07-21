@@ -45,6 +45,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tgLoggingIn, setTgLoggingIn] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [termsError, setTermsError] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tokenRef = useRef<string | null>(null);
 
@@ -449,8 +451,41 @@ export default function SignupPage() {
                   )}
                 </>
               )}
-              <div className="space-y-3 pt-2">
-                <Link href={`${SITE.app}/admin/login`} className="btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10">
+
+              <div className={`rounded-xl border ${termsError ? "border-red-500" : "border-app-border"} bg-app-card/50 p-3`}>
+                <label className="flex cursor-pointer items-start gap-2 text-left">
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => { setTermsAgreed(e.target.checked); setTermsError(false); }}
+                    className="mt-0.5 h-4 w-4 rounded border-app-border text-app-primary focus:ring-app-primary/30 cursor-pointer"
+                  />
+                  <span className="text-xs text-app-text-muted leading-relaxed">
+                    <span className={termsError ? "text-red-500 font-medium" : ""}>
+                      이용약관 및 개인정보처리방침에 동의합니다
+                    </span>
+                    {" "}
+                    <Link href="/terms" className="text-app-primary hover:underline">이용약관</Link>
+                    {" · "}
+                    <Link href="/privacy" className="text-app-primary hover:underline">개인정보처리방침</Link>
+                  </span>
+                </label>
+                {termsError && (
+                  <p className="mt-1 text-xs text-red-500">계속하려면 이용약관 및 개인정보처리방침에 동의해야 합니다.</p>
+                )}
+              </div>
+
+              <div className="space-y-3 pt-0">
+                <Link
+                  href={`${SITE.app}/admin/login`}
+                  className={`btn-primary flex h-12 items-center justify-center rounded-xl text-sm font-semibold relative z-10 ${!termsAgreed ? "pointer-events-none opacity-50" : ""}`}
+                  onClick={(e) => {
+                    if (!termsAgreed) {
+                      e.preventDefault();
+                      setTermsError(true);
+                    }
+                  }}
+                >
                   대시보드로 이동
                 </Link>
                 <Link href="/pricing" className="block text-sm text-app-text-muted hover:text-app-text transition-colors">요금제 업그레이드</Link>

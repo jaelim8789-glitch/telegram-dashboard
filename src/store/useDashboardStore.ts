@@ -185,7 +185,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
   navigateToCategory: (category) => set({ navView: "category", navCategory: category, navFeature: null }),
   navigateToFeature: (tabId) => {
     try { localStorage.setItem(LAST_TAB_KEY, tabId); } catch { }
-    set({ navView: "feature", navFeature: tabId, activeTab: tabId });
+    set({ navView: "feature", navFeature: tabId, activeTab: tabId, navCategory: getTabCategory(tabId) });
   },
   navigateBack: () => {
     const state = get();
@@ -328,6 +328,9 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       sendSelectedGroupIds: broadcast.recipients,
       sendImageFile: null,
       activeTab: "send",
+      navView: "feature",
+      navFeature: "send",
+      navCategory: "send",
       reuseNotice: "설정을 불러왔습니다. 내용을 확인 후 발송하세요.",
       sendReplyToMessageId: broadcast.replyToMessageId ?? null,
     });

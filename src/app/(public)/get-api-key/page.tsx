@@ -36,6 +36,27 @@ export default function GetApiKeyPage() {
           </p>
         </div>
 
+        {/* Free Plan Promotion */}
+        <div className="mt-8 text-center" data-fade>
+          <div className="glass-card p-6 border border-app-primary/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-app-primary/10 mx-auto mb-3">
+              <Sparkles className="h-6 w-6 text-app-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-app-text">무료 플랜도 있어요</h3>
+            <p className="mt-2 text-sm text-app-text-secondary">
+              Pro 요금제가 부담스럽다면 무료 플랜으로도 충분히 활용할 수 있습니다.<br/>
+              발송 시 워터마크 광고가 포함됩니다.
+            </p>
+            <Link
+              href="/signup"
+              className="btn-secondary mt-4 inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-medium"
+            >
+              <Zap className="h-4 w-4" />
+              무료 플랜 시작하기
+            </Link>
+          </div>
+        </div>
+
         {/* How it works — 3 steps */}
         <div className="mt-12 grid gap-4 sm:grid-cols-3" data-fade>
           {[

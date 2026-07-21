@@ -1,10 +1,11 @@
 "use client";
 
+import { useCallback } from "react";
 import { LayoutDashboard, Send, Activity, Sparkles, Settings, Plus, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { TABS, CATEGORY_META, type TabGroup, type NavView } from "@/types";
+import { TABS, CATEGORY_META, type TabGroup } from "@/types";
 import { cn } from "@/lib/cn";
 
 const CATEGORY_ICONS: Record<TabGroup, React.ComponentType<{ className?: string }>> = {
@@ -33,8 +34,44 @@ export function CategoryStrip() {
 
   const isDeep = navView === "category" || navView === "feature";
 
+  const chatIndex = 0;
+  const categoryStartIndex = 1;
+  const totalItems = 1 + visibleCategories.length;
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    let currentIndex = navView === "chat" ? chatIndex
+      : visibleCategories.indexOf(navCategory ?? "dashboard") + categoryStartIndex;
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      currentIndex = (currentIndex + 1) % totalItems;
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+    } else {
+      return;
+    }
+
+    if (currentIndex === chatIndex) {
+      haptics.light();
+      navigateToChat();
+    } else {
+      const catIdx = currentIndex - categoryStartIndex;
+      if (catIdx >= 0 && catIdx < visibleCategories.length) {
+        haptics.light();
+        navigateToCategory(visibleCategories[catIdx]);
+      }
+    }
+  }, [navView, navCategory, navigateToChat, navigateToCategory, visibleCategories, haptics]);
+
   return (
-    <div className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+    <nav
+      role="navigation"
+      aria-label="카테고리 탐색"
+      onKeyDown={handleKeyDown}
+      className="flex items-center gap-0.5 border-b border-app-border/50 bg-app-surface/50 px-2 py-1.5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+      style={{ scrollbarWidth: "none" }}
+    >
       {isDeep && (
         <button
           type="button"
@@ -49,18 +86,21 @@ export function CategoryStrip() {
       <button
         type="button"
         onClick={() => { haptics.light(); navigateToChat(); }}
+        tabIndex={0}
+        aria-current={navView === "chat" ? "page" : undefined}
+        aria-label="AI 대화"
         className={cn(
-          "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0",
+          "focus-ring flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0",
           navView === "chat"
             ? "bg-app-primary/10 text-app-primary"
             : "text-app-text-muted hover:text-app-text hover:bg-app-card-hover"
         )}
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="hidden sm:inline">AI</span>
       </button>
 
-      <div className="h-5 w-px bg-app-border/50 mx-0.5 shrink-0" />
+      <div className="h-5 w-px bg-app-border/50 mx-0.5 shrink-0" aria-hidden="true" />
 
       {visibleCategories.map((group) => {
         const meta = CATEGORY_META[group];
@@ -71,14 +111,17 @@ export function CategoryStrip() {
             key={group}
             type="button"
             onClick={() => { haptics.light(); navigateToCategory(group); }}
+            tabIndex={0}
+            aria-current={active ? "page" : undefined}
+            aria-label={`${meta.label} 카테고리`}
             className={cn(
-              "relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0",
+              "focus-ring relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0",
               active
                 ? "text-app-text"
                 : "text-app-text-muted hover:text-app-text hover:bg-app-card-hover"
             )}
           >
-            {Icon && <Icon className="h-3.5 w-3.5" />}
+            {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
             <span className="hidden sm:inline">{meta.label}</span>
             {active && (
               <motion.span
@@ -90,6 +133,6 @@ export function CategoryStrip() {
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

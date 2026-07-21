@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // 동적 임포트를 통한 코드 분할
     esmExternals: 'loose',
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
   },
 
   // Rewrite /api/* to the backend so `next dev` works without nginx.
