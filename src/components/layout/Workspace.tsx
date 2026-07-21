@@ -4,6 +4,7 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from "react
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import type { NavView } from "@/types";
 import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
@@ -180,7 +181,7 @@ function usePullToRefresh(
   return { pulling, pullDist, refreshing, onTouchStart, onTouchMove, onTouchEnd };
 }
 
-function navDepth(view: typeof navView): number {
+function navDepth(view: NavView): number {
   if (view === "feature") return 2;
   if (view === "category") return 1;
   return 0;
