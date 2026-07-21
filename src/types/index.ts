@@ -1,13 +1,7 @@
 ﻿export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars";
 
-// Navigation/IA grouping — organizes tabs into visual categories in TabBar.
-// "send"    = message delivery
-// "ai"      = everything AI (single MyAi tab)
-// "analyze" = logs, analytics, health
-// "search"  = group search + link inspector
-// "manage"  = account setup, automation, team, etc.
-// "new"     = experimental / Kiro-integrated features
-export type TabGroup = "send" | "ai" | "analyze" | "search" | "manage" | "new";
+// Navigation/IA grouping — 6 categories
+export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
 
 export interface TabDef {
   id: TabId;
@@ -18,40 +12,43 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
+  // ── 대시보드 (최상단 단독) ──
+  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "dashboard" },
+
   // ── 발송 ──
-  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "send" },
   { id: "send", label: "발송", group: "send" },
   { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "send" },
   { id: "scheduler", label: "스케줄러", group: "send" },
   { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "send" },
+  { id: "campaigns", label: "캠페인", shortLabel: "캠페인", group: "send" },
+  { id: "templates", label: "템플릿", group: "send" },
 
-  // ── AI (나만의 AI 하나로 통합) ──
+  // ── 운영/모니터링 ──
+  { id: "log", label: "로그", group: "ops" },
+  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "ops" },
+  { id: "health", label: "계정 건강", shortLabel: "건강", group: "ops" },
+  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "ops" },
+  { id: "register", label: "계정 등록", shortLabel: "등록", group: "ops" },
+  { id: "group", label: "그룹", group: "ops" },
+  { id: "groupsearch", label: "그룹 검색", shortLabel: "검색", group: "ops" },
+  { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "ops" },
+  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "ops" },
+
+  // ── AI 도구 ──
   { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "ai" },
+  { id: "aireply", label: "AI 답장", shortLabel: "답장", group: "ai" },
+  { id: "aibroadcast", label: "AI 발송", shortLabel: "AI발송", group: "ai" },
+  { id: "aioperations", label: "AI 리포트", shortLabel: "리포트", group: "ai" },
+  { id: "aiopscenter", label: "AI 운영센터", shortLabel: "운영", group: "ai" },
+  { id: "aiusage", label: "AI 사용량", shortLabel: "사용량", group: "ai" },
 
-  // ── 분석 ──
-  { id: "log", label: "로그", group: "analyze" },
-  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "analyze" },
-  { id: "health", label: "계정 건강", shortLabel: "건강", group: "analyze" },
-
-  // ── 검사 (통합) ──
-  { id: "groupsearch", label: "검사", shortLabel: "검사", group: "search" },
-  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "search" },
-
-  // ── 관리 ──
-  { id: "register", label: "계정 등록", shortLabel: "등록", group: "manage" },
-  { id: "group", label: "그룹", group: "manage" },
-  { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "manage" },
-  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "manage" },
-  { id: "campaigns", label: "캠페인", shortLabel: "캠페인", group: "manage" },
-  { id: "folders", label: "폴더", group: "manage" },
-  { id: "templates", label: "템플릿", group: "manage" },
-  { id: "team", label: "팀 관리", shortLabel: "팀", group: "manage" },
-  { id: "profile", label: "프로필", group: "manage" },
-
-  // ── 신규 (Kiro 이식 완료) ──
-  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "new" },
-  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "new" },
-  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "new" },
+  // ── 설정/기타 ──
+  { id: "team", label: "팀 관리", shortLabel: "팀", group: "settings" },
+  { id: "profile", label: "프로필", group: "settings" },
+  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "settings" },
+  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "settings" },
+  { id: "folders", label: "폴더", group: "settings" },
+  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "settings" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
