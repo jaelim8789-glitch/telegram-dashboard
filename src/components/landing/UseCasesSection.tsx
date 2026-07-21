@@ -56,7 +56,7 @@ export function UseCasesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 min-h-[250px]"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -70,12 +70,12 @@ export function UseCasesSection() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>{c.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{c.desc}</p>
+                <h3 className="text-base font-semibold break-words" style={{ color: "var(--color-text)" }}>{c.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed break-words" style={{ color: "var(--color-text-secondary)" }}>{c.desc}</p>
 
                 <ul className="mt-4 space-y-1.5">
                   {c.benefits.map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    <li key={b} className="flex items-center gap-2 text-xs break-words" style={{ color: "var(--color-text-muted)" }}>
                       <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--color-accent)" }} />
                       {b}
                     </li>
@@ -85,7 +85,7 @@ export function UseCasesSection() {
                 <div className="mt-4 pt-3 border-t border-[var(--color-accent-border)]">
                   <Link
                     href="/features"
-                    className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--color-accent)" }}
+                    className="inline-flex items-center gap-1 text-xs font-medium min-h-[44px] flex items-center" style={{ color: "var(--color-accent)" }}
                   >
                     자세히 보기 <ArrowRight className="h-3 w-3" />
                   </Link>

@@ -65,7 +65,7 @@ export function ProblemsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-7 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-7 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 min-h-[300px]"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -79,17 +79,17 @@ export function ProblemsSection() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
+                <h3 className="text-base font-semibold break-words" style={{ color: "var(--color-text)" }}>
                   {p.title}
                 </h3>
 
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+                <p className="mt-3 text-sm leading-relaxed break-words" style={{ color: "var(--color-text-secondary)" }}>
                   {p.desc}
                 </p>
 
                 {/* 인용구 — 금색 왼쪽 바와 함께 */}
                 <div className="mt-5 pl-4 border-l-2 border-[var(--color-accent)]">
-                  <p className="text-xs italic leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+                  <p className="text-xs italic leading-relaxed break-words" style={{ color: "var(--color-text-muted)" }}>
                     {p.quote}
                   </p>
                 </div>
@@ -102,14 +102,14 @@ export function ProblemsSection() {
         </div>
 
         <div className="mt-14 text-center">
-          <p className="text-sm italic mb-6" style={{ color: "var(--color-text-muted)" }}>
+          <p className="text-sm italic mb-6 break-words" style={{ color: "var(--color-text-muted)" }}>
             &ldquo;변화를 원한다면, 지금 이 순간부터 다르게 행동하라.
             <br />
             <span style={{ color: "var(--color-accent)", fontStyle: "normal" }}>내일은 없다. 오늘이 전부다.</span>&rdquo;
           </p>
           <Link
             href="/signup"
-            className="btn-luxury btn-luxury-primary inline-flex"
+            className="btn-luxury btn-luxury-primary inline-flex min-h-[44px] items-center justify-center"
           >
             지금 바꾸십시오
             <ArrowRight className="h-4 w-4" />

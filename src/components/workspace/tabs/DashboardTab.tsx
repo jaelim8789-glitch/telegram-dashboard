@@ -34,6 +34,7 @@ const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warn
 
 import { formatRelativeTime, formatCompact } from "@/lib/formatTime";
 import { computeHealthScore, computeOverallScore, healthScoreColor, healthScoreBg } from "@/lib/healthScore";
+import { predictBanRisk, banRiskColor, banRiskBg, banRiskLabel, type BanPrediction } from "@/lib/banPredictor";
 
 function failureInfoSummary(info: Broadcast["failureInfo"] | null | undefined): { summary: string; action: string | null; retryable: string | null } {
   if (!info || !info.category) return { summary: "", action: null, retryable: null };
@@ -166,6 +167,7 @@ export function DashboardTab() {
     dailyDigest: true, realtimeMetrics: true, attention: true, recentFailures: true,
     middlePanels: true, recentActivity: true, accountOverview: true, failureIntelligence: true,
     healthTrend: true, usageChart: true, usageProgress: true, healthScore: true,
+    banPredictor: true,
   };
 
   const WIDGET_LABELS: Record<string, string> = {
@@ -173,6 +175,7 @@ export function DashboardTab() {
     usageProgress: "사용량 한도", attention: "운영 주의 사항", recentFailures: "최근 발송 실패",
     middlePanels: "예약/반복/건강 패널", recentActivity: "최근 활동", accountOverview: "계정 현황",
     failureIntelligence: "실패 분석", healthTrend: "계정 건강 트렌드", healthScore: "계정 건강 점수",
+    banPredictor: "계정 차단 예측",
   };
 
   // ── Widget visibility ──
@@ -421,6 +424,13 @@ export function DashboardTab() {
   const nonRetryableFailures = useMemo(() => {
     return recentFailures.filter(f => f.failureInfo?.retryable === "not_retryable");
   }, [recentFailures]);
+
+  const banPredictions = useMemo(() =>
+    accounts.map((a) => {
+      const hi = healthItems.find((h) => h.accountId === a.id) ?? null;
+      return predictBanRisk(a, logs, hi);
+    }).sort((a, b) => b.riskScore - a.riskScore),
+  [accounts, logs, healthItems]);
 
   const summary = overview?.summary;
 
@@ -1398,6 +1408,59 @@ export function DashboardTab() {
             })}
           </div>
         </Panel>
+      )}
+      </div>
+
+      <div key="banPredictor" style={{ order: widgetIdx("banPredictor") }}>
+      {widgetVisibility.banPredictor && banPredictions.length > 0 && (
+        <div className="rounded-xl border border-app-border bg-app-card p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-app-text">
+              <ShieldAlert className="h-4 w-4 text-app-danger" aria-hidden="true" />
+              계정 차단 예측
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {banPredictions.map((bp) => {
+              const acct = accounts.find((a) => a.id === bp.accountId);
+              return (
+                <div key={bp.accountId} className="rounded-xl border border-app-border bg-app-card p-3 transition-colors hover:border-app-border-strong">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="truncate text-xs font-medium text-app-text">
+                        {acct?.name?.trim() || acct?.phone || bp.accountId}
+                      </p>
+                    </div>
+                    <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold", banRiskBg(bp.riskLevel), banRiskColor(bp.riskLevel))}>
+                      {banRiskLabel(bp.riskLevel)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 h-1.5 rounded-full bg-app-border overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all", banRiskBg(bp.riskLevel))}
+                        style={{ width: `${Math.min(bp.riskScore, 100)}%` }}
+                      />
+                    </div>
+                    <span className={cn("text-xs font-bold tabular-nums", banRiskColor(bp.riskLevel))}>
+                      {bp.riskScore}
+                    </span>
+                  </div>
+                  {bp.factors.length > 0 && (
+                    <p className="text-[10px] text-app-text-muted truncate" title={bp.factors.join(", ")}>
+                      {bp.factors.join(", ")}
+                    </p>
+                  )}
+                  {(bp.riskLevel === "critical" || bp.riskLevel === "high") && bp.estimatedDaysLeft !== undefined && (
+                    <p className="mt-0.5 text-[10px] text-app-danger">
+                      예상 {bp.estimatedDaysLeft}일 내 차단
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
       </div>
 

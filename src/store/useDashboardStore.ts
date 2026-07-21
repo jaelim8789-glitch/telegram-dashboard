@@ -15,12 +15,9 @@ function dedupeGroups(groups: Group[]): Group[] {
 }
 
 function dedupeRecipientIds(ids: string[], validIds?: Set<string>): string[] {
-  const seen = new Set<string>();
   const next: string[] = [];
   for (const id of ids) {
-    if (seen.has(id)) continue;
     if (validIds && !validIds.has(id)) continue;
-    seen.add(id);
     next.push(id);
   }
   return next;

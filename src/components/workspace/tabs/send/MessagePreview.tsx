@@ -11,6 +11,7 @@ interface MessagePreviewProps {
   accountPhone?: string;
   groupName?: string;
   imagePreviewUrl?: string | null;
+  plan?: string | null;
 }
 
 export function MessagePreview({
@@ -19,17 +20,23 @@ export function MessagePreview({
   accountPhone,
   groupName,
   imagePreviewUrl,
+  plan,
 }: MessagePreviewProps) {
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
 
+  const WATERMARK = "\n\n━━━━━━━━━━━━━━━━━━\n🤖 TeleMon AI\n\n🚀 Telegram 운영, 아직도 직접 하시나요?\n\nAI 비서가\n✅ 자동 홍보\n✅ 자동 답장\n✅ 채널 운영\n✅ 그룹 관리\n\n🌐 https://telemon.online";
+
   const preview = useMemo(
     () =>
-      previewTemplate(message, {
-        name: groupName ?? "샘플 그룹",
-        phone: accountPhone ?? "010-0000-0000",
-        count: recipientCount ?? 10,
-      }),
-    [message, groupName, accountPhone, recipientCount],
+      previewTemplate(
+        message + (plan === "free" ? WATERMARK : ""),
+        {
+          name: groupName ?? "샘플 그룹",
+          phone: accountPhone ?? "010-0000-0000",
+          count: recipientCount ?? 10,
+        }
+      ),
+    [message, groupName, accountPhone, recipientCount, plan],
   );
 
   const isEmpty = !message.trim() && !imagePreviewUrl;

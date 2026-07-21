@@ -69,7 +69,7 @@ export function NewFeaturesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.15 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[320px]"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -88,12 +88,12 @@ export function NewFeaturesSection() {
                   </span>
                 </div>
 
-                <h3 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed flex-1" style={{ color: "var(--color-text-secondary)" }}>{f.desc}</p>
+                <h3 className="text-base font-semibold break-words" style={{ color: "var(--color-text)" }}>{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed flex-1 break-words" style={{ color: "var(--color-text-secondary)" }}>{f.desc}</p>
 
                 <ul className="mt-4 space-y-1.5">
                   {f.details.map((d) => (
-                    <li key={d} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    <li key={d} className="flex items-center gap-2 text-xs break-words" style={{ color: "var(--color-text-muted)" }}>
                       <Zap className="h-3 w-3 shrink-0" style={{ color: "var(--color-accent)" }} />
                       {d}
                     </li>
@@ -103,7 +103,7 @@ export function NewFeaturesSection() {
                 <div className="mt-4 pt-3 border-t border-[var(--color-accent-border)]">
                   <Link
                     href="/app/chat"
-                    className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--color-accent)" }}
+                    className="inline-flex items-center gap-1 text-xs font-medium min-h-[44px] flex items-center" style={{ color: "var(--color-accent)" }}
                   >
                     <MessageCircle className="h-3 w-3" />
                     AI 비서 사용해보기
@@ -117,7 +117,7 @@ export function NewFeaturesSection() {
         </div>
 
         <div className="mt-10 text-center">
-          <Link href="/signup" className="btn-luxury btn-luxury-primary inline-flex">
+          <Link href="/signup" className="btn-luxury btn-luxury-primary inline-flex min-h-[44px] items-center justify-center">
             모든 기능 살펴보기
           </Link>
         </div>

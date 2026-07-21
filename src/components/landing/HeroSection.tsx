@@ -158,13 +158,13 @@ export function HeroSection() {
         >
           <Link
             href="/features"
-            className="btn-luxury btn-luxury-secondary w-full sm:w-auto justify-center text-xs sm:text-sm"
+            className="btn-luxury btn-luxury-secondary w-full sm:w-auto justify-center text-xs sm:text-sm min-h-[44px] flex items-center justify-center py-3"
           >
             {t("app.features")}
           </Link>
           <Link
             href="/signup"
-            className="btn-luxury btn-luxury-primary w-full sm:w-auto justify-center text-xs sm:text-sm group"
+            className="btn-luxury btn-luxury-primary w-full sm:w-auto justify-center text-xs sm:text-sm min-h-[44px] flex items-center justify-center py-3 group"
           >
             <span>{t("app.start")}</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

@@ -40,7 +40,7 @@ export function HowItWorksSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.12 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center min-h-[180px]"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -54,7 +54,7 @@ export function HowItWorksSection() {
                   <Icon className="h-7 w-7" />
                 </div>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{step.desc}</p>
+                <p className="mt-2 text-sm leading-relaxed break-words" style={{ color: "var(--color-text-secondary)" }}>{step.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
@@ -64,7 +64,7 @@ export function HowItWorksSection() {
         </div>
 
         <div className="mt-10 text-center">
-          <Link href="/signup" className="btn-luxury btn-luxury-primary inline-flex">
+          <Link href="/signup" className="btn-luxury btn-luxury-primary inline-flex min-h-[44px] items-center justify-center">
             지금 시작하기
             <ArrowRight className="h-4 w-4" />
           </Link>

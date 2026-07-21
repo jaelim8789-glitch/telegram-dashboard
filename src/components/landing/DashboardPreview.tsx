@@ -151,14 +151,14 @@ export function DashboardPreview() {
         </div>
 
         {/* Dashboard content */}
-        <div className="rounded-b-xl border border-[#444466] overflow-hidden" style={{ background: mainBg }}>
-          <div className="grid grid-cols-[200px_1fr] min-h-[360px]">
+        <div className="rounded-b-xl border border-[#444466] overflow-x-auto" style={{ background: mainBg }}>
+          <div className="grid grid-cols-[minmax(150px,200px)_1fr] min-h-[360px] sm:min-h-[400px]">
             {/* Sidebar */}
             <div className="border-r border-[#444466] p-4 space-y-1.5" style={{ background: sidebarBg }}>
               {[["Dashboard", true], ["Send", false], ["Auto Reply", false], ["Groups", false], ["Logs", false], ["Schedule", false], ["Profile", false]].map(([item, active]) => (
                 <div
                   key={item as string}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all min-h-[40px] flex items-center"
                   style={{
                     background: active ? "rgba(200,168,110,0.12)" : "transparent",
                     color: active ? accentGold : textMuted,
@@ -195,7 +195,7 @@ export function DashboardPreview() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-lg border p-3 transition-all hover:shadow-md"
+                    className="rounded-lg border p-3 transition-all hover:shadow-md min-h-[70px]"
                     style={{
                       background: cardBg,
                       borderColor: borderColor,
@@ -215,12 +215,12 @@ export function DashboardPreview() {
               {/* Screenshot carousel */}
               <div className="rounded-lg border p-4" style={{ background: cardBg, borderColor: borderColor }}>
                 {/* Tab selector */}
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-2">
                   {TELEGRAM_SCREENSHOTS.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => setActiveScreenshot(s.id)}
-                      className="rounded-md px-2.5 py-1 text-[10px] font-medium transition-all"
+                      className="rounded-md px-2.5 py-1.5 text-[10px] font-medium transition-all whitespace-nowrap min-w-[90px] min-h-[40px] flex items-center justify-center"
                       style={{
                         background: activeScreenshot === s.id ? accentGold : "transparent",
                         color: activeScreenshot === s.id ? "#0d0d14" : textMuted,
@@ -235,7 +235,7 @@ export function DashboardPreview() {
                       {TELEGRAM_SCREENSHOTS.map((s) => (
                         <span
                           key={s.id}
-                          className="h-1.5 w-1.5 rounded-full transition-all"
+                          className="h-1.5 w-1.5 rounded-full transition-all min-w-[6px]"
                           style={{
                             background: activeScreenshot === s.id ? accentGold : borderColor,
                             width: activeScreenshot === s.id ? "12px" : "6px",
@@ -278,7 +278,7 @@ export function DashboardPreview() {
                 {[35, 55, 40, 70, 60, 85, 50].map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-t-sm transition-all duration-500 hover:scale-y-110"
+                    className="flex-1 rounded-t-sm transition-all duration-500 hover:scale-y-110 min-w-[8px]"
                     style={{
                       height: `${h}%`,
                       background: `linear-gradient(to top, ${accentGold}80, ${accentGold}30)`,

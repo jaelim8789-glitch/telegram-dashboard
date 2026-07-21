@@ -66,13 +66,16 @@ const CATEGORIES = [
   { value: "alert", label: "알림" },
 ] as const;
 
+// 사용자 정의 카테고리 추가를 위한 배열
+const CUSTOM_CATEGORY_VALUES = ["general", "promotion", "notice", "welcome", "follow_up", "alert"];
+
 const CATEGORY_COLORS: Record<string, string> = {
-  general: "bg-app-info-muted text-app-info",
-  promotion: "bg-app-warning-muted text-app-warning",
-  notice: "bg-app-primary-muted/30 text-app-primary",
-  welcome: "bg-app-success-muted text-app-success",
-  follow_up: "bg-app-card-hover text-app-text-secondary",
-  alert: "bg-app-danger-muted text-app-danger",
+  general: "bg-app-card-hover text-app-text-muted",
+  promotion: "bg-amber-500/10 text-amber-600",
+  notice: "bg-blue-500/10 text-blue-600",
+  welcome: "bg-emerald-500/10 text-emerald-600",
+  follow_up: "bg-violet-500/10 text-violet-600",
+  alert: "bg-rose-500/10 text-rose-600",
 };
 
 function TemplateCard({
@@ -100,6 +103,7 @@ function TemplateCard({
     }
   }, [template.variables]);
 
+  // 사용자 정의 카테고리가 아닌 경우 기본 색상 사용
   const categoryColor = CATEGORY_COLORS[template.category] ?? "bg-app-card-hover text-app-text-muted";
 
   return (
@@ -204,7 +208,8 @@ function TemplateEditor({
   saving: boolean;
 }) {
   const [name, setName] = useState(template?.name ?? "");
-  const [category, setCategory] = useState(template?.category ?? "general");
+  // 기존 카테고리가 없는 경우 기본값 설정
+  const [category, setCategory] = useState(template?.category ?? (template ? (CUSTOM_CATEGORY_VALUES.includes(template.category) ? template.category : template.category) : "general"));
   const [content, setContent] = useState(template?.content ?? "");
   const [variablesStr, setVariablesStr] = useState(() => {
     if (!template?.variables) return "";
@@ -280,6 +285,10 @@ function TemplateEditor({
           {CATEGORIES.filter((c) => c.value).map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
           ))}
+          {/* 사용자가 직접 입력한 카테고리가 기존 목록에 없을 경우 옵션에 추가 */}
+          {template && !CATEGORIES.some(c => c.value === template.category) && CUSTOM_CATEGORY_VALUES.indexOf(template.category) === -1 && (
+            <option key={template.category} value={template.category}>{template.category}</option>
+          )}
         </select>
       </div>
 

@@ -41,7 +41,7 @@ export function SecuritySection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.08 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 min-h-[180px]"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -56,7 +56,7 @@ export function SecuritySection() {
                 </div>
 
                 <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{item.desc}</p>
+                <p className="mt-2 text-sm leading-relaxed break-words" style={{ color: "var(--color-text-secondary)" }}>{item.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />

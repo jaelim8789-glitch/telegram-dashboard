@@ -33,11 +33,11 @@ export function CtaSection() {
           <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-40" />
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link href="/signup" className="btn-luxury btn-luxury-primary group w-full sm:w-auto justify-center">
+            <Link href="/signup" className="btn-luxury btn-luxury-primary group w-full sm:w-auto justify-center min-h-[44px] flex items-center justify-center">
               무료로 시작하기
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/pricing" className="btn-luxury btn-luxury-secondary w-full sm:w-auto justify-center">
+            <Link href="/pricing" className="btn-luxury btn-luxury-secondary w-full sm:w-auto justify-center min-h-[44px] flex items-center justify-center">
               요금제 보기
             </Link>
           </div>
