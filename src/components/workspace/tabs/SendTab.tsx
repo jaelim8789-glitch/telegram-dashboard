@@ -123,9 +123,6 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
 };
 
 
-
-
-
 export function SendTab() {
   const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
