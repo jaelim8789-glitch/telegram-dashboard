@@ -2127,7 +2127,7 @@ export function SendTab() {
           }
           description={`대상이 많아 계정 ${distributionSiblings.length}개에 나눠서 보냈습니다`}
           action={
-            <>
+            <div className="flex items-center gap-2">
               {recoverableFailedIds.length > 0 && (
                 <button
                   type="button"
@@ -2145,7 +2145,7 @@ export function SendTab() {
                 <RefreshCw className="h-3.5 w-3.5" />
                 새로고침
               </button>
-            </>
+            </div>
           }
         >
           <div className="space-y-2">
