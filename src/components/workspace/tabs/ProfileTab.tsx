@@ -19,6 +19,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { getAccountDisplayName, getAccountInitials } from "@/types";
 import { formatRelativeTime } from "@/lib/formatTime";
+import { backupData, restoreData } from "@/lib/exportUtils";
 import type { Account, Broadcast } from "@/types";
 
 export function ProfileTab() {
@@ -455,6 +456,35 @@ export function ProfileTab() {
               비활성화
             </Button>
           </div>
+        </div>
+      </Panel>
+
+      {/* ── Data Backup ── */}
+      <Panel title="데이터 백업" description="로컬 저장 데이터를 백업하고 복원합니다">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={async () => {
+              const count = await backupData("telemon-", "telemon-backup");
+              alert(`백업 완료 (${count}개 항목)`);
+            }}
+          >
+            백업 다운로드
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={async () => {
+              const count = await restoreData("telemon-");
+              alert(`복원 완료 (${count}개 항목)`);
+            }}
+          >
+            복원
+          </Button>
+          <p className="text-xs text-app-text-subtle">
+            텔레그램 계정 데이터, 발송그룹, 템플릿 등이 포함됩니다.
+          </p>
         </div>
       </Panel>
 

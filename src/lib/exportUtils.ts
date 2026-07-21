@@ -21,6 +21,53 @@ function download(content: string, filename: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
+export function importJSON(): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return reject("No file selected");
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { resolve(JSON.parse(reader.result as string)); }
+        catch { reject("Invalid JSON file"); }
+      };
+      reader.onerror = () => reject("File read error");
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
+
+export async function backupData(key: string, filename: string) {
+  try {
+    const data: Record<string, unknown> = {};
+    const allKeys = Object.keys(localStorage).filter((k) => k.startsWith(key));
+    for (const k of allKeys) {
+      try { data[k] = JSON.parse(localStorage.getItem(k) ?? "null"); }
+      catch { data[k] = localStorage.getItem(k); }
+    }
+    exportJSON(data, filename);
+    return allKeys.length;
+  } catch { return 0; }
+}
+
+export async function restoreData(key: string): Promise<number> {
+  try {
+    const data = await importJSON() as Record<string, unknown>;
+    let count = 0;
+    for (const [k, v] of Object.entries(data)) {
+      if (k.startsWith(key)) {
+        localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));
+        count++;
+      }
+    }
+    return count;
+  } catch { return 0; }
+}
+
 export async function captureElementAsPNG(_elementId: string, _filename: string) {
   console.warn("PNG capture requires html2canvas package - install with: npm install html2canvas");
 }
