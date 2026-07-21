@@ -2196,7 +2196,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">일반 발송</div>
                         <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
                       </div>
-                      {deliveryMode === "normal" && deliveryExpanded && (
+                      {deliveryMode === "normal" && deliveryExpanded ? (
                         <div className="mt-1.5 space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-app-text-muted">방마다</span>
