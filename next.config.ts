@@ -35,8 +35,6 @@ const nextConfig: NextConfig = {
 
   // 성능 최적화를 위한 설정
   experimental: {
-    // 번들 분석 도구 활성화
-    outputFileTracingRoot: undefined,
     // 동적 임포트를 통한 코드 분할
     esmExternals: 'loose',
   },

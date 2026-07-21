@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { initData, useSignal, backButton, MainButton, HapticFeedback } from "@tma.js/sdk-react";
+import { initData, useSignal, backButton, mainButton, hapticFeedback } from "@tma.js/sdk-react";
 import { Send, BarChart3, Coins, RefreshCw, CheckCircle2, XCircle, Clock, Loader2, AlertCircle, TrendingUp, Users } from "lucide-react";
 import * as api from "@/lib/api";
-import { 
-  fetchRecentBroadcasts, 
+import type { BroadcastStatus } from "@/types";
+import {
+  fetchRecentBroadcasts,
   fetchTokenBalance, 
   fetchAccountHealthScore, 
   fetchAccountDetails, 
@@ -26,7 +27,7 @@ interface Account {
 interface BroadcastItem {
   id: string;
   message: string;
-  status: 'pending' | 'sent' | 'failed';
+  status: BroadcastStatus;
   sentAt: string;
   recipients: number;
 }
@@ -85,7 +86,7 @@ function QuickSendForm({ onSend }: { onSend: (message: string) => void }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const haptic = HapticFeedback.use();
+  const haptic = hapticFeedback;
 
   async function handleQuickSend() {
     if (!message.trim() || sending) return;
@@ -97,7 +98,7 @@ function QuickSendForm({ onSend }: { onSend: (message: string) => void }) {
     try {
       // 가장 첫 번째 활성 계정 찾기
       const accounts = await api.fetchAccounts();
-      const active = accounts.find((a: Account) => a.status === "active");
+      const active = accounts.find((a) => a.status === "active");
       if (!active) {
         setResult("⚠️ 사용 가능한 계정이 없습니다.");
         haptic.notificationOccurred('error');
@@ -241,24 +242,23 @@ export default function MiniAppPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const initDataState = useSignal(initData.state);
-  const haptic = HapticFeedback.use();
+  const haptic = hapticFeedback;
   
   // Telegram MainButton 설정
   useEffect(() => {
-    MainButton.setText("새로고침");
-    MainButton.enable();
-    MainButton.show();
-    
+    try { mainButton.mount(); } catch { /* already mounted */ }
+    mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: true });
+
     const handleMainButtonClick = () => {
       fetchData();
       haptic.impactOccurred('light');
     };
-    
-    MainButton.on('click', handleMainButtonClick);
-    
+
+    const off = mainButton.onClick(handleMainButtonClick);
+
     return () => {
-      MainButton.off('click', handleMainButtonClick);
-      MainButton.hide();
+      off();
+      mainButton.hide();
     };
   }, []);
 
