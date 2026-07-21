@@ -207,10 +207,6 @@ async def test_manual_execute_endpoint_unaffected(monkeypatch) -> None:
     app = FastAPI()
     app.include_router(rm.router, prefix="/api")
 
-    async def _fake_user():
-        return {"id": "u1", "role": "user"}
-    app.dependency_overrides[rm.verify_account_ownership] = _fake_user
-
     try:
         client = TestClient(app)
 

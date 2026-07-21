@@ -5,6 +5,7 @@ P1 security regressions for TeleMon production hardening.
 from __future__ import annotations
 
 import asyncio
+import os
 import sqlite3
 import tempfile
 from types import SimpleNamespace
@@ -153,7 +154,7 @@ def test_webhook_secret_is_required(monkeypatch):
 
 
 def test_observability_defaults_are_hardened():
-    compose = open("docker-compose.observability.yml", encoding="utf-8").read()
+    compose = open(os.path.join(os.path.dirname(__file__), "..", "..", "docker-compose.observability.yml"), encoding="utf-8").read()
     assert "127.0.0.1:9090:9090" in compose
     assert "127.0.0.1:3001:3000" in compose
     assert "127.0.0.1:3100:3100" in compose

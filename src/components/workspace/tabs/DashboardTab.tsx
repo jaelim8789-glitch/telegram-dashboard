@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import {
-  Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, MessageSquare,
+  Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, Download, MessageSquare,
   RefreshCw, SendHorizonal, Users, XCircle,
   ArrowRight, Ban, Plus, UserPlus, ShieldAlert, ShieldOff, PauseCircle,
   Bug, Settings, Eye, EyeOff, HeartPulse, TrendingUp, TrendingDown,
@@ -22,6 +22,7 @@ import { DailyDigest } from "@/components/workspace/tabs/dashboard/DailyDigest";
 import { UsageChartWidget } from "@/components/workspace/tabs/dashboard/UsageChartWidget";
 import { UsageProgressWidget } from "@/components/workspace/tabs/dashboard/UsageProgressWidget";
 import { DashboardSkeleton } from "@/components/workspace/tabs/dashboard/DashboardSkeleton";
+import { exportCSV, exportJSON } from "@/lib/exportUtils";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
   pending: { tone: "neutral", label: "대기 중" },
@@ -182,6 +183,71 @@ export function DashboardTab() {
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
 
+  // ── Dashboard profiles ──
+  interface DashboardProfile {
+    name: string;
+    widgetVisibility: Record<string, boolean>;
+    widgetOrder: string[];
+  }
+
+  const PROFILES_STORAGE_KEY = "telemon-dashboard-profiles";
+  const DEFAULT_PROFILE_NAME = "기본";
+
+  const [profiles, setProfiles] = useState<DashboardProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem(PROFILES_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [{ name: DEFAULT_PROFILE_NAME, widgetVisibility: { ...WIDGET_DEFAULTS }, widgetOrder: Object.keys(WIDGET_DEFAULTS) }];
+    } catch { return [{ name: DEFAULT_PROFILE_NAME, widgetVisibility: { ...WIDGET_DEFAULTS }, widgetOrder: Object.keys(WIDGET_DEFAULTS) }]; }
+  });
+
+  const [currentProfile, setCurrentProfile] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("telemon-dashboard-current-profile");
+      if (saved) return saved;
+    } catch {}
+    return DEFAULT_PROFILE_NAME;
+  });
+
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const profilePanelRef = useRef<HTMLDivElement>(null);
+
+  const persistProfiles = (next: DashboardProfile[]) => {
+    try { localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(next)); } catch {}
+    setProfiles(next);
+  };
+
+  const saveCurrentProfile = (name: string) => {
+    const entry: DashboardProfile = { name, widgetVisibility: { ...widgetVisibility }, widgetOrder: [...widgetOrder] };
+    const next = [...profiles.filter((p) => p.name !== name), entry];
+    persistProfiles(next);
+    setCurrentProfile(name);
+    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch {}
+  };
+
+  const switchProfile = (name: string) => {
+    const profile = profiles.find((p) => p.name === name);
+    if (!profile) return;
+    setWidgetVisibility(profile.widgetVisibility);
+    try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(profile.widgetVisibility)); } catch {}
+    setWidgetOrder(profile.widgetOrder);
+    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(profile.widgetOrder)); } catch {}
+    setCurrentProfile(name);
+    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch {}
+  };
+
+  const deleteProfile = (name: string) => {
+    if (name === DEFAULT_PROFILE_NAME) return;
+    const next = profiles.filter((p) => p.name !== name);
+    persistProfiles(next);
+    if (currentProfile === name) {
+      switchProfile(DEFAULT_PROFILE_NAME);
+    }
+  };
+
+  const [profilePrompt, setProfilePrompt] = useState<string | null>(null);
+
   const toggleWidget = (key: string) => {
     setWidgetVisibility((prev) => {
       const next = { ...prev, [key]: !prev[key] };
@@ -189,6 +255,43 @@ export function DashboardTab() {
       return next;
     });
   };
+
+  // ── Export handlers ──
+  const handleExportCSV = () => {
+    const headers = ["message", "status", "account", "recipients", "error", "created_at"];
+    const rows = logs.map((b) => {
+      const acct = accounts.find((a) => a.id === b.accountId);
+      return [
+        b.message,
+        STATUS_TONE[b.status]?.label ?? b.status,
+        acct?.name?.trim() || acct?.phone || b.accountId,
+        String(b.recipients?.length ?? 0),
+        b.errorMessage ?? "",
+        b.createdAt,
+      ];
+    });
+    exportCSV(headers, rows, `telemon-logs-${new Date().toISOString().slice(0, 10)}`);
+    setShowExportDropdown(false);
+  };
+
+  const handleExportJSON = () => {
+    exportJSON({ logs, overview, recurring, health: healthItems }, `telemon-dashboard-${new Date().toISOString().slice(0, 10)}`);
+    setShowExportDropdown(false);
+  };
+
+  // ── Click-outside ──
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
+        setShowExportDropdown(false);
+      }
+      if (profilePanelRef.current && !profilePanelRef.current.contains(e.target as Node)) {
+        setShowProfilePanel(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // ── Widget order (drag-reorderable) ──
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
@@ -382,6 +485,24 @@ export function DashboardTab() {
               <Plus className="h-3.5 w-3.5" aria-hidden="true" /> 계정 추가
             </button>
           )}
+          <div className="relative" ref={exportDropdownRef}>
+            <button onClick={() => setShowExportDropdown(!showExportDropdown)} aria-label="내보내기"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring">
+              <Download className="h-3.5 w-3.5" aria-hidden="true" /> 내보내기
+            </button>
+            {showExportDropdown && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-app-border bg-app-surface p-1 shadow-xl">
+                <button onClick={handleExportCSV}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors">
+                  CSV 내보내기 (로그)
+                </button>
+                <button onClick={handleExportJSON}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors">
+                  JSON 내보내기 (전체)
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={loadAll} aria-label="새로고침"
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring">
             <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} aria-hidden="true" />
@@ -727,68 +848,132 @@ export function DashboardTab() {
       )}
       </div>
 
-      {/* ── Widget Customization ────────────────────────────── */}
-      <div className="relative">
-        <button
-          onClick={() => setShowWidgetSettings(!showWidgetSettings)}
-          className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
-        >
-          <Settings className="h-3.5 w-3.5" aria-hidden="true" />
-          위젯 설정
-        </button>
-        {showWidgetSettings && (
-          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
-            <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">위젯 순서 및 표시</p>
-            {widgetKeys.map((w, i) => (
-              <div
-                key={w.key}
-                draggable
-                onDragStart={() => { dragWidgetRef.current = { key: w.key, from: i }; }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (dragWidgetRef.current && dragWidgetRef.current.key !== w.key) {
-                    const from = dragWidgetRef.current.from;
-                    const to = i;
-                    const next = [...widgetOrder];
-                    next.splice(from, 1);
-                    next.splice(to, 0, dragWidgetRef.current.key);
-                    persistOrder(next);
-                    dragWidgetRef.current.from = to;
-                  }
-                }}
-                onDragEnd={() => { dragWidgetRef.current = null; }}
-                className="flex items-center gap-1 rounded-lg px-1 py-1 text-xs text-app-text hover:bg-app-card-hover transition-colors group cursor-grab active:cursor-grabbing"
-              >
-                <span className="text-[10px] text-app-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0">⠿</span>
-                <button
-                  onClick={() => toggleWidget(w.key)}
-                  className="flex items-center gap-2 flex-1 px-1"
+      {/* ── Widget Customization & Profiles ─────────────────── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <button
+            onClick={() => setShowWidgetSettings(!showWidgetSettings)}
+            className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+            위젯 설정
+          </button>
+          {showWidgetSettings && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
+              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">위젯 순서 및 표시</p>
+              {widgetKeys.map((w, i) => (
+                <div
+                  key={w.key}
+                  draggable
+                  onDragStart={() => { dragWidgetRef.current = { key: w.key, from: i }; }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragWidgetRef.current && dragWidgetRef.current.key !== w.key) {
+                      const from = dragWidgetRef.current.from;
+                      const to = i;
+                      const next = [...widgetOrder];
+                      next.splice(from, 1);
+                      next.splice(to, 0, dragWidgetRef.current.key);
+                      persistOrder(next);
+                      dragWidgetRef.current.from = to;
+                    }
+                  }}
+                  onDragEnd={() => { dragWidgetRef.current = null; }}
+                  className="flex items-center gap-1 rounded-lg px-1 py-1 text-xs text-app-text hover:bg-app-card-hover transition-colors group cursor-grab active:cursor-grabbing"
                 >
-                  {widgetVisibility[w.key] ? (
-                    <Eye className="h-3.5 w-3.5 text-app-primary shrink-0" />
-                  ) : (
-                    <EyeOff className="h-3.5 w-3.5 text-app-text-subtle shrink-0" />
-                  )}
-                  <span className={widgetVisibility[w.key] ? "text-app-text" : "text-app-text-muted"}>{w.label}</span>
-                </button>
-                <div className="flex shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] text-app-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0">⠿</span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); moveWidget(w.key, -1); }}
-                    disabled={i === 0}
-                    className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
-                    title="위로 이동"
-                  >↑</button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); moveWidget(w.key, 1); }}
-                    disabled={i === widgetKeys.length - 1}
-                    className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
-                    title="아래로 이동"
-                  >↓</button>
+                    onClick={() => toggleWidget(w.key)}
+                    className="flex items-center gap-2 flex-1 px-1"
+                  >
+                    {widgetVisibility[w.key] ? (
+                      <Eye className="h-3.5 w-3.5 text-app-primary shrink-0" />
+                    ) : (
+                      <EyeOff className="h-3.5 w-3.5 text-app-text-subtle shrink-0" />
+                    )}
+                    <span className={widgetVisibility[w.key] ? "text-app-text" : "text-app-text-muted"}>{w.label}</span>
+                  </button>
+                  <div className="flex shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveWidget(w.key, -1); }}
+                      disabled={i === 0}
+                      className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
+                      title="위로 이동"
+                    >↑</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveWidget(w.key, 1); }}
+                      disabled={i === widgetKeys.length - 1}
+                      className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
+                      title="아래로 이동"
+                    >↓</button>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="relative" ref={profilePanelRef}>
+          <button
+            onClick={() => setShowProfilePanel(!showProfilePanel)}
+            className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
+          >
+            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+            프로필
+          </button>
+          {showProfilePanel && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
+              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">
+                현재 프로필: {currentProfile}
+              </p>
+              <div className="space-y-0.5">
+                {profiles.map((p) => (
+                  <div key={p.name} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs">
+                    <button
+                      onClick={() => { switchProfile(p.name); setShowProfilePanel(false); }}
+                      className={`flex-1 text-left ${currentProfile === p.name ? "font-medium text-app-primary" : "text-app-text hover:text-app-text-strong"}`}
+                    >
+                      {p.name}
+                    </button>
+                    {p.name !== DEFAULT_PROFILE_NAME && (
+                      <button
+                        onClick={() => deleteProfile(p.name)}
+                        className="shrink-0 rounded px-1 py-0.5 text-[10px] text-app-text-muted hover:text-app-danger transition-colors"
+                        title="삭제"
+                      >×</button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+              <div className="mt-2 border-t border-app-border pt-2">
+                <button
+                  onClick={() => setProfilePrompt("")}
+                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-app-text-muted hover:bg-app-card-hover transition-colors"
+                >
+                  <Plus className="h-3 w-3" /> 새 프로필로 저장
+                </button>
+              </div>
+              {profilePrompt !== null && (
+                <div className="mt-2 border-t border-app-border pt-2">
+                  <form onSubmit={(e) => { e.preventDefault(); if (profilePrompt.trim()) { saveCurrentProfile(profilePrompt.trim()); setProfilePrompt(null); setShowProfilePanel(false); } }}>
+                    <input
+                      autoFocus
+                      value={profilePrompt}
+                      onChange={(e) => setProfilePrompt(e.target.value)}
+                      placeholder="프로필 이름 입력..."
+                      className="w-full rounded-lg border border-app-border bg-app-bg px-2 py-1.5 text-xs text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary"
+                    />
+                    <div className="mt-1.5 flex justify-end gap-1">
+                      <button type="button" onClick={() => setProfilePrompt(null)}
+                        className="rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:bg-app-card-hover transition-colors">취소</button>
+                      <button type="submit"
+                        className="rounded-lg bg-app-primary px-2 py-1 text-[11px] text-white hover:bg-app-primary-hover transition-colors">저장</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Quick Actions ─────────────────────────────────────── */}

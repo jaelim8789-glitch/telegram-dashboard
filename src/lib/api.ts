@@ -672,6 +672,20 @@ export async function batchRetryBroadcasts(broadcastIds: string[]): Promise<{ re
   });
 }
 
+export async function cancelBroadcasts(broadcastIds: string[]): Promise<void> {
+  await request("/api/broadcast/batch-cancel", {
+    method: "POST",
+    body: JSON.stringify({ broadcast_ids: broadcastIds }),
+  });
+}
+
+export async function deleteBroadcasts(broadcastIds: string[]): Promise<void> {
+  await request("/api/broadcast/batch-delete", {
+    method: "POST",
+    body: JSON.stringify({ broadcast_ids: broadcastIds }),
+  });
+}
+
 export async function fetchSchedulerStatus(): Promise<{
   tick_interval_seconds: number;
   next_tick_at: string | null;
