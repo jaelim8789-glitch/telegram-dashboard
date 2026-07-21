@@ -159,7 +159,7 @@ class AutonomousGrowthManager {
     }
 
     // 1. 콘텐츠 생성
-    const content = await this.generateContent(loop.strategy.contentStrategy, loop.goal);
+    const content = await this.generateContent(loop.strategy.contentStrategy, loop.goal, loop.userId);
 
     // 2. 발송 대상 결정
     const targets = await this.determineTargets(loop.strategy.targetingStrategy);
@@ -193,7 +193,7 @@ class AutonomousGrowthManager {
   /**
    * 콘텐츠를 생성합니다
    */
-  private async generateContent(strategy: ContentStrategy, goal: string): Promise<string> {
+  private async generateContent(strategy: ContentStrategy, goal: string, accountId: string): Promise<string> {
     // AI를 사용하여 콘텐츠 생성
     const prompt = `
       사용자의 목표: "${goal}"
@@ -207,6 +207,7 @@ class AutonomousGrowthManager {
     try {
       // AI API를 사용하여 콘텐츠 생성
       const aiResponse = await requestAiReply({
+        accountId,
         message: prompt,
         session_id: null,
         use_memory: true
