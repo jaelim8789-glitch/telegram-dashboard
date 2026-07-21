@@ -11,7 +11,11 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "cap:build": "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build && npx cap copy",
+    "cap:sync": "cross-env CAPACITOR=1 next build && npx cap sync",
+    "cap:android": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open android",
+    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open ios"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -19,6 +23,18 @@
     ]
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.4.2",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@telegram-apps/telegram-ui": "^2.1.13",
     "@tma.js/sdk-react": "^3.0.23",
     "clsx": "^2.1.1",
@@ -38,6 +54,7 @@
     "@types/node": "^20",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "^15.5.20",
     "lint-staged": "^17.1.0",

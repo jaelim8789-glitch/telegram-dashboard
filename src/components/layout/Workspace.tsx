@@ -15,6 +15,7 @@ import type { TabId } from "@/types";
 import { Loader2, WifiOff } from "lucide-react";
 import { updateBadgeFromStats } from "@/lib/appBadge";
 import { requestPushPermission, subscribeToPush } from "@/lib/pushNotifications";
+import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
   loading: () => (
@@ -211,10 +212,11 @@ export function Workspace() {
   const navFeature = useDashboardStore((s) => s.navFeature);
   const activeTab = useDashboardStore((s) => s.activeTab);
 
-  // Init push notifications + app badge
+  // Init push notifications + app badge + native bridge
   useEffect(() => {
     requestPushPermission().then((granted) => { if (granted) subscribeToPush(); });
-    updateBadgeFromStats({ pending: 0, failed: 0, sent: 0, total: 0 }); // clear on load
+    registerNativePush();
+    updateBadgeFromStats({ pending: 0, failed: 0, sent: 0, total: 0 });
   }, []);
 
   useEffect(() => {
