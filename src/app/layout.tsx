@@ -9,6 +9,8 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import "./globals.css";
 
 const SplashScreen = dynamic(() => import("@/components/ui/SplashScreen").then(m => ({ default: m.SplashScreen })), { ssr: false });
+const GestureTour = dynamic(() => import("@/components/ui/GestureTour").then(m => ({ default: m.GestureTour })), { ssr: false });
+const BiometricLock = dynamic(() => import("@/components/ui/BiometricLock").then(m => ({ default: m.BiometricLock })), { ssr: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://telemon.online"),
@@ -45,11 +47,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <SplashScreen />
-        <RuntimeInitializer />
-        <CommandPaletteProvider />
-        <PwaRegister />
-        <PwaInstallPrompt />
-        <ToastProvider>{children}</ToastProvider>
+        <GestureTour />
+        <BiometricLock>
+          <RuntimeInitializer />
+          <CommandPaletteProvider />
+          <PwaRegister />
+          <PwaInstallPrompt />
+          <ToastProvider>{children}</ToastProvider>
+        </BiometricLock>
       </body>
     </html>
   );

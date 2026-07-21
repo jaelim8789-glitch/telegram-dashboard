@@ -142,7 +142,7 @@
       "typeGroup": "그룹",
       "typeMegagroup": "슈퍼그룹",
       "typeChannel": "채널",
-      "allTags": "전체 태그",
+      "allTags": "전체 타",
       "noGroups": "조회된 그룹이 없습니다.",
       "addTag": "태그 추가",
       "tagPrompt": "태그를 입력하세요"
@@ -317,13 +317,13 @@
     }
   },
   "hero": {
-    "title1": "TIME IS LIMITED.",
-    "title2": "POSSIBILITY IS NOT.",
-    "subtitle": "시간은 유한하지만, 가능성은 무한하다. 현실에 안주하지 않는 사람들을 위해.",
+    "title1": "Telegram 운영의",
+    "title2": "모든 것을 하나로",
+    "subtitle": "여러 Telegram 계정을 하나의 대시보드에서 관리하고, 자동 응답, 예약 발송, 그룹 검색, 전달 분석 등을 코딩 없이 사용해보세요.",
     "reason1": "설정 1분, 평생 자동화",
     "reason2": "계정 차단 걱정 끝, AI가 지킵니다",
     "reason3": "시작한 당신은 영구 동반자",
-    "quote": "BUILT FOR THOSE WHO REFUSE TO SETTLE.",
+    "quote": "Telegram 자동화의 새로운 기준",
     "lifetimeHint": "지금 시작하는 당신은 영구 동반자입니다.",
     "lifetimeLink": "첫 발자취 알아보기"
   },
@@ -339,7 +339,7 @@
     "step2": "인증번호 입력",
     "step2Desc": "Telegram 앱에서 수신한 인증번호를 입력합니다.",
     "step3": "2FA 비밀번호 (선택)",
-    "step3Desc": "2단계 인증이 설정된 경우 비밀번호를 입력합니다.",
+    "step3Desc": "2FA가 설정된 경우 비밀번호를 입력합니다.",
     "step4": "인증 완료",
     "step4Desc": "계정이 등록되고 사용 준비가 완료됩니다.",
     "required": "필수 설정",
