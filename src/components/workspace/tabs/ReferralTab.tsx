@@ -214,7 +214,7 @@ export function ReferralTab() {
             <div className="rounded-xl border border-app-border bg-app-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-app-text">내 추천 링크</h3>
-                <Badge tone="primary">총판 전용</Badge>
+                <Badge tone="info">총판 전용</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <input
