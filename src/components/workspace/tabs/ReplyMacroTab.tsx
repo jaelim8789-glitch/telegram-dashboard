@@ -1,112 +1,105 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Loader2, MessageSquare, AlertTriangle } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { getToken } from "@/lib/auth";
-import { getAccountDisplayName } from "@/types";
-import { Link } from "@/components/ui/Link";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+import { getAccountDisplayName, type ReplyMacro } from "@/types";
+import { fetchReplyMacros, updateReplyMacro } from "@/lib/api";
 
 export function ReplyMacroTab() {
   const { selectedAccountId, accounts } = useDashboardStore();
+  const { toast } = useToast();
   const [macros, setMacros] = useState<ReplyMacro[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [draftMessage, setDraftMessage] = useState("");
+
   const account = useMemo(
     () => accounts.find((a) => a.id === selectedAccountId),
     [accounts, selectedAccountId]
   );
 
+  // 이 탭은 "랜덤 답장" 단일 매크로 개념으로 동작 — 계정당 매크로가 없으면 새로
+  // 만들 준비 상태를, 있으면 첫 번째 매크로를 편집 대상으로 삼는다.
+  const macro = macros[0] ?? null;
+
   useEffect(() => {
     if (!selectedAccountId) return;
-    
-    // 계정 상태 확인 후 활성 상태일 때만 매크로 정보 가져오기
-    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-    if (currentAccount?.status !== 'active') {
+
+    const currentAccount = accounts.find((acc) => acc.id === selectedAccountId);
+    if (currentAccount?.status !== "active") {
       setMacros([]);
       setLoading(false);
       return;
     }
-    
+
     loadMacros();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountId, accounts]);
+
+  useEffect(() => {
+    setDraftMessage(macro?.messageContent ?? "");
+  }, [macro]);
 
   async function loadMacros() {
     setLoading(true);
     setError(null);
     try {
-      // 계정 상태 확인
-      const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-      if (currentAccount?.status !== 'active') {
+      const currentAccount = accounts.find((acc) => acc.id === selectedAccountId);
+      if (currentAccount?.status !== "active") {
         throw new Error("계정이 인증되지 않아 답장매크로를 불러올 수 없습니다.");
       }
-      
+
       const data = await fetchReplyMacros(selectedAccountId!);
       setMacros(data);
-    } catch (err: any) {
-      setError(err.message || "답장매크로 목록을 불러오지 못했습니다.");
-      console.error("답장매크로 로드 실패:", err);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "답장매크로 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function saveToggle(macroId: string, nextActive: boolean) {
-    if (!selectedAccountId) return;
-    
-    // 계정 상태 확인
-    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-    if (currentAccount?.status !== 'active') {
+  async function saveToggle(nextActive: boolean) {
+    if (!selectedAccountId || !macro) return;
+
+    const currentAccount = accounts.find((acc) => acc.id === selectedAccountId);
+    if (currentAccount?.status !== "active") {
       toast("error", "계정이 인증되지 않아 답장매크로를 사용할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
       return;
     }
-    
+
     setSaving(true);
     try {
-      const updated = await updateReplyMacro(selectedAccountId, macroId, { is_active: nextActive });
-      setMacros(prev => prev.map(m => m.id === macroId ? updated : m));
+      const updated = await updateReplyMacro(selectedAccountId, macro.id, { isActive: nextActive });
+      setMacros((prev) => prev.map((m) => (m.id === macro.id ? updated : m)));
       toast("success", nextActive ? "답장매크로 켜짐" : "답장매크로 꺼짐");
-    } catch (err: any) {
-      toast("error", err.message || "저장 실패");
-      console.error("답장매크로 토글 실패:", err);
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "저장 실패");
     } finally {
       setSaving(false);
     }
   }
 
-  async function saveMessage(macroId: string, message: string) {
-    if (!selectedAccountId) return;
-    
-    // 계정 상태 확인
-    const currentAccount = accounts.find(acc => acc.id === selectedAccountId);
-    if (currentAccount?.status !== 'active') {
+  async function saveMessage() {
+    if (!selectedAccountId || !macro) return;
+
+    const currentAccount = accounts.find((acc) => acc.id === selectedAccountId);
+    if (currentAccount?.status !== "active") {
       toast("error", "계정이 인증되지 않아 답장매크로를 수정할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.");
       return;
     }
-    
+
     setSaving(true);
     try {
-      const updated = await updateReplyMacro(selectedAccountId, macroId, { message_content: message });
-      setMacros(prev => prev.map(m => m.id === macroId ? updated : m));
+      const updated = await updateReplyMacro(selectedAccountId, macro.id, { messageContent: draftMessage });
+      setMacros((prev) => prev.map((m) => (m.id === macro.id ? updated : m)));
       toast("success", "메시지 저장됨");
-    } catch (err: any) {
-      toast("error", err.message || "저장 실패");
-      console.error("답장매크로 메시지 저장 실패:", err);
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "저장 실패");
     } finally {
       setSaving(false);
     }
@@ -140,22 +133,21 @@ export function ReplyMacroTab() {
     );
   }
 
-  // 계정 상태 확인
-  if (account.status !== 'active') {
+  if (account.status !== "active") {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-center">
         <div className="rounded-2xl border border-app-border bg-app-card p-6 max-w-md w-full">
           <MessageSquare className="mx-auto h-12 w-12 text-app-warning" />
           <h3 className="mt-3 text-lg font-medium text-app-text">계정 인증 필요</h3>
           <p className="mt-2 text-sm text-app-text-secondary">
-            이 계정은 현재 {account.status === 'inactive' ? '비활성화' : 
-            account.status === 'banned' ? '차단' : '알 수 없는 상태'} 상태입니다.
+            이 계정은 현재 {account.status === "inactive" ? "비활성화" :
+            account.status === "banned" ? "차단" : "알 수 없는 상태"} 상태입니다.
           </p>
           <p className="mt-2 text-xs text-app-text-subtle">
             답장매크로를 사용하려면 계정 등록에서 Telegram 인증을 완료해야 합니다.
           </p>
           <Link href="/app" className="mt-4 inline-block">
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               계정 등록으로 이동
             </Button>
           </Link>
@@ -187,6 +179,9 @@ export function ReplyMacroTab() {
     );
   }
 
+  const isActive = macro?.isActive ?? false;
+  const messageDirty = macro !== null && draftMessage !== macro.messageContent;
+
   return (
     <div className="mx-auto max-w-md space-y-6 pb-8 pt-8">
       <div className="space-y-1 text-center">
@@ -194,18 +189,23 @@ export function ReplyMacroTab() {
         <p className="text-sm text-app-text-muted">{getAccountDisplayName(account)}</p>
         <p className="text-xs text-app-text-muted">
           켜면 이 계정이 속한 모든 그룹에서 무작위로 1명씩 골라 답장으로 아래 메시지를 자동 전송합니다.
-          같은 사람에게 중복 전송되지 않으며, 약 {30}분마다 반복됩니다.
+          같은 사람에게 중복 전송되지 않으며, 약 30분마다 반복됩니다.
         </p>
       </div>
 
       <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        value={draftMessage}
+        onChange={(e) => setDraftMessage(e.target.value)}
         placeholder="답장으로 보낼 메시지를 입력하세요"
         rows={5}
         disabled={saving}
         className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm outline-none focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 resize-none"
       />
+      {messageDirty && (
+        <Button variant="secondary" size="sm" loading={saving} onClick={saveMessage} className="w-full">
+          메시지 저장
+        </Button>
+      )}
 
       <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-card px-4 py-3">
         <span className="text-sm font-medium text-app-text">
@@ -215,7 +215,7 @@ export function ReplyMacroTab() {
           variant={isActive ? "secondary" : "primary"}
           size="sm"
           loading={saving}
-          disabled={saving || (!isActive && !message.trim())}
+          disabled={saving || !macro || (!isActive && !draftMessage.trim())}
           onClick={() => saveToggle(!isActive)}
         >
           {isActive ? "끄기" : "켜기"}

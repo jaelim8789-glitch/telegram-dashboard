@@ -72,6 +72,7 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   operator: dynamic(() => import("@/components/workspace/tabs/OperatorTab").then(m => ({ default: m.OperatorTab })), { loading: TabFallback }),
   styleprofile: dynamic(() => import("@/components/workspace/tabs/StyleProfileTab").then(m => ({ default: m.StyleProfileTab })), { loading: TabFallback }),
   growthloop: dynamic(() => import("@/components/workspace/tabs/GrowthLoopTab").then(m => ({ default: m.GrowthLoopTab })), { loading: TabFallback }),
+  sendhub: dynamic(() => import("@/components/navigation/categories/SendHub").then(m => ({ default: m.SendHub })), { loading: TabFallback }),
 };
 
 // ── Network status hook ──

@@ -161,7 +161,7 @@ interface TabMemoryManagement {
 }
 
 // 탭 메모리 관리 기능 추가
-const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get) => ({
+export const useDashboardStore = create<DashboardState & TabMemoryManagement>((set, get) => ({
   ...INITIAL_STATE,
 
   resetStore: () => {
