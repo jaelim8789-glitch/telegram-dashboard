@@ -13,7 +13,7 @@ import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
-import ErrorBoundary from '../ErrorBoundary';
+import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
@@ -234,7 +234,7 @@ export function TabBar() {
                 />
               ))}
               {/* "더보기" 버튼 */}
-              {moreGroups.length > 0 && (
+              {hasMoreTab && (
                 <button
                   type="button"
                   onClick={() => { haptics.light(); setMoreOpen(true); }}
@@ -329,9 +329,6 @@ export function TabBar() {
                 <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
                 <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-2 px-1">계정 전환</p>
                 <div className="max-h-[35vh] overflow-y-auto space-y-1">
-                  {accounts.length === 0 && (
-                    <p className="px-3 py-4 text-center text-sm text-app-text-muted">등록된 계정이 없습니다</p>
-                  )}
                   {accounts.map((account) => {
                     const isSelected = account.id === selectedAccountId;
                     return (

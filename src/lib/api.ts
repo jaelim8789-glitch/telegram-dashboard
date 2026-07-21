@@ -23,44 +23,13 @@ import type {
   AiPromptTemplate, AiTemplateCreateInput,
   AiMemorySearchResult,
   AiSession, AiUsageSummary, AiPlanLimits, AiSearchFilters,
+  TeleMonMemorySnapshot,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
-}
-
-/**
- * API 요청 시 재시도 로직을 포함한 함수
- */
-export async function apiCallWithRetry<T>(
-  requestFn: () => Promise<T>,
-  retries: number = 3,
-  delay: number = 1000,
-  fallbackValue?: T
-): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const result = await requestFn();
-      return result;
-    } catch (error) {
-      console.warn(`API 호출 실패 (${i + 1}/${retries}):`, error);
-      
-      // 마지막 시도가 아니면 대기
-      if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i))); // exponential backoff
-      }
-    }
-  }
-  
-  // 모든 재시도 실패 시 폴백 값 반환
-  if (fallbackValue !== undefined) {
-    console.warn('재시도 모두 실패, 폴백 값 사용');
-    return fallbackValue;
-  }
-  
-  throw new Error('API 호출이 모든 재시도 후 실패했습니다');
 }
 
 // ── Network resilience ─────────────────────────────────────────────
@@ -75,9 +44,8 @@ export async function apiCallWithRetry<T>(
 // background.  Callers that want the fast-fail UX should use
 // requestFast() and catch the initial error.
 const REQUEST_TIMEOUT_MS = 60_000;
-const MAX_RETRIES = 3; // 증가된 재시도 횟수
+const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 2_000;
-
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -1246,19 +1214,6 @@ export async function adminDeleteUserByPhone(phone: string): Promise<{ deleted: 
 
 export interface AdminReferralCommission {
   id: string;
-  referrerId: string;
-  referredId: string;
-  paymentId: string;
-  amountCents: number;
-  rate: number;
-  status: string;
-  paymentTxId: string | null;
-  paidAt: string | null;
-  createdAt: string | null;
-}
-
-interface ApiAdminReferralCommission {
-  id: string;
   referrer_id: string;
   referred_id: string;
   payment_id: string;
@@ -1273,44 +1228,27 @@ interface ApiAdminReferralCommission {
 /** Admin: list referral commissions, optionally filtered by status */
 export async function fetchAdminReferralCommissions(status?: string): Promise<AdminReferralCommission[]> {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  const result = await request<{ items: ApiAdminReferralCommission[] }>(`/api/admin/referral/commissions${query}`);
-  return result.items.map((c) => ({
-    id: c.id,
-    referrerId: c.referrer_id,
-    referredId: c.referred_id,
-    paymentId: c.payment_id,
-    amountCents: c.amount_cents,
-    rate: c.rate,
-    status: c.status,
-    paymentTxId: c.payment_tx_id,
-    paidAt: c.paid_at,
-    createdAt: c.created_at,
-  }));
+  const result = await request<{ items: AdminReferralCommission[] }>(`/api/admin/referral/commissions${query}`);
+  return result.items;
+}
+
+/** Admin: approve a referral commission for payout, optionally recording the payment tx id */
+export async function approveAdminReferralCommission(commissionId: string, paymentTxId?: string): Promise<void> {
+  await request(`/api/admin/referral/commissions/${encodeURIComponent(commissionId)}/approve`, {
+    method: "POST",
+    body: JSON.stringify(paymentTxId ? { payment_tx_id: paymentTxId } : {}),
+  });
 }
 
 /** Admin: manually top up a user's token balance */
-export async function adminTopUpTokens(userId: string, amount: number, memo?: string): Promise<{ newBalance: number }> {
-  const result = await request<{ user_id: string; amount: number; new_balance: number }>(
-    `/api/admin/users/${encodeURIComponent(userId)}/topup-tokens`,
-    { method: "POST", body: JSON.stringify({ amount, memo }) },
-  );
-  return { newBalance: result.new_balance };
+export async function adminTopUpTokens(userId: string, amount: number, memo?: string): Promise<{ user_id: string; amount: number; new_balance: number }> {
+  return request(`/api/admin/users/${userId}/topup-tokens`, {
+    method: "POST",
+    body: JSON.stringify({ amount, ...(memo ? { memo } : {}) }),
+  });
 }
 
 export interface AdminAuditLog {
-  id: string;
-  adminUsername: string;
-  action: string;
-  targetType: string;
-  targetId: string | null;
-  targetPhone: string | null;
-  detail: string | null;
-  memo: string | null;
-  result: string;
-  createdAt: string;
-}
-
-interface ApiAdminAuditLog {
   id: string;
   admin_username: string;
   action: string;
@@ -1323,67 +1261,27 @@ interface ApiAdminAuditLog {
   created_at: string;
 }
 
-/** Admin: list recent admin audit log entries */
-export async function fetchAdminAuditLogs(limit = 50, action?: string): Promise<AdminAuditLog[]> {
-  const params = new URLSearchParams({ limit: String(limit) });
-  if (action) params.set("action", action);
-  const result = await request<{ items: ApiAdminAuditLog[] }>(`/api/admin/audit-logs?${params.toString()}`);
-  return result.items.map((r) => ({
-    id: r.id,
-    adminUsername: r.admin_username,
-    action: r.action,
-    targetType: r.target_type,
-    targetId: r.target_id,
-    targetPhone: r.target_phone,
-    detail: r.detail,
-    memo: r.memo,
-    result: r.result,
-    createdAt: r.created_at,
-  }));
+/** Admin: fetch recent admin action audit log entries */
+export async function fetchAdminAuditLogs(limit = 50): Promise<AdminAuditLog[]> {
+  const result = await request<{ items: AdminAuditLog[] }>(`/api/admin/audit-logs?limit=${limit}`);
+  return result.items;
 }
 
 export interface AdminBillingUpdateInput {
   plan?: "free" | "pro" | "team";
-  subscriptionStatus?: "active" | "inactive" | "pending" | "past_due" | "canceled";
-  trialExpiresAt?: string;
-  extendTrialDays?: number;
+  subscription_status?: "active" | "inactive" | "pending" | "past_due" | "canceled";
+  trial_expires_at?: string;
+  extend_trial_days?: number;
 }
 
-export interface AdminBillingUpdateResult {
-  userId: string;
-  tenantId: string;
-  phone: string;
-  plan: string;
-  subscriptionStatus: string;
-  trialExpiresAt: string | null;
-}
-
-/** Admin: update a user's plan/subscription/trial */
-export async function adminUpdateUserBilling(userId: string, input: AdminBillingUpdateInput): Promise<AdminBillingUpdateResult> {
-  const body: Record<string, unknown> = {};
-  if (input.plan) body.plan = input.plan;
-  if (input.subscriptionStatus) body.subscription_status = input.subscriptionStatus;
-  if (input.trialExpiresAt) body.trial_expires_at = input.trialExpiresAt;
-  if (input.extendTrialDays) body.extend_trial_days = input.extendTrialDays;
-  const result = await request<{
-    user_id: string; tenant_id: string; phone: string; plan: string;
-    subscription_status: string; trial_expires_at: string | null;
-  }>(`/api/admin/users/${encodeURIComponent(userId)}/billing`, { method: "PATCH", body: JSON.stringify(body) });
-  return {
-    userId: result.user_id,
-    tenantId: result.tenant_id,
-    phone: result.phone,
-    plan: result.plan,
-    subscriptionStatus: result.subscription_status,
-    trialExpiresAt: result.trial_expires_at,
-  };
-}
-
-/** Admin: approve a referral commission for payout, optionally recording the payment tx id */
-export async function approveAdminReferralCommission(commissionId: string, paymentTxId?: string): Promise<void> {
-  await request(`/api/admin/referral/commissions/${encodeURIComponent(commissionId)}/approve`, {
-    method: "POST",
-    body: JSON.stringify(paymentTxId ? { payment_tx_id: paymentTxId } : {}),
+/** Admin: update a user's plan/subscription/trial billing fields */
+export async function adminUpdateUserBilling(
+  userId: string,
+  payload: AdminBillingUpdateInput
+): Promise<{ user_id: string; tenant_id: string; phone: string; plan: string; subscription_status: string; trial_expires_at: string | null }> {
+  return request(`/api/admin/users/${userId}/billing`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -2078,21 +1976,9 @@ function toReplyMacroLog(api: ApiReplyMacroLog): ReplyMacroLog {
   };
 }
 
-function unauthenticatedAccountError(action: string, err: unknown): Error {
-  const status = err instanceof ApiError ? err.status : undefined;
-  if (status === 400 || status === 401 || status === 403) {
-    return new Error(`계정이 인증되지 않아 답장매크로를 ${action}할 수 없습니다. 계정 등록에서 Telegram 인증을 완료해주세요.`);
-  }
-  return err instanceof Error ? err : new Error(String(err));
-}
-
 export async function fetchReplyMacroLogs(accountId: string, macroId: string): Promise<ReplyMacroLog[]> {
-  try {
-    const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
-    return logs.map(toReplyMacroLog);
-  } catch (err) {
-    throw unauthenticatedAccountError("로그를 불러오", err);
-  }
+  const logs = await request<ApiReplyMacroLog[]>(`/api/accounts/${accountId}/reply-macros/${macroId}/logs`);
+  return logs.map(toReplyMacroLog);
 }
 
 // ─── Team Management ──────────────────────────────────────────────────
@@ -2301,6 +2187,10 @@ export async function clearAiMemory(): Promise<void> {
   await request<void>("/api/ai/memory", { method: "DELETE" });
 }
 
+export async function fetchTeleMonMemorySnapshot(): Promise<TeleMonMemorySnapshot> {
+  return request("/api/ai/telemon-memory/snapshot");
+}
+
 // ─── AI Reply 2.0 — Usage / Analytics ─────────────────────────────
 
 export async function fetchAiUsage(days: number = 30): Promise<AiUsageSummary> {
@@ -2488,10 +2378,6 @@ export async function fetchAIAnalyticsOverview(days?: number): Promise<import("@
 export async function fetchAIAnalyticsDaily(days?: number): Promise<import("@/types").AIAnalyticsDaily[]> {
   const qs = days ? `?days=${days}` : "";
   return request<import("@/types").AIAnalyticsDaily[]>(`/api/ai/analytics/daily${qs}`);
-}
-
-export async function fetchTeleMonMemorySnapshot(): Promise<import("@/types").TeleMonMemorySnapshot> {
-  return request<import("@/types").TeleMonMemorySnapshot>("/api/ai/telemon-memory/snapshot");
 }
 
 export async function fetchAIAnalyticsAgentBreakdown(): Promise<import("@/types").AIAnalyticsAgentBreakdown[]> {

@@ -200,7 +200,7 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
       }
       const result = await api.adminTopUpTokens(lookup.userId, amount, memo.trim() || undefined);
       setDone(true);
-      setResultText(`충전 완료: 새 잔액 ${result.newBalance.toLocaleString()} 토큰`);
+      setResultText(`충전 완료: 새 잔액 ${result.new_balance.toLocaleString()} 토큰`);
       setPhoneInput("");
       toast("success", `${lookup.phone ?? "사용자"}에 ${amount.toLocaleString()}토큰 충전 완료`);
       onTopUp();
@@ -502,9 +502,9 @@ function UsersContent() {
     if (!selectedUser || billingLoading) return;
     const payload: api.AdminBillingUpdateInput = {};
     if (billingPlan !== "keep") payload.plan = billingPlan;
-    if (billingSubscription !== "keep") payload.subscriptionStatus = billingSubscription;
-    if (extendTrialDays > 0) payload.extendTrialDays = extendTrialDays;
-    if (!payload.plan && !payload.subscriptionStatus && !payload.extendTrialDays) {
+    if (billingSubscription !== "keep") payload.subscription_status = billingSubscription;
+    if (extendTrialDays > 0) payload.extend_trial_days = extendTrialDays;
+    if (!payload.plan && !payload.subscription_status && !payload.extend_trial_days) {
       setError("변경할 결제/플랜 항목을 선택해주세요.");
       return;
     }
@@ -818,7 +818,7 @@ function UsersContent() {
                     <td className="px-2 py-2">
                       <Badge tone={c.status === "pending" ? "warning" : "success"}>{c.status}</Badge>
                     </td>
-                    <td className="px-2 py-2">{(c.amountCents / 100).toLocaleString()} USDT</td>
+                    <td className="px-2 py-2">{(c.amount_cents / 100).toLocaleString()} USDT</td>
                     <td className="px-2 py-2">{(c.rate * 100).toFixed(1)}%</td>
                     <td className="px-2 py-2">
                       {c.status === "pending" ? (
@@ -829,7 +829,7 @@ function UsersContent() {
                           className="w-52"
                         />
                       ) : (
-                        <span className="text-app-text-muted">{c.paymentTxId ?? "-"}</span>
+                        <span className="text-app-text-muted">{c.payment_tx_id ?? "-"}</span>
                       )}
                     </td>
                     <td className="px-2 py-2 text-right">
@@ -871,9 +871,9 @@ function UsersContent() {
               <tbody className="divide-y divide-app-border">
                 {auditLogs.map((log) => (
                   <tr key={log.id}>
-                    <td className="px-2 py-2 text-app-text-muted">{formatDateTime(log.createdAt)}</td>
+                    <td className="px-2 py-2 text-app-text-muted">{formatDateTime(log.created_at)}</td>
                     <td className="px-2 py-2"><Badge tone="info">{log.action}</Badge></td>
-                    <td className="px-2 py-2">{log.targetPhone ?? log.targetId ?? "-"}</td>
+                    <td className="px-2 py-2">{log.target_phone ?? log.target_id ?? "-"}</td>
                     <td className="px-2 py-2 text-app-text-muted">{log.memo ?? log.detail ?? "-"}</td>
                   </tr>
                 ))}

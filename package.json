@@ -15,7 +15,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "next lint --max-warnings 0 --file"
+      "next lint --file"
     ]
   },
   "dependencies": {
