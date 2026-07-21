@@ -34,14 +34,14 @@ services:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks:
       - telemon-observability
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "/dev/null", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
+      interval: 5s
+      timeout: 3s
       retries: 3
 
   grafana:
@@ -59,7 +59,7 @@ services:
       - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
       - ./config/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     networks:
       - telemon-observability
     restart: unless-stopped
@@ -87,16 +87,16 @@ services:
       retries: 3
 
   tempo:
-    image: grafana/tempo:2.5.0
+    image: grafana/tempo:v2.5.0
     container_name: telemon-tempo
     command: ["-config.file=/etc/tempo/tempo.yml"]
     volumes:
       - ./config/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo-data:/tmp/tempo
     ports:
-      - "3200:3200"   # tempo query
-      - "4318:4318"   # OTLP HTTP
-      - "4317:4317"   # OTLP gRPC
+      - "127.0.0.1:3200:3200"   # tempo query
+      - "127.0.0.1:4318:4318"   # OTLP HTTP
+      - "127.0.0.1:4317:4317"   # OTLP gRPC
     networks:
       - telemon-observability
     restart: unless-stopped

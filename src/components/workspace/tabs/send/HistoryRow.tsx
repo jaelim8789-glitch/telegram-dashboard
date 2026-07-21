@@ -175,14 +175,24 @@ export function HistoryRow({
           )}
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — real-time for sending, summary for others */}
         <div className="mt-2 w-full">
           <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-app-border/50" role="progressbar"
             aria-valuemin={0} aria-valuemax={100}
-            aria-valuenow={isSending ? undefined : isSent ? 100 : isFailed ? 0 : 0}
+            aria-valuenow={isSending ? 50 : isSent ? 100 : isFailed ? 0 : 0}
             aria-label={isSending ? "발송 진행 중" : isSent ? "발송 완료" : isFailed ? "발송 실패" : "대기 중"}>
             {isSending ? (
-              <div className="h-full w-full animate-pulse rounded-full bg-app-info" style={{ animationDuration: '1.5s' }} />
+              <div className="relative h-full w-full overflow-hidden rounded-full">
+                <div className="absolute inset-0 bg-app-info/30" />
+                <div
+                  className="h-full rounded-full bg-app-info transition-all duration-1000"
+                  style={{
+                    width: `${Math.min(95, 20 + (Date.now() % 30000) / 30000 * 60)}%`,
+                    animation: "none",
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+              </div>
             ) : isSent ? (
               <div className="h-full w-full rounded-full bg-app-success" />
             ) : isFailed ? (
@@ -191,6 +201,15 @@ export function HistoryRow({
               <div className="h-full w-1/3 rounded-full bg-app-text-subtle/30" />
             )}
           </div>
+          {isSending && (
+            <div className="mt-1 flex items-center justify-between text-[10px] text-app-text-muted">
+              <span className="flex items-center gap-1">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                발송 진행 중...
+              </span>
+              <span>{h.recipients.length}명 대상</span>
+            </div>
+          )}
         </div>
 
         {/* Failure action hint */}

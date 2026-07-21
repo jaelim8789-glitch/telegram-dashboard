@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 
+from ..auth_middleware import get_current_user, check_account_ownership
 from ..runtime_manager import RuntimeManager
 from ..healing_engine import CircuitState
 
@@ -27,25 +28,49 @@ router = APIRouter()
 
 
 @router.get("/healing/status")
-async def get_healing_status():
+async def get_healing_status(current_user: dict = Depends(get_current_user)):
     """Get comprehensive healing status for all accounts."""
     manager = RuntimeManager.get_instance()
-    return manager.healing_engine.get_healing_status()
+    data = manager.healing_engine.get_healing_status()
+    if current_user.get("role") in ("admin", "super_admin"):
+        return data
+    owned_ids = manager.get_account_ids_by_user(current_user.get("id", ""))
+    if owned_ids is None:
+        return data
+    owned_set = set(owned_ids)
+    data["total_accounts"] = len([a for a in data.get("accounts", []) if a.get("account_id") in owned_set])
+    data["accounts"] = [a for a in data.get("accounts", []) if a.get("account_id") in owned_set]
+    return data
 
 
 @router.get("/healing/history")
-async def get_healing_history(limit: int = 100):
+async def get_healing_history(limit: int = 100, current_user: dict = Depends(get_current_user)):
     """Get recent recovery events."""
     manager = RuntimeManager.get_instance()
+    history = manager.healing_engine.get_recovery_history(limit=limit)
+    if current_user.get("role") in ("admin", "super_admin"):
+        return {
+            "total_events": len(history),
+            "events": history,
+        }
+    owned_ids = manager.get_account_ids_by_user(current_user.get("id", ""))
+    if owned_ids is None:
+        return {
+            "total_events": len(history),
+            "events": history,
+        }
+    owned_set = set(owned_ids)
+    filtered = [event for event in history if event.get("account_id") in owned_set]
     return {
-        "total_events": len(manager.healing_engine._recovery_history),
-        "events": manager.healing_engine.get_recovery_history(limit=limit),
+        "total_events": len(filtered),
+        "events": filtered,
     }
 
 
 @router.get("/healing/accounts/{account_id}")
-async def get_account_healing_detail(account_id: str):
+async def get_account_healing_detail(account_id: str, current_user: dict = Depends(get_current_user)):
     """Get detailed healing info for a single account."""
+    await check_account_ownership(account_id, current_user)
     manager = RuntimeManager.get_instance()
     detail = manager.healing_engine.get_account_health_detail(account_id)
     if not detail.get("circuit_breaker") and not detail.get("heartbeat"):

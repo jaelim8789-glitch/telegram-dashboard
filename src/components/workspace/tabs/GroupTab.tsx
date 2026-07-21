@@ -15,6 +15,7 @@ import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { useFavoriteGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { formatRelativeTime } from "@/lib/formatTime";
 import type { Group, GroupType } from "@/types";
 
 const TYPE_LABEL: Record<GroupType, string> = {
@@ -66,6 +67,7 @@ export function GroupTab() {
   const [folderFilter, setFolderFilter] = useState<string>("all");
   const bgPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const [savedSendGroupIds, setSavedSendGroupIds] = useState<string[]>([]);
 
@@ -105,6 +107,7 @@ export function GroupTab() {
     if (!selectedAccountId || refreshing) return;
     setRefreshing(true);
     await runtimeActions.refreshGroups(selectedAccountId);
+    setLastSyncedAt(new Date());
     setRefreshing(false);
   }
 
@@ -129,6 +132,7 @@ export function GroupTab() {
     if (cachedGroups.length > 0) {
       setGroups(cachedGroups);
       setLoading(false);
+      setLastSyncedAt(new Date());
     }
   }, [cachedGroups]);
 
@@ -260,7 +264,7 @@ export function GroupTab() {
 
       <Panel
         title={<div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-app-primary" /> 그룹 목록</div>}
-        description={`${account.name ?? account.phone} 계정이 참여 중인 그룹/채널입니다.`}
+        description={`${account.name ?? account.phone} 계정이 참여 중인 그룹/채널입니다.${lastSyncedAt ? ` · 마지막 동기화: ${formatRelativeTime(lastSyncedAt.toISOString())}` : ""}`}
         action={
           <Button variant="ghost" onClick={handleRefresh} disabled={isBusy}>
             <RefreshCw className={`h-3.5 w-3.5 ${isBusy ? "animate-spin" : ""}`} />

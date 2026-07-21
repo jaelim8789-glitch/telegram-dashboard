@@ -268,8 +268,7 @@ class BroadcastQueue:
                 return
 
             if not await self._rate_limiter.acquire("send_message", chat_id=recipient_id, timeout=30):
-                fail_count += 1
-                current_idx += 1
+                await self._rate_limiter.wait_and_acquire("send_message", chat_id=recipient_id)
                 continue
 
             try:
