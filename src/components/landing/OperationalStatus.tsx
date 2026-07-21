@@ -1,13 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Server, Shield, Wifi, Database } from "lucide-react";
+import { Bot, MessageCircle, Clock, Sparkles } from "lucide-react";
 
-const ITEMS = [
-  { icon: Server, title: "FastAPI 백엔드", desc: "메시지 발송, 계정 관리, API 키 인증 처리를 담당하는 핵심 서버" },
-  { icon: Wifi, title: "WebSocket 알림", desc: "실시간 발송 상태 및 계정 건강 변경 알림을 브라우저에 푸시" },
-  { icon: Database, title: "SQLite (WAL 모드)", desc: "계정 세션, 발송 로그, 설정 데이터를 WAL 모드로 저장하고 주기적으로 자동 백업" },
-  { icon: Shield, title: "워커 프로세스", desc: "예약 발송, 반복 발송, 자동 응답을 비동기로 처리하는 백그라운드 작업자" },
+const AI_FEATURES = [
+  { 
+    icon: MessageCircle, 
+    title: "질문하면 AI가 바로 답변", 
+    desc: "채널 운영에 대한 질문을 자연스럽게 물어보세요. AI 비서가 실시간으로 도와줍니다." 
+  },
+  { 
+    icon: Clock, 
+    title: "24시간 AI 어시스턴트", 
+    desc: "언제든지 AI가 대기하고 있어, 밤낮 없이 채널 운영을 도와줍니다." 
+  },
+  { 
+    icon: Bot, 
+    title: "채널 운영을 AI에게 맡기세요", 
+    desc: "AI가 자동으로 메시지를 보내고, 응답하고, 채널을 관리합니다." 
+  },
+  { 
+    icon: Sparkles, 
+    title: "지능형 대화", 
+    desc: "AI는 단순한 키워드가 아닌, 진짜 대화를 이해하고 자연스럽게 응답합니다." 
+  },
 ];
 
 export function OperationalStatus() {
@@ -16,27 +32,27 @@ export function OperationalStatus() {
       <div className="mx-auto max-w-3xl">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-[0.15em] mb-3" style={{ color: "var(--color-accent)" }}>
-            플랫폼 아키텍처
+            AI 어시스턴트
           </p>
           <h2 className="section-heading text-2xl sm:text-3xl">
-            <span style={{ color: "var(--color-accent)" }}>검증된</span> 인프라
+            <span style={{ color: "var(--color-accent)" }}>나만의 AI</span>와 함께
           </h2>
           <p className="mt-3 text-sm editorial-body max-w-lg mx-auto">
-            TeleMon은 안정적인 오픈소스 기술 스택 위에 구축되었습니다.
+            AI 비서가 대화하듯 채널 운영을 도와줍니다.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {ITEMS.map((item, i) => {
-            const Icon = item.icon;
+          {AI_FEATURES.map((feature, i) => {
+            const Icon = feature.icon;
             return (
               <motion.div
-                key={item.title}
+                key={feature.title}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.08 }}
-                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                className="group relative rounded-xl border border-[var(--color-accent-border)] bg-[var(--color-card)] p-6 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col items-center text-center"
                 style={{
                   borderTop: "4px solid var(--color-accent)",
                 }}
@@ -50,8 +66,8 @@ export function OperationalStatus() {
                   <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{item.desc}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{feature.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{feature.desc}</p>
 
                 {/* 하단 장식선 */}
                 <div className="mt-4 h-px w-0 bg-gradient-to-r from-[var(--color-accent)] to-transparent transition-all duration-500 group-hover:w-full" />
