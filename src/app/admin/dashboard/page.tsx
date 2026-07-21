@@ -217,7 +217,7 @@ function AdminDashboardContent() {
       </div>
 
       <Panel
-        accent="teal"
+        accent="cyan"
         title={<div className="flex items-center gap-2"><Layers className="h-4 w-4 text-teal-400" /> KPI 인사이트</div>}
         description="전환율, 이탈 리스크, 활동성 지표를 빠르게 확인합니다."
         action={<Button size="sm" onClick={downloadKpiSnapshotCsv}>KPI CSV 내보내기</Button>}
