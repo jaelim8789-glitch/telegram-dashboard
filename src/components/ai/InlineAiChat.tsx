@@ -13,6 +13,7 @@ import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
+import { getToken, getSessionToken } from "@/lib/auth";
 import * as agentApi from "@/lib/agent-api";
 import type { ToolConfirmation } from "@/lib/agent-api";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -21,8 +22,8 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = localStorage.getItem("access_token");
-  const sessionToken = localStorage.getItem("session_token");
+  const token = getToken();
+  const sessionToken = getSessionToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (sessionToken) headers["X-Session-Token"] = sessionToken;
   return headers;

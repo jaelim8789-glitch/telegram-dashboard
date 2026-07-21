@@ -13,14 +13,15 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
+import { getToken, getSessionToken } from "@/lib/auth";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = localStorage.getItem("access_token");
-  const sessionToken = localStorage.getItem("session_token");
+  const token = getToken();
+  const sessionToken = getSessionToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (sessionToken) headers["X-Session-Token"] = sessionToken;
   return headers;
