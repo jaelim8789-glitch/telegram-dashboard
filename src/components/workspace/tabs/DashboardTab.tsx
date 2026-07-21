@@ -620,9 +620,9 @@ export function DashboardTab() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                { step: 1, title: "계정 연결", desc: "Telegram 계정을 TeleMon에 연결하세요", icon: Link, action: "계정 등록하기", tab: "register" },
-                { step: 2, title: "그룹 선택", desc: "관리할 그룹과 채널을 선택하세요", icon: Users, action: "그룹 관리", tab: "group" },
-                { step: 3, title: "첫 메시지 발송", desc: "AI의 도움을 받아 첫 발송을 시작하세요", icon: Send, action: "발송하기", tab: "send" },
+                { step: 1, title: "계정 연결", desc: "Telegram 계정을 TeleMon에 연결하세요", icon: Link, action: "계정 등록하기", tab: "register" as const },
+                { step: 2, title: "그룹 선택", desc: "관리할 그룹과 채널을 선택하세요", icon: Users, action: "그룹 관리", tab: "group" as const },
+                { step: 3, title: "첫 메시지 발송", desc: "AI의 도움을 받아 첫 발송을 시작하세요", icon: Send, action: "발송하기", tab: "send" as const },
               ].map((item) => (
                 <div key={item.step} className="flex flex-col items-center text-center rounded-xl border border-app-border bg-app-card p-4 hover:border-app-primary/30 transition-colors cursor-pointer"
                   onClick={() => setTab(item.tab)}
