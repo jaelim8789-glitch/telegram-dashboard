@@ -385,26 +385,13 @@ export function SendTab() {
   const isInitialMount = useRef(true);
   const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
-  const replyIdInputRef = useRef<HTMLInputElement>(null);
 
   // ── Recent recipient sets ──
   useEffect(() => {
     setRecentSets(getRecentRecipientSets().slice(0, 3));
   }, []);
 
-  // Toggling "답장으로 보내기" removes the (much taller) 발송 방식 section above the
-  // checkbox, shortening the panel enough that the browser doesn't reflow scroll
-  // position to match — the newly-revealed 메시지 ID input can render above the
-  // current viewport, out of reach of a real click even though it's technically
-  // "visible" in the DOM. Bring it on-screen and focus it explicitly instead.
-  useEffect(() => {
-    if (!replyMacroEnabled) return;
-    const id = window.requestAnimationFrame(() => {
-      replyIdInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      replyIdInputRef.current?.focus();
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [replyMacroEnabled]);
+
 
   // ── Draft persistence: auto-save on every meaningful state change ──
   useEffect(() => {
@@ -1515,23 +1502,7 @@ export function SendTab() {
               </div>
             )}
 
-            {/* Reply Message ID (only shown when reply is enabled — additional field, not a replacement) */}
-            {replyMacroEnabled && (
-              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                <Field label="답장할 메시지 ID">
-                  <input ref={replyIdInputRef} type="number" value={replyToMessageId}
-                    onChange={(e) => setReplyToMessageId(e.target.value)}
-                    placeholder="예: 12345"
-                    min="1"
-                    className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60" />
-                </Field>
-                {!replyToMessageId.trim() && (
-                  <p className="mt-1.5 text-xs text-app-text-muted">
-                    메시지 ID를 입력해야 답장 모드가 활성화됩니다.
-                  </p>
-                )}
-              </div>
-            )}
+
 
             {/* Inline buttons */}
             <div className="space-y-2">
@@ -1616,17 +1587,14 @@ export function SendTab() {
               ))}
             </div>
 
-            {/* Image / Video — 답장매크로 모드에서는 숨김 (단순 텍스트 답장 전용) */}
-            {!replyMacroEnabled && (
+            {/* Image / Video */}
             <Field label="이미지 또는 영상 (선택)">
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-app-text-muted file:mr-3 file:rounded-lg file:border file:border-app-border file:bg-app-card file:px-2.5 file:py-1.5 file:text-app-text" />
             </Field>
-            )}
 
             {/* Auto-retry on failure */}
-            {!replyMacroEnabled && (
             <div className="flex items-center gap-2 rounded-xl border border-app-border/60 bg-app-card/30 px-3 py-2">
               <label className="flex cursor-pointer items-center gap-2">
                 <input type="checkbox" checked={autoRetry}
@@ -1647,12 +1615,10 @@ export function SendTab() {
                     {[1, 3, 5, 10, 30, 60].map((m) => <option key={m} value={m}>{m}분</option>)}
                   </select>
                 </div>
-              )}
+               )}
             </div>
-            )}
 
-            {/* Timing & Delivery mode options — 답장매크로 모드에서는 숨김 */}
-            {!replyMacroEnabled && (
+            {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
                 <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
@@ -1695,18 +1661,15 @@ export function SendTab() {
                 )}
               </div>
             </div>
-            )}
-
             </div>
 
-            {!replyMacroEnabled && (isScheduled || isRecurring) && (
+            {(isScheduled || isRecurring) && (
               <p className="text-[11px] text-app-text-subtle italic -mt-1">
                 예약 발송과 반복 발송은 동시에 선택할 수 없습니다.
               </p>
             )}
 
-            {/* Delivery Mode Selector — 답장매크로 모드에서는 숨김 (항상 "일반 발송" 방식으로 순차 처리) */}
-            {!replyMacroEnabled && (
+            {/* Delivery Mode Selector */}
             <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
                   <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
@@ -1786,9 +1749,8 @@ export function SendTab() {
                       <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
                     </div>
                   </label>
-                </div>
               </div>
-            )}
+            </div>
 
             {/* "답장매크로" (답장으로 보내기) toggle + 중복 제거 */}
             <div className="flex items-center gap-3 flex-wrap">
