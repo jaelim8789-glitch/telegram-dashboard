@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Users, FileText, Bot, Search, Zap, X, BarChart3 } from "lucide-react";
+import { Send, Users, FileText, Bot, Search, Zap, X, BarChart3, RefreshCw, Clock3, Sparkles, AlertTriangle } from "lucide-react";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { TabId } from "@/types";
+import type { Broadcast, DeliveryOverview } from "@/types";
+import * as api from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 interface Action {
   icon: React.ComponentType<{ className?: string }>;
@@ -27,8 +30,97 @@ const QUICK_ACTIONS: Action[] = [
 
 export function QuickActionSheet() {
   const [open, setOpen] = useState(false);
+  const [overview, setOverview] = useState<DeliveryOverview | null>(null);
+  const [recentFailed, setRecentFailed] = useState<Broadcast[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [runningAction, setRunningAction] = useState<string | null>(null);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const setSendMessage = useDashboardStore((s) => s.setSendMessage);
+  const clearSendDraft = useDashboardStore((s) => s.clearSendDraft);
+  const setReuseNotice = useDashboardStore((s) => s.setReuseNotice);
   const haptics = useHapticFeedback();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    async function loadSheetData() {
+      setLoading(true);
+      try {
+        const [overviewData, logs] = await Promise.all([
+          api.fetchDeliveryOverview(undefined, 1),
+          api.fetchLogs({ status: "failed", limit: 8 } as never),
+        ]);
+        if (cancelled) return;
+        setOverview(overviewData);
+        setRecentFailed(logs.filter((log) => log.status === "failed").slice(0, 3));
+      } catch {
+        if (cancelled) return;
+        setOverview(null);
+        setRecentFailed([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadSheetData();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const summaryLine = useMemo(() => {
+    if (!overview?.summary) return "오늘 성과 데이터를 불러오는 중입니다.";
+    const summary = overview.summary;
+    return `성공률 ${summary.success_rate.toFixed(1)}% · 성공 ${summary.successful}건 · 실패 ${summary.failed}건`;
+  }, [overview]);
+
+  async function handleRetryFailed() {
+    if (recentFailed.length === 0) {
+      toast("error", "재시도할 실패 발송이 없습니다");
+      return;
+    }
+    setRunningAction("retry");
+    try {
+      await api.batchRetryBroadcasts(recentFailed.map((item) => item.id));
+      haptics.success();
+      toast("success", "최근 실패 발송 재시도 시작", {
+        description: `${recentFailed.length}건을 다시 큐에 넣었습니다.`,
+      });
+      setOpen(false);
+      setActiveTab("log");
+    } catch (err) {
+      toast("error", "재시도 시작 실패", {
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+      });
+    } finally {
+      setRunningAction(null);
+    }
+  }
+
+  function jumpToQuickSend() {
+    clearSendDraft();
+    setSendMessage("");
+    setReuseNotice("지금 바로 발송할 메시지를 작성하세요. 모바일 빠른 발송 모드입니다.");
+    haptics.light();
+    setActiveTab("send");
+    setOpen(false);
+  }
+
+  function jumpToScheduledSend() {
+    clearSendDraft();
+    setReuseNotice("메시지를 작성한 뒤 예약 옵션에서 1시간 후 발송을 선택하세요.");
+    haptics.light();
+    setActiveTab("send");
+    setOpen(false);
+  }
+
+  function jumpToAiRewrite() {
+    haptics.light();
+    setActiveTab("aibroadcast");
+    setOpen(false);
+  }
 
   return (
     <>        <button
@@ -61,7 +153,7 @@ export function QuickActionSheet() {
               <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-app-border" />
               <div className="flex items-center justify-between px-5 py-2">
                 <h2 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                  퀵 액션
+                  모바일 퀵 액션
                 </h2>
                 <button
                   type="button"
@@ -72,7 +164,82 @@ export function QuickActionSheet() {
                 </button>
               </div>
               <div className="h-px mx-5 bg-gradient-to-r from-transparent via-[var(--color-accent-border)] to-transparent opacity-30" />
-              <div className="grid grid-cols-4 gap-2 px-5 pt-4">
+              <div className="px-5 pt-4 space-y-3">
+                <div className="rounded-2xl border border-app-border/60 bg-app-bg/70 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] font-semibold text-app-text">오늘 운영 브리프</p>
+                      <p className="mt-1 text-[10px] text-app-text-muted">{loading ? "불러오는 중..." : summaryLine}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab("deliveryanalytics"); setOpen(false); }}
+                      className="rounded-xl border border-app-border px-2.5 py-1.5 text-[10px] text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
+                    >
+                      분석 열기
+                    </button>
+                  </div>
+                  {recentFailed.length > 0 && (
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-app-danger/20 bg-app-danger/5 px-3 py-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-app-danger" />
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-app-text">최근 실패 {recentFailed.length}건</p>
+                          <p className="truncate text-[10px] text-app-text-muted">{recentFailed[0]?.message}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRetryFailed}
+                        disabled={runningAction === "retry"}
+                        className="shrink-0 rounded-xl bg-app-danger px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:opacity-60"
+                      >
+                        {runningAction === "retry" ? "재시도 중" : "3건 재시도"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={jumpToQuickSend}
+                    className="group rounded-2xl border border-app-border/60 bg-app-bg/60 p-3 text-left transition-all hover:border-[var(--color-accent-border)] hover:bg-[var(--color-accent-light)]"
+                  >
+                    <Send className="h-5 w-5 text-app-primary transition-transform group-hover:scale-110" />
+                    <p className="mt-3 text-xs font-semibold text-app-text">즉시 발송 작성</p>
+                    <p className="mt-1 text-[10px] text-app-text-muted">초안 비우고 바로 전송 준비</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={jumpToScheduledSend}
+                    className="group rounded-2xl border border-app-border/60 bg-app-bg/60 p-3 text-left transition-all hover:border-[var(--color-accent-border)] hover:bg-[var(--color-accent-light)]"
+                  >
+                    <Clock3 className="h-5 w-5 text-app-info transition-transform group-hover:scale-110" />
+                    <p className="mt-3 text-xs font-semibold text-app-text">1시간 뒤 예약</p>
+                    <p className="mt-1 text-[10px] text-app-text-muted">예약 발송 플로우로 바로 이동</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={jumpToAiRewrite}
+                    className="group rounded-2xl border border-app-border/60 bg-app-bg/60 p-3 text-left transition-all hover:border-[var(--color-accent-border)] hover:bg-[var(--color-accent-light)]"
+                  >
+                    <Sparkles className="h-5 w-5 text-app-warning transition-transform group-hover:scale-110" />
+                    <p className="mt-3 text-xs font-semibold text-app-text">AI 문구 재작성</p>
+                    <p className="mt-1 text-[10px] text-app-text-muted">모바일에서 빠르게 문구 개선</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { haptics.light(); setActiveTab("log"); setOpen(false); }}
+                    className="group rounded-2xl border border-app-border/60 bg-app-bg/60 p-3 text-left transition-all hover:border-[var(--color-accent-border)] hover:bg-[var(--color-accent-light)]"
+                  >
+                    <RefreshCw className="h-5 w-5 text-app-success transition-transform group-hover:scale-110" />
+                    <p className="mt-3 text-xs font-semibold text-app-text">실패 로그 처리</p>
+                    <p className="mt-1 text-[10px] text-app-text-muted">재시도, 취소, 삭제를 바로 처리</p>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 pt-1">
                 {QUICK_ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
@@ -88,6 +255,7 @@ export function QuickActionSheet() {
                     </button>
                   );
                 })}
+                </div>
               </div>
             </motion.div>
           </>
