@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Users, FileText, Bot, Search, Zap, X, BarChart3 } from "lucide-react";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { TabId } from "@/types";
 
@@ -27,12 +28,13 @@ const QUICK_ACTIONS: Action[] = [
 export function QuickActionSheet() {
   const [open, setOpen] = useState(false);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const haptics = useHapticFeedback();
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { haptics.light(); setOpen(true); }}
         className="flex flex-col items-center gap-0.5 flex-1 py-1.5 text-app-text-muted"
         aria-label="퀵 액션"
       >
@@ -78,7 +80,7 @@ export function QuickActionSheet() {
                     <button
                       key={action.tab}
                       type="button"
-                      onClick={() => { setActiveTab(action.tab); setOpen(false); }}
+                      onClick={() => { haptics.light(); setActiveTab(action.tab); setOpen(false); }}
                       className="group flex flex-col items-center gap-1.5 rounded-xl border border-app-border/40 bg-app-bg/50 py-3 transition-all duration-200 hover:border-[var(--color-accent-border)] hover:bg-[var(--color-accent-light)]"
                     >
                       <Icon className="h-5 w-5 text-app-primary transition-transform group-hover:scale-110" />

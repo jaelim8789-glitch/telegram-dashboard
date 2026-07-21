@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
 function useEdgeSwipe(
   onSwipeLeft: () => void,
@@ -48,30 +49,38 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
+import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import { useNotification } from "@/lib/useNotification";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
+import { useOrientation } from "@/hooks/useOrientation";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
 
+  const haptics = useHapticFeedback();
+
   const toggleSidebar = useCallback(() => {
+    haptics.light();
     setSidebarOpen((v) => !v);
     setInspectorOpen(false);
-  }, []);
+  }, [haptics]);
   const toggleInspector = useCallback(() => {
+    haptics.light();
     setInspectorOpen((v) => !v);
     setSidebarOpen(false);
-  }, []);
+  }, [haptics]);
 
   // Edge swipe: left edge → sidebar, right edge → inspector
   useEdgeSwipe(
-    useCallback(() => { setInspectorOpen(true); setSidebarOpen(false); }, []),
-    useCallback(() => { setSidebarOpen(true); setInspectorOpen(false); }, []),
+    useCallback(() => { haptics.medium(); setInspectorOpen(true); setSidebarOpen(false); }, [haptics]),
+    useCallback(() => { haptics.medium(); setSidebarOpen(true); setInspectorOpen(false); }, [haptics]),
   );
 
   // "?" key opens cheatsheet (only when not typing in an input)
@@ -89,6 +98,24 @@ export function DashboardShell() {
     onNavigate: (tabId: import("@/types").TabId) => setActiveTab(tabId),
   }), [setActiveTab]);
   useKeyboardShortcuts(shortcutHandlers);
+
+  const { isKeyboardVisible } = useVisualViewport();
+  const { orientation } = useOrientation();
+  const scrollPositions = useRef<Map<string, number>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const key = `${orientation}-${activeTab}`;
+    const saved = scrollPositions.current.get(key);
+    if (saved != null) {
+      container.scrollTop = saved;
+    }
+    return () => {
+      scrollPositions.current.set(key, container.scrollTop);
+    };
+  }, [orientation, activeTab]);
 
   // ── Foreground auto-refresh ──
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
@@ -127,6 +154,7 @@ export function DashboardShell() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-app-bg text-app-text">
+      <NetworkStatus />
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
@@ -154,7 +182,11 @@ export function DashboardShell() {
           인스펙터 <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="relative flex min-h-0 flex-1">
+      <div
+        ref={containerRef}
+        className="relative flex min-h-0 flex-1"
+        style={{ paddingBottom: isKeyboardVisible ? "var(--keyboard-offset, 0px)" : undefined }}
+      >
         {/* Sidebar — always visible on desktop, overlay on mobile */}
         <div
           id="dashboard-sidebar"

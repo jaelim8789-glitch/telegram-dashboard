@@ -2,6 +2,7 @@
 
 import React, { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { TabBar } from "@/components/workspace/TabBar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
@@ -94,16 +95,23 @@ export function Workspace() {
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const ActiveTabContent = TAB_CONTENT[activeTab];
+  const haptics = useHapticFeedback();
 
   const swipe = useSwipe(
     useCallback(() => {
       const idx = MOBILE_ORDER.indexOf(activeTab);
-      if (idx < MOBILE_ORDER.length - 1) setActiveTab(MOBILE_ORDER[idx + 1]);
-    }, [activeTab, setActiveTab]),
+      if (idx < MOBILE_ORDER.length - 1) {
+        haptics.selection();
+        setActiveTab(MOBILE_ORDER[idx + 1]);
+      }
+    }, [activeTab, setActiveTab, haptics]),
     useCallback(() => {
       const idx = MOBILE_ORDER.indexOf(activeTab);
-      if (idx > 0) setActiveTab(MOBILE_ORDER[idx - 1]);
-    }, [activeTab, setActiveTab]),
+      if (idx > 0) {
+        haptics.selection();
+        setActiveTab(MOBILE_ORDER[idx - 1]);
+      }
+    }, [activeTab, setActiveTab, haptics]),
   );
 
   return (

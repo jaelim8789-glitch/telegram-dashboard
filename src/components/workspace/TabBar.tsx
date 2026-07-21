@@ -7,6 +7,7 @@ import {
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import { QuickActionSheet } from "./QuickActionSheet";
 import { TABS, type TabDef } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -93,6 +94,7 @@ export function TabBar() {
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const tabBadges = useDashboardStore((s) => s.tabBadges);
+  const haptics = useHapticFeedback();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -178,7 +180,7 @@ export function TabBar() {
                 key={tab.id}
                 tab={tab}
                 active={tab.id === activeTab}
-                onSelect={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                onSelect={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
                 badge={tabBadges[tab.id]}
                 mobile
               />
@@ -218,7 +220,7 @@ export function TabBar() {
                           <button
                             key={tab.id}
                             type="button"
-                            onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                            onClick={() => { haptics.light(); setActiveTab(tab.id); setMoreOpen(false); }}
                             className={cn(
                               "flex flex-col items-center gap-1 rounded-xl py-3 transition-colors",
                               active ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"

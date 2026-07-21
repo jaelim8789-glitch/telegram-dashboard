@@ -910,3 +910,101 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 .safe-area-bottom {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+/* ── Mobile enhancements ── */
+
+/* Improved touch targets for mobile */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .touch-target-sm {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* Momentum scrolling for scrollable areas */
+.scroll-momentum {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Mobile-friendly table wrapper */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.table-scroll > table {
+  min-width: max(100%, 600px);
+}
+
+/* Safe area padding utilities */
+.safe-area-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+.safe-area-left {
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+}
+.safe-area-right {
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+}
+
+/* Keyboard-aware: hide elements when keyboard is visible */
+@media (max-height: 500px) {
+  .hide-on-keyboard {
+    display: none !important;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .landscape-compact {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  .landscape-sidebar {
+    max-width: 50vw !important;
+  }
+}
+
+/* Prevent zoom on input focus for iOS */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Reduced data mode */
+@media (prefers-reduced-data: reduce) {
+  .reduce-data {
+    filter: none !important;
+    background-image: none !important;
+  }
+  .reduce-data img {
+    display: none !important;
+  }
+}
+
+/* Bottom sheet safe area */
+.sheet-safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Pull to refresh indicator area */
+.ptr-indicator {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+.ptr-active .ptr-indicator {
+  height: 36px;
+}

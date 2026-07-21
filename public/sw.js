@@ -1,17 +1,8 @@
 // TeleMon PWA Service Worker
 // Cache-first for static assets, network-first for API calls.
-//
-// IMPORTANT: CACHE_NAME must change on any deploy that should invalidate
-// old clients' caches. It was hardcoded as "telemon-v1" forever, so the
-// activate handler's cleanup (which deletes any cache key != CACHE_NAME)
-// never actually fired — old caches (including the pre-cached "/" shell)
-// stuck around indefinitely and kept serving stale UI to already-visited
-// browsers no matter how many times the site was redeployed or how hard
-// the user refreshed (a service worker sits in front of the HTTP cache
-// entirely). Bump this string whenever a deploy needs to force a clean
-// cache for returning users.
+// Supports push notifications.
 
-const CACHE_NAME = "telemon-v2";
+const CACHE_NAME = "telemon-v3";
 const STATIC_ASSETS = [
   "/",
   "/offline",
@@ -25,12 +16,9 @@ const STATIC_ASSETS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Silently skip assets that fail to cache (e.g. on first load)
-      });
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
-  // Activate immediately without waiting for page reload
   self.skipWaiting();
 });
 
@@ -45,8 +33,82 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
-  // Take control of all clients immediately
   self.clients.claim();
+});
+
+// Push event: show notification
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body ?? "",
+      icon: data.icon ?? "/icons/icon-192.svg",
+      badge: "/icons/icon-192.svg",
+      tag: data.tag ?? "telemon-default",
+      data: {
+        url: data.url ?? "/",
+      },
+      vibrate: data.vibrate ?? [10, 30, 10],
+      requireInteraction: data.requireInteraction ?? false,
+      actions: data.actions ?? [],
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(
+        data.title ?? "TeleMon",
+        options
+      )
+    );
+  } catch {
+    // If JSON parsing fails, show raw text
+    event.waitUntil(
+      self.registration.showNotification("TeleMon", {
+        body: event.data.text(),
+        icon: "/icons/icon-192.svg",
+      })
+    );
+  }
+});
+
+// Notification click: navigate to URL or focus existing client
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url ?? "/";
+  const action = event.action;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Check if action was provided
+      if (action && event.notification.data?.actions) {
+        const actionConfig = event.notification.data.actions.find(
+          (a: { action: string }) => a.action === action
+        );
+        if (actionConfig?.url) {
+          return openOrFocus(actionConfig.url);
+        }
+      }
+
+      return openOrFocus(url);
+    })
+  );
+
+  function openOrFocus(targetUrl: string) {
+    return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          client.navigate(targetUrl);
+          return;
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    });
+  }
 });
 
 // Fetch: cache-first for static, network-first for API
@@ -54,7 +116,6 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // API calls — network first, fall back to cache
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request)
@@ -70,7 +131,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Next.js static assets (_next/static) — cache-first
   if (url.pathname.startsWith("/_next/static")) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -89,7 +149,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Everything else — network first
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -100,7 +159,6 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() => {
-        // Navigation requests — show offline page
         if (request.mode === "navigate") {
           return caches.match("/offline");
         }
