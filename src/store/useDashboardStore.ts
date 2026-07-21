@@ -25,6 +25,7 @@ function dedupeRecipientIds(ids: string[], validIds?: Set<string>): string[] {
 
 type DashboardStateValue = {
   activeTab: TabId;
+  mobileFocusMode: boolean;
   role: "admin" | "user" | "api_key" | null;
   subscriptionStatus: string | null;
   plan: string | null;
@@ -45,6 +46,7 @@ type DashboardStateValue = {
 
 export const INITIAL_STATE: DashboardStateValue = {
   activeTab: loadLastTab(),
+  mobileFocusMode: false,
   role: null,
   subscriptionStatus: null,
   plan: null,
@@ -65,6 +67,7 @@ export const INITIAL_STATE: DashboardStateValue = {
 
 interface DashboardState extends DashboardStateValue {
   setActiveTab: (tab: TabId) => void;
+  setMobileFocusMode: (enabled: boolean) => void;
   setRole: (role: "admin" | "user" | "api_key" | null) => void;
   setSubscription: (status: string | null, plan: string | null, trialExpiresAt: string | null) => void;
   selectAccount: (id: string) => void;
@@ -126,7 +129,18 @@ export function getRecentRecipientSets(): string[][] {
   return loadRecentRecipientSets();
 }
 
-export const useDashboardStore = create<DashboardState>((set, get) => ({
+// 탭 메모리 관리 인터페이스 확장
+interface TabMemoryManagement {
+  activeTabs: string[];
+  tabLoadTimestamps: Record<string, number>;
+  maxInactiveTabs: number;
+  cleanupInactiveTabs: () => void;
+  registerActiveTab: (tabId: string) => void;
+  unregisterActiveTab: (tabId: string) => void;
+}
+
+// 탭 메모리 관리 기능 추가
+const useDashboardStore = create<DashboardStore & TabMemoryManagement>((set, get) => ({
   ...INITIAL_STATE,
 
   resetStore: () => {
@@ -146,6 +160,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     (window as any).__lastTabId = tab;
     set({ activeTab: tab });
   },
+
+  setMobileFocusMode: (enabled) => set({ mobileFocusMode: enabled }),
 
   role: null,
   setRole: (role) => set({ role }),
@@ -277,4 +293,61 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       sendReplyToMessageId: broadcast.replyToMessageId ?? null,
     });
   },
+
+  // 탭 메모리 관리 상태
+  activeTabs: [],
+  tabLoadTimestamps: {},
+  maxInactiveTabs: 5, // 비활성 탭 최대 개수
+  
+  // 비활성 탭 정리
+  cleanupInactiveTabs: () => {
+    set(state => {
+      const now = Date.now();
+      const newTabLoadTimestamps = { ...state.tabLoadTimestamps };
+      const tabsToKeep = state.activeTabs;
+      
+      // 오래된 비활성 탭 제거
+      Object.keys(newTabLoadTimestamps).forEach(tabId => {
+        if (!tabsToKeep.includes(tabId)) {
+          const timeSinceLastLoad = now - newTabLoadTimestamps[tabId];
+          // 30분 이상 비활성 상태인 탭 제거
+          if (timeSinceLastLoad > 30 * 60 * 1000) {
+            delete newTabLoadTimestamps[tabId];
+          }
+        }
+      });
+      
+      return { tabLoadTimestamps: newTabLoadTimestamps };
+    });
+  },
+  
+  // 활성 탭 등록
+  registerActiveTab: (tabId: string) => {
+    set(state => {
+      const newActiveTabs = state.activeTabs.includes(tabId) 
+        ? state.activeTabs 
+        : [...state.activeTabs, tabId];
+        
+      return {
+        activeTabs: newActiveTabs,
+        tabLoadTimestamps: {
+          ...state.tabLoadTimestamps,
+          [tabId]: Date.now()
+        }
+      };
+    });
+    
+    // 필요 시 비활성 탭 정리
+    setTimeout(() => {
+      get().cleanupInactiveTabs();
+    }, 0);
+  },
+  
+  // 활성 탭 해제
+  unregisterActiveTab: (tabId: string) => {
+    set(state => {
+      const newActiveTabs = state.activeTabs.filter(id => id !== tabId);
+      return { activeTabs: newActiveTabs };
+    });
+  }
 }));

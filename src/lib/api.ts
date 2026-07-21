@@ -31,6 +31,38 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
+/**
+ * API 요청 시 재시도 로직을 포함한 함수
+ */
+export async function apiCallWithRetry<T>(
+  requestFn: () => Promise<T>,
+  retries: number = 3,
+  delay: number = 1000,
+  fallbackValue?: T
+): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await requestFn();
+      return result;
+    } catch (error) {
+      console.warn(`API 호출 실패 (${i + 1}/${retries}):`, error);
+      
+      // 마지막 시도가 아니면 대기
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i))); // exponential backoff
+      }
+    }
+  }
+  
+  // 모든 재시도 실패 시 폴백 값 반환
+  if (fallbackValue !== undefined) {
+    console.warn('재시도 모두 실패, 폴백 값 사용');
+    return fallbackValue;
+  }
+  
+  throw new Error('API 호출이 모든 재시도 후 실패했습니다');
+}
+
 // ── Network resilience ─────────────────────────────────────────────
 // Retry with exponential backoff so Render free-tier cold starts
 // (5-30 seconds) don't surface a "서버에 연결할 수 없습니다" error.
@@ -43,8 +75,9 @@ export function getApiBaseUrl(): string {
 // background.  Callers that want the fast-fail UX should use
 // requestFast() and catch the initial error.
 const REQUEST_TIMEOUT_MS = 60_000;
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3; // 증가된 재시도 횟수
 const BASE_RETRY_DELAY_MS = 2_000;
+
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
