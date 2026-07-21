@@ -39,6 +39,7 @@ import {
 import { useDraftRestore, useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { saveSendDraft, loadSendDraft, clearSendDraft as clearPersistedDraft } from "@/lib/sendDraft";
 import { useToast } from "@/components/ui/Toast";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import {
   loadTemplates, saveTemplate as persistTemplate,
   deleteTemplate as removeTemplate,
@@ -127,6 +128,7 @@ const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
 
 
 export function SendTab() {
+  const haptics = useHapticFeedback();
   const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -2197,7 +2199,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">일반 발송</div>
                         <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
                       </div>
-                      {deliveryMode === "normal" && deliveryExpanded && (
+                      {deliveryMode === "normal" && deliveryExpanded ? (
                         <div className="mt-1.5 space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-app-text-muted">방마다</span>
