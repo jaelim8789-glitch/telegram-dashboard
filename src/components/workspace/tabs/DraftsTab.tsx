@@ -10,6 +10,7 @@ import {
 import * as draftApi from "@/lib/draft-api";
 import type { Account } from "@/types";
 import { request } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_OPTIONS = [
   { value: "", label: "전체", icon: FileText },
@@ -357,6 +358,7 @@ function DraftCard({
 // ─── Main Tab ───────────────────────────────────────────────────────
 
 export function DraftsTab() {
+  const { toast } = useToast();
   const [drafts, setDrafts] = useState<draftApi.Draft[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [status, setStatus] = useState("");
@@ -395,7 +397,7 @@ export function DraftsTab() {
       setDrafts(d);
       setSummary(s);
       setAccounts(accs.accounts || []);
-    } catch { /* ignore */ }
+    } catch { toast("error", "초안 로드 실패"); }
     setLoading(false);
   }, [status]);
 
@@ -409,7 +411,7 @@ export function DraftsTab() {
     if (!approvingDraft) return;
     try {
       await draftApi.approveDraft(approvingDraft.id, opts);
-    } catch { /* ignore */ }
+    } catch { toast("error", "초안 승인 실패"); }
     setApprovingDraft(null);
     load();
   }
@@ -418,14 +420,14 @@ export function DraftsTab() {
     try {
       await draftApi.rejectDraft(id);
       load();
-    } catch { /* ignore */ }
+    } catch { toast("error", "초안 거절 실패"); }
   }
 
   async function handleDelete(id: string) {
     try {
       await draftApi.deleteDraft(id);
       load();
-    } catch { /* ignore */ }
+    } catch { toast("error", "초안 삭제 실패"); }
   }
 
   // ── Bulk operations ────────────────────────────────────────────────
@@ -437,7 +439,7 @@ export function DraftsTab() {
       await draftApi.batchApproveDrafts(Array.from(selectedIds));
       setSelectedIds(new Set());
       load();
-    } catch { /* ignore */ }
+    } catch { toast("error", "일괄 승인 실패"); }
     setBulkActionLoading(false);
   }
 
@@ -448,7 +450,7 @@ export function DraftsTab() {
       await draftApi.batchRejectDrafts(Array.from(selectedIds));
       setSelectedIds(new Set());
       load();
-    } catch { /* ignore */ }
+    } catch { toast("error", "일괄 거절 실패"); }
     setBulkActionLoading(false);
   }
 
@@ -459,7 +461,7 @@ export function DraftsTab() {
       await draftApi.batchDeleteDrafts(Array.from(selectedIds));
       setSelectedIds(new Set());
       load();
-    } catch { /* ignore */ }
+    } catch { toast("error", "일괄 삭제 실패"); }
     setBulkActionLoading(false);
   }
 

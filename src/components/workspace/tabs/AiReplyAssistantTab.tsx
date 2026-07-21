@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { getToken, getSessionToken } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -30,6 +31,7 @@ interface RecentMessage {
 
 export function AiReplyAssistantTab() {
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const { toast } = useToast();
   const [accountId, setAccountId] = useState("");
   const [chatTitle, setChatTitle] = useState("");
   const [incomingMessage, setIncomingMessage] = useState("");
@@ -53,7 +55,7 @@ export function AiReplyAssistantTab() {
       .then((data) => {
         setRecentMessages(Array.isArray(data) ? data : (data.messages || []));
       })
-      .catch(() => {})
+      .catch(() => { toast("error", "최근 메시지 로드 실패"); })
       .finally(() => setRecentLoading(false));
   }, [selectedAccountId]);
 

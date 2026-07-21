@@ -75,7 +75,7 @@ export function AiContentStudioTab() {
     setStyleProfilesLoading(true);
     fetchStyleProfiles()
       .then((list) => { if (!cancelled) setStyleProfiles(list); })
-      .catch(() => { /* silently fail — dropdown just won't show */ })
+      .catch(() => { toast("error", "스타일 프로필 로드 실패"); })
       .finally(() => { if (!cancelled) setStyleProfilesLoading(false); });
     return () => { cancelled = true; };
   }, []);
@@ -133,7 +133,7 @@ export function AiContentStudioTab() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // silently fail
+      toast("error", "클립보드 복사 실패");
     }
   }, []);
 

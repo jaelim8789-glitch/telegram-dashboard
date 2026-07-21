@@ -10,7 +10,6 @@ interface LandingImageProps {
   height?: number;
   className?: string;
   priority?: boolean;
-  placeholder?: string;
 }
 
 const LandingImage = ({
@@ -20,7 +19,6 @@ const LandingImage = ({
   height,
   className = '',
   priority = false,
-  placeholder = '/landing/placeholder.jpg',
 }: LandingImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);

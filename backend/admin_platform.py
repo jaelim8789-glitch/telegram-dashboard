@@ -56,6 +56,7 @@ class Plan(str, Enum):
     PRO = "pro"
     TEAM = "team"
     LIFETIME = "lifetime"
+    AI_PREMIUM = "ai_premium"
 
 
 class Feature(str, Enum):
@@ -88,6 +89,10 @@ class Feature(str, Enum):
     SSO = "sso"
     CUSTOM_RATE_LIMITS = "custom_rate_limits"
     DEDICATED_INFRA = "dedicated_infrastructure"
+    
+    # AI / Agent
+    CUSTOM_AI_AGENTS = "custom_ai_agents"
+    AI_TOKEN_MONTHLY_LIMIT = "ai_token_monthly_limit"
 
 
 class AuditAction(str, Enum):
@@ -145,6 +150,8 @@ class PlanDefinition:
     audit_log_retention_days: int = 7
     daily_limit: int = 0  # overall daily API call limit (0 = unlimited)
     feature_flags: dict[str, bool] = field(default_factory=dict)
+    max_ai_agents: int = 0  # custom AI agents limit (0 = none)
+    monthly_token_limit: int = 0  # AI token soft cap (0 = no limit)
 
 
 PLANS: dict[str, PlanDefinition] = {
@@ -209,6 +216,29 @@ PLANS: dict[str, PlanDefinition] = {
         daily_limit=99999,
         feature_flags={"can_export": True, "can_webhook": True, "bulk_operations": True, "sso": False},
     ),
+    Plan.AI_PREMIUM: PlanDefinition(
+        name="AI Premium",
+        max_accounts=5,
+        max_groups_per_account=300,
+        daily_send_limit=99999,
+        daily_auto_reply_limit=99999,
+        max_team_members=3,
+        features={
+            Feature.BROADCAST, Feature.AUTO_REPLY, Feature.REPLY_MACRO,
+            Feature.SCHEDULED_SEND, Feature.API_ACCESS, Feature.ANALYTICS,
+            Feature.AUDIT_LOG, Feature.HEALING_ENGINE,
+            Feature.CUSTOM_AI_AGENTS, Feature.AI_TOKEN_MONTHLY_LIMIT,
+        },
+        price_monthly_cents=9999,  # $99.99
+        price_yearly_cents=99990,  # $999.90
+        api_rate_limit=120,
+        priority_support=True,
+        audit_log_retention_days=30,
+        daily_limit=99999,
+        feature_flags={"can_export": True, "can_webhook": False, "bulk_operations": False},
+        max_ai_agents=3,  # 2~3 custom AI agents
+        monthly_token_limit=100000,  # 100K tokens/month soft cap
+    ),
     Plan.LIFETIME: PlanDefinition(
         name="Lifetime",
         max_accounts=100,
@@ -241,7 +271,8 @@ _PLAN_ALIASES: dict[str, str] = {
     "starter": "pro",
     "professional": "pro",
     "enterprise": "team",
-    "premium": "pro",
+    "ai_premium": "ai_premium",
+    "ai-premium": "ai_premium",
 }
 
 
@@ -759,6 +790,8 @@ class AdminPlatform:
                 "audit_log_retention_days": p.audit_log_retention_days,
                 "daily_limit": p.daily_limit,
                 "feature_flags": p.feature_flags,
+                "max_ai_agents": p.max_ai_agents,
+                "monthly_token_limit": p.monthly_token_limit,
             }
             for name, p in PLANS.items()
         }

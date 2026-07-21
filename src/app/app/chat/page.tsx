@@ -56,6 +56,53 @@ export default function AgentChatPage() {
   const [newAgentRole, setNewAgentRole] = useState("marketing");
   const [newAgentPrompt, setNewAgentPrompt] = useState("");
   const [creatingAgent, setCreatingAgent] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  // Agent purpose templates
+  const PURPOSE_TEMPLATES = [
+    {
+      id: "web_search",
+      role: "web_search",
+      name: "🔍 웹서치팀",
+      desc: "웹 검색 + 요약 전문",
+      prompt: "당신은 웹 리서치 전문가입니다. 최신 뉴스, 트렌드, 정보를 수집하여 간결하게 요약합니다. 항상 출처를 명시하고 한국어로 응답하세요.",
+    },
+    {
+      id: "marketing",
+      role: "marketing",
+      name: "📊 마케터",
+      desc: "카피라이팅 + 분석",
+      prompt: "당신은 전문 마케팅 어시스턴트입니다. 타겟 분석, 카피 작성, 프로모션 전략을 수립합니다. 항상 데이터 기반으로 조언하고 한국어로 응답하세요.",
+    },
+    {
+      id: "customer_support",
+      role: "custom",
+      name: "💬 고객응대팀",
+      desc: "자동 응대 + CS",
+      prompt: "당신은 친절하고 전문적인 고객 응대 매니저입니다. 고객 문의에 신속하고 정확하게 답변하며, 공감적인 태도를 유지하세요. 한국어로 응답합니다.",
+    },
+    {
+      id: "content_creator",
+      role: "custom",
+      name: "✍️ 콘텐츠팀",
+      desc: "포스트 + 뉴스레터 작성",
+      prompt: "당신은 창의적인 콘텐츠 크리에이터입니다. 텔레그램 채널용 포스트, 뉴스레터, 광고 카피를 작성합니다. 트렌드에 민감하고 참신한 아이디어를 제시하세요.",
+    },
+    {
+      id: "data_analyst",
+      role: "custom",
+      name: "📈 데이터분석팀",
+      desc: "통계 + 인사이트 도출",
+      prompt: "당신은 데이터 분석 전문가입니다. 발송 통계, 사용자 행동 데이터, 성과 지표를 분석하여 인사이트를 도출합니다. 숫자와 차트를 활용한 명확한 분석을 제공하세요.",
+    },
+    {
+      id: "scheduler",
+      role: "scheduler",
+      name: "⏰ 스케줄러",
+      desc: "발송 일정 최적화",
+      prompt: "당신은 일정 관리 및 코디네이션 전문가입니다. 발송 일정을 계획하고, 반복 작업을 설정하며, 시간대별 최적 발송 전략을 제안합니다.",
+    },
+  ];
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -139,6 +186,16 @@ export default function AgentChatPage() {
     setNewAgentName("");
     setNewAgentRole("marketing");
     setNewAgentPrompt("");
+    setSelectedTemplate(null);
+  }
+
+  function applyTemplate(templateId: string) {
+    const tmpl = PURPOSE_TEMPLATES.find(t => t.id === templateId);
+    if (!tmpl) return;
+    setSelectedTemplate(templateId);
+    setNewAgentName(tmpl.name.replace(/^[^\s]+\s/, ''));  // Remove emoji prefix
+    setNewAgentRole(tmpl.role);
+    setNewAgentPrompt(tmpl.prompt);
   }
 
   async function confirmCreateAgent() {
@@ -490,11 +547,43 @@ export default function AgentChatPage() {
         }
       >
         <div className="space-y-4">
+          {/* Purpose Templates */}
+          <div>
+            <label className="mb-2 block text-xs font-medium text-app-text-muted">
+              🎯 목적 템플릿 선택 <span className="text-app-text-subtle">(선택 시 자동 입력)</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PURPOSE_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  type="button"
+                  disabled={creatingAgent}
+                  onClick={() => applyTemplate(tmpl.id)}
+                  className={`text-left rounded-xl border p-3 transition-all ${
+                    selectedTemplate === tmpl.id
+                      ? "border-app-primary/50 bg-app-primary/10 ring-1 ring-app-primary/30"
+                      : "border-app-border hover:border-app-primary/30 hover:bg-app-card-hover"
+                  }`}
+                >
+                  <div className="font-medium text-sm text-app-text">{tmpl.name}</div>
+                  <div className="text-xs text-app-text-muted mt-0.5">{tmpl.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-app-border" />
+            <span className="text-[10px] text-app-text-muted uppercase tracking-wider">또는 직접 설정</span>
+            <div className="flex-1 h-px bg-app-border" />
+          </div>
+
           <div>
             <label className="mb-1 block text-xs font-medium text-app-text-muted">이름</label>
             <input
               value={newAgentName}
-              onChange={(e) => setNewAgentName(e.target.value)}
+              onChange={(e) => { setNewAgentName(e.target.value); setSelectedTemplate(null); }}
               placeholder="예: 마케팅팀-1"
               disabled={creatingAgent}
               className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"
@@ -504,7 +593,7 @@ export default function AgentChatPage() {
             <label className="mb-1 block text-xs font-medium text-app-text-muted">역할</label>
             <select
               value={newAgentRole}
-              onChange={(e) => setNewAgentRole(e.target.value)}
+              onChange={(e) => { setNewAgentRole(e.target.value); setSelectedTemplate(null); }}
               disabled={creatingAgent}
               className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"
             >
@@ -519,9 +608,9 @@ export default function AgentChatPage() {
             <label className="mb-1 block text-xs font-medium text-app-text-muted">System Prompt (선택)</label>
             <textarea
               value={newAgentPrompt}
-              onChange={(e) => setNewAgentPrompt(e.target.value)}
+              onChange={(e) => { setNewAgentPrompt(e.target.value); setSelectedTemplate(null); }}
               placeholder="Agent의 성격과 역할을 정의하세요..."
-              rows={4}
+              rows={3}
               disabled={creatingAgent}
               className="w-full resize-none rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"
             />

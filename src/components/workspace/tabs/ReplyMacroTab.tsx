@@ -41,7 +41,7 @@ export function ReplyMacroTab() {
         setIsActive(!!data.is_active);
         setMessage(data.message_content || "");
       })
-      .catch(() => {})
+      .catch(() => { toast("error", "로드 실패"); })
       .finally(() => setLoading(false));
   }, [selectedAccountId]);
 

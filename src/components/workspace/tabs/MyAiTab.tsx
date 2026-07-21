@@ -14,6 +14,7 @@ import { AiContentStudioTab } from "@/components/workspace/tabs/AiContentStudioT
 import { AiEmployeeTab } from "@/components/workspace/tabs/AiEmployeeTab";
 import { InlineAiChat } from "@/components/ai/InlineAiChat";
 import * as agentApi from "@/lib/agent-api";
+import { useToast } from "@/components/ui/Toast";
 
 function AgentLevelBadge({ level, exp }: { level: number; exp: number }) {
   return (
@@ -185,6 +186,7 @@ function ActiveContent({ sub }: { sub: string }) {
 }
 
 function AiChatRedirect() {
+  const { toast } = useToast();
   const [agents, setAgents] = useState<agentApi.Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -192,7 +194,7 @@ function AiChatRedirect() {
     let cancelled = false;
     agentApi.fetchAgents()
       .then(list => { if (!cancelled) setAgents(list); })
-      .catch(() => {})
+      .catch(() => { toast("error", "Agent 로드 실패"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

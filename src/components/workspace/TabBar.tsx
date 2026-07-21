@@ -329,6 +329,9 @@ export function TabBar() {
                 <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
                 <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-2 px-1">계정 전환</p>
                 <div className="max-h-[35vh] overflow-y-auto space-y-1">
+                  {accounts.length === 0 && (
+                    <p className="px-3 py-4 text-center text-sm text-app-text-muted">등록된 계정이 없습니다</p>
+                  )}
                   {accounts.map((account) => {
                     const isSelected = account.id === selectedAccountId;
                     return (

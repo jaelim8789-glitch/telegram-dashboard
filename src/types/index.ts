@@ -3,6 +3,17 @@ export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
 
+export const CATEGORY_META: Record<TabGroup, { label: string; icon: string }> = {
+  dashboard: { label: "대시보드", icon: "LayoutDashboard" },
+  send: { label: "발송", icon: "Send" },
+  ops: { label: "운영", icon: "Activity" },
+  ai: { label: "AI", icon: "Sparkles" },
+  settings: { label: "설정", icon: "Settings" },
+  new: { label: "신규", icon: "Plus" },
+};
+
+export type NavView = "chat" | "category" | "feature";
+
 export interface TabDef {
   id: TabId;
   label: string;
