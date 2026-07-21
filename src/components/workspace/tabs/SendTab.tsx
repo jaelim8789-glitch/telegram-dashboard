@@ -937,6 +937,18 @@ export function SendTab() {
     toast("success", `발송그룹 ${available.length}개를 선택했습니다.`);
   }
 
+  // ── Ctrl+Enter keyboard shortcut ──
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        document.querySelector<HTMLFormElement>("#send-form")?.requestSubmit();
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   // Selecting a folder (Send Group) adds every group in it to the current manual
   // selection — same additive pattern as handleSelectSavedSendGroup/handleSelectAllVisible,
   // so manual checkbox selection keeps working unchanged before and after.
@@ -1342,18 +1354,12 @@ export function SendTab() {
                     <>
                       <button
                         type="button"
-                        onClick={handleSelectAllVisible}
+                        onClick={() => {
+                          if (confirm(`${visibleGroups.length}개 그룹을 모두 선택하시겠습니까?`)) handleSelectAllVisible();
+                        }}
                         className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
                       >
-                        현재 결과 전체 선택
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDeselectAllVisible}
-                        disabled={!visibleGroups.some((g) => selectedIds.includes(g.id))}
-                        className="rounded-lg border border-app-border px-2 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        현재 결과 선택 해제
+                        전체 선택
                       </button>
                     </>
                   )}
@@ -1440,11 +1446,15 @@ export function SendTab() {
 
               {!groupsLoading && (sendFolders.length > 0 || telegramFolders.length > 0) && (
                 <div className="mb-3">
-                  <div className="mb-1.5 flex items-center gap-2">
+                  <button onClick={() => setFoldersExpanded(!foldersExpanded)}
+                    className="mb-1.5 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-app-card-hover active:scale-[0.98]">
                     <span className="text-xs font-medium text-app-text-muted">그룹 폴더</span>
                     <span className="h-px flex-1 bg-app-border/50" />
                     <span className="text-[10px] text-app-text-subtle">{sendFolders.length + telegramFolders.length}개</span>
-                  </div>
+                    {foldersExpanded ? <ChevronUp className="h-4 w-4 text-app-text-muted" /> : <ChevronDown className="h-4 w-4 text-app-text-muted" />}
+                  </button>
+                  {foldersExpanded && (
+                  <>
                   {sendFolders.length > 0 && (
                     <div className="mb-2">
                       <div className="mb-1 flex items-center gap-1.5">
@@ -1487,6 +1497,8 @@ export function SendTab() {
                       </div>
                     </div>
                   )}
+                  </>
+                  )}
                 </div>
               )}
 
@@ -1525,7 +1537,7 @@ export function SendTab() {
                   <button
                     type="button"
                     onClick={() => setAllGroupsExpanded(!allGroupsExpanded)}
-                    className="mb-1.5 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-app-card-hover active:scale-[0.98]"
+                    className="mb-1.5 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-app-card-hover active:scale-[0.98] min-h-[44px]"
                   >
                     <span className="text-xs font-medium text-app-text-muted">전체 대화방</span>
                     <span className="h-px flex-1 bg-app-border/50" />
@@ -2010,7 +2022,7 @@ export function SendTab() {
                       type="button"
                       onClick={() => applyDeliveryPreset(preset)}
                       className={cn(
-                        "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                        "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
                         deliveryPreset === preset
                           ? "border-app-primary bg-app-primary text-white"
                           : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text"
@@ -2054,6 +2066,14 @@ export function SendTab() {
                 </label>
                 {isRecurring && (
                   <div className="mt-2">
+                    <div className="flex gap-1 mb-1.5">
+                      {RECURRING_INTERVALS.filter((opt) => [30, 60, 360].includes(opt.value)).map((opt) => (
+                        <button key={opt.value} type="button" onClick={() => setRecurringInterval(opt.value)}
+                          className={`rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${recurringInterval === opt.value ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted"}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                     <Field label="반복 간격">
                       <select value={recurringInterval} onChange={(e) => setRecurringInterval(Number(e.target.value))}
                         className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60">
@@ -2143,7 +2163,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">답장매크로</div>
                         <Badge tone="info" className="text-[9px] px-1.5 py-0">자동</Badge>
                       </div>
-                      <div className="text-xs text-app-text-muted">랜덤리플라이 — 켜면 모든 그룹에서 무작위 대상에게 자동 답장</div>
+                      <div className="hidden sm:block text-xs text-app-text-muted">랜덤리플라이 — 켜면 모든 그룹에서 무작위 대상에게 자동 답장</div>
                     </div>
                   </label>
                   <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
@@ -2154,7 +2174,7 @@ export function SendTab() {
                         <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
                         <Badge tone="danger" className="text-[9px] px-1.5 py-0">위험</Badge>
                       </div>
-                      <div className="text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
+                      <div className="hidden sm:block text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
                       {deliveryMode === "bulk" && (
                         <div className="mt-2 flex items-center gap-1.5">
                           <input type="checkbox" id="dedupeNormal" checked={dedupeNormalSend}
