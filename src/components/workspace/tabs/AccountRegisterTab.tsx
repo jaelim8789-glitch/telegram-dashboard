@@ -31,6 +31,7 @@ import { cn } from "@/lib/cn";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { AuthFlowMode, AccountHealthItem } from "@/types";
 import * as api from "@/lib/api";
+import { PlanUpgradeModal } from "@/components/workspace/tabs/register/PlanUpgradeModal";
 
 type Step = "form" | "code" | "2fa" | "done";
 
@@ -94,6 +95,8 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [phoneConflict, setPhoneConflict] = useState(false);
   const [showSelfReset, setShowSelfReset] = useState(false);
+  const [showPlanUpgrade, setShowPlanUpgrade] = useState(false);
+  const [planUpgradeMsg, setPlanUpgradeMsg] = useState("");
 
   const codeInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -209,9 +212,17 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
       setSuccessMessage("인증번호가 전송되었습니다. Telegram 앱을 확인하세요.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "계정 등록에 실패했습니다.";
-      setError(msg);
-      if (err instanceof api.ApiError && err.status === 409) {
-        setPhoneConflict(true);
+      
+      // 계정 한도 초과 → 업그레이드 모달 표시
+      if (msg.includes("계정 한도") || msg.includes("업그레이드") || msg.includes("max_accounts")) {
+        setPlanUpgradeMsg(msg);
+        setShowPlanUpgrade(true);
+        setError(null); // 모달에서 설명하므로 인라인 에러는 숨김
+      } else {
+        setError(msg);
+        if (err instanceof api.ApiError && err.status === 409) {
+          setPhoneConflict(true);
+        }
       }
     } finally {
       setSubmitting(false);
@@ -345,6 +356,12 @@ export function AccountRegisterTab({ healthItems }: { healthItems?: AccountHealt
           phone={phone.trim()}
           onClose={() => setShowSelfReset(false)}
           onResetComplete={handleSelfResetComplete}
+        />
+        <PlanUpgradeModal
+          open={showPlanUpgrade}
+          onClose={() => setShowPlanUpgrade(false)}
+          currentPlan="free"
+          currentAccountCount={healthItems?.length ?? 0}
         />
       </div>
     );
