@@ -1,4 +1,4 @@
-export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
+export type TabId = "dashboard" | "register" | "send" | "group" | "groupsearch" | "linkinspector" | "profile" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop";
 
 // Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
@@ -23,7 +23,6 @@ export const TABS: TabDef[] = [
   { id: "templates", label: "템플릿", group: "send" },
 
   // ── 운영/모니터링 ──
-  { id: "log", label: "로그", group: "ops" },
   { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "ops" },
   { id: "health", label: "계정 건강", shortLabel: "건강", group: "ops" },
   { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "ops" },
@@ -778,6 +777,7 @@ export interface TeleMonMemoryPeriod {
 
 export interface TeleMonMemoryTopPost {
   broadcast_id: string;
+  message_content: string;
   message_preview: string;
   attempted: number;
   successful: number;
