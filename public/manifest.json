@@ -1,17 +1,19 @@
 {
+  "id": "/app",
   "name": "TeleMon — 텔레그램 자동화 플랫폼",
   "short_name": "TeleMon",
   "description": "Telegram 계정 관리, 자동 응답, 예약 발송을 하나의 대시보드에서",
-  "start_url": "/",
+  "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "browser"],
   "background_color": "#0a0a0a",
   "theme_color": "#bfa260",
   "orientation": "any",
+  "dir": "ltr",
   "categories": ["business", "communication", "productivity"],
   "lang": "ko-KR",
   "prefer_related_applications": false,
-  "display_override": ["standalone", "browser"],
-  "edge_side_panel": {},
   "icons": [
     {
       "src": "/icons/icon-192.svg",
@@ -26,16 +28,10 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-monochrome.svg",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
     }
   ],
   "shortcuts": [
@@ -46,9 +42,9 @@
       "url": "/app",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
+          "src": "/icons/icon-192.svg",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
@@ -59,9 +55,9 @@
       "url": "/app?tab=send",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
+          "src": "/icons/icon-192.svg",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
@@ -72,9 +68,9 @@
       "url": "/app?tab=group",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
+          "src": "/icons/icon-192.svg",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
@@ -85,9 +81,9 @@
       "url": "/app?tab=myai",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
+          "src": "/icons/icon-192.svg",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     }
