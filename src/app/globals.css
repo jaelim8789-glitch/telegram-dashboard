@@ -890,3 +890,23 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
     box-shadow: 0 0 15px rgba(184, 160, 96, 0.5), 0 0 30px rgba(184, 160, 96, 0.3);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.gyro-tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out;
+}
+
+.safe-area-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
