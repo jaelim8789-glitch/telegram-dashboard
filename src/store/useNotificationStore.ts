@@ -1,75 +1,26 @@
-"use client";
-
 import { create } from "zustand";
 
-export interface AppNotification {
-  id: string;
-  type: "broadcast" | "error" | "account" | "system" | "success";
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  action?: { label: string; onClick: () => void };
-}
+export type NotificationType = "info" | "warning" | "error" | "success";
+
+export interface NotificationAction { label: string; tabId: string; }
+export interface Notification { id: string; type: NotificationType; title: string; message: string; timestamp: number; read: boolean; action?: NotificationAction; }
+
+function generateId(): string { return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
 
 interface NotificationState {
-  notifications: AppNotification[];
+  notifications: Notification[];
   unreadCount: number;
-  addNotification: (n: Omit<AppNotification, "id" | "timestamp" | "read">) => void;
+  addNotification: (n: Omit<Notification, "id" | "timestamp" | "read">) => void;
   dismissNotification: (id: string) => void;
   markAllRead: () => void;
   clearAll: () => void;
 }
 
-const STORAGE_KEY = "telemon-notifications";
-
-function loadNotifications(): AppNotification[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as AppNotification[];
-  } catch {
-    return [];
-  }
-}
-
-function saveNotifications(ns: AppNotification[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ns));
-  } catch {}
-}
-
-export const useNotificationStore = create<NotificationState>((set, get) => ({
-  notifications: loadNotifications(),
-  unreadCount: loadNotifications().filter((n) => !n.read).length,
-
-  addNotification: (n) => {
-    const notification: AppNotification = {
-      ...n,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    const next = [notification, ...get().notifications].slice(0, 100);
-    saveNotifications(next);
-    set({ notifications: next, unreadCount: next.filter((x) => !x.read).length });
-  },
-
-  dismissNotification: (id) => {
-    const next = get().notifications.filter((n) => n.id !== id);
-    saveNotifications(next);
-    set({ notifications: next, unreadCount: next.filter((n) => !n.read).length });
-  },
-
-  markAllRead: () => {
-    const next = get().notifications.map((n) => ({ ...n, read: true }));
-    saveNotifications(next);
-    set({ notifications: next, unreadCount: 0 });
-  },
-
-  clearAll: () => {
-    saveNotifications([]);
-    set({ notifications: [], unreadCount: 0 });
-  },
+export const useNotificationStore = create<NotificationState>((set) => ({
+  notifications: [],
+  unreadCount: 0,
+  addNotification: (n) => set((state) => ({ notifications: [{ ...n, id: generateId(), timestamp: Date.now(), read: false }, ...state.notifications], unreadCount: state.unreadCount + 1 })),
+  dismissNotification: (id) => set((state) => { const t = state.notifications.find(n => n.id === id); if (!t) return state; return { notifications: state.notifications.filter(n => n.id !== id), unreadCount: t.read ? state.unreadCount : state.unreadCount - 1 }; }),
+  markAllRead: () => set((state) => ({ notifications: state.notifications.map(n => ({ ...n, read: true })), unreadCount: 0 })),
+  clearAll: () => set({ notifications: [], unreadCount: 0 }),
 }));

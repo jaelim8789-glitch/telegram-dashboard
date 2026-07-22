@@ -1,62 +1,27 @@
-interface DiffResult {
-  changed: boolean;
-  added: number;
-  removed: number;
-  details: Record<string, { oldValue: unknown; newValue: unknown }>;
-}
+export interface RefreshDiffResult { changed: number; added: number; removed: number; details: string[]; }
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
-}
+function isObject(v: unknown): v is Record<string, unknown> { return typeof v === "object" && v !== null && !Array.isArray(v); }
 
-function deepDiff(
-  oldObj: Record<string, unknown>,
-  newObj: Record<string, unknown>,
-  prefix = ""
-): Record<string, { oldValue: unknown; newValue: unknown }> {
-  const details: Record<string, { oldValue: unknown; newValue: unknown }> = {};
-  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
-
-  for (const key of allKeys) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    const oldVal = oldObj[key];
-    const newVal = newObj[key];
-
-    if (key in oldObj && !(key in newObj)) {
-      details[path] = { oldValue: oldVal, newValue: undefined };
-    } else if (!(key in oldObj) && key in newObj) {
-      details[path] = { oldValue: undefined, newValue: newVal };
-    } else if (isObject(oldVal) && isObject(newVal)) {
-      Object.assign(details, deepDiff(oldVal, newVal, path));
-    } else if (oldVal !== newVal) {
-      details[path] = { oldValue: oldVal, newValue: newVal };
-    }
+function deepKeys(a: unknown, b: unknown, path: string, details: string[]): void {
+  if (a === b) return;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) details.push(`${path}: length ${a.length} → ${b.length}`);
+    const max = Math.max(a.length, b.length);
+    for (let i = 0; i < max; i++) { if (i >= a.length) details.push(`${path}[${i}]: added`); else if (i >= b.length) details.push(`${path}[${i}]: removed`); else deepKeys(a[i], b[i], `${path}[${i}]`, details); }
+    return;
   }
-
-  return details;
+  if (isObject(a) && isObject(b)) {
+    const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const k of allKeys) { if (!(k in a)) details.push(`${path}.${k}: added`); else if (!(k in b)) details.push(`${path}.${k}: removed`); else deepKeys(a[k], b[k], `${path}.${k}`, details); }
+    return;
+  }
+  details.push(`${path}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`);
 }
 
-export function computeDiff(
-  oldData: unknown,
-  newData: unknown
-): DiffResult {
-  if (!isObject(oldData) || !isObject(newData)) {
-    return {
-      changed: oldData !== newData,
-      added: 0,
-      removed: 0,
-      details: oldData !== newData ? { _root: { oldValue: oldData, newValue: newData } } : {},
-    };
-  }
-
-  const details = deepDiff(oldData, newData);
-  const added = Object.values(details).filter((d) => d.oldValue === undefined).length;
-  const removed = Object.values(details).filter((d) => d.newValue === undefined).length;
-
-  return {
-    changed: Object.keys(details).length > 0,
-    added,
-    removed,
-    details,
-  };
+export function computeDiff(oldData: unknown, newData: unknown): RefreshDiffResult {
+  const details: string[] = [];
+  deepKeys(oldData, newData, "root", details);
+  let changed = 0, added = 0, removed = 0;
+  for (const d of details) { if (d.endsWith(": added")) added++; else if (d.endsWith(": removed")) removed++; else changed++; }
+  return { changed, added, removed, details };
 }

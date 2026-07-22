@@ -1,59 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-interface AdaptiveLoading {
-  connectionType: string;
+export type ConnectionType = "slow-2g" | "2g" | "3g" | "4g" | "5g" | "wifi";
+export type LoadPriority = "critical" | "normal" | "deferred";
+
+export interface AdaptiveLoadingState {
+  connectionType: ConnectionType | null;
   isMobile: boolean;
   isLowBandwidth: boolean;
-  loadPriority: "critical" | "normal" | "deferred";
+  loadPriority: LoadPriority;
 }
 
-export function useAdaptiveLoading(): AdaptiveLoading {
-  const [state, setState] = useState<AdaptiveLoading>(() => {
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    return {
-      connectionType: "unknown",
-      isMobile,
-      isLowBandwidth: false,
-      loadPriority: isMobile ? "normal" : "critical",
-    };
-  });
+function getConnectionType(): ConnectionType | null {
+  if (typeof navigator === "undefined" || !("connection" in navigator)) return null;
+  const conn = (navigator as any).connection;
+  const effectiveType = conn.effectiveType as string | undefined;
+  if (!effectiveType) return null;
+  if (effectiveType === "slow-2g" || effectiveType === "2g") return effectiveType as ConnectionType;
+  if (effectiveType === "3g") return "3g";
+  if (effectiveType === "4g") return "4g";
+  return null;
+}
+
+function computePriority(isMobile: boolean, connectionType: ConnectionType | null): LoadPriority {
+  if (!connectionType) return "critical";
+  if (connectionType === "slow-2g" || connectionType === "2g") return "deferred";
+  if (isMobile && connectionType === "3g") return "deferred";
+  if (connectionType === "3g") return "normal";
+  if (isMobile && connectionType === "4g") return "normal";
+  return "critical";
+}
+
+export function useAdaptiveLoading(): AdaptiveLoadingState {
+  const [isMobile, setIsMobile] = useState(false);
+  const [connectionType, setConnectionType] = useState<ConnectionType | null>(null);
 
   useEffect(() => {
-    function update() {
-      const conn = (navigator as unknown as { connection?: { effectiveType: string; downlink: number } }).connection;
-      const connectionType = conn?.effectiveType ?? "unknown";
-      const isMobile = window.innerWidth < 768;
-      const isSlow = connectionType === "2g" || connectionType === "slow-2g";
-      const isLowDownlink = conn ? conn.downlink < 0.5 : false;
-      const isLowBandwidth = isSlow || isLowDownlink;
-
-      let loadPriority: "critical" | "normal" | "deferred";
-      if (isLowBandwidth) {
-        loadPriority = "deferred";
-      } else if (isMobile || connectionType === "3g") {
-        loadPriority = "normal";
-      } else {
-        loadPriority = "critical";
-      }
-
-      setState({ connectionType, isMobile, isLowBandwidth, loadPriority });
-    }
-
-    update();
-
-    const mq = window.matchMedia("(max-width: 767px)");
-    mq.addEventListener("change", update);
-
-    const conn = (navigator as unknown as { connection?: { addEventListener: (e: string, h: () => void) => void } }).connection;
-    conn?.addEventListener("change", update);
-
-    return () => {
-      mq.removeEventListener("change", update);
-      conn?.removeEventListener("change", update);
-    };
+    function checkWidth() { setIsMobile(window.innerWidth < 768); }
+    checkWidth();
+    window.addEventListener("resize", checkWidth);
+    return () => window.removeEventListener("resize", checkWidth);
   }, []);
 
-  return state;
+  useEffect(() => {
+    function check() { setConnectionType(getConnectionType()); }
+    check();
+    if ("connection" in navigator) {
+      const conn = (navigator as any).connection;
+      conn.addEventListener("change", check);
+      return () => conn.removeEventListener("change", check);
+    }
+  }, []);
+
+  const loadPriority = computePriority(isMobile, connectionType);
+  const isLowBandwidth = loadPriority === "deferred";
+
+  return { connectionType, isMobile, isLowBandwidth, loadPriority };
 }

@@ -1,23 +1,22 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 
 interface WidgetGroupProps {
-  title: string;
-  icon?: React.ReactNode;
-  groupKey?: string;
+  title: ReactNode;
+  icon?: ReactNode;
+  groupKey: string;
   defaultOpen?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
 export function WidgetGroup({ title, icon, groupKey, defaultOpen = true, children, className }: WidgetGroupProps) {
   return (
-    <div className={cn("rounded-xl border border-app-border/60 bg-app-card", className)}>
-      <CollapsibleSection title={title} icon={icon} groupKey={groupKey} defaultOpen={defaultOpen}>
-        {children}
-      </CollapsibleSection>
-    </div>
+    <CollapsibleSection groupKey={groupKey} defaultOpen={defaultOpen} icon={icon} title={title} className={cn("widget-group", className)}>
+      {children}
+    </CollapsibleSection>
   );
 }

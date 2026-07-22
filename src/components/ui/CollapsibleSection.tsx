@@ -1,91 +1,53 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useId, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { ChevronDown } from "lucide-react";
 
 interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
+  title: ReactNode;
+  icon?: ReactNode;
   defaultOpen?: boolean;
-  badge?: string | number;
-  children: React.ReactNode;
+  badge?: ReactNode;
+  children: ReactNode;
   groupKey?: string;
   className?: string;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
-export function CollapsibleSection({
-  title,
-  icon,
-  defaultOpen = true,
-  badge,
-  children,
-  groupKey,
-  className,
-}: CollapsibleSectionProps) {
-  const id = useId();
-  const contentId = `collapsible-content-${id}`;
-  const [open, setOpen] = useState(() => {
-    if (groupKey && typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(`collapsible-${groupKey}`);
-        if (saved !== null) return saved === "true";
-      } catch {}
-    }
-    return defaultOpen;
-  });
+function getInitialState(key: string | undefined, fallback: boolean): boolean {
+  if (typeof window === "undefined" || !key) return fallback;
+  try { const stored = localStorage.getItem(`collapsible:${key}`); if (stored !== null) return stored === "true"; } catch {}
+  return fallback;
+}
 
-  useEffect(() => {
-    if (groupKey) {
-      try {
-        localStorage.setItem(`collapsible-${groupKey}`, String(open));
-      } catch {}
-    }
-  }, [open, groupKey]);
+function persistState(key: string | undefined, open: boolean) {
+  if (!key) return;
+  try { localStorage.setItem(`collapsible:${key}`, String(open)); } catch {}
+}
 
-  const toggle = useCallback(() => setOpen((o) => !o), []);
+export function CollapsibleSection({ title, icon, defaultOpen = true, badge, children, groupKey, className, headerClassName, contentClassName }: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(() => getInitialState(groupKey, defaultOpen));
+  const contentId = useId();
+
+  const toggle = () => setOpen(p => { const n = !p; persistState(groupKey, n); return n; });
 
   return (
-    <div className={cn("overflow-hidden", className)}>
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-controls={contentId}
-        className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-app-text hover:bg-app-card-hover transition-colors"
-      >
+    <div className={cn("collapsible-root", className)}>
+      <button type="button" onClick={toggle} aria-expanded={open} aria-controls={contentId} className={cn("collapsible-header w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-app-card-hover/50 hover:bg-app-card-hover transition-colors", headerClassName)}>
         <span className="flex items-center gap-2">
-          {icon && <span className="text-app-text-muted">{icon}</span>}
-          {title}
+          {icon && <span className="collapsible-icon">{icon}</span>}
+          <span className="text-sm font-medium text-app-text">{title}</span>
+          {badge && <span className="collapsible-badge">{badge}</span>}
         </span>
-        <span className="flex items-center gap-2">
-          {badge != null && (
-            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-app-primary/20 px-1.5 text-[10px] font-semibold text-app-primary">
-              {badge}
-            </span>
-          )}
-          <motion.span
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-app-text-muted"
-          >
-            <ChevronDown className="h-4 w-4" />
-          </motion.span>
-        </span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="collapsible-chevron text-app-text-muted"><ChevronDown className="h-4 w-4" /></motion.span>
       </button>
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
-            id={contentId}
-            key="content"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="px-3 pb-2">{children}</div>
+          <motion.div id={contentId} key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+            <div className={cn("pt-2", contentClassName)}>{children}</div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,88 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, type ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 interface CompactCardProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string | number;
   trend?: "up" | "down" | "neutral";
-  color?: string;
+  color: "indigo" | "emerald" | "rose" | "amber" | "cyan" | "violet" | "orange";
   compact?: boolean;
   onClick?: () => void;
 }
 
+const ICON_BG: Record<string, string> = {
+  indigo: "bg-gradient-to-br from-indigo-500 to-indigo-600", emerald: "bg-gradient-to-br from-emerald-500 to-teal-500",
+  rose: "bg-gradient-to-br from-rose-500 to-pink-500", amber: "bg-gradient-to-br from-amber-500 to-orange-500",
+  cyan: "bg-gradient-to-br from-cyan-500 to-blue-500", violet: "bg-gradient-to-br from-violet-500 to-purple-500",
+  orange: "bg-gradient-to-br from-orange-500 to-red-500",
+};
+
 export function CompactCard({ icon, label, value, trend, color, compact, onClick }: CompactCardProps) {
-  const [showLabel, setShowLabel] = useState(false);
-  const Comp = onClick ? "button" : "div";
+  const [expanded, setExpanded] = useState(false);
 
-  function handleClick() {
-    if (compact) {
-      setShowLabel(true);
-      setTimeout(() => setShowLabel(false), 1500);
-    }
+  const handleClick = () => {
+    if (compact) { setExpanded(true); setTimeout(() => setExpanded(false), 2000); }
     onClick?.();
-  }
+  };
 
   return (
-    <Comp
-      {...(onClick ? { onClick: handleClick, type: "button" as const } : {})}
-      className={cn(
-        "group relative overflow-hidden rounded-xl border border-app-border/60 bg-app-card p-3 text-left transition-all duration-200 hover:border-app-border-strong",
-        onClick && "cursor-pointer"
+    <motion.button onClick={handleClick} layout transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      className={cn("relative flex flex-col items-center justify-center rounded-xl border border-app-border bg-app-card transition-colors hover:border-app-border-strong active:scale-[0.97]", compact ? "min-h-[72px] gap-0.5 px-2 py-2 text-center" : "p-3")}>
+      <div className={cn("flex items-center justify-center rounded-lg text-white", ICON_BG[color], compact ? "h-7 w-7" : "h-9 w-9")}>{icon}</div>
+      <span className={cn("font-bold tracking-tight text-app-text", compact ? "text-base" : "text-lg")}>{value}</span>
+      <AnimatePresence mode="wait">
+        {(!compact || expanded) && (
+          <motion.span initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden text-[11px] text-app-text-muted">{label}</motion.span>
+        )}
+      </AnimatePresence>
+      {compact && expanded && (
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="absolute -top-1 right-0 z-10 rounded-full bg-app-text px-1.5 py-0.5 text-[9px] font-medium text-app-bg">{label}</motion.div>
       )}
-    >
-      {compact ? (
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-lg" style={{ color: color ?? "var(--color-accent)" }}>
-            {icon}
-          </span>
-          <span className="text-sm font-bold" style={{ fontFamily: "var(--font-heading)" }}>
-            {value}
-          </span>
-          <AnimatedLabel visible={showLabel}>{label}</AnimatedLabel>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${color ?? "var(--color-accent)"}20`, color: color ?? "var(--color-accent)" }}>
-              {icon}
-            </span>
-            <div>
-              <div className="text-xs text-app-text-muted">{label}</div>
-              <div className="text-base font-bold" style={{ fontFamily: "var(--font-heading)" }}>{value}</div>
-            </div>
-          </div>
-          {trend && (
-            <span
-              className={cn(
-                "text-xs font-medium",
-                trend === "up" && "text-emerald-500",
-                trend === "down" && "text-rose-500",
-                trend === "neutral" && "text-app-text-muted"
-              )}
-            >
-              {trend === "up" && "↑"}
-              {trend === "down" && "↓"}
-              {trend}
-            </span>
-          )}
-        </div>
-      )}
-    </Comp>
-  );
-}
-
-function AnimatedLabel({ visible, children }: { visible: boolean; children: React.ReactNode }) {
-  return (
-    <motion.span
-      animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -4 }}
-      transition={{ duration: 0.2 }}
-      className="text-[10px] text-app-text-muted"
-    >
-      {children}
-    </motion.span>
+    </motion.button>
   );
 }

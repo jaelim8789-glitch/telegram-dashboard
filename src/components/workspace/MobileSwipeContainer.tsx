@@ -1,65 +1,33 @@
 "use client";
 
-import { useCallback, useRef } from "react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/cn";
+import React from "react";
+import { motion, useMotionValue } from "framer-motion";
 import { useSwipeTabs } from "@/hooks/useSwipeTabs";
+import { cn } from "@/lib/cn";
 
 interface MobileSwipeContainerProps {
+  children: React.ReactNode;
   currentTabId: string;
   allTabIds: string[];
-  onTabChange: (tabId: string) => void;
+  onTabChange?: (tabId: string) => void;
   enabled?: boolean;
-  children: React.ReactNode;
 }
 
-export function MobileSwipeContainer({
-  currentTabId,
-  allTabIds,
-  onTabChange,
-  enabled = true,
-  children,
-}: MobileSwipeContainerProps) {
-  const { handlers, direction, isSwiping, swipeProgress } = useSwipeTabs();
-  const startX = useRef(0);
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!enabled) return;
-    startX.current = e.clientX;
-    handlers.onPointerDown(e);
-  }, [enabled, handlers]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!enabled) return;
-    handlers.onPointerMove(e);
-  }, [enabled, handlers]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!enabled) return;
-    const dx = e.clientX - startX.current;
-    const currentIndex = allTabIds.indexOf(currentTabId);
-    if (dx < -50 && currentIndex < allTabIds.length - 1) {
-      onTabChange(allTabIds[currentIndex + 1]);
-    } else if (dx > 50 && currentIndex > 0) {
-      onTabChange(allTabIds[currentIndex - 1]);
-    }
-    handlers.onPointerUp(e);
-  }, [enabled, currentTabId, allTabIds, onTabChange, handlers]);
-
-  const x = direction === "left" ? -swipeProgress * 80 : direction === "right" ? swipeProgress * 80 : 0;
+export function MobileSwipeContainer({ children, currentTabId, allTabIds, onTabChange, enabled = true }: MobileSwipeContainerProps) {
+  const { handlers, isSwiping, swipeProgress, direction } = useSwipeTabs({ currentTabId, allTabIds, onTabChange, enabled });
 
   return (
-    <motion.div
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      animate={{ x: isSwiping ? x : 0 }}
-      transition={isSwiping ? { type: "tween", duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
-      style={{ touchAction: "pan-y" }}
-      className={cn("w-full", isSwiping && "cursor-grabbing")}
-    >
-      {children}
-    </motion.div>
+    <div className="relative flex-1 overflow-hidden touch-pan-y" style={{ overscrollBehaviorX: "none" }}
+      onPointerDown={handlers.onPointerDown} onPointerMove={handlers.onPointerMove} onPointerUp={handlers.onPointerUp}>
+      <motion.div className="h-full" animate={isSwiping ? { x: direction * swipeProgress * -60 } : { x: 0 }}
+        transition={isSwiping ? { type: "spring", stiffness: 300, damping: 30 } : { type: "spring", stiffness: 400, damping: 35 }}>
+        {children}
+      </motion.div>
+      {isSwiping && (
+        <div className="pointer-events-none absolute inset-y-0 z-10 flex items-center text-[11px] font-medium text-app-text-muted" style={{ [direction === 1 ? "left" : "right"]: 8 }}>
+          {direction === 1 ? "←" : "→"}
+        </div>
+      )}
+    </div>
   );
 }
