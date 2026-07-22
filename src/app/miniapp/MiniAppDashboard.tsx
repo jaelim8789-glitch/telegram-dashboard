@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, memo, useCallback, useMemo } from "react";
+import { useEffect, useState, memo, useCallback, useMemo, useRef } from "react";
 import { Send, CheckCircle2, Coins, Clock, Users, Loader2, TrendingUp, Plug, Plus, RefreshCw, CircleAlert, WifiOff } from "lucide-react";
 import * as api from "@/lib/api";
 import { fetchTokenBalance, fetchRecentBroadcasts } from "@/lib/api-miniapp";

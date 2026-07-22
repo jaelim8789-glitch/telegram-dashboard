@@ -57,6 +57,8 @@ export default function MiniAppPage() {
   }, [activeTab, handleRefresh]);
 
   useEffect(() => {
+    function handleTabChange(e: CustomEvent) { setActiveTab(e.detail.tab); }
+    window.addEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
     setOnline(navigator.onLine);
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);

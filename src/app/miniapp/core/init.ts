@@ -36,7 +36,7 @@ export async function init(options: {
 
   // Initialize haptic feedback for better mobile UX
   try {
-    const haptic = new HapticFeedback();
+    const haptic = new (HapticFeedback as any)("8.0");
     haptic.impactOccurred("light");
   } catch {
     /* haptic feedback unavailable in some environments */
