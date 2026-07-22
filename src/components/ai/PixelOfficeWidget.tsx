@@ -46,6 +46,19 @@ export function PixelOfficeWidget({ onExpand, compact }: PixelOfficeWidgetProps)
   const [hoveredEmp, setHoveredEmp] = useState<string | null>(null);
   const totalSent = accounts?.reduce((sum, a) => sum + (a.todaySent || 0), 0) || 0;
 
+  // 별 위치는 클라이언트에서만 한 번 계산 — 렌더링 중 Math.random()을 쓰면 서버
+  // 렌더링 결과와 클라이언트 결과가 매번 달라져 하이드레이션 불일치가 발생한다.
+  const [starPositions, setStarPositions] = useState<{ top: number; left: number; delay: number }[]>([]);
+  useEffect(() => {
+    setStarPositions(
+      Array.from({ length: 8 }, () => ({
+        top: Math.random() * 30,
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+      })),
+    );
+  }, []);
+
   const charPositions = useRef<Record<string, { x: number; y: number }>>({
     e1: { x: 4, y: 2 }, e2: { x: 8, y: 2 }, e3: { x: 12, y: 2 },
     e4: { x: 16, y: 2 }, e5: { x: 3, y: 7 }, e6: { x: 17, y: 7 },
@@ -109,8 +122,8 @@ export function PixelOfficeWidget({ onExpand, compact }: PixelOfficeWidgetProps)
       {isNight && (
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f1a] to-transparent opacity-60" />
       )}
-      {isNight && Array.from({ length: 8 }).map((_, i) => (
-        <div key={`pix-star-${i}`} className="absolute h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse" style={{ top: `${Math.random() * 30}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />
+      {isNight && starPositions.map((star, i) => (
+        <div key={`pix-star-${i}`} className="absolute h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse" style={{ top: `${star.top}%`, left: `${star.left}%`, animationDelay: `${star.delay}s` }} />
       ))}
 
       <div className="relative" style={{ width: WIDGET_COLS * TILE, height: WIDGET_ROWS * TILE, margin: "0 auto" }}>
@@ -136,7 +149,7 @@ export function PixelOfficeWidget({ onExpand, compact }: PixelOfficeWidgetProps)
               className="absolute z-10 transition-all duration-500 cursor-pointer"
               style={{ left: pos.x * TILE - 2, top: pos.y * TILE - 6 }}
               animate={{ y: [0, -1, 0] }}
-              transition={{ repeat: Infinity, duration: 2 + Math.random() }}
+              transition={{ repeat: Infinity, duration: 2.5 }}
               onMouseEnter={() => setHoveredEmp(emp.id)}
               onMouseLeave={() => setHoveredEmp(null)}
             >
