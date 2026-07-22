@@ -163,7 +163,7 @@ export function CategoryStrip() {
         )}
       >
         <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-        <span className="hidden sm:inline">AI</span>
+        <span className="inline sm:inline text-[11px]">AI</span>
       </button>
 
       <div className="h-5 w-px bg-app-border/50 mx-0.5 shrink-0" aria-hidden="true" />
@@ -189,7 +189,7 @@ export function CategoryStrip() {
             )}
           >
             {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
-            <span className="hidden sm:inline">{meta.label}</span>
+            <span className="inline sm:inline text-[11px]">{meta.label}</span>
             {badge != null && badge > 0 && (
               <span className="flex items-center justify-center rounded-full bg-app-danger px-1.5 h-4 min-w-[16px] text-[9px] font-bold leading-none text-white">
                 {badge > 99 ? "99+" : badge}

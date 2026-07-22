@@ -15,7 +15,7 @@ export function MobileDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.fetchLogs({ accountId: undefined, days: 1 })
+    api.fetchLogs({ accountId: undefined, days: 1, limit: 50 })
       .then((logs) => {
         setStats({ total: logs.length, sent: logs.filter((l) => l.status === "sent").length, failed: logs.filter((l) => l.status === "failed").length });
       })
