@@ -1,0 +1,1 @@
+export const tokenSystem = { getBalance: () => Promise.resolve(0), spend: () => Promise.resolve(true) };
