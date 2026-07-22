@@ -230,7 +230,7 @@ export function DialogList({
           return (
             <SwipeableRow
               key={dialog.id}
-              rightActions={[
+              actions={[
                 ...(onMuteDialog ? [{
                   label: "음소거",
                   icon: <BellOff className="h-3.5 w-3.5" />,
