@@ -1,13 +1,25 @@
 "use client";
 
-import { Send, MessagesSquare } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import {
+  Send,
+  MessagesSquare,
+  Copy,
+  Reply,
+  Trash2,
+} from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { ChatMessage, ChatRoom } from "./mockData";
 
 interface ChatConversationPanelProps {
   room: ChatRoom | null;
   messages: ChatMessage[];
   onSend: (text: string) => void;
+}
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  messageId: string;
 }
 
 function formatTimeOnly(date: Date): string {
@@ -50,13 +62,60 @@ export function ChatConversationPanel({
   onSend,
 }: ChatConversationPanelProps) {
   const [input, setInput] = useState("");
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollMemory = useRef<Map<string, number>>(new Map());
+  const prevRoomIdRef = useRef<string | null>(null);
+
+  const saveScroll = useCallback(() => {
+    if (prevRoomIdRef.current && scrollRef.current) {
+      scrollMemory.current.set(
+        prevRoomIdRef.current,
+        scrollRef.current.scrollTop
+      );
+    }
+  }, []);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    return () => {
+      saveScroll();
+    };
+  }, [saveScroll]);
+
+  useEffect(() => {
+    if (!room || !scrollRef.current) return;
+
+    if (prevRoomIdRef.current && prevRoomIdRef.current !== room.id) {
+      saveScroll();
     }
+
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      const saved = scrollMemory.current.get(room.id);
+      if (saved !== undefined) {
+        scrollRef.current.scrollTop = saved;
+      } else {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+
+    prevRoomIdRef.current = room.id;
+  }, [room, saveScroll]);
+
+  useEffect(() => {
+    if (!scrollRef.current || !room) return;
+    const saved = scrollMemory.current.get(room.id);
+    if (saved !== undefined) return;
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, room]);
+
+  useEffect(() => {
+    function handleClick() {
+      setContextMenu(null);
+    }
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
 
   function handleSend() {
     const trimmed = input.trim();
@@ -70,6 +129,29 @@ export function ChatConversationPanel({
       e.preventDefault();
       handleSend();
     }
+  }
+
+  function handleContextMenu(
+    e: React.MouseEvent,
+    messageId: string
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, messageId });
+  }
+
+  function handleCopy(msg: ChatMessage) {
+    navigator.clipboard.writeText(msg.content).catch(() => {});
+    setContextMenu(null);
+  }
+
+  function handleReply(msg: ChatMessage) {
+    setInput(`[답장] @${msg.senderName}: `);
+    setContextMenu(null);
+  }
+
+  function handleDelete(msgId: string) {
+    setContextMenu(null);
   }
 
   if (!room) {
@@ -114,7 +196,10 @@ export function ChatConversationPanel({
         key={msg.id}
         className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in ${spacingClass}`}
       >
-        <div className={`max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
+        <div
+          className={`max-w-[70%] ${isMe ? "items-end" : "items-start"}`}
+          onContextMenu={(e) => handleContextMenu(e, msg.id)}
+        >
           {!isMe && !prevConsecutive && (
             <div className="mb-1 ml-0.5 flex items-center gap-1.5">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-[10px] font-bold text-white">
@@ -126,7 +211,7 @@ export function ChatConversationPanel({
             </div>
           )}
           <div
-            className={`px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+            className={`cursor-context-menu select-text px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
               isMe
                 ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white rounded-2xl rounded-br-sm ml-auto"
                 : "bg-[#1a1a24] text-app-text rounded-2xl rounded-bl-sm"
@@ -149,8 +234,12 @@ export function ChatConversationPanel({
     lastSenderIndex = i;
   }
 
+  const contextMessage = contextMenu
+    ? messages.find((m) => m.id === contextMenu.messageId) ?? null
+    : null;
+
   return (
-    <div className="flex flex-1 flex-col bg-app-bg">
+    <div className="relative flex flex-1 flex-col bg-app-bg">
       <div className="flex shrink-0 items-center justify-between border-b border-violet-500/20 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-xs font-bold text-white">
@@ -206,6 +295,35 @@ export function ChatConversationPanel({
           </button>
         </div>
       </div>
+
+      {contextMenu && contextMessage && (
+        <div
+          className="fixed z-50 min-w-[140px] rounded-xl border border-violet-500/30 bg-app-card shadow-xl shadow-black/40 backdrop-blur-xl"
+          style={{ left: contextMenu.x + 4, top: contextMenu.y + 4 }}
+        >
+          <button
+            onClick={() => handleCopy(contextMessage)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10 rounded-t-xl"
+          >
+            <Copy className="h-3.5 w-3.5 text-app-text-muted" />
+            복사
+          </button>
+          <button
+            onClick={() => handleReply(contextMessage)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+          >
+            <Reply className="h-3.5 w-3.5 text-app-text-muted" />
+            답장
+          </button>
+          <button
+            onClick={() => handleDelete(contextMessage.id)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-danger transition-colors hover:bg-red-500/10 rounded-b-xl"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            삭제
+          </button>
+        </div>
+      )}
     </div>
   );
 }

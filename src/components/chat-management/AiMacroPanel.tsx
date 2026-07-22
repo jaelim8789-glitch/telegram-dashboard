@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sparkles } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import type { AiMacro } from "./mockData";
 
@@ -47,6 +48,12 @@ function MacroToggle({
   );
 }
 
+interface ToastItem {
+  id: string;
+  label: string;
+  enabled: boolean;
+}
+
 export function AiMacroPanel({ macros, onToggle }: AiMacroPanelProps) {
   const [local, setLocal] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -55,14 +62,28 @@ export function AiMacroPanel({ macros, onToggle }: AiMacroPanelProps) {
     }
     return init;
   });
+  const [toast, setToast] = useState<ToastItem | null>(null);
 
-  function handleToggle(id: string, enabled: boolean) {
-    setLocal((prev) => ({ ...prev, [id]: enabled }));
-    onToggle(id, enabled);
-  }
+  const handleToggle = useCallback(
+    (id: string, enabled: boolean) => {
+      setLocal((prev) => ({ ...prev, [id]: enabled }));
+      onToggle(id, enabled);
+      const macro = macros.find((m) => m.id === id);
+      if (macro) {
+        setToast({ id: `${macro.id}-${Date.now()}`, label: macro.label, enabled });
+      }
+    },
+    [macros, onToggle]
+  );
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 1500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-l border-violet-500/20 bg-app-surface">
+    <div className="relative flex h-full w-[260px] shrink-0 flex-col border-l border-violet-500/20 bg-app-surface">
       <div className="border-b border-violet-500/20 px-4 py-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-violet-400" />
@@ -89,6 +110,21 @@ export function AiMacroPanel({ macros, onToggle }: AiMacroPanelProps) {
           AI 매크로는 텔레그램 봇을 통해 자동 실행됩니다
         </p>
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 12, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 6, x: "-50%" }}
+            transition={{ duration: 0.2 }}
+            className="absolute bottom-16 left-1/2 z-20 whitespace-nowrap rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-medium text-white shadow-lg shadow-violet-500/30"
+          >
+            {toast.label} {toast.enabled ? "켜짐" : "꺼짐"}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
