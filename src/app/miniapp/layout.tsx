@@ -9,7 +9,6 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 개발 환경에서 Telegram 환경 mocking
     async function setup() {
       try {
         const isTma =
@@ -22,10 +21,25 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
       } catch (e) {
         console.warn("MiniApp init failed (not in Telegram):", e);
         setError(null);
-        setReady(true); // Fallback: show anyway
+        setReady(true);
       }
     }
     setup();
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      meta.setAttribute("content", "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no");
+    }
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (!themeColor) {
+      const el = document.createElement("meta");
+      el.name = "theme-color";
+      el.content = "#17212b";
+      document.head.appendChild(el);
+    }
   }, []);
 
   if (!ready) {

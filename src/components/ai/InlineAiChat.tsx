@@ -487,7 +487,7 @@ export function InlineAiChat() {
           {messagesLoading ? (
             <div className="space-y-3">
               {[1, 2].map((i) => (
-                <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+                <div key={`iac-sk-${i}`} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                   <div className="space-y-1.5">
                     <Skeleton className="h-3 w-12 rounded" />
                     <Skeleton className={`h-14 w-40 rounded-2xl ${i % 2 === 0 ? "rounded-br-md" : "rounded-bl-md"}`} />
@@ -572,7 +572,7 @@ export function InlineAiChat() {
         {agentsLoading ? (
           <div className="flex gap-1.5">
             {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-7 w-20 rounded-lg" />
+              <Skeleton key={`iac-sk2-${i}`} className="h-7 w-20 rounded-lg" />
             ))}
           </div>
         ) : agentsError && agents.length === 0 ? (
@@ -635,8 +635,8 @@ export function InlineAiChat() {
             <div className="flex-1 overflow-y-auto">
               {chatsLoading ? (
                 <div className="space-y-1 p-2">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={`iac-sk3-${i}`} className="h-10 w-full rounded-lg" />
                   ))}
                 </div>
               ) : chats.length === 0 ? (

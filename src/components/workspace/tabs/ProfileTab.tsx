@@ -358,7 +358,7 @@ export function ProfileTab() {
       >
         {timelineLoading ? (
           <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={`prof-sk-${i}`} className="h-14 w-full rounded-xl" />)}
           </div>
         ) : recentActivity.length === 0 ? (
           <EmptyState icon={Activity} title="최근 활동 없음" description="이 계정의 활동 기록이 아직 없습니다." />

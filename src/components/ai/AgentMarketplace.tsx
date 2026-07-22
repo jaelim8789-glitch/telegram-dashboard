@@ -243,7 +243,7 @@ export function AgentMarketplace({ onAgentCreated, onClose }: AgentMarketplacePr
         {loading && (
           <div className="grid grid-cols-2 gap-2">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              <Skeleton key={`am-sk-${i}`} className="h-28 w-full rounded-xl" />
             ))}
           </div>
         )}

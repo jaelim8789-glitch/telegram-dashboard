@@ -91,7 +91,7 @@ function DeliveryRateMeter({ successCount, total }: { successCount: number; tota
     <div className="flex items-center gap-2">
       <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-app-border">
         {segments.map((s, i) => (
-          <div key={i} className={s.color} style={{ width: `${s.pct}%` }} />
+          <div key={`seg-${i}`} className={s.color} style={{ width: `${s.pct}%` }} />
         ))}
       </div>
       <span
@@ -434,7 +434,7 @@ function SupportConsoleContent() {
 
       {loading && (
         <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={`ad-supp-sk-${i}`} className="h-16 w-full rounded-xl" />)}
         </div>
       )}
 

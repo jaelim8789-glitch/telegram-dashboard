@@ -1,20 +1,29 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { initData, useSignal, backButton, hapticFeedback } from "@tma.js/sdk-react";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowLeft, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { MiniAppNav, type MiniAppTab } from "./MiniAppNav";
-import { MiniAppChat } from "./MiniAppChat";
-import { MiniAppProfile } from "./MiniAppProfile";
 import { MiniAppDashboard } from "./MiniAppDashboard";
 import { MiniAppSend } from "./MiniAppSend";
+
+const MiniAppChat = dynamic(() => import("./MiniAppChat").then((m) => ({ default: m.MiniAppChat })), {
+  loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
+});
+
+const MiniAppProfile = dynamic(() => import("./MiniAppProfile").then((m) => ({ default: m.MiniAppProfile })), {
+  loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
+});
 
 export default function MiniAppPage() {
   const [activeTab, setActiveTab] = useState<MiniAppTab>("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [online, setOnline] = useState(true);
   const initDataState = useSignal(initData.state);
   const user = initDataState?.user;
+  const inputFocusedRef = useRef(false);
 
   const handleRefresh = useCallback(() => {
     try { hapticFeedback.impactOccurred("medium"); } catch {}
@@ -47,6 +56,42 @@ export default function MiniAppPage() {
     return () => { cancelled = true; if (off) off(); };
   }, [activeTab, handleRefresh]);
 
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleFocusIn(e: FocusEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        inputFocusedRef.current = true;
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    }
+    function handleFocusOut(e: FocusEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        inputFocusedRef.current = false;
+      }
+    }
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
   const greeting = user ? user.first_name + "님" : "TeleMon";
 
   return (
@@ -71,18 +116,30 @@ export default function MiniAppPage() {
               TeleMon · {lastUpdated.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 갱신
             </span>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-90"
-            style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}
-            aria-label="새로고침"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1" aria-label={online ? "온라인" : "오프라인"}>
+              {online ? (
+                <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <WifiOff className="h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className="text-[10px]" style={{ color: online ? "var(--tg-theme-hint-color, #708499)" : "var(--tg-theme-destructive-text-color, #ec3942)" }}>
+                {online ? "온라인" : "오프라인"}
+              </span>
+            </div>
+            <button
+              onClick={handleRefresh}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-90"
+              style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}
+              aria-label="새로고침"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pb-[68px]" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 68px)" }}>
         {activeTab === "dashboard" && <MiniAppDashboard key={`dash-${refreshKey}`} />}
         {activeTab === "chat" && <MiniAppChat key={`chat-${refreshKey}`} />}
         {activeTab === "send" && <MiniAppSend key={`send-${refreshKey}`} user={user} />}

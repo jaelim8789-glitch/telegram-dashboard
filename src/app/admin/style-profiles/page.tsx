@@ -193,7 +193,7 @@ function StyleProfilesContent() {
         {loading && (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+              <Skeleton key={`ad-sp-sk-${i}`} className="h-20 w-full rounded-xl" />
             ))}
           </div>
         )}
@@ -326,7 +326,7 @@ function StyleProfilesContent() {
                           <span className="text-app-text-muted">주요 패턴</span>
                           <div className="mt-0.5 flex flex-wrap gap-1">
                             {(analysis.key_patterns as string[]).map((pattern, i) => (
-                              <span key={i} className="rounded-md border border-app-border bg-app-card px-1.5 py-0.5 text-[11px] text-app-text">
+                              <span key={`kp-${i}`} className="rounded-md border border-app-border bg-app-card px-1.5 py-0.5 text-[11px] text-app-text">
                                 {pattern}
                               </span>
                             ))}

@@ -76,7 +76,7 @@ function TrendLineChart({ trend }: { trend: HealthTrendPoint[] }) {
           const cx = xScale(i);
           const cy = yScale(t.success_rate);
           return (
-            <g key={i} className="group cursor-pointer">
+            <g key={`trend-${i}`} className="group cursor-pointer">
               <circle cx={cx} cy={cy} r="3" className="fill-app-card stroke-app-primary" strokeWidth="2" />
               {/* Bar for total volume */}
               <rect
@@ -198,7 +198,7 @@ export function HealthTab() {
       <div className="space-y-4" aria-busy="true">
         <Skeleton className="h-8 w-48 rounded-xl" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={`health-sk-${i}`} className="h-24 w-full rounded-xl" />)}
         </div>
         <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />

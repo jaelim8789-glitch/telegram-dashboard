@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useRef, useEffect } from "react";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 
@@ -23,12 +23,17 @@ const RESPONSES: Record<string, string> = {
   "마케팅 카피": "드디어 공개! 텔레그램 마케팅의 새로운 기준, TeleMon이 선보입니다. 지금 바로 시작하세요!",
 };
 
-export function MiniAppChat() {
+export const MiniAppChat = memo(function MiniAppChat() {
   const [messages, setMessages] = useState<Message[]>([
     { role: "agent", content: "안녕하세요! TeleMon AI입니다. 무엇을 도와드릴까요?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function handleSend(text: string) {
     if (!text.trim() || loading) return;
@@ -40,7 +45,6 @@ export function MiniAppChat() {
       hapticFeedback.notificationOccurred("success");
     } catch {}
 
-    // Simulate AI response (production: replace with real API call)
     setTimeout(() => {
       let reply = "죄송합니다. 다시 말씀해주시겠어요?";
       for (const [key, value] of Object.entries(RESPONSES)) {
@@ -52,6 +56,11 @@ export function MiniAppChat() {
       setMessages((prev) => [...prev, { role: "agent", content: reply }]);
       setLoading(false);
     }, 1000);
+  }
+
+  function handleQuickTap(prompt: string) {
+    try { hapticFeedback.impactOccurred("light"); } catch {}
+    handleSend(prompt);
   }
 
   return (
@@ -71,7 +80,7 @@ export function MiniAppChat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" role="log" aria-label="채팅 메시지">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -107,6 +116,7 @@ export function MiniAppChat() {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {messages.length <= 2 && (
@@ -115,13 +125,14 @@ export function MiniAppChat() {
             {QUICK_PROMPTS.map((prompt) => (
               <button
                 key={prompt}
-                onClick={() => handleSend(prompt)}
+                onClick={() => handleQuickTap(prompt)}
                 disabled={loading}
                 className="rounded-full px-3 py-2 text-xs transition-opacity disabled:opacity-50 active:scale-95"
                 style={{
                   backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)",
                   color: "var(--tg-theme-button-color, #5288c1)",
                 }}
+                aria-label={`빠른 질문: ${prompt}`}
               >
                 {prompt}
               </button>
@@ -152,6 +163,7 @@ export function MiniAppChat() {
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck="false"
+            aria-label="메시지 입력"
           />
           <button
             onClick={() => handleSend(input)}
@@ -161,6 +173,7 @@ export function MiniAppChat() {
               backgroundColor: "var(--tg-theme-button-color, #5288c1)",
               opacity: !input.trim() || loading ? 0.5 : 1,
             }}
+            aria-label="메시지 전송"
           >
             <Send className="h-5 w-5 text-white" />
           </button>
@@ -168,4 +181,4 @@ export function MiniAppChat() {
       </div>
     </div>
   );
-}
+});

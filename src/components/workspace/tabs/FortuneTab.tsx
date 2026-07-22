@@ -179,7 +179,7 @@ export function FortuneTab() {
                 {/* 배경 별 효과 */}
                 <div className="absolute inset-0 opacity-10">
                   {Array.from({ length: 20 }).map((_, i) => (
-                    <Star key={i} className="absolute text-yellow-400" style={{
+                    <Star key={`fortune-star-${i}`} className="absolute text-yellow-400" style={{
                       top: `${Math.random() * 100}%`,
                       left: `${Math.random() * 100}%`,
                       fontSize: `${Math.random() * 12 + 6}px`,
@@ -256,7 +256,7 @@ export function FortuneTab() {
             <Panel title="🏆 오늘의 핵심 미션" description="운세 기반 추천 액션 아이템">
               <div className="space-y-2">
                 {fortune.core_missions.map((mission, i) => (
-                  <div key={i} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-card/50 p-2.5">
+                  <div key={`mission-${i}`} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-card/50 p-2.5">
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-app-primary/10 text-[10px] font-bold text-app-primary">
                       {i + 1}
                     </div>
@@ -272,7 +272,7 @@ export function FortuneTab() {
             <Panel title="🚨 오늘 피해야 할 행동" description="별자리 흐름에 따른 주의사항">
               <div className="space-y-2">
                 {fortune.avoid_today.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-app-text">
+                  <div key={`avoid-${i}`} className="flex items-start gap-2 text-xs text-app-text">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-orange-500" />
                     <span>{item}</span>
                   </div>

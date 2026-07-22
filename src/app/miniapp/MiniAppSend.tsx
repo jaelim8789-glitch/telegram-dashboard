@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Send, Loader2, CheckCircle } from "lucide-react";
+import { hapticFeedback } from "@tma.js/sdk-react";
 
 interface MiniAppSendProps {
   user?: { id: number; first_name?: string; last_name?: string; username?: string };
 }
 
-export function MiniAppSend({ user }: MiniAppSendProps) {
+export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
   async function sendHandler() {
     if (!message.trim() || sending) return;
+    try { hapticFeedback.impactOccurred("medium"); } catch {}
     setSending(true);
     try {
       const res = await fetch("/api/broadcasts", {
@@ -24,9 +26,12 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
       if (res.ok) { 
         setSent(true); 
         setMessage(""); 
+        try { hapticFeedback.notificationOccurred("success"); } catch {}
         setTimeout(() => setSent(false), 3000); 
       }
-    } catch {}
+    } catch {
+      try { hapticFeedback.notificationOccurred("error"); } catch {}
+    }
     finally { setSending(false); }
   }
 
@@ -50,6 +55,7 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
         autoCorrect="off"
         autoCapitalize="sentences"
         spellCheck="false"
+        aria-label="발송할 메시지"
       />
       <button
         onClick={sendHandler}
@@ -59,6 +65,7 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
           color: "var(--tg-theme-button-text-color, #fff)",
         }}
         className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 transition-opacity active:scale-98"
+        aria-label={sending ? "발송 중" : sent ? "발송 완료" : "발송하기"}
       >
         {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : sent ? <CheckCircle className="h-5 w-5" /> : <Send className="h-5 w-5" />}
         {sending ? "발송 중..." : sent ? "발송 완료!" : "발송하기"}
@@ -68,4 +75,4 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
       </p>
     </div>
   );
-}
+});

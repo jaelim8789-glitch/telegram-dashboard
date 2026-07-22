@@ -134,10 +134,10 @@ export function PixelClickGame({ onClose }: { onClose: () => void }) {
             <div className="relative h-[300px] rounded-xl bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] overflow-hidden">
               {/* Grid dots */}
               {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="absolute h-full w-px bg-white/5" style={{ left: `${(i / 20) * 100}%` }} />
+                <div key={`grid-v-${i}`} className="absolute h-full w-px bg-white/5" style={{ left: `${(i / 20) * 100}%` }} />
               ))}
               {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="absolute w-full h-px bg-white/5" style={{ top: `${(i / 20) * 100}%` }} />
+                <div key={`grid-h-${i}`} className="absolute w-full h-px bg-white/5" style={{ top: `${(i / 20) * 100}%` }} />
               ))}
 
               <AnimatePresence>

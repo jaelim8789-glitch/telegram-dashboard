@@ -218,7 +218,7 @@ function RuleEditorModal({
                 const Icon = actionDef ? getActionIcon(actionType) : Zap;
                 return (
                   <motion.div
-                    key={i}
+                    key={action.id || `action-${i}`}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}

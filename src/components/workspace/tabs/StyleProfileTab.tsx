@@ -316,7 +316,7 @@ export function StyleProfileTab() {
                   <span className="shrink-0 w-20 text-app-text-muted">이모지 유형</span>
                   <div className="flex flex-wrap gap-1">
                     {a.emoji_types.map((e, i) => (
-                      <span key={i} className="rounded-full bg-app-card-hover px-2 py-0.5 text-[10px] text-app-text">{e}</span>
+                      <span key={`emoji-${i}`} className="rounded-full bg-app-card-hover px-2 py-0.5 text-[10px] text-app-text">{e}</span>
                     ))}
                   </div>
                 </div>
@@ -325,7 +325,7 @@ export function StyleProfileTab() {
                 <div className="pt-2 border-t border-app-border">
                   <p className="text-[10px] text-app-text-muted mb-1">주요 패턴</p>
                   {a.key_patterns.map((p, i) => (
-                    <p key={i} className="text-[11px] text-app-text ml-2">• {p}</p>
+                    <p key={`kp-${i}`} className="text-[11px] text-app-text ml-2">• {p}</p>
                   ))}
                 </div>
               )}

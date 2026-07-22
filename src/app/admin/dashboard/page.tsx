@@ -282,7 +282,7 @@ function AdminDashboardContent() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+            <Skeleton key={`ad-dash-${i}`} className="h-28 w-full rounded-2xl" />
           ))
         ) : (
           <>
@@ -332,13 +332,13 @@ function AdminDashboardContent() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                <Skeleton key={`ad-dash3-${i}`} className="h-20 w-full rounded-xl" />
               ))}
             </div>
             <Skeleton className="h-4 w-full rounded-lg" />
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
               {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                <Skeleton key={`ad-dash4-${i}`} className="h-10 w-full rounded-lg" />
               ))}
             </div>
           </div>
