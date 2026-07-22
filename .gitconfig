@@ -1,0 +1,21 @@
+[core]
+    excludesfile = ~/.gitignore_global
+
+[alias]
+    cleanup = "!f() { git branch --merged master | grep -v 'main\|master\|\*' | xargs -r git branch -d; }; f"
+    cleanup-remote = "!f() { git branch -r --merged master | grep -v 'main\|master\|HEAD' | sed 's/origin\\///' | xargs -r -I{} git push origin --delete {}; }; f"
+    fresh = "!git checkout master && git pull && git branch --merged master | grep -v 'master\\|\\*' | xargs -r git branch -d && git worktree prune"
+    wip = "!git add -A && git commit --no-verify -m 'WIP: auto-save' && echo 'WIP saved'"
+    unwip = "!git reset HEAD~1 --soft && echo 'WIP undone'"
+    all = "!f() { git add -A && git commit --no-verify -m \"$1\" && git push origin HEAD --no-verify; }; f"
+    today = "log --oneline --since='midnight'"
+    stats = "shortlog -sn --all --since='1 week ago'"
+
+[push]
+    default = current
+
+[pull]
+    rebase = true
+
+[rebase]
+    autoStash = true
