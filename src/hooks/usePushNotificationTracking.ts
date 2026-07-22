@@ -40,8 +40,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
     if (storedMetrics) {
       try {
         setMetrics(JSON.parse(storedMetrics));
-      } catch (error) {
-        console.error('Push notification metrics parsing error:', error);
+      } catch {
       }
     }
   }, []);
