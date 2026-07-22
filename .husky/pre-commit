@@ -41,7 +41,7 @@ echo "✅ [check-conflict] 통과"
 
 # 1. JSX-in-.ts 파일 금지 검사 (빠름 — 전체 tsc 안 돌리고 1초 컷)
 echo "🔬 [check-jsx-in-ts] .ts 파일에 JSX 있는지 검사..."
-VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '<[A-Z][a-zA-Z]*\s' 2>/dev/null || true)
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '</[A-Z][a-zA-Z]*>|<[A-Z][a-zA-Z]*\s*/>|<[A-Z][a-zA-Z]*\s+[a-zA-Z-]+=' 2>/dev/null || true)
 if [ -n "$VIOLATIONS" ]; then
   echo "❌ [check-jsx-in-ts] 다음 .ts 파일에 JSX 구문이 포함되어 있습니다."
   echo "   .tsx로 확장자를 변경해주세요:"
