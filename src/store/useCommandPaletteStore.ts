@@ -2,51 +2,21 @@
 
 import { create } from "zustand";
 
-const RECENT_KEY = "telemon-cmd-recent";
-const MAX_RECENT = 5;
+interface Command { id: string; label: string; icon?: string; action: string; category: string; }
+interface CommandPaletteState { open: boolean; query: string; results: Command[]; setOpen: (o: boolean) => void; setQuery: (q: string) => void; setResults: (r: Command[]) => void; }
 
-interface PaletteState {
-  open: boolean;
-  setOpen: (v: boolean) => void;
-  toggle: () => void;
-  recent: string[];
-  addRecent: (id: string) => void;
-  clearRecent: () => void;
-}
+const DEFAULT_COMMANDS: Command[] = [
+  { id: "1", label: "발송하기", action: "tab-send", category: "탭", icon: "✉️" },
+  { id: "2", label: "계정 등록", action: "tab-register", category: "탭", icon: "➕" },
+  { id: "3", label: "AI 채팅", action: "tab-myai", category: "탭", icon: "🤖" },
+  { id: "4", label: "대시보드", action: "tab-dashboard", category: "탭", icon: "📊" },
+  { id: "5", label: "새로고침", action: "refresh", category: "액션", icon: "🔄" },
+  { id: "6", label: "다크모드 전환", action: "toggle-theme", category: "설정", icon: "🌙" },
+];
 
-function loadRecent(): string[] {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(RECENT_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveRecent(recent: string[]) {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
-  } catch {
-    /* noop */
-  }
-}
-
-export const useCommandPaletteStore = create<PaletteState>((set, get) => ({
-  open: false,
-  setOpen: (v) => set({ open: v }),
-  toggle: () => set((state) => ({ open: !state.open })),
-  recent: loadRecent(),
-  addRecent: (id) => {
-    const next = [id, ...get().recent.filter((item) => item !== id)].slice(0, MAX_RECENT);
-    saveRecent(next);
-    set({ recent: next });
-  },
-  clearRecent: () => {
-    saveRecent([]);
-    set({ recent: [] });
-  },
+export const useCommandPaletteStore = create<CommandPaletteState>((set) => ({
+  open: false, query: "", results: DEFAULT_COMMANDS,
+  setOpen: (o) => set({ open: o, query: "", results: DEFAULT_COMMANDS }),
+  setQuery: (q) => set(s => ({ query: q, results: q ? DEFAULT_COMMANDS.filter(c => c.label.includes(q) || c.category.includes(q)) : DEFAULT_COMMANDS })),
+  setResults: (r) => set({ results: r }),
 }));
