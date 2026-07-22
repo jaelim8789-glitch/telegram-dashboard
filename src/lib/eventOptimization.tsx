@@ -465,23 +465,6 @@ export function useThrottle<T extends (...args: any[]) => any>(
   return throttle(func, limit, key);
 }
 
-// 디바운스된 값 훅
-export function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 // 쓰로틀된 값 훅
 export function useThrottledValue<T>(value: T, interval: number): T {
   const [throttledValue, setThrottledValue] = useState<T>(value);
