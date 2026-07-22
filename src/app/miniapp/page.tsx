@@ -49,16 +49,20 @@ export default function MiniAppPage() {
         const { mainButton } = await import("@tma.js/sdk-react");
         if (cancelled) return;
         mainButton.mount();
-        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: activeTab === "dashboard" });
+        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false });
         off = mainButton.onClick(handleRefresh);
       } catch {}
     })();
     return () => { cancelled = true; if (off) off(); };
-  }, [activeTab, handleRefresh]);
+  }, [handleRefresh]);
 
   useEffect(() => {
     function handleTabChange(e: CustomEvent) { setActiveTab(e.detail.tab); }
     window.addEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
+    return () => window.removeEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
+  }, []);
+
+  useEffect(() => {
     setOnline(navigator.onLine);
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
