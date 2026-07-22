@@ -1,14 +1,20 @@
 "use client";
 
-import { Edit3, Trash2, RefreshCw } from "lucide-react";
+import { memo } from "react";
+import { Edit3, Trash2, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { AccountEntry, AccountStatus } from "./types";
 
 interface AccountTableProps {
   accounts: AccountEntry[];
+  sortKey?: string | null;
+  sortDir?: "asc" | "desc";
+  onSort?: (key: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onRefresh: (id: string) => void;
 }
+
+type SortableColumn = "name" | "status" | "lastActive" | "todaySent";
 
 const STATUS_BADGE: Record<AccountStatus, { bg: string; text: string; label: string; dot: boolean }> = {
   active: { bg: "bg-green-500/10", text: "text-green-400", label: "연결됨", dot: true },
@@ -31,7 +37,36 @@ function formatTime(iso: string): string {
   return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
-export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountTableProps) {
+interface SortableHeaderProps {
+  label: string;
+  column: SortableColumn;
+  sortKey: string | null | undefined;
+  sortDir: "asc" | "desc" | undefined;
+  onSort: ((key: string) => void) | undefined;
+}
+
+const SortableHeader = memo(function SortableHeader({ label, column, sortKey, sortDir, onSort }: SortableHeaderProps) {
+  const isActive = sortKey === column;
+  return (
+    <button
+      onClick={() => onSort?.(column)}
+      className="group inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-app-text-muted transition-colors hover:text-app-text"
+    >
+      {label}
+      {isActive ? (
+        sortDir === "asc" ? (
+          <ArrowUp className="h-3 w-3 text-violet-400" />
+        ) : (
+          <ArrowDown className="h-3 w-3 text-violet-400" />
+        )
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60" />
+      )}
+    </button>
+  );
+});
+
+export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDelete, onRefresh }: AccountTableProps) {
   if (accounts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-app-text-muted">
@@ -49,10 +84,19 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
       <table className="w-full">
         <thead>
           <tr className="border-b border-app-border/50 text-left">
-            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">계정명</th>
+            <th className="px-5 py-3">
+              <SortableHeader label="계정명" column="name" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+            </th>
             <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">전화번호</th>
-            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">상태</th>
-            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">마지막 활동</th>
+            <th className="px-5 py-3">
+              <SortableHeader label="오늘 발송" column="todaySent" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+            </th>
+            <th className="px-5 py-3">
+              <SortableHeader label="상태" column="status" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+            </th>
+            <th className="px-5 py-3">
+              <SortableHeader label="마지막 활동" column="lastActive" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+            </th>
             <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">작업</th>
           </tr>
         </thead>
@@ -69,6 +113,11 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
                 </td>
                 <td className="px-5 py-3.5">
                   <span className="text-sm text-app-text-secondary">{account.phone}</span>
+                </td>
+                <td className="px-5 py-3.5">
+                  <span className="text-sm tabular-nums text-app-text">
+                    {account.todaySent.toLocaleString()}건
+                  </span>
                 </td>
                 <td className="px-5 py-3.5">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text}`}>

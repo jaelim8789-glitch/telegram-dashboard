@@ -7,14 +7,30 @@ import { AccountTable } from "@/components/accounts/AccountTable";
 import { AccountFiltersBar } from "@/components/accounts/AccountFilters";
 import { AccountPagination } from "@/components/accounts/AccountPagination";
 import { useToast } from "@/components/ui/Toast";
-import type { AccountStatus } from "@/components/accounts/types";
+import type { AccountEntry, AccountStatus } from "@/components/accounts/types";
 
 const PAGE_SIZE = 10;
+
+type SortKey = "name" | "status" | "lastActive" | "todaySent";
+
+function sortAccounts(list: AccountEntry[], key: SortKey | null, dir: "asc" | "desc" | null): AccountEntry[] {
+  if (!key || !dir) return list;
+  return [...list].sort((a, b) => {
+    const aVal = a[key];
+    const bVal = b[key];
+    const cmp = typeof aVal === "string" && typeof bVal === "string"
+      ? aVal.localeCompare(bVal)
+      : (aVal as number) - (bVal as number);
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
 
 export function AccountsPageClient() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<AccountStatus | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { toast } = useToast();
 
   const filteredAccounts = useMemo(() => {
@@ -28,11 +44,15 @@ export function AccountsPageClient() {
     });
   }, [search, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / PAGE_SIZE));
+  const sortedAccounts = useMemo(() => {
+    return sortAccounts(filteredAccounts, sortKey, sortDir);
+  }, [filteredAccounts, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedAccounts.length / PAGE_SIZE));
   const paginatedAccounts = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredAccounts.slice(start, start + PAGE_SIZE);
-  }, [filteredAccounts, currentPage]);
+    return sortedAccounts.slice(start, start + PAGE_SIZE);
+  }, [sortedAccounts, currentPage]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -46,6 +66,19 @@ export function AccountsPageClient() {
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
+  }, []);
+
+  const handleSort = useCallback((key: string) => {
+    setSortKey((prev) => {
+      if (prev !== key) return key as SortKey;
+      return prev;
+    });
+    setSortDir((prev) => {
+      if (!prev) return "asc";
+      if (prev === "asc") return "desc";
+      return null;
+    });
+    setCurrentPage(1);
   }, []);
 
   const handleEdit = useCallback((id: string) => {
@@ -98,6 +131,9 @@ export function AccountsPageClient() {
         <div className="rounded-2xl border border-violet-500/15 bg-app-card overflow-hidden">
           <AccountTable
             accounts={paginatedAccounts}
+            sortKey={sortKey}
+            sortDir={sortDir ?? undefined}
+            onSort={handleSort}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onRefresh={handleRefresh}
@@ -105,7 +141,7 @@ export function AccountsPageClient() {
           <AccountPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredAccounts.length}
+            totalItems={sortedAccounts.length}
             pageSize={PAGE_SIZE}
             onPageChange={handlePageChange}
           />
