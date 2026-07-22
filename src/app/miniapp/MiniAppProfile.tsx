@@ -9,6 +9,7 @@ import {
 import { clearAll } from "@/lib/auth";
 import { SITE } from "@/lib/site";
 import { fetchAuthMe } from "@/lib/api";
+import { Image } from '@/components/ui/Image';
 
 function MenuItem({
   icon,
@@ -84,7 +85,15 @@ export function MiniAppProfile() {
           }}
         >
           {user?.photo_url ? (
-            <img src={user.photo_url} alt={user.first_name} className="h-full w-full rounded-full object-cover" />
+            <Image 
+              src={user.photo_url} 
+              alt={user.first_name} 
+              width={40}
+              height={40}
+              className="h-full w-full rounded-full object-cover"
+              priority={false}
+              unoptimized // 외부 이미지이므로 최적화 비활성화
+            />
           ) : (
             user?.first_name?.charAt(0)?.toUpperCase() || "U"
           )}

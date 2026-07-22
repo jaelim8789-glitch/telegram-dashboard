@@ -17,15 +17,26 @@ if [ "${CHANGED_LINES:-0}" -gt 500 ]; then
   echo ""
 fi
 
-# 1. TypeScript 타입 체크
-echo "📦 [tsc --noEmit] ..."
-npx tsc --noEmit 2>&1 || {
+# 1. JSX-in-.ts 파일 금지 검사 (빠름 — 전체 tsc 안 돌리고 1초 컷)
+echo "🔬 [check-jsx-in-ts] .ts 파일에 JSX 있는지 검사..."
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '<[A-Z][a-zA-Z]*\s' 2>/dev/null || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "❌ [check-jsx-in-ts] 다음 .ts 파일에 JSX 구문이 포함되어 있습니다."
+  echo "   .tsx로 확장자를 변경해주세요:"
+  echo "$VIOLATIONS" | sed 's/^/   - /'
+  exit 1
+fi
+echo "✅ [check-jsx-in-ts] 통과"
+
+# 2. TypeScript 타입 체크 (변경된 파일만 — incremental)
+echo "📦 [tsc --noEmit] (incremental) ..."
+npx tsc --noEmit --incremental 2>&1 || {
   echo "❌ [tsc --noEmit] 타입 오류가 있습니다. 커밋이 차단되었습니다."
   exit 1
 }
 echo "✅ [tsc --noEmit] 통과"
 
-# 2. Lint-staged (ESLint --fix + Prettier)
+# 3. Lint-staged (ESLint --fix + Prettier)
 echo "🧹 [lint-staged] ..."
 npx lint-staged 2>&1 || {
   echo "❌ [lint-staged] 린트 오류가 있습니다. 커밋이 차단되었습니다."

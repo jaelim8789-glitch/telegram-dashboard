@@ -20,6 +20,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
+import {
+  POLL_INTERVAL_MS, HISTORY_POLL_INTERVAL_MS,
+  TYPE_LABEL, TYPE_ICON, FILTER_ORDER, FILTER_LABEL,
+  DELIVERY_PRESET_LABEL,
+  replyDedupeKey, loadReplyDedupeSet, addToReplyDedupeSet, shuffled,
+  type SortMode, type HistoryFilter, type DeliveryPreset,
+} from "@/components/workspace/tabs/send/sendTabTypes";
 import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
 import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { RuntimeManager } from "@/lib/runtimeManager";

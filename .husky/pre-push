@@ -3,36 +3,46 @@ set -e
 echo "🔍 [pre-push] 실행 중..."
 
 # ═══════════════════════════════════════════════
-# 0. 되돌리기 감지 경고
-#    "이 커밋이 최근 N시간 내 변경된 파일을 되돌리는지" 간단 diff 히스토리 비교
+# 0. Diff 요약 자동 생성 (PR 리뷰 부담 감소)
 # ═══════════════════════════════════════════════
-echo "🕵️  [pre-push] 되돌리기 감지..."
-
-# Get the range of commits being pushed
 REMOTE_REF="$2"
 LOCAL_REF="$1"
 if [ -z "$REMOTE_REF" ] || [ "$REMOTE_REF" = "" ]; then
-  # New branch — compare against master
   RANGE="origin/master..HEAD"
 else
   RANGE="$REMOTE_REF..$LOCAL_REF"
 fi
 
-RECENT_HOURS=48
-RECENT_CUTOFF=$(date -d "-${RECENT_HOURS} hours" +%s 2>/dev/null || echo "")
+SUMMARY_FILE="/tmp/telemon-push-summary-$(date +%s).md"
+{
+  echo "## 📦 Push 요약"
+  echo ""
+  echo "### 커밋"
+  git log --oneline "$RANGE" 2>/dev/null | head -30
+  echo ""
+  echo "### 변경 파일 ($(git diff --name-only "$RANGE" 2>/dev/null | wc -l)개)"
+  git diff --stat "$RANGE" 2>/dev/null | head -40
+  echo ""
+  echo "### 주요 변경사항"
+  git diff "$RANGE" -- '*.ts' '*.tsx' 2>/dev/null | grep -E '^[+-].*(feat|fix|refactor|add|remove|change|수정|추가|변경)' | head -20 || echo "(자동감지 없음)"
+} > "$SUMMARY_FILE"
+echo "📝 Push 요약 생성: $SUMMARY_FILE"
+echo "   push 완료 후 확인: cat $SUMMARY_FILE"
 
-# Files changed in the commits being pushed
+# ═══════════════════════════════════════════════
+# 1. 되돌리기 감지 경고
+# ═══════════════════════════════════════════════
+echo "🕵️  [pre-push] 되돌리기 감지..."
+
+RECENT_HOURS=48
 PUSHED_FILES=$(git diff --name-only "$RANGE" 2>/dev/null || echo "")
 
 if [ -n "$PUSHED_FILES" ]; then
-  # For each pushed file, check if there's a recent revert pattern
   for f in $PUSHED_FILES; do
-    # Check if the last 5 commits on this file include a revert pattern
     RECENT_LOG=$(git log --oneline -5 -- "$f" 2>/dev/null)
     if echo "$RECENT_LOG" | grep -qiE "revert|rollback|되돌|복구"; then
       echo "⚠️  [pre-push] 되돌리기 의심: $f"
       echo "   최근 커밋에 revert/rollback 키워드가 있습니다."
-      echo "   해당 파일의 최근 변경 내역을 확인하세요."
     fi
   done
 fi
