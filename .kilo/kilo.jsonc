@@ -4,9 +4,7 @@
   "default_agent": "telemon-dev",
   "instructions": [
     "AGENTS.md",
-    "DOCS/ONBOARDING.md",
-    "WORKTREE_WORKFLOW.md",
-    "FEATURES_30_PROPOSAL.md"
+    ".kilo/DEVEL_SPEED.md"
   ],
   "permission": {
     "edit": "allow",
