@@ -14,7 +14,7 @@ export function useLocalSearch() {
       const [acc, grp, brd] = await Promise.all([
         import("@/lib/api").then(m => m.fetchAccounts()).catch(() => []),
         import("@/lib/api").then(m => m.fetchGroups?.("")?.catch(() => []) || Promise.resolve([])),
-        import("@/lib/api").then(m => m.fetchBroadcast?.()?.catch(() => []) || Promise.resolve([])),
+        import("@/lib/api").then(m => m.fetchLogs?.()?.catch(() => []) || Promise.resolve([])),
       ]);
       setIndex({ accounts: acc || [], groups: grp || [], broadcasts: brd || [] });
       loaded.current = true;
