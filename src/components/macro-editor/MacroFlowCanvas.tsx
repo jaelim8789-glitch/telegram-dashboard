@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState, useEffect, type DragEvent } from "react";
+import React, { useCallback, useRef, useState, type DragEvent } from "react";
 import {
   ReactFlow,
   Controls,
@@ -12,14 +12,11 @@ import {
   type Connection,
   type NodeTypes,
   MarkerType,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  ReactFlowProvider,
   applyNodeChanges,
   applyEdgeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { ArrowDown } from "lucide-react";
 
 import { StartNode } from "./nodes/StartNode";
 import { ConditionNode } from "./nodes/ConditionNode";
@@ -38,11 +35,9 @@ const nodeTypes: NodeTypes = {
 };
 
 const defaultEdgeOptions = {
-  animated: true,
   style: {
-    stroke: "#8b5cf6",
+    stroke: "url(#edgeGradient)",
     strokeWidth: 2,
-    strokeDasharray: "5,5",
   },
   markerEnd: {
     type: MarkerType.ArrowClosed,
@@ -64,26 +59,24 @@ interface FlowCanvasProps {
   onNodeSelect: (node: Node | null) => void;
   nodes: Node[];
   edges: Edge[];
-  setNodes: (nodes: Node[] | ((nds: Node[]) => Node[])) => void;
-  setEdges: (edges: Edge[] | ((eds: Edge[]) => Edge[])) => void;
+  onNodesChange: (changes: Parameters<typeof applyNodeChanges>[0]) => void;
+  onEdgesChange: (changes: Parameters<typeof applyEdgeChanges>[0]) => void;
+  onConnect: (connection: Connection) => void;
+  onDropNode: (type: string, position: { x: number; y: number }) => void;
 }
 
-function FlowCanvas({
+export function FlowCanvas({
+  selectedNode,
   onNodeSelect,
   nodes,
   edges,
-  setNodes,
-  setEdges,
+  onNodesChange,
+  onEdgesChange,
+  onConnect,
+  onDropNode,
 }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [rfInstance, setRfInstance] = useState<any>(null);
-
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setEdges((eds) => addEdge({ ...connection, ...defaultEdgeOptions }, eds));
-    },
-    [setEdges]
-  );
 
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -103,39 +96,20 @@ function FlowCanvas({
         y: event.clientY - bounds.top,
       });
 
-      const newNode: Node = {
-        id: `${type}-${Date.now()}`,
-        type,
-        position,
-        data: {},
-      };
-
-      setNodes((nds) => [...nds, newNode]);
+      onDropNode(type, position);
     },
-    [rfInstance, setNodes]
+    [rfInstance, onDropNode]
   );
 
-  const onNodesChangeHandler = useCallback(
-    (changes: any) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-    },
-    [setNodes]
-  );
-
-  const onEdgesChangeHandler = useCallback(
-    (changes: any) => {
-      setEdges((eds) => applyEdgeChanges(changes, eds));
-    },
-    [setEdges]
-  );
+  const hasNodes = nodes.length > 0;
 
   return (
-    <div ref={reactFlowWrapper} className="h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
+    <div ref={reactFlowWrapper} className="h-full w-full relative" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChangeHandler}
-        onEdgesChange={onEdgesChangeHandler}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_event, node) => onNodeSelect(node)}
         onPaneClick={() => onNodeSelect(null)}
@@ -145,7 +119,22 @@ function FlowCanvas({
         fitView
         className="bg-app-bg"
         proOptions={{ hideAttribution: true }}
+        connectionLineStyle={{ stroke: "#8b5cf6", strokeWidth: 2 }}
       >
+        <svg>
+          <defs>
+            <linearGradient id="edgeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#3b82f6" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="rgba(139, 92, 246, 0.15)"
+        />
         <Controls
           className="!rounded-xl !border !border-violet-500/20 !bg-app-surface !shadow-lg"
           position="bottom-left"
@@ -166,51 +155,16 @@ function FlowCanvas({
           }}
           maskColor="rgba(0,0,0,0.7)"
         />
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="rgba(139, 92, 246, 0.15)"
-        />
       </ReactFlow>
+
+      {!hasNodes && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+          <ArrowDown className="mb-3 h-10 w-10 text-violet-400/30 blur-[1px]" />
+          <p className="text-sm text-app-text-muted/70">
+            여기에 노드를 드래그해서 시작하세요
+          </p>
+        </div>
+      )}
     </div>
-  );
-}
-
-interface MacroFlowCanvasOuterProps {
-  selectedNode: Node | null;
-  onNodeSelect: (node: Node | null) => void;
-  onNodesUpdate: (nodes: Node[]) => void;
-  onEdgesUpdate: (edges: Edge[]) => void;
-}
-
-export function MacroFlowCanvas({
-  selectedNode,
-  onNodeSelect,
-  onNodesUpdate,
-  onEdgesUpdate,
-}: MacroFlowCanvasOuterProps) {
-  const [nodes, setNodes] = useNodesState(initialNodes);
-  const [edges, setEdges] = useEdgesState([]);
-
-  useEffect(() => {
-    onNodesUpdate(nodes);
-  }, [nodes, onNodesUpdate]);
-
-  useEffect(() => {
-    onEdgesUpdate(edges);
-  }, [edges, onEdgesUpdate]);
-
-  return (
-    <ReactFlowProvider>
-      <FlowCanvas
-        selectedNode={selectedNode}
-        onNodeSelect={onNodeSelect}
-        nodes={nodes}
-        edges={edges}
-        setNodes={setNodes}
-        setEdges={setEdges}
-      />
-    </ReactFlowProvider>
   );
 }
