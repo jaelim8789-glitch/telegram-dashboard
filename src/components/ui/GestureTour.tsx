@@ -64,7 +64,7 @@ export function GestureTour() {
               <div className="flex justify-center gap-2">
                 {STEPS.map((_, i) => (
                   <div
-                    key={i}
+                    key={`gesture-dot-${i}`}
                     className={`h-1.5 rounded-full transition-all ${
                       i === step ? "w-6 bg-app-primary" : "w-1.5 bg-app-border"
                     }`}

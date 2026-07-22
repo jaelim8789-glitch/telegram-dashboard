@@ -41,9 +41,9 @@ export function KeyboardShortcutHints({
       <div className={cn("flex items-center gap-3", className)}>
         <Keyboard className="h-3.5 w-3.5 text-app-text-subtle" />
         {shortcuts.slice(0, 2).map((s, i) => (
-          <span key={i} className="flex items-center gap-1 text-[10px] text-app-text-muted">
+          <span key={s.label} className="flex items-center gap-1 text-[10px] text-app-text-muted">
             {s.keys.map((key, ki) => (
-              <Kbd key={ki}>{key}</Kbd>
+              <Kbd key={`${ki}-${key}`}>{key}</Kbd>
             ))}
             <span className="ml-0.5">{s.label}</span>
           </span>
@@ -60,11 +60,11 @@ export function KeyboardShortcutHints({
       </p>
       <div className="space-y-1.5">
         {shortcuts.map((s, i) => (
-          <div key={i} className="flex items-center justify-between">
+          <div key={s.label} className="flex items-center justify-between">
             <span className="text-xs text-app-text-muted">{s.label}</span>
             <span className="flex items-center gap-1">
               {s.keys.map((key, ki) => (
-                <Kbd key={ki}>{key}</Kbd>
+                <Kbd key={`${ki}-${key}`}>{key}</Kbd>
               ))}
             </span>
           </div>

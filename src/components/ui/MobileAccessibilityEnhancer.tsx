@@ -7,40 +7,36 @@ export function MobileAccessibilityEnhancer() {
     // 모바일 스크린 리더 최적화
     const enhanceAccessibility = () => {
       // 모든 버튼에 접근성 라벨 추가
-      const buttons = document.querySelectorAll('button:not([role="tab"]):not([aria-label])');
+      const buttons = document.querySelectorAll('button:not([role="tab"])');
       buttons.forEach(button => {
-        const buttonText = button.textContent?.trim();
-        if (buttonText && buttonText.length <= 50) {
-          button.setAttribute('aria-label', buttonText);
+        if (!button.getAttribute('aria-label') && !button.getAttribute('aria-labelledby')) {
+          const buttonText = button.textContent?.trim();
+          if (buttonText && buttonText.length <= 50) {
+            button.setAttribute('aria-label', buttonText);
+          }
         }
       });
 
       // 링크에 역할 명시
-      const links = document.querySelectorAll('a:not([aria-label])');
+      const links = document.querySelectorAll('a');
       links.forEach(link => {
-        const linkText = link.textContent?.trim();
-        if (linkText && linkText.length <= 50) {
-          link.setAttribute('aria-label', linkText);
+        if (!link.getAttribute('aria-label') && !link.getAttribute('aria-labelledby')) {
+          const linkText = link.textContent?.trim();
+          if (linkText && linkText.length <= 50) {
+            link.setAttribute('aria-label', linkText);
+          }
         }
       });
 
       // 포커스 가능한 요소에 포커스 스타일 추가
       const focusableElements = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
       focusableElements.forEach(element => {
-        // 모바일 환경에서 더 큰 포커스 표시를 보장
+        // CSS에서 이미 focus-ring 클래스를 사용하고 있으므로 여기서는 추가하지 않음
+        // 대신 모바일 환경에서 더 큰 포커스 표시를 보장
         if (window.matchMedia('(max-width: 768px)').matches) {
           element.classList.add('focus-ring');
         }
       });
-
-      // 모바일에서 축소/확대 방지 (접근성을 위한 적절한 제스처 허용)
-      const metaViewport = document.querySelector('meta[name="viewport"]');
-      if (metaViewport) {
-        const content = metaViewport.getAttribute('content');
-        if (content && !content.includes('user-scalable=no')) {
-          metaViewport.setAttribute('content', content + ', maximum-scale=1.0, minimum-scale=1.0');
-        }
-      }
     };
 
     // DOM이 로드된 후 실행

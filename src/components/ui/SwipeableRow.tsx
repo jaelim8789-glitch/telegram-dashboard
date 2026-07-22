@@ -86,7 +86,7 @@ export function SwipeableRow({
         <motion.div className="flex h-full" style={{ opacity: leftOpacity }}>
           {leftActions.map((action, i) => (
             <button
-              key={i}
+              key={action.label}
               onClick={() => triggerAction(action)}
               className={`flex w-[72px] items-center justify-center ${action.color} text-white text-[10px] font-medium`}
             >
@@ -104,7 +104,7 @@ export function SwipeableRow({
         <motion.div className="flex h-full ml-auto" style={{ opacity: rightOpacity }}>
           {rightActions.map((action, i) => (
             <button
-              key={i}
+              key={action.label}
               onClick={() => triggerAction(action)}
               className={`flex w-[72px] items-center justify-center ${action.color} text-white text-[10px] font-medium`}
             >

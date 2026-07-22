@@ -4,12 +4,12 @@ export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "g
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
 
 export const CATEGORY_META: Record<TabGroup, { label: string; icon: string }> = {
-  dashboard: { label: "?占?占쎈낫??, icon: "LayoutDashboard" },
+  dashboard: { label: "?�?�보??, icon: "LayoutDashboard" },
   send: { label: "발송", icon: "Send" },
-  ops: { label: "운영", icon: "Activity" },
+  ops: { label: "?�영", icon: "Activity" },
   ai: { label: "AI", icon: "Sparkles" },
-  settings: { label: "설정", icon: "Settings" },
-  new: { label: "신규", icon: "Plus" },
+  settings: { label: "?�정", icon: "Settings" },
+  new: { label: "?�규", icon: "Plus" },
 };
 
 export type NavView = "chat" | "category" | "feature";
@@ -23,50 +23,50 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
-  // ?占?占??占?占쎈낫??(理쒖긽???占쎈룆) ?占?占?
-  { id: "dashboard", label: "?占?占쎈낫??, shortLabel: "?占??, group: "dashboard" },
+  // ?�?� ?�?�보??(최상???�독) ?�?�
+  { id: "dashboard", label: "?�?�보??, shortLabel: "?�??, group: "dashboard" },
 
-  // ?占?占?諛쒖넚 ?占?占?
-  { id: "send", label: "諛쒖넚?占쎄린", shortLabel: "諛쒖넚", group: "send" },
-  { id: "sendhub", label: "諛쒖넚 ?占쏀꽣", shortLabel: "?占쏀꽣", group: "send" },
-  { id: "drafts", label: "Draft 寃??, shortLabel: "珥덉븞", group: "send" },
-  { id: "scheduler", label: "?占쏙옙?以꾨윭", group: "send" },
-  { id: "replymacro", label: "?占쎌옣留ㅽ겕占?, shortLabel: "留ㅽ겕占?, group: "send" },
-  { id: "templates", label: "?占쏀뵆占?, group: "send" },
+  // ?�?� 발송 ?�?�
+  { id: "send", label: "발송?�기", shortLabel: "발송", group: "send" },
+  { id: "sendhub", label: "발송 ?�터", shortLabel: "?�터", group: "send" },
+  { id: "drafts", label: "Draft 검??, shortLabel: "초안", group: "send" },
+  { id: "scheduler", label: "?��?줄러", group: "send" },
+  { id: "replymacro", label: "?�장매크�?, shortLabel: "매크�?, group: "send" },
+  { id: "templates", label: "?�플�?, group: "send" },
 
-  // ?占?占??占쎌쁺/紐⑤땲?占쎈쭅 ?占?占?
-  { id: "deliveryanalytics", label: "?占쎈떖 遺꾩꽍", shortLabel: "遺꾩꽍", group: "ops" },
-  { id: "linkinspector", label: "留곹겕 寃??, shortLabel: "留곹겕", group: "ops" },
-  { id: "register", label: "怨꾩젙 ?占쎈줉", shortLabel: "?占쎈줉", group: "ops" },
-  { id: "group", label: "洹몃９", group: "ops" },
-  { id: "groupsearch", label: "洹몃９ 寃??, shortLabel: "寃??, group: "ops" },
-  { id: "autoreply", label: "?占쎈룞 ?占쎈떟", shortLabel: "?占쎈룞", group: "ops" },
-  { id: "channelhub", label: "梨꾨꼸 ?占쎈툕", shortLabel: "?占쎈툕", group: "ops" },
+  // ?�?� ?�영/모니?�링 ?�?�
+  { id: "deliveryanalytics", label: "?�달 분석", shortLabel: "분석", group: "ops" },
+  { id: "linkinspector", label: "링크 검??, shortLabel: "링크", group: "ops" },
+  { id: "register", label: "계정 ?�록", shortLabel: "?�록", group: "ops" },
+  { id: "group", label: "그룹", group: "ops" },
+  { id: "groupsearch", label: "그룹 검??, shortLabel: "검??, group: "ops" },
+  { id: "autoreply", label: "?�동 ?�답", shortLabel: "?�동", group: "ops" },
+  { id: "channelhub", label: "채널 ?�브", shortLabel: "?�브", group: "ops" },
 
-  // ?占?占?AI ?占쎄뎄 ?占?占?
-  { id: "myai", label: "?占쎈쭔??AI", shortLabel: "AI", group: "ai" },
-  { id: "aireply", label: "AI ?占쎌옣", shortLabel: "?占쎌옣", group: "ai" },
-  { id: "aibroadcast", label: "AI 諛쒖넚", shortLabel: "AI諛쒖넚", group: "ai" },
-  { id: "aioperations", label: "AI 由ы룷??, shortLabel: "由ы룷??, group: "ai" },
-  { id: "aiopscenter", label: "AI ?占쎌쁺?占쏀꽣", shortLabel: "?占쎌쁺", group: "ai" },
-  { id: "aiusage", label: "AI ?占쎌슜??, shortLabel: "?占쎌슜??, group: "ai" },
+  // ?�?� AI ?�구 ?�?�
+  { id: "myai", label: "?�만??AI", shortLabel: "AI", group: "ai" },
+  { id: "aireply", label: "AI ?�장", shortLabel: "?�장", group: "ai" },
+  { id: "aibroadcast", label: "AI 발송", shortLabel: "AI발송", group: "ai" },
+  { id: "aioperations", label: "AI 리포??, shortLabel: "리포??, group: "ai" },
+  { id: "aiopscenter", label: "AI ?�영?�터", shortLabel: "?�영", group: "ai" },
+  { id: "aiusage", label: "AI ?�용??, shortLabel: "?�용??, group: "ai" },
 
-  // ?占?占??占쎌젙/湲곤옙? ?占?占?
-  { id: "team", label: "?占?愿占?, shortLabel: "?占?, group: "settings" },
-  { id: "profile", label: "?占쎈줈??, group: "settings" },
-  { id: "guestbot", label: "Guest 占?, shortLabel: "占?, group: "settings" },
-  { id: "stars", label: "Stars 寃곗젣", shortLabel: "寃곗젣", group: "settings" },
-  { id: "folders", label: "?占쎈뜑", group: "settings" },
+  // ?�?� ?�정/기�? ?�?�
+  { id: "team", label: "?� 관�?, shortLabel: "?�", group: "settings" },
+  { id: "profile", label: "?�로??, group: "settings" },
+  { id: "guestbot", label: "Guest �?, shortLabel: "�?, group: "settings" },
+  { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "settings" },
+  { id: "folders", label: "?�더", group: "settings" },
   { id: "apikeys", label: "API ??, shortLabel: "API", group: "settings" },
-  { id: "audit", label: "?占쎈룞 濡쒓렇", shortLabel: "?占쎈룞", group: "settings" },
-  { id: "triggers", label: "?占쎈룞??洹쒖튃", shortLabel: "洹쒖튃", group: "settings" },
-  { id: "referral", label: "異붿쿇??, shortLabel: "異붿쿇", group: "settings" },
-  { id: "operator", label: "AI 吏곸썝", shortLabel: "吏곸썝", group: "ai" },
-  { id: "styleprofile", label: "釉뚮옖????, shortLabel: "??, group: "ai" },
-  { id: "growthloop", label: "?占쎌옣 猷⑦봽", shortLabel: "?占쎌옣", group: "ai" },
-  { id: "fortune", label: "?占쎌꽭", shortLabel: "?占쎌꽭", group: "new" },
-  { id: "telegram", label: "Telegram", shortLabel: "梨꾪똿", group: "send" },
-  { id: "pixeloffice", label: "?占쏙옙占?AI ?占쎈Т??, shortLabel: "?占쎈Т??, group: "ai" },
+  { id: "audit", label: "?�동 로그", shortLabel: "?�동", group: "settings" },
+  { id: "triggers", label: "?�동??규칙", shortLabel: "규칙", group: "settings" },
+  { id: "referral", label: "추천??, shortLabel: "추천", group: "settings" },
+  { id: "operator", label: "AI 직원", shortLabel: "직원", group: "ai" },
+  { id: "styleprofile", label: "브랜????, shortLabel: "??, group: "ai" },
+  { id: "growthloop", label: "?�장 루프", shortLabel: "?�장", group: "ai" },
+  { id: "fortune", label: "?�세", shortLabel: "?�세", group: "new" },
+  { id: "telegram", label: "Telegram", shortLabel: "채팅", group: "send" },
+  { id: "pixeloffice", label: "?���?AI ?�무??, shortLabel: "?�무??, group: "ai" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
@@ -115,7 +115,7 @@ export function getAccountDisplayName(account: Account): string {
 }
 
 export function getAccountInitials(account: Account): string {
-  const source = account.name?.trim() || account.phone.replace(/[^0-9A-Za-z媛-??/g, "");
+  const source = account.name?.trim() || account.phone.replace(/[^0-9A-Za-z가-??/g, "");
   return source.slice(0, 2).toUpperCase();
 }
 
@@ -232,20 +232,20 @@ export interface BroadcastChild {
 export const MAX_BROADCAST_RECIPIENTS = 10;
 
 export const RECURRING_INTERVALS = [
-  { value: 30, label: "30占? },
-  { value: 60, label: "1?占쎄컙" },
-  { value: 120, label: "2?占쎄컙" },
-  { value: 180, label: "3?占쎄컙" },
-  { value: 360, label: "6?占쎄컙" },
-  { value: 720, label: "12?占쎄컙" },
-  { value: 1440, label: "24?占쎄컙" },
+  { value: 30, label: "30�? },
+  { value: 60, label: "1?�간" },
+  { value: 120, label: "2?�간" },
+  { value: 180, label: "3?�간" },
+  { value: 360, label: "6?�간" },
+  { value: 720, label: "12?�간" },
+  { value: 1440, label: "24?�간" },
 ] as const;
 
 export const NORMAL_DELAY_OPTIONS = [
-  { value: 5, label: "5占? },
-  { value: 10, label: "10占? },
-  { value: 30, label: "30占? },
-  { value: 60, label: "1占? },
+  { value: 5, label: "5�? },
+  { value: 10, label: "10�? },
+  { value: 30, label: "30�? },
+  { value: 60, label: "1�? },
 ] as const;
 
 export type AutoReplyMatchType = "keyword" | "exact";
@@ -284,7 +284,7 @@ export interface AutoReplyLog {
   createdAt: string;
 }
 
-// ?占?占?占?Reply Macro (?占쎌옣留ㅽ겕占? ?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?
+// ?�?�?� Reply Macro (?�장매크�? ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export type ReplyMacroScheduleType = "interval" | "fixed";
 
@@ -317,7 +317,7 @@ export interface ReplyMacroLog {
   createdAt: string;
 }
 
-// ?占?占?占?Delivery Analytics ?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?
+// ?�?�?� Delivery Analytics ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export interface DeliverySummary {
   total_attempted: number;
@@ -397,7 +397,7 @@ export interface LatencyByAccountItem {
   total_measured: number;
 }
 
-// ?占?占?占?Per-endpoint Delivery Analytics types (DeliveryAnalyticsTab) ?占?占?占?占?占?占?占?占?占?
+// ?�?�?� Per-endpoint Delivery Analytics types (DeliveryAnalyticsTab) ?�?�?�?�?�?�?�?�?�
 
 export interface AnalyticsSummary {
   total_attempts: number;
@@ -490,7 +490,7 @@ export interface AnalyticsLatency {
   period_days: number;
 }
 
-// ?占?占?占?Group Folders (per-account, backend-persisted) ?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?
+// ?�?�?� Group Folders (per-account, backend-persisted) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export interface GroupFolder {
   id: string;
@@ -559,7 +559,7 @@ export interface SmartFolderConfig {
   params?: Record<string, unknown>;
 }
 
-// ?占?占?占?Account Groups (localStorage only) ?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?占?
+// ?�?�?� Account Groups (localStorage only) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export interface AccountGroup {
   id: string;

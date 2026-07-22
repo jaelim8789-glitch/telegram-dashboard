@@ -22,25 +22,6 @@ export function MobileFontOptimizer() {
             document.documentElement.classList.add('fonts-loaded');
           });
         }
-        
-        // FOIT/FOUT 방지를 위한 폰트 스와핑 최적화
-        const style = document.createElement('style');
-        style.textContent = `
-          /* 모바일에서 폰트 로딩 최적화 */
-          @media (max-width: 768px) {
-            * {
-              -webkit-font-smoothing: antialiased;
-              -moz-osx-font-smoothing: grayscale;
-            }
-            
-            /* 폰트 로딩 전에는 fallback 폰트 사용 */
-            html:not(.fonts-loaded) {
-              --font-heading: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-              --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            }
-          }
-        `;
-        document.head.appendChild(style);
       }
     };
 

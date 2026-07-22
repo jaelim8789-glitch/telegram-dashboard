@@ -109,7 +109,7 @@ export function decodeJwt(token: string): Record<string, unknown> | null {
   }
 }
 
-export function verifyJwtSignature(token: string): boolean {
+export async function verifyJwtSignature(token: string): Promise<boolean> {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return false;
@@ -122,7 +122,7 @@ export function verifyJwtSignature(token: string): boolean {
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secretKey);
     const sig = Uint8Array.from(atob(parts[2].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-    const valid = crypto.subtle.verify("HMAC", await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]), sig, encoder.encode(`${parts[0]}.${parts[1]}`));
+    const valid = await crypto.subtle.verify("HMAC", await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]), sig, encoder.encode(`${parts[0]}.${parts[1]}`));
     return valid;
   } catch {
     return false;

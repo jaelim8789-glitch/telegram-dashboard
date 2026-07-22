@@ -392,7 +392,7 @@ export function SendTab() {
         const est = await api.fetchBroadcastEstimate({
           accountId: selectedAccountId,
           recipientCount: selectedRecipientIds.length,
-          deliveryMode: deliveryMode === "replyMacro" ? "normal" : deliveryMode,
+          deliveryMode: deliveryMode === "replyMacro" || deliveryMode === "cycle" ? "normal" : deliveryMode,
           delaySeconds: normalDelaySeconds,
         });
         setEstimatePreview(est);

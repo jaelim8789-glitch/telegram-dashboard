@@ -102,7 +102,7 @@ export function GlobalSearch() {
                 </div>
               )}
               {results.map((r, i) => (
-                <button key={i} onClick={r.action} onMouseEnter={() => setSelectedIdx(i)}
+                <button key={r.label} onClick={r.action} onMouseEnter={() => setSelectedIdx(i)}
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${i === selectedIdx ? "bg-app-primary/10" : "hover:bg-app-card-hover"}`}>
                   <span className="text-app-text-muted">{r.icon}</span>
                   <div className="min-w-0 flex-1">

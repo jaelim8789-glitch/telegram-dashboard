@@ -133,7 +133,7 @@ export function OnboardingTour() {
           <div className="mt-3 flex items-center justify-between">
             <div className="flex gap-1">
               {STEPS.map((_, i) => (
-                <div key={i} className={cn("h-1.5 w-1.5 rounded-full transition-colors", i === step ? "bg-app-primary" : "bg-app-border")} />
+                <div key={`tour-dot-${i}`} className={cn("h-1.5 w-1.5 rounded-full transition-colors", i === step ? "bg-app-primary" : "bg-app-border")} />
               ))}
             </div>
             <div className="flex gap-1.5">

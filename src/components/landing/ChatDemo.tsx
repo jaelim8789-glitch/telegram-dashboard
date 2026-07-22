@@ -76,7 +76,7 @@ export default function ChatDemo() {
           <AnimatePresence>
             {visibleMessages.map((msg, i) => (
               <motion.div
-                key={i}
+                key={msg.text}
                 initial={{ opacity: 0, y: 12, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 20 }}
