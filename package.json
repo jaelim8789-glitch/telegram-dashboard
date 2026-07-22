@@ -95,7 +95,7 @@
   },
   "devDependencies": {
     "jwt-decode": "^4.0.0",
-    "@chromatic-com/storybook": "^3",
+    "@chromatic-com/storybook": "^5",
     "@playwright/test": "^1.61.1",
     "@storybook/addon-essentials": "^8",
     "@storybook/addon-interactions": "^8",
