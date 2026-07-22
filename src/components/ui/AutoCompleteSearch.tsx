@@ -109,7 +109,7 @@ export function AutoCompleteSearch({
           {filteredSuggestions.map((suggestion, index) => (
             <li
               key={suggestion}
-              ref={el => suggestionRefs.current[index] = el}
+              ref={(el: HTMLLIElement | null) => { if (el) suggestionRefs.current[index] = el; }}
               onMouseDown={() => handleSelect(suggestion)}
               className={cn(
                 'px-4 py-2.5 text-sm cursor-pointer transition-colors',

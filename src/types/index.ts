@@ -19,6 +19,7 @@ export interface TabDef {
   label: string;
   /** Shorter label used on mobile when horizontal space is limited (≤ 640px viewport). Falls back to `label` when absent. */
   shortLabel?: string;
+  description?: string;
   group: TabGroup;
 }
 

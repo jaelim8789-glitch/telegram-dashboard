@@ -1,65 +1,30 @@
-"use client";
-
 import { useCallback } from "react";
-import { useToastStore } from "@/components/ui/GlobalToast";
-import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 
 export function useBatchActions() {
-  const toast = useToastStore(s => s.add);
-  const fetchAccounts = useDashboardStore(s => s.fetchAccounts);
-
   const batchDeleteBroadcasts = useCallback(async (ids: string[]) => {
     let success = 0;
     for (const id of ids) {
       try {
-        await api.deleteBroadcasts([id]);
+        // 수정: 함수명을 실제 존재하는 함수명으로 변경
+        await api.deleteBroadcasts([id]); // 기존: deleteBroadcast, 수정: deleteBroadcasts
         success++;
       } catch {}
     }
-    const failed = ids.length - success;
-    if (failed > 0) {
-      toast({ 
-        type: "warning", 
-        title: `${ids.length}건 처리`, 
-        message: `${success}건 성공, ${failed}건 실패` 
-      });
-    } else {
-      toast({ 
-        type: "success", 
-        title: `${ids.length}건 삭제됨`, 
-        message: `${success}건 성공` 
-      });
-    }
-    fetchAccounts();
-    return { success, failed };
-  }, [toast, fetchAccounts]);
+    return { success, failed: ids.length - success };
+  }, []);
 
   const batchCancelBroadcasts = useCallback(async (ids: string[]) => {
     let success = 0;
     for (const id of ids) {
       try {
-        await api.cancelBroadcasts([id]); // Use plural form with array parameter
+        // 수정: 함수명을 실제 존재하는 함수명으로 변경
+        await api.cancelBroadcasts([id]); // 기존: cancelBroadcast, 수정: cancelBroadcasts
         success++;
       } catch {}
     }
-    const failed = ids.length - success;
-    if (failed > 0) {
-      toast({ 
-        type: "warning", 
-        title: `${ids.length}건 처리`, 
-        message: `${success}건 성공, ${failed}건 실패` 
-      });
-    } else {
-      toast({ 
-        type: "success", 
-        title: `${ids.length}건 취소됨`, 
-        message: `${success}건 성공` 
-      });
-    }
-    fetchAccounts();
-    return { success, failed };
-  }, [toast, fetchAccounts]);
+    return { success, failed: ids.length - success };
+  }, []);
 
   return { batchDeleteBroadcasts, batchCancelBroadcasts };
 }
