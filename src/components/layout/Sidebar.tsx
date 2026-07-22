@@ -30,7 +30,8 @@ const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: ty
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
 export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
-  const accounts = useDashboardStore((s) => s.accounts);
+  const storeAccounts = useDashboardStore((s) => s.accounts);
+  const accounts = (storeAccounts ?? []) as any[];
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
   const accountsError = useDashboardStore((s) => s.accountsError);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);

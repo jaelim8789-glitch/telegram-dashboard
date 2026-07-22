@@ -1,4 +1,33 @@
 {
   "$schema": "https://app.kilo.ai/config.json",
-  "snapshot": false
+  "snapshot": false,
+  "default_agent": "telemon-dev",
+  "instructions": [
+    "AGENTS.md",
+    "DOCS/ONBOARDING.md",
+    "WORKTREE_WORKFLOW.md",
+    "FEATURES_30_PROPOSAL.md"
+  ],
+  "permission": {
+    "edit": "allow",
+    "read": "allow",
+    "bash": "allow",
+    "task": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "external_directory": {
+      "C:\\Dev\\TeleMon\\*": "allow",
+      "C:\\Dev\\TeleMon-*": "allow",
+      "C:\\Backups\\*\\Dev\\TeleMon\\*": "allow"
+    }
+  },
+  "skills": {
+    "paths": ["./skills"]
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true
+  }
 }

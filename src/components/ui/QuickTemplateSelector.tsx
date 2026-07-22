@@ -61,8 +61,6 @@ export function QuickTemplateSelector({
     onTemplateAdd({
       name: newTemplateName.trim(),
       content: newTemplateContent.trim(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
       usageCount: 0
     });
     

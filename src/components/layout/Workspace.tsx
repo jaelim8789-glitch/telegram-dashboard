@@ -379,7 +379,7 @@ export function Workspace() {
           )}
         </AnimatePresence>
 
-        <ConfettiAnimation active={confetti} />
+        <ConfettiAnimation />
         <AppRatingPrompt />
 
         <CategoryStrip />

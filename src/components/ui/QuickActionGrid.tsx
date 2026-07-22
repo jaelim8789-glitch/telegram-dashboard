@@ -23,7 +23,7 @@ export function QuickActionGrid({ onAction }: { onAction: (action: string) => vo
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="grid grid-cols-4 gap-2 overflow-hidden">
             {actions.map(a => (
-              <button key={a.id} onClick={() => onAction(a.id)} className="flex flex-col items-center gap-1 rounded-xl py-3 active:scale-95 bg-gradient-to-br text-white" className={`bg-gradient-to-br ${a.color}`}>
+              <button key={a.id} onClick={() => onAction(a.id)} className={`flex flex-col items-center gap-1 rounded-xl py-3 active:scale-95 bg-gradient-to-br text-white ${a.color}`}>
                 <span className="text-lg">{a.icon}</span>
                 <span className="text-[9px] font-medium">{a.label}</span>
               </button>

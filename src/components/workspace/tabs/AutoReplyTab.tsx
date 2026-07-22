@@ -20,7 +20,8 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 import { useToast } from "@/components/ui/Toast";
-import { useHapticFeedback } from "@tma.js/sdk-react";
+import { hapticFeedback as tmaHaptic } from "@tma.js/sdk-react";
+const haptics = new Proxy({}, { get: () => (...args: any[]) => { try { (tmaHaptic as any).impactOccurred?.(...args); } catch {} } }) as any;
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 import { useSwipeTemplate } from "@/hooks/useSwipeTemplate"; // 스와이프 템플릿 훅 추가
 import { QuickTemplateSelector } from "@/components/ui/QuickTemplateSelector"; // 퀵 템플릿 선택기 추가
@@ -104,7 +105,7 @@ export function AutoReplyTab() {
   const submitLockRef = useRef(false);
 
   const { toast } = useToast();
-  const haptics = useHapticFeedback();
+
 
   const [isMobile, setIsMobile] = useState(false);
   const [actionSheetRuleId, setActionSheetRuleId] = useState<string | null>(null);
@@ -336,7 +337,7 @@ export function AutoReplyTab() {
   }
 
   // 템플릿 상태 추가
-  const [templates, setTemplates] = useState([
+  const [templates, setTemplates] = useState<any[]>([
     { id: '1', name: '기본 응답', content: '안녕하세요, 확인 후 답변드리겠습니다.' },
     { id: '2', name: '업무시간 안내', content: '업무시간은 평일 09:00~18:00입니다.' },
     { id: '3', name: '휴무일 안내', content: '주말 및 공휴일은 휴무입니다.' },
@@ -422,14 +423,13 @@ export function AutoReplyTab() {
             // 선택된 템플릿을 현재 입력 필드에 삽입
             console.log('선택된 템플릿:', template);
           }}
-          onAddTemplate={(name, content) => {
-            // 새 템플릿 추가
+          onTemplateAdd={(template) => {
             const newTemplate = {
               id: Date.now().toString(),
-              name,
-              content,
+              name: template.name,
+              content: template.content,
               createdAt: new Date().toISOString()
-            };
+            } as any;
             setTemplates(prev => [newTemplate, ...prev]);
           }}
         />

@@ -21,7 +21,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { refresh: refreshDashboard } = useDashboardStore();
+  const { fetchAccounts: refreshDashboard } = useDashboardStore();
   const { getCurrentAccountState, updateAccountState } = useAccountStateStore();
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
   
