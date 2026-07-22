@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
-  output: process.env.CAPACITOR ? "export" : "standalone",
+  output: process.env.CAPACITOR ? "export" : process.env.CI ? "standalone" : undefined,
   poweredByHeader: false,
   generateEtags: true, // Enable etag generation for caching
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
@@ -130,7 +130,10 @@ if (process.env.ANALYZE) {
 
 const sentryWebpackPluginOptions = { silent: true };
 
-export default withSentryConfig(
-  typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
-  sentryWebpackPluginOptions
-);
+const sentryExports = process.env.CI
+  ? withSentryConfig(
+      typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
+      sentryWebpackPluginOptions
+    )
+  : nextConfig;
+export default sentryExports;
