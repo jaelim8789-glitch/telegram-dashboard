@@ -17,6 +17,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { formatDate } from "@/lib/format";
+import { PLAN_LABEL } from "@/lib/constants/plans";
 import { useToast } from "@/components/ui/Toast";
 import {
   fetchStarProducts,
@@ -229,11 +231,9 @@ export default function StarsTab() {
 
   // ── Subscription Status Panel ────────────────────────────────────────
 
-  const PLAN_LABELS: Record<string, string> = {
-    free: "Free",
-    pro: "Pro",
+  const EXTRA_PLAN_LABELS: Record<string, string> = {
+    ...PLAN_LABEL,
     premium: "Premium",
-    team: "Team",
     enterprise: "Enterprise",
   };
 
@@ -272,7 +272,7 @@ export default function StarsTab() {
     const { plan, status, trial_expires_at, stars_balance } = subscriptionStatus;
     const isActive = status === "active" || status === "trial";
     const isTrial = status === "trial" || (status === "active" && !!trial_expires_at);
-    const planLabel = PLAN_LABELS[plan?.toLowerCase() ?? ""] || plan || "Free";
+    const planLabel = EXTRA_PLAN_LABELS[plan?.toLowerCase() ?? ""] || plan || "Free";
 
     return (
       <motion.div

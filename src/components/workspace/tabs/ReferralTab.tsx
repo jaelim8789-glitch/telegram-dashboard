@@ -16,24 +16,9 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
+import { formatMoney, formatDate, formatDateTime } from "@/lib/format";
+import { PLAN_LABEL, PLAN_COLOR } from "@/lib/constants/plans";
 import * as api from "@/lib/api_referral";
-
-const PLAN_LABEL: Record<string, string> = { free: "무료", pro: "Pro", team: "Team" };
-const PLAN_COLOR: Record<string, string> = { free: "text-app-text-muted", pro: "text-blue-500", team: "text-purple-500" };
-
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("ko-KR").format(cents) + "원";
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
-}
-
-function formatDateTime(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleString("ko-KR", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
 
 // ── Sub-components ──
 
@@ -634,9 +619,16 @@ export function ReferralTab() {
                 </button>
               </div>
               <div className="flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrCodeUrl} alt="Referral QR Code" className="h-48 w-48 rounded-xl border border-app-border"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <Image 
+                  src={qrCodeUrl} 
+                  alt="Referral QR Code"
+                  width={192}
+                  height={192}
+                  className="h-48 w-48 rounded-xl border border-app-border"
+                  priority={false}
+                  unoptimized // 동적으로 생성된 QR 코드이므로 최적화 비활성화
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
               </div>
               <p className="mt-3 text-center text-[10px] text-app-text-muted">QR 코드를 스캔하여 가입하면 자동 추천됩니다</p>
             </motion.div>

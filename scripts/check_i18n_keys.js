@@ -63,6 +63,13 @@ function extractUsedKeys() {
     while ((templateMatch = templateRegex.exec(content)) !== null) {
       keys.add(templateMatch[1]);
     }
+    
+    // useTranslations 훅 사용 패턴 검색
+    const useTransRegex = /\.t\s*\(\s*["'](.*?)["']\s*\)/g;
+    let transMatch;
+    while ((transMatch = useTransRegex.exec(content)) !== null) {
+      keys.add(transMatch[1]);
+    }
   }
   
   return Array.from(keys);
@@ -102,7 +109,8 @@ function checkMissingKeys(languageFiles, usedKeys) {
       missing: missingKeys,
       extra: extraKeys,
       totalUsed: usedKeys.length,
-      totalTranslated: allKeys.length
+      totalTranslated: allKeys.length,
+      coverage: allKeys.length > 0 ? ((usedKeys.length - missingKeys.length) / usedKeys.length * 100).toFixed(2) : 0
     };
   }
   
@@ -115,14 +123,21 @@ function checkMissingKeys(languageFiles, usedKeys) {
 function printResults(results) {
   let hasIssues = false;
   
+  console.log('\n🌐 i18n 키 완결성 체크 결과:');
+  console.log('='.repeat(60));
+  
   for (const [lang, result] of Object.entries(results)) {
     console.log(`\n🔍 ${lang.toUpperCase()} 언어 파일 분석 결과:`);
-    console.log(`  사용된 키: ${result.totalUsed}, 번역된 키: ${result.totalTranslated}`);
+    console.log(`  사용된 키: ${result.totalUsed}, 번역된 키: ${result.totalTranslated - result.extra.length}`);
+    console.log(`  번역 커버리지: ${result.coverage}%`);
     
     if (result.missing.length > 0) {
       console.log(`  ❌ 누락된 키 (${result.missing.length}개):`);
-      for (const key of result.missing) {
+      for (const key of result.missing.slice(0, 10)) { // 상위 10개만 표시
         console.log(`    - ${key}`);
+      }
+      if (result.missing.length > 10) {
+        console.log(`    ... 외 ${result.missing.length - 10}개`);
       }
       hasIssues = true;
     } else {
@@ -131,13 +146,48 @@ function printResults(results) {
     
     if (result.extra.length > 0) {
       console.log(`  ⚠️  미사용 번역 키 (${result.extra.length}개):`);
-      for (const key of result.extra) {
+      for (const key of result.extra.slice(0, 10)) { // 상위 10개만 표시
         console.log(`    - ${key}`);
+      }
+      if (result.extra.length > 10) {
+        console.log(`    ... 외 ${result.extra.length - 10}개`);
       }
     }
   }
   
   return hasIssues;
+}
+
+/**
+ * JSON 형식의 리포트를 생성합니다.
+ */
+function generateJsonReport(results) {
+  const report = {
+    timestamp: new Date().toISOString(),
+    summary: {},
+    details: results
+  };
+  
+  for (const [lang, result] of Object.entries(results)) {
+    report.summary[lang] = {
+      totalUsedKeys: result.totalUsed,
+      translatedKeys: result.totalTranslated - result.extra.length,
+      missingKeys: result.missing.length,
+      extraKeys: result.extra.length,
+      coveragePercentage: parseFloat(result.coverage)
+    };
+  }
+  
+  return report;
+}
+
+/**
+ * 리포트를 파일로 저장합니다.
+ */
+function saveReport(report) {
+  const reportPath = path.join(__dirname, '..', 'i18n_coverage_report.json');
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+  console.log(`\n📊 상세 리포트가 ${reportPath}에 저장되었습니다.`);
 }
 
 /**
@@ -157,6 +207,10 @@ function main() {
   
   const results = checkMissingKeys(languageFiles, usedKeys);
   const hasIssues = printResults(results);
+  
+  // JSON 리포트 생성 및 저장
+  const report = generateJsonReport(results);
+  saveReport(report);
   
   if (hasIssues) {
     console.log('\n❌ 누락된 번역 키가 있습니다. i18n 파일을 업데이트해주세요.');
@@ -179,5 +233,7 @@ module.exports = {
   extractAllKeys,
   checkMissingKeys,
   printResults,
+  generateJsonReport,
+  saveReport,
   main
 };

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-interface PanelProps {
+export interface PanelProps {
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;

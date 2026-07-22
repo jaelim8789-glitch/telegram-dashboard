@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { subscribeToPush } from "@/lib/pushManager";
 import { cacheClear } from "@/lib/cacheStorage";
 import { useOnlineStatus } from "@/lib/offlineDetector";
+import { usePushNotificationTracking } from '@/hooks/usePushNotificationTracking';
 
 interface PwaRegisterProps {
   onUpdateAvailable?: () => void;
@@ -14,7 +15,7 @@ interface PwaRegisterProps {
  * and push notification subscriptions. Also syncs stale IndexedDB cache
  * when the app comes back online after being offline.
  */
-export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
+export function PwaRegister() {
   const { online, wasOffline } = useOnlineStatus();
   const syncingRef = useRef(false);
 
@@ -75,6 +76,35 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
     return () => clearTimeout(timer);
   }, [onUpdateAvailable]);
+
+  const { trackDelivered, trackOpened, trackClicked, trackError } = usePushNotificationTracking();
+
+  // 푸시 알림 이벤트 등록
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        // 푸시 메시지 수신 이벤트
+        registration.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'PUSH_RECEIVED') {
+            const { notificationId } = event.data;
+            trackDelivered(notificationId);
+          }
+        });
+
+        // 알림 클릭 이벤트
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+            const { notificationId } = event.data;
+            trackOpened(notificationId);
+            // 클릭 이벤트는 사용자가 알림을 실제로 클릭했을 때 발생
+            if (event.data.action === 'CLICK_ACTION') {
+              trackClicked(notificationId);
+            }
+          }
+        });
+      });
+    }
+  }, [trackDelivered, trackOpened, trackClicked]);
 
   return null;
 }

@@ -1,67 +1,118 @@
-# TeleMon 프로젝트를 위한 Makefile
-.PHONY: dev test deploy-check clean install build analyze
+.PHONY: dev dev-backend dev-frontend build build-backend build-frontend \
+        typecheck lint clean reset-ci reset-full test test-e2e \
+        deploy deploy-staging health-check worktree-status \
+        db-up db-down db-reset logs logs-backend logs-frontend \
+        sentry-check env-check
 
-# 개발 서버 시작
+# ─── 개발 서버 ──────────────────────────────────────────────────────
+
+## 전체 개발 스택 실행
 dev:
-	@echo "프론트엔드 및 백엔드 개발 서버를 시작합니다..."
-	@concurrently "cd $(CURDIR) && npm run dev" "cd $(CURDIR)/backend && python -m uvicorn main:app --reload --port 8000"
+	cd telegram-dashboard-backend && docker compose --profile full up -d
+	pnpm dev
 
-# 테스트 실행
-test:
-	@echo "모든 테스트를 실행합니다..."
-	@npm run test
-	@cd backend && python -m pytest tests/
+## 백엔드만 실행 (프론트는 pnpm dev)
+dev-backend:
+	cd telegram-dashboard-backend && docker compose --profile backend-only up -d
 
-# 배포 전 검사
-deploy-check:
-	@echo "배포 전 검사를 실행합니다..."
-	@npm run lint
-	@npm run build
-	@cd backend && python -m pytest tests/
-	@cd backend && python -m mypy .
+## 프론트만 실행 (백엔드는 별도)
+dev-frontend:
+	pnpm dev
 
-# 종속성 설치
-install:
-	@echo "프론트엔드 종속성을 설치합니다..."
-	@npm install
-	@echo "백엔드 종속성을 설치합니다..."
-	@cd backend && pip install -r requirements.txt
+# ─── 빌드 ────────────────────────────────────────────────────────────
 
-# 빌드
 build:
-	@echo "프론트엔드를 빌드합니다..."
-	@npm run build
-	@echo "백엔드를 빌드합니다..."
-	@cd backend && python -m compileall .
+	pnpm build
 
-# 번들 분석
-analyze:
-	@echo "번들 분석을 실행합니다..."
-	@npm run build --analyze
+build-backend:
+	cd telegram-dashboard-backend && docker compose build backend
 
-# 정리
+# ─── 검사 ────────────────────────────────────────────────────────────
+
+typecheck:
+	pnpm typecheck
+
+lint:
+	pnpm lint
+
+sentry-check:
+	scripts/sentry-error-dashboard.sh --deploy-check
+
+env-check:
+	scripts/check-env-sync.sh
+	scripts/check-env-sync.sh backend
+
+# ─── 정리 ────────────────────────────────────────────────────────────
+
+## 캐시+노드모듈+빌드 찌꺼기 완전 초기화 (pnpm store은 보존)
 clean:
-	@echo "빌드 산출물을 정리합니다..."
-	@rm -rf .next dist build
-	@cd backend && rm -rf __pycache__ *.pyc
+	rm -rf .next node_modules
+	pnpm store prune
+	echo "✅ Clean complete — run 'pnpm install' to reinstall"
 
-# 터널 테스트 (ngrok 필요)
-tunnel:
-	@echo "로컬 터널을 시작합니다 (ngrok 필요)..."
-	@ngrok http 8000
+## DB 포함 완전 초기화
+clean-all: clean
+	cd telegram-dashboard-backend && docker compose down -v
+	rm -rf telegram-dashboard-backend/__pycache__ telegram-dashboard-backend/app/**/__pycache__
+	echo "✅ Full clean — run 'make dev' to start fresh"
 
-# 스냅샷 테스트
-snapshot-test:
-	@echo "스냅샷 테스트를 실행합니다..."
-	@npm run test -- --updateSnapshot
+# ─── 테스트 ──────────────────────────────────────────────────────────
 
-# i18n 키 검사
-check-i18n:
-	@echo "i18n 키 완결성을 검사합니다..."
-	@node scripts/check-i18n-keys.js
+test:
+	pnpm test:e2e
 
-# 포트 충돌 확인 및 처리
-check-port:
-	@echo "포트 사용 상태를 확인합니다..."
-	@netstat -an | grep :3000 || echo "Port 3000 is available"
-	@netstat -an | grep :8000 || echo "Port 8000 is available"
+# ─── 배포 ────────────────────────────────────────────────────────────
+
+## 스테이징 배포 (SSH 키 필요)
+deploy-staging:
+	cd telegram-dashboard-backend && docker compose build frontend
+	ssh $(VPS_HOST) "cd /opt/telemon/backend && git pull && docker compose up -d --no-deps frontend"
+
+## 스모크 테스트
+smoke-test:
+	scripts/smoke_test_prod.sh
+
+# ─── 워크트리 ─────────────────────────────────────────────────────────
+
+worktree-status:
+	scripts/worktree-dashboard.sh
+
+# ─── Docker DB ────────────────────────────────────────────────────────
+
+db-up:
+	cd telegram-dashboard-backend && docker compose up -d db
+
+db-down:
+	cd telegram-dashboard-backend && docker compose stop db
+
+db-reset:
+	cd telegram-dashboard-backend && docker compose down -v db && docker compose up -d db
+
+# ─── 로그 ────────────────────────────────────────────────────────────
+
+logs:
+	cd telegram-dashboard-backend && docker compose logs -f --tail=50
+
+logs-backend:
+	cd telegram-dashboard-backend && docker compose logs -f backend --tail=50
+
+logs-frontend:
+	cd telegram-dashboard-backend && docker compose logs -f frontend --tail=50
+
+# ─── 헬스 체크 ──────────────────────────────────────────────────────
+
+health-check:
+	scripts/vps-health-check.sh
+
+# ─── 도움말 ──────────────────────────────────────────────────────────
+
+help:
+	@echo "TeleMon Makefile — 자주 쓰는 명령 모음"
+	@echo ""
+	@grep -E '^## |^[a-zA-Z_-]+:' Makefile | while read line; do \
+		if echo "$$line" | grep -q '^## '; then \
+			echo "  $$line" | sed 's/## /  /'; \
+		else \
+			echo "    $$line" | sed 's/://'; \
+		fi; \
+	done
