@@ -247,7 +247,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             </button>
             <span className="absolute bottom-2 left-2 rounded px-2 py-0.5 text-[10px]"
               style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "#ccc" }}>
-              {imageFile!.name} ({(imageFile!.size / 1024).toFixed(0)}KB)
+              {imageFile?.name} ({((imageFile?.size ?? 0) / 1024).toFixed(0)}KB)
             </span>
             {imageFile && imageFile.size > 5 * 1024 * 1024 && (
               <div className="absolute bottom-8 left-2 flex items-center gap-1 rounded px-2 py-0.5 text-[10px]"
