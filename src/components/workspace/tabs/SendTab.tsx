@@ -1338,7 +1338,7 @@ export function SendTab() {
                 <span className="text-[11px] font-medium text-app-text-muted">최근 대상:</span>
                 {recentSets.map((set, idx) => (
                   <button
-                    key={idx}
+                    key={`set-${idx}`}
                     type="button"
                     onClick={() => handleRestoreRecentSet(set)}
                     className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-card px-2.5 py-1 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
@@ -1562,7 +1562,7 @@ export function SendTab() {
                     <>
                       {groupsLoading && (
                         <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={`send-gsk-${i}`} className="h-20 w-full" />)}
                         </div>
                       )}
                       {groupsError && <p className="text-xs text-app-danger">{groupsError}</p>}
@@ -1802,7 +1802,7 @@ export function SendTab() {
                   {spamScore.reasons.length > 0 && (
                     <ul className="space-y-0.5">
                       {spamScore.reasons.slice(0, 2).map((r, i) => (
-                        <li key={i} className="text-[10px] text-app-text-subtle">• {r}</li>
+                        <li key={`spam-r-${i}`} className="text-[10px] text-app-text-subtle">• {r}</li>
                       ))}
                     </ul>
                   )}

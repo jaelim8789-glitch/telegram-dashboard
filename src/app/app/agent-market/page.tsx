@@ -162,9 +162,9 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
   return (
     <span className="inline-flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => {
-        if (i < full) return <Star key={i} className={`${cls} fill-amber-400 text-amber-400`} />;
-        if (i === full && half) return <StarHalf key={i} className={`${cls} fill-amber-400 text-amber-400`} />;
-        return <Star key={i} className={`${cls} text-app-border-strong`} />;
+        if (i < full) return <Star key={`star-full-${i}`} className={`${cls} fill-amber-400 text-amber-400`} />;
+        if (i === full && half) return <StarHalf key={`star-half-${i}`} className={`${cls} fill-amber-400 text-amber-400`} />;
+        return <Star key={`star-empty-${i}`} className={`${cls} text-app-border-strong`} />;
       })}
     </span>
   );
@@ -364,7 +364,7 @@ export default function AgentMarketPage() {
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-app-border bg-app-card">
+            <div key={`market-sk-${i}`} className="overflow-hidden rounded-2xl border border-app-border bg-app-card">
               <div className="animate-pulse p-4">
                 <Skeleton className="mb-3 h-10 w-10 rounded-xl" />
                 <Skeleton className="mb-2 h-4 w-3/4" />

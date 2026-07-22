@@ -340,7 +340,7 @@ function OperationsAttention({
   return (
     <div className="space-y-1.5">
       {items.map((item, i) => (
-        <div key={i} className={cn(
+        <div key={`da-item-${i}`} className={cn(
           "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs",
           item.tone === "danger" && "border-app-danger/20 bg-app-danger-muted/30 text-app-danger",
           item.tone === "warning" && "border-app-warning/20 bg-app-warning-muted/30 text-app-warning",
@@ -399,7 +399,7 @@ function DeliveryTimeHeatmap({ data }: { data: TimelineItem[] }) {
           <div className="flex flex-col gap-0.5 shrink-0 mr-1">
             <div className="h-4" />
             {dayLabels.map((d, i) => (
-              <div key={i} className="flex h-4 items-center justify-end text-[9px] text-app-text-muted pr-1">
+              <div key={`daylabel-${i}`} className="flex h-4 items-center justify-end text-[9px] text-app-text-muted pr-1">
                 {d}
               </div>
             ))}
@@ -408,14 +408,14 @@ function DeliveryTimeHeatmap({ data }: { data: TimelineItem[] }) {
           <div className="flex-1">
             <div className="flex gap-0.5 mb-0.5">
               {Array.from({ length: 24 }).map((_, h) => (
-                <div key={h} className="flex-1 text-center text-[8px] text-app-text-muted/60 leading-4">
+                <div key={`hourlabel-${h}`} className="flex-1 text-center text-[8px] text-app-text-muted/60 leading-4">
                   {h}
                 </div>
               ))}
             </div>
             <div className="flex flex-col gap-0.5">
               {Array.from({ length: 7 }).map((_, d) => (
-                <div key={d} className="flex gap-0.5">
+                <div key={`dayrow-${d}`} className="flex gap-0.5">
                   {Array.from({ length: 24 }).map((_, h) => {
                     const item = hourlyData.find(x => x.hour === h && x.day === d);
                     const count = item?.count ?? 0;
@@ -531,7 +531,7 @@ export function DeliveryAnalyticsTab() {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="전달 분석 로딩 중">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={`da-sk-${i}`} className="h-24 w-full rounded-xl" />)}
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Skeleton className="h-40 w-full rounded-2xl" /><Skeleton className="h-40 w-full rounded-2xl" />

@@ -65,7 +65,7 @@ export function OfficeTV() {
           <p className="text-lg font-bold text-green-400">+{Math.floor(Math.random() * 30) + 5}%</p>
           <div className="flex gap-0.5 h-4 items-end">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="w-2 rounded-t-sm transition-all bg-gradient-to-t from-green-500 to-green-400"
+              <div key={`tv-bar-${i}`} className="w-2 rounded-t-sm transition-all bg-gradient-to-t from-green-500 to-green-400"
                 style={{ height: `${Math.random() * 100}%` }} />
             ))}
           </div>
@@ -103,7 +103,7 @@ export function OfficeTV() {
       {/* Channel buttons */}
       <div className="flex gap-1 mt-1.5">
         {channels.map((ch, i) => (
-          <button key={i} onClick={() => setChannel(i)}
+          <button key={ch.name} onClick={() => setChannel(i)}
             className={`flex-1 rounded px-1 py-0.5 text-[7px] font-medium transition-colors ${channel === i ? "bg-white/10 text-white" : "text-white/30 hover:bg-white/5"}`}
           >{ch.name}</button>
         ))}

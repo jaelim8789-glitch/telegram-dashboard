@@ -224,7 +224,7 @@ export interface BroadcastChild {
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
   /** Delivery mode inherited from parent. */
-  deliveryMode?: "normal" | "cycle" | "bulk" | "replyMacro";
+  deliveryMode?: "normal" | "cycle" | "bulk" | "replyMacro" | "reply";
   /** Inline keyboard buttons. */
   inlineButtons: InlineButton[] | null;
 }

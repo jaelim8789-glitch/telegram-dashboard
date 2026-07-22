@@ -1070,7 +1070,7 @@ export function RecurringScheduleTab() {
       {loading && recurring.length === 0 ? (
         <div className="space-y-3">
           {[1, 2, 3].map((index) => (
-            <Skeleton key={index} className="h-36 w-full rounded-2xl" />
+            <Skeleton key={`rec-sk-${index}`} className="h-36 w-full rounded-2xl" />
           ))}
         </div>
       ) : error && recurring.length === 0 ? (

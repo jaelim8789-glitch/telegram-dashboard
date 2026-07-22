@@ -348,7 +348,7 @@ export function GuestBotTab() {
             "5회 이상 사용한 사용자에게 프리미엄 전환 유도",
             "그룹 스팸 없이 개인화된 커뮤니케이션",
           ].map((item, i) => (
-            <li key={i} className="flex items-center gap-2 text-xs text-app-text-muted">
+            <li key={`guest-item-${i}`} className="flex items-center gap-2 text-xs text-app-text-muted">
               <span className="h-1 w-1 rounded-full bg-app-primary/40 shrink-0" />
               {item}
             </li>

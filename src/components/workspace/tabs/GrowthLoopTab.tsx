@@ -305,7 +305,7 @@ function LoopCard({ loop, actioning, onAction }: { loop: GrowthLoop; actioning: 
               {c.suggestions.length > 0 && (
                 <div className="mt-1 space-y-0.5">
                   {c.suggestions.slice(0, 3).map((s, i) => (
-                    <p key={i} className="text-[9px] text-app-text-muted ml-2">💡 {s}</p>
+                    <p key={`suggestion-${i}`} className="text-[9px] text-app-text-muted ml-2">💡 {s}</p>
                   ))}
                 </div>
               )}

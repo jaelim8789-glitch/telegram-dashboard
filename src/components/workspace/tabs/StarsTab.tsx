@@ -94,7 +94,7 @@ function ProductCard({
 
       <ul className="mb-6 flex-1 space-y-2">
         {product.description.split("\\n").map((line, i) => (
-          <li key={i} className="flex items-start gap-2 text-[13px] text-app-text-secondary">
+          <li key={`desc-${i}`} className="flex items-start gap-2 text-[13px] text-app-text-secondary">
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
             {line.replace("• ", "")}
           </li>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { initData, useSignal, hapticFeedback } from "@tma.js/sdk-react";
 import {
   User, Settings, LogOut, ChevronRight, Star, Bell,
@@ -42,6 +42,7 @@ function MenuItem({
       style={{
         color: danger ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-text-color, #f5f5f5)",
       }}
+      aria-label={label}
     >
       <div className="flex items-center gap-3">
         <span className="flex h-6 w-6 items-center justify-center" style={{ color: danger ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-button-color, #5288c1)" }}>
@@ -57,7 +58,7 @@ function MenuItem({
   );
 }
 
-export function MiniAppProfile() {
+export const MiniAppProfile = memo(function MiniAppProfile() {
   const initDataState = useSignal(initData.state);
   const user = initDataState?.user;
   const [planName, setPlanName] = useState("Free");
@@ -87,12 +88,12 @@ export function MiniAppProfile() {
           {user?.photo_url ? (
             <Image 
               src={user.photo_url} 
-              alt={user.first_name} 
+              alt={user.first_name}
               width={80}
               height={80}
               className="h-full w-full rounded-full object-cover"
               priority={false}
-              unoptimized // 외부 이미지이므로 최적화 비활성화
+              unoptimized
             />
           ) : (
             user?.first_name?.charAt(0)?.toUpperCase() || "U"
@@ -142,4 +143,4 @@ export function MiniAppProfile() {
       </div>
     </div>
   );
-}
+});

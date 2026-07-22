@@ -281,8 +281,8 @@ export function AccountRegisterTab() {
               </div>
               {configAnalysis.spamScore.reasons.length > 0 && (
                 <ul className="space-y-0.5">
-                  {configAnalysis.spamScore.reasons.slice(0, 2).map((r, i) => (
-                    <li key={i} className="text-[10px] text-app-text-subtle">• {r}</li>
+                    {configAnalysis.spamScore.reasons.slice(0, 2).map((r, i) => (
+                    <li key={`${r}-${i}`} className="text-[10px] text-app-text-subtle">• {r}</li>
                   ))}
                 </ul>
               )}
@@ -660,7 +660,7 @@ export function AccountRegisterTab() {
               <div className="flex space-x-1">
                 {steps.map((_, index) => (
                   <div
-                    key={index}
+                    key={`step-${index}`}
                     className={`h-1.5 rounded-full transition-all ${
                       index <= currentStep ? 'bg-app-primary w-6' : 'bg-app-border w-2'
                     }`}

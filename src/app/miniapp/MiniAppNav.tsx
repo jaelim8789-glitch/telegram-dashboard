@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { LayoutDashboard, MessageSquare, Send, User } from "lucide-react";
 
 export type MiniAppTab = "dashboard" | "chat" | "send" | "profile";
@@ -18,10 +19,12 @@ const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = 
   { id: "profile", label: "프로필", icon: User },
 ];
 
-export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavProps) {
+export const MiniAppNav = memo(function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavProps) {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5"
+      role="tablist"
+      aria-label="메인 내비게이션"
       style={{
         paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
         backgroundColor: "var(--tg-theme-bg-color, #17212b)",
@@ -34,6 +37,9 @@ export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavPr
         return (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={isActive}
+            aria-label={tab.label}
             onClick={() => onTabChange(tab.id)}
             className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[64px] transition-all active:scale-90"
             style={{
@@ -62,4 +68,4 @@ export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavPr
       })}
     </nav>
   );
-}
+});

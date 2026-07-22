@@ -175,7 +175,7 @@ export function AgentSidebar({
           {agentsLoading ? (
             <div className="space-y-1.5 px-2">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                <Skeleton key={`as-sk-${i}`} className="h-12 w-full rounded-lg" />
               ))}
             </div>
           ) : agentsError ? (
@@ -254,7 +254,7 @@ export function AgentSidebar({
           {chatsLoading ? (
             <div className="space-y-1.5 px-2">
               {[1, 2].map((i) => (
-                <Skeleton key={i} className="h-8 w-full rounded-lg" />
+                <Skeleton key={`as-sk2-${i}`} className="h-8 w-full rounded-lg" />
               ))}
             </div>
           ) : chatsError ? (

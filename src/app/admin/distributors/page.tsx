@@ -305,7 +305,7 @@ function DistributorsContent() {
 
         {loading ? (
           <div className="space-y-2">
-            {[1,2,3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+            {[1,2,3].map((i) => <Skeleton key={`dist-sk-${i}`} className="h-16 w-full rounded-xl" />)}
           </div>
         ) : sorted.length === 0 ? (
           <EmptyState icon={Users} title="총판이 없습니다" description="아직 등록된 총판이 없습니다." />

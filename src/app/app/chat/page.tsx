@@ -427,7 +427,7 @@ export default function AgentChatPage() {
                 {messagesLoading ? (
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+                      <div key={`chat-sk-${i}`} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                         <div className={`space-y-2 ${i % 2 === 0 ? "items-end" : "items-start"}`}>
                           <Skeleton className={`h-3 w-16 rounded`} />
                           <Skeleton className={`h-16 w-48 sm:w-72 rounded-2xl ${i % 2 === 0 ? "rounded-br-md" : "rounded-bl-md"}`} />

@@ -179,7 +179,7 @@ export function AiOperationsReportTab() {
               {(currentReport.sections?.length ?? 0) > 0 && (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {currentReport.sections!.map((section: ReportSection, i: number) => (
-                    <Panel key={i} title={section.title || `섹션 ${i + 1}`}>
+                    <Panel key={section.title || `section-${i}`} title={section.title || `섹션 ${i + 1}`}>
                       <p className="text-xs text-app-text leading-relaxed whitespace-pre-wrap">
                         {section.content || JSON.stringify(section)}
                       </p>
@@ -192,7 +192,7 @@ export function AiOperationsReportTab() {
                 <Panel title={<div className="flex items-center gap-1.5"><Lightbulb className="h-4 w-4 text-app-warning" /> 인사이트</div>}>
                   <div className="space-y-2">
                     {currentReport.insights!.map((insight: ReportInsight, i: number) => (
-                      <div key={i} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-bg p-2.5">
+                      <div key={`insight-${i}`} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-bg p-2.5">
                         <Lightbulb className="h-4 w-4 text-app-warning shrink-0 mt-0.5" />
                         <div>
                           <p className="text-xs font-medium text-app-text">                        {typeof insight === "string" ? insight : insight.title}</p>
@@ -208,7 +208,7 @@ export function AiOperationsReportTab() {
                 <Panel title={<div className="flex items-center gap-1.5"><TrendingUp className="h-4 w-4 text-app-primary" /> 개선 추천</div>}>
                   <div className="space-y-2">
                     {currentReport.recommendations!.map((rec: ReportRecommendation, i: number) => (
-                      <div key={i} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-bg p-2.5">
+                      <div key={`rec-${i}`} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-bg p-2.5">
                         <div className={cn(
                           "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
                           rec.impact === "high" ? "bg-app-danger-muted text-app-danger" :

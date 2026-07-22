@@ -190,7 +190,7 @@ export function OperatorTab() {
           <Panel title="📋 실행 계획">
             <div className="space-y-2">
               {result.plan.map((p, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
+                <div key={`plan-${i}`} className="flex items-start gap-2 text-xs">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-app-primary/10 text-[10px] font-bold text-app-primary mt-0.5">
                     {i + 1}
                   </span>
@@ -208,7 +208,7 @@ export function OperatorTab() {
                 const label = STEP_LABELS[s.step] || s.step;
                 return (
                   <div
-                    key={i}
+                    key={`step-${i}`}
                     className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
                       s.status === "done"
                         ? "border-app-success/20 bg-app-success-muted/10"
@@ -250,7 +250,7 @@ export function OperatorTab() {
                   return hashtags?.length ? (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {hashtags.map((tag: string, i: number) => (
-                        <span key={i} className="text-[10px] text-app-primary">{tag}</span>
+                        <span key={`tag-${i}`} className="text-[10px] text-app-primary">{tag}</span>
                       ))}
                     </div>
                   ) : null;

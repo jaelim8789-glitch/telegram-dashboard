@@ -380,7 +380,7 @@ export function GroupTab() {
 
         {loading && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={`group-sk-${i}`} className="h-24 w-full rounded-xl" />)}
           </div>
         )}
         {error && <p className="text-xs text-app-danger">{error}</p>}

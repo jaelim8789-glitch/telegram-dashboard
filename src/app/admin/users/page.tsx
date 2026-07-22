@@ -653,7 +653,7 @@ function UsersContent() {
         {loading && (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-xl bg-app-card-hover" />
+              <div key={`user-sk-${i}`} className="h-14 animate-pulse rounded-xl bg-app-card-hover" />
             ))}
           </div>
         )}
