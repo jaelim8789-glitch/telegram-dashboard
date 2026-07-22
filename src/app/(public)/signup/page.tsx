@@ -3,7 +3,7 @@
 import { useState, useMemo, type FormEvent, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle, Send, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, UserCheck, RefreshCw, Key, AlertCircle, Send, ArrowLeft, ArrowRight, Users } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
@@ -453,6 +453,27 @@ export default function SignupPage() {
                   {apiKey && !apiKey.startsWith("Telegram") && (
                     <div className="rounded-xl bg-app-surface border border-app-border p-4">
                       <code className="break-all text-sm text-app-text font-mono">{apiKey}</code>
+                    </div>
+                  )}
+
+                  {/* ── Referral onboarding card ── */}
+                  {referralCode && (
+                    <div className="rounded-xl border border-app-primary/20 bg-app-primary/5 p-4 text-left">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-app-primary/15">
+                          <Users className="h-5 w-5 text-app-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-app-text">
+                            🎉 당신을 초대한 사람도 AI 직원을 사용합니다
+                          </p>
+                          <p className="text-xs text-app-text-muted mt-1">
+                            추천인 코드 <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-[11px]">{referralCode}</code>가 자동 등록되었습니다.
+                            당신도 워터마크에 내 추천인 코드를 넣어 친구를 초대해보세요!
+                            첫 추천 성공 시 커미션을 받을 수 있습니다.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </>

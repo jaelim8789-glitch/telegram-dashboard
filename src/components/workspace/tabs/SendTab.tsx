@@ -25,6 +25,8 @@ import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import ApiKeyGuard from "@/components/ApiKeyGuard";
 import { useApiKeyGuard } from "@/lib/useApiKeyGuard";
+import { WatermarkGate } from "@/components/workspace/WatermarkGate";
+import { ErrorAction } from "@/components/workspace/ErrorAction";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
 import * as api from "@/lib/api";
 import * as folderApi from "@/lib/folderApi";
@@ -47,21 +49,15 @@ import {
   type MessageTemplate,
 } from "@/lib/messageTemplates";
 import { MessagePreview } from "@/components/workspace/tabs/send/MessagePreview";
-import { HistoryRow } from "@/components/workspace/tabs/send/HistoryRow";
 import { InlineButtonBuilder } from "@/components/workspace/tabs/send/InlineButtonBuilder";
 import { RecipientReviewPanel } from "@/components/workspace/tabs/send/RecipientReviewPanel";
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { STATUS_META } from "@/lib/statusMeta";
 import { Modal } from "@/components/ui/Modal";
-import { downloadLogsCsv } from "@/lib/exportCsv";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
 import { SendProgressBar } from "@/components/ui/SendProgressBar";
-import { useDebounce, usePasteImage } from "@/lib/performance";
-import { resizeImage } from "@/lib/imageResize";
-import { hapticFeedback } from "@/lib/haptic";
-import { fireConfetti } from "@/lib/confetti";
-import { enqueueSend } from "@/lib/offlineQueue";
+import { useDebounce } from "@/hooks/useDebounce";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
 import { computeViralScore, viralColor, viralBg, viralLabel, type ViralScoreResult } from "@/lib/viralScore";
@@ -275,13 +271,19 @@ export function SendTab() {
   }, [tagsByGroup]);
 
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSetSearch = useCallback(
+    (val: string) => setSearch(val),
+    []
+  );
+  const debouncedSetSearchDebounced = useDebounce(debouncedSetSearch, 250);
   const [sortMode, setSortMode] = useState<SortMode>("default");
   const [typeFilter, setTypeFilter] = useState<GroupType | "all" | "saved">("all");
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<number>(60);
-  const [deliveryMode, setDeliveryMode] = useState<"normal" | "bulk" | "replyMacro">("normal");
+  const [deliveryMode, setDeliveryMode] = useState<"normal" | "bulk" | "replyMacro" | "cycle">("normal");
   const [normalDelaySeconds, setNormalDelaySeconds] = useState<number>(60);
   const [dragOver, setDragOver] = useState(false);
   const [dragError, setDragError] = useState<string | null>(null);
@@ -296,7 +298,8 @@ export function SendTab() {
   const [autoRetry, setAutoRetry] = useState(false);
   const [autoRetryCount, setAutoRetryCount] = useState(3);
   const [autoRetryInterval, setAutoRetryInterval] = useState(5);
-    const [deliveryPreset, setDeliveryPreset] = useState<DeliveryPreset>("balanced");
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [deliveryPreset, setDeliveryPreset] = useState<DeliveryPreset>("balanced");
   useEffect(() => {
     // Delivery Preset → batchSize + delay 자동 매핑
     switch (deliveryPreset) {
@@ -477,6 +480,7 @@ export function SendTab() {
   const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const groupSectionRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   useEffect(() => {
     if (typeof window === 'undefined' || !('visualViewport' in window)) return;
@@ -781,7 +785,7 @@ export function SendTab() {
       setIsRecurring(false); setRecurringInterval(60);
       setDeliveryMode("normal");
       setReplyMacroEnabled(false); setReplyToMessageId(""); setDedupeReply(false);
-      setSearch("");
+      setSearch(""); setSearchInput("");
     }
     setSubmitError(null);
     setSubmitNotice(null);
@@ -1042,7 +1046,18 @@ export function SendTab() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!selectedAccountId || selectedRecipientIds.length === 0 || submitting) return;
+    if (!selectedAccountId || submitting) return;
+
+    // Auto-scroll to group section if no recipients selected
+    if (selectedRecipientIds.length === 0) {
+      setSubmitError("발송 대상을 선택해주세요.");
+      setTimeout(() => {
+        groupSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        groupSectionRef.current?.classList.add("ring-2", "ring-app-primary/40", "rounded-xl");
+        setTimeout(() => groupSectionRef.current?.classList.remove("ring-2", "ring-app-primary/40", "rounded-xl"), 3000);
+      }, 200);
+      return;
+    }
     if (!message.trim()) {
       setSubmitError("메시지 내용을 입력하세요.");
       return;
@@ -1120,7 +1135,7 @@ export function SendTab() {
       setReplyMacroEnabled(false); setReplyToMessageId(""); setDedupeReply(false);
       setAutoRetry(false); setAutoRetryCount(3); setAutoRetryInterval(5);
       setInlineButtons([]);
-      setSearch("");
+      setSearch(""); setSearchInput("");
       await loadHistory(selectedAccountId);
     } catch (err) {
       if (err instanceof api.ApiError && err.isNetworkError) {
@@ -1402,7 +1417,7 @@ export function SendTab() {
             )}
 
             {/* Group selector */}
-            <div>
+            <div ref={groupSectionRef} id="send-group-selector">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-app-text-muted">
                   <Users2 className="h-3.5 w-3.5" />
@@ -1439,16 +1454,16 @@ export function SendTab() {
                 <input
                   ref={searchRef}
                   type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => { setSearchInput(e.target.value); debouncedSetSearchDebounced(e.target.value); }}
                   onFocus={() => setTimeout(() => searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   placeholder="그룹/채널 이름 또는 ID 검색"
                   className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 scroll-mt-24"
                 />
-                {search && (
+                {searchInput && (
                   <button
                     type="button"
-                    onClick={() => setSearch("")}
+                    onClick={() => { setSearchInput(""); setSearch(""); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
                     title="검색 지우기"
                   >
@@ -1673,7 +1688,7 @@ export function SendTab() {
                           <p className="text-sm">일치하는 그룹이 없습니다.</p>
                           <button
                             type="button"
-                            onClick={() => setSearch("")}
+                            onClick={() => { setSearchInput(""); setSearch(""); }}
                             className="text-xs text-app-primary hover:underline"
                           >
                             검색 지우기
@@ -1777,6 +1792,7 @@ export function SendTab() {
                 groupName={selectedRecipients[0]?.title}
                 imagePreviewUrl={imageObjectUrl}
                 plan={plan}
+                referralCode={referralCode}
               />
               {message.trim() && TEMPLATE_VARIABLES.some((v) => message.includes(v.key)) && (
                 <div className="rounded-xl border border-app-info/15 bg-app-info-muted/5 px-3 py-2 self-start">
@@ -2269,98 +2285,70 @@ export function SendTab() {
               </label>
             </div>
 
-            {/* Inline Buttons Section */}
-            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-app-text">인라인 버튼</h3>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowInlineButtons(!showInlineButtons)}
-                  className="h-6 w-6 p-0 text-app-text-subtle"
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      showInlineButtons ? "rotate-180" : ""
-                    }`}
-                  />
-                </Button>
-              </div>
+            {/* Watermark + Referral Gate — free plan users must enable watermark */}
+            <WatermarkGate
+              plan={plan}
+              onWatermarkEnabled={() => {}}
+              onReferralReady={(code) => setReferralCode(code)}
+            />
 
-              {showInlineButtons && (
-                <div className="mt-3 space-y-3">
-                  {inlineButtons.map((btn, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={btn.label}
-                        onChange={(e) => {
-                          const newButtons = [...inlineButtons];
-                          newButtons[idx].label = e.target.value;
-                          setInlineButtons(newButtons);
-                        }}
-                        placeholder="버튼 라벨"
-                        className="flex-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-sm text-app-text outline-none focus:border-app-primary/60 min-h-[44px]"
-                      />
-                      <input
-                        type="url"
-                        value={btn.url}
-                        onChange={(e) => {
-                          const newButtons = [...inlineButtons];
-                          newButtons[idx].url = e.target.value;
-                          setInlineButtons(newButtons);
-                        }}
-                        placeholder="https://"
-                        className="flex-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-sm text-app-text outline-none focus:border-app-primary/60 min-h-[44px]"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setInlineButtons(inlineButtons.filter((_, i) => i !== idx));
-                        }}
-                        className="h-9 w-9 p-0 text-app-danger"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      setInlineButtons([
-                        ...inlineButtons,
-                        { label: "", url: "" },
-                      ])
-                    }
-                    className="w-full min-h-[44px]"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    버튼 추가
-                  </Button>
+            {/* Submit Error + Error Action */}
+            {submitError && (
+              <div className="space-y-2">
+                <div className="rounded-xl border border-app-danger/30 bg-app-danger/5 px-3 py-2">
+                  <p className="text-xs text-app-danger flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    {submitError}
+                  </p>
                 </div>
-              )}
-            </div>
+                <ErrorAction
+                  errorMessage={submitError}
+                  accountId={selectedAccountId ?? undefined}
+                  message={message}
+                  onRewrite={(newMsg) => {
+                    setMessage(newMsg);
+                    setSubmitError(null);
+                    toast("success", "AI가 메시지를 순화했습니다. 확인 후 발송하세요.");
+                  }}
+                  onReauth={() => {
+                    setSubmitError(null);
+                    toast("info", "계정 탭에서 재인증을 진행해주세요.");
+                  }}
+                  onUpgrade={() => {
+                    window.location.href = "/pricing";
+                  }}
+                  onAddAccount={() => {
+                    setSubmitError(null);
+                    toast("info", "계정 관리 탭에서 계정을 추가하거나 요금제를 업그레이드하세요.");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Submit Notice */}
+            {submitNotice && (
+              <div className="rounded-xl border border-app-success/30 bg-app-success/5 px-3 py-2">
+                <p className="text-xs text-app-success whitespace-pre-wrap">{submitNotice}</p>
+              </div>
+            )}
 
             {/* Send Button */}
             <Button
-              type="button"
+              type="submit"
               variant="primary"
-              onClick={handleSendConfirm}
-              disabled={!selectedGroupIds.length || !message.trim() || sending}
+              disabled={!selectedRecipientIds.length || !message.trim() || submitting}
               className="w-full min-h-[48px] text-base font-medium"
             >
-              {sending ? (
+              {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   발송 중...
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
-                  {selectedGroupIds.length > 1
-                    ? `${selectedGroupIds.length}개 그룹에 발송`
+                  <SendIcon className="mr-2 h-4 w-4" />
+                  {selectedRecipientIds.length > 1
+                    ? `${selectedRecipientIds.length}개 그룹에 발송`
                     : "그룹에 발송"}
                 </>
               )}

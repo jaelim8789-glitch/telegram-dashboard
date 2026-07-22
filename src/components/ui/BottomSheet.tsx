@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 interface BottomSheetProps {
   open: boolean;
   onClose: () => void;
-  title?: string;
+  title?: ReactNode;
   children: ReactNode;
 }
 

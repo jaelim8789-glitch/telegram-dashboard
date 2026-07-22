@@ -73,6 +73,26 @@ function extractDetailMessage(body: unknown): string | null {
   return null;
 }
 
+function camelToSnake(str: string): string {
+  return str.replaceAll(/([A-Z])/g, "_$1").toLowerCase();
+}
+
+function snakeToCamel(str: string): string {
+  return str.replaceAll(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function camelCaseKeys<T>(obj: unknown): T {
+  if (Array.isArray(obj)) return obj.map(camelCaseKeys) as T;
+  if (obj !== null && typeof obj === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      result[snakeToCamel(key)] = camelCaseKeys(value);
+    }
+    return result as T;
+  }
+  return obj as T;
+}
+
 async function readErrorBody(res: Response): Promise<unknown> {
   const text = await res.text().catch(() => "");
   if (!text) return null;
@@ -102,18 +122,7 @@ export interface CreateAccountInput {
 }
 
 function toAccount(api: ApiAccount): Account {
-  return {
-    id: api.id,
-    phone: api.phone,
-    name: api.name,
-    status: api.status,
-    todaySent: api.today_sent,
-    groupCount: api.group_count,
-    lastActivity: api.last_activity,
-    autoReplyEnabled: api.auto_reply_enabled,
-    createdAt: api.created_at,
-    updatedAt: api.updated_at,
-  };
+  return camelCaseKeys<Account>(api);
 }
 
 export class ApiError extends Error {
@@ -348,19 +357,7 @@ interface ApiAccountHealthItem {
 }
 
 function toAccountHealthItem(api: ApiAccountHealthItem): AccountHealthItem {
-  return {
-    accountId: api.account_id,
-    phone: api.phone,
-    name: api.name,
-    status: api.status,
-    hasSession: api.has_session,
-    lastActivity: api.last_activity,
-    lastError: api.last_error,
-    lastErrorStatus: api.last_error_status,
-    recentSuccessCount: api.recent_success_count,
-    recentFailureCount: api.recent_failure_count,
-    totalDeliveryAttempts: api.total_delivery_attempts,
-  };
+  return camelCaseKeys<AccountHealthItem>(api);
 }
 
 export async function fetchAccountHealth(): Promise<AccountHealthItem[]> {
@@ -446,7 +443,7 @@ export interface AuthStepResult {
 }
 
 function toAuthStepResult(api: ApiAuthStepResult): AuthStepResult {
-  return { status: api.status, requiresTwoFactor: api.requires_2fa, detail: api.detail };
+  return camelCaseKeys<AuthStepResult>(api);
 }
 
 export async function sendCode(accountId: string): Promise<{ sent: boolean }> {
@@ -1102,10 +1099,10 @@ export interface TelegramLoginResult {
   is_new_user: boolean;
 }
 
-export async function telegramLogin(authData: TelegramAuthData): Promise<TelegramLoginResult> {
+export async function telegramLogin(authData: TelegramAuthData, referralCode?: string): Promise<TelegramLoginResult> {
   const result = await request<TelegramLoginResult>("/api/auth/telegram-login", {
     method: "POST",
-    body: JSON.stringify(authData),
+    body: JSON.stringify({ ...authData, referral_code: referralCode ?? null }),
   });
   return result;
 }

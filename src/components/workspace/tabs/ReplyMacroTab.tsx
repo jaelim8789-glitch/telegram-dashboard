@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { getToken } from "@/lib/auth";
 import { getAccountDisplayName } from "@/types";
+import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -22,6 +23,7 @@ function authHeaders(): Record<string, string> {
 export function ReplyMacroTab() {
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const plan = useDashboardStore((s) => s.plan);
   const account = accounts.find((a) => a.id === selectedAccountId);
   const { toast } = useToast();
 
@@ -103,6 +105,9 @@ export function ReplyMacroTab() {
         disabled={saving}
         className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm outline-none focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 resize-none"
       />
+
+      {/* Watermark + Referral Gate — free plan users must enable watermark */}
+      <WatermarkGate plan={plan} />
 
       <div className="flex items-center justify-between rounded-xl border border-app-border bg-app-card px-4 py-3">
         <span className="text-sm font-medium text-app-text">

@@ -46,11 +46,6 @@ export function MobileInspectorSheet({ open, onClose }: MobileInspectorSheetProp
 
   const title = useMemo(() => {
     if (!account) return "인스펙터";
-    return account.name?.trim() || account.phone;
-  }, [account]);
-
-  const titleElement = useMemo(() => {
-    if (!account) return <div>인스펙터</div>;
     return (
       <div className="flex items-center gap-2">
         {accountStatusIcon(account.status)}
@@ -79,15 +74,9 @@ export function MobileInspectorSheet({ open, onClose }: MobileInspectorSheetProp
       open={open}
       onClose={onClose}
       title={title}
-      snapPoints={[25, 50, 85]}
-      initialSnap={50}
-      showCloseButton={true}
     >
-      <div className="absolute top-4 left-4 right-4 flex items-center pointer-events-none z-10">
-        {titleElement}
-      </div>
       {account && (
-        <div className="pt-8 space-y-4 pb-6">
+        <div className="space-y-4 pb-6">
           <Panel title="계정 정보">
             <div className="space-y-2 text-xs">
               <div className="flex justify-between rounded-lg border border-app-border bg-app-bg px-3 py-2">
@@ -162,7 +151,7 @@ export function MobileInspectorSheet({ open, onClose }: MobileInspectorSheetProp
       )}
 
       {!account && (
-        <div className="pt-8 flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
           <Activity className="h-8 w-8 text-app-text-muted opacity-30" />
           <p className="mt-3 text-xs text-app-text-muted">계정을 선택하면 상세 정보를 확인할 수 있습니다</p>
         </div>
