@@ -1274,26 +1274,18 @@ export function SendTab() {
   // ── 답장매크로 (랜덤리플라이) 토글 연동 ──
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
-  function authHeaders(): Record<string, string> {
-    const token = getToken();
-    return {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  }
-
   useEffect(() => {
     if (!selectedAccountId) return;
     setReplyMacroLoading(true);
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-      headers: authHeaders(),
+      headers: api.authHeaders(),
     })
       .then((r) => r.json())
       .then((data) => {
         setReplyMacroActive(!!data.is_active);
         setReplyMacroMessage(data.message_content || "");
       })
-      .catch(() => {})
+      .catch((e) => console.warn("SendTab: reply-macro 설정 fetch 실패", e))
       .finally(() => setReplyMacroLoading(false));
   }, [selectedAccountId]);
 
@@ -1312,7 +1304,7 @@ export function SendTab() {
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
         method: "PUT",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: replyMacroMessage }),
       });
       const data = await res.json();

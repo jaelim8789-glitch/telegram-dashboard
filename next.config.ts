@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
-  eslint: { ignoreDuringBuilds: true },
   compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],

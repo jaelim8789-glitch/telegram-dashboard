@@ -27,10 +27,7 @@ function applyTheme(theme: Theme, animate = false) {
 
   if (animate && el.getAttribute("data-theme") !== resolved) {
     el.classList.add("theme-transitioning");
-    // Remove the class after the transition completes to avoid
-    // interfering with non-theme animations or interactions.
-    clearTimeout((el as HTMLElement & { _themeTimer?: ReturnType<typeof setTimeout> })._themeTimer);
-    (el as HTMLElement & { _themeTimer?: ReturnType<typeof setTimeout> })._themeTimer = setTimeout(() => {
+    setTimeout(() => {
       el.classList.remove("theme-transitioning");
     }, 500);
   }

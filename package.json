@@ -6,19 +6,29 @@
   },
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:legacy": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --fix",
+    "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "prepare": "husky || true",
     "cap:build": "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build && npx cap copy",
     "cap:sync": "cross-env CAPACITOR=1 next build && npx cap sync",
     "cap:android": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open android",
-    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open ios"
+    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open ios",
+    "seed": "cd telegram-dashboard-backend && python scripts/seed_local.py",
+    "openapi": "cd telegram-dashboard-backend && python -c \"from app.main import app; import json; open('../openapi.json','w').write(json.dumps(app.openapi(), indent=2))\"",
+    "typegen": "npx openapi-typescript openapi.json -o src/lib/api.types.ts",
+    "changelog": "npx conventional-changelog-cli -p angular -i CHANGELOG.md -s",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "lint-staged": {
-    "package.json": []
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,yaml,yml,md}": ["prettier --write"],
+    "*.py": ["autopep8 --in-place"]
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -48,15 +58,26 @@
     "@sentry/nextjs": "^9"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^3",
     "@playwright/test": "^1.61.1",
+    "@storybook/addon-essentials": "^8",
+    "@storybook/addon-interactions": "^8",
+    "@storybook/blocks": "^8",
+    "@storybook/nextjs": "^8",
+    "@storybook/react": "^8",
+    "@storybook/test": "^8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "conventional-changelog-cli": "^5",
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "^15.5.20",
     "lint-staged": "^17.1.0",
+    "openapi-typescript": "^7",
+    "prettier": "^3",
+    "storybook": "^8",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

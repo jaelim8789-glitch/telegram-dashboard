@@ -54,6 +54,7 @@ npm run dev        # http://localhost:3000
 | **[AGENTS.md](AGENTS.md)** | **지금, 필수.** 워크트리 규칙(MANDATORY), MCP 우선순위, 배포 절차의 정본. |
 | [WORKTREE_WORKFLOW.md](WORKTREE_WORKFLOW.md) | 브랜치를 새로 만들거나, merge/release/deploy를 다룰 때 — "왜"와 상세 절차. |
 | [PARALLEL_DEVELOPMENT.md](PARALLEL_DEVELOPMENT.md) | **무슨 기능을 만들지 정할 때** — 내 담당 영역, 병렬 가능한 작업, 충돌 위험 파일 확인. |
+| [ALEMBIC_CONVENTIONS.md](ALEMBIC_CONVENTIONS.md) | **백엔드 migration을 만들 때** — revision ID 자동 생성, 멀티헤드 방지 규칙. |
 
 지금 당장 외워야 할 3가지:
 1. **내 워크트리 밖은 수정하지 않는다.**

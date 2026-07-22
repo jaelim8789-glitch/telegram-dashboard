@@ -168,7 +168,7 @@ interface TabMemoryManagement {
 export const useDashboardStore = create<DashboardState & TabMemoryManagement>((set, get) => ({
   ...INITIAL_STATE,
   dashboardRefreshKey: 0,
-  dashboardSwitchProfile: (profileName) => {
+  dashboardSwitchProfile: (profileName: string) => {
     const current = get().dashboardRefreshKey;
     localStorage.setItem("telemon-dashboard-current-profile", profileName);
     set({ dashboardRefreshKey: current + 1 });
@@ -186,11 +186,6 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
 
   setActiveTab: (tab) => {
     try { localStorage.setItem(LAST_TAB_KEY, tab); } catch { }
-    const now = Date.now();
-    const lastSwitch = (window as any).__lastTabSwitch;
-    if (lastSwitch && now - lastSwitch < 300 && tab === (window as any).__lastTabId) return;
-    (window as any).__lastTabSwitch = now;
-    (window as any).__lastTabId = tab;
     set({ activeTab: tab, navView: "feature", navFeature: tab, navCategory: getTabCategory(tab) });
   },
 
@@ -211,18 +206,9 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
 
   setMobileFocusMode: (enabled) => set({ mobileFocusMode: enabled }),
 
-  role: null,
   setRole: (role) => set({ role }),
 
-  subscriptionStatus: null,
-  plan: null,
-  trialExpiresAt: null,
   setSubscription: (subscriptionStatus, plan, trialExpiresAt) => set({ subscriptionStatus, plan, trialExpiresAt }),
-
-  accounts: [],
-  accountsLoading: true,
-  accountsError: null,
-  selectedAccountId: null,
 
   /** RuntimeManager를 통해 즉시 계정 전환 — API 재호출 없음 */
   selectAccount: (id) => {
@@ -252,7 +238,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
         await manager.initialize();
       } else {
         // 이미 초기화됨 — 백그라운드 refresh만 트리거
-        manager.refreshAll().catch(() => {});
+        manager.refreshAll().catch((e) => console.warn("useDashboardStore: 백그라운드 refresh 실패", e));
       }
 
       const accounts = manager.accounts;
@@ -406,9 +392,5 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       const newActiveTabs = state.activeTabs.filter(id => id !== tabId);
       return { activeTabs: newActiveTabs };
     });
-  },
-
-  dashboardSwitchProfile: (profile: string) => {
-    try { localStorage.setItem("telemon-dashboard-profile", profile); } catch {}
   },
 }));

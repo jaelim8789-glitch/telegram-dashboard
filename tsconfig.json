@@ -42,6 +42,17 @@
     "TeleMon",
     ".kilo",
     "telegram-dashboard-backend",
-    "src/components/landing/AIVirtualAssistantSection.tsx"
+    "src/components/landing/AIVirtualAssistantSection.tsx",
+    "src/security",
+    "src/lib/animationOptimization.tsx",
+    "src/lib/bundleOptimization.tsx",
+    "src/lib/cssOptimization.tsx",
+    "src/lib/dataStructureOptimization.tsx",
+    "src/lib/eventOptimization.tsx",
+    "src/lib/fontOptimization.tsx",
+    "src/lib/resourcePreloading.tsx",
+    "src/lib/ssrOptimization.tsx",
+    "src/hooks/useSmartSync.tsx",
+    "src/hooks/useWebWorker.tsx"
   ]
 }

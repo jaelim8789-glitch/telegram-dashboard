@@ -4,12 +4,22 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy target"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
 
 jobs:
   # ═══════════════════════════════════════════
-  # 1. Frontend — typecheck + build
-  #    (this repo is the frontend only — backend lives in the separate
-  #    telegram-dashboard-backend repo with its own workflow)
+  # 1. Frontend CI — typecheck + build + e2e
   # ═══════════════════════════════════════════
   frontend-ci:
     runs-on: ubuntu-latest
@@ -22,28 +32,101 @@ jobs:
           cache: "npm"
 
       - run: npm ci --prefer-offline
+
       - run: npx tsc --noEmit
         name: TypeScript type check
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
+
+      - run: npx next build
+        name: Next.js production build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
+
+      # ── Cache hit rate log ──
+      - run: |
+          echo "npm cache path: $(npm cache ls 2>&1 | head -5 || echo 'N/A')"
+          echo "node_modules size: $(du -sh node_modules 2>/dev/null | cut -f1 || echo 'N/A')"
+          echo ".next size: $(du -sh .next 2>/dev/null | cut -f1 || echo 'N/A')"
+        name: Cache stats
+
+      # ── Playwright e2e (core-flows only) ──
+      - run: npx playwright install chromium --with-deps
+        name: Install Playwright chromium
+
+      - run: >
+          npx playwright test core-flows.spec.ts --project=chromium-no-auth
+          --reporter=list 2>&1 | tail -50
+        name: Run e2e/core-flows.spec.ts
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
 
   # ═══════════════════════════════════════════
-  # 2. Deploy (manual trigger or on master)
+  # 2a. Deploy to staging (master push)
   # ═══════════════════════════════════════════
-  deploy:
+  deploy-staging:
     needs: [frontend-ci]
-    if: github.ref == 'refs/heads/master' && github.event_name != 'workflow_dispatch'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
-      - name: Deploy via SSH
+      - name: Deploy staging via SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
+            cd /opt/telemon/telegram-dashboard
+            git pull origin master
+            cd /opt/telemon/backend
+            docker compose -f docker-compose.yml -f docker-compose.staging.yml build frontend
+            docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps frontend
+            docker image prune -f
+            echo "✅ [staging] 프론트엔드 배포 완료: $(cd /opt/telemon/telegram-dashboard && git log --oneline -1)"
+
+      - name: Notify staging deploy result
+        uses: fjogeleit/http-request-action@v1
+        continue-on-error: true
+        with:
+          url: ${{ secrets.ALERT_WEBHOOK_URL }}
+          method: POST
+          data: >-
+            {"text":"✅ [staging] TeleMon frontend deployed: $(cd /opt/telemon/telegram-dashboard && git log --oneline -1)","username":"TeleMon CI","icon_emoji":":rocket:"}
+          preventFailureOnNoResponse: true
+
+  # ═══════════════════════════════════════════
+  # 2b. Deploy to production (manual trigger only)
+  # ═══════════════════════════════════════════
+  deploy-production:
+    needs: [frontend-ci]
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy production via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
             cd /opt/telemon/telegram-dashboard
             git pull origin master
             cd /opt/telemon/backend
             docker compose build frontend
             docker compose up -d --no-deps frontend
             docker image prune -f
-            echo "✅ 프론트엔드 배포 완료: $(cd /opt/telemon/telegram-dashboard && git log --oneline -1)"
+            echo "✅ [production] 프론트엔드 배포 완료: $(cd /opt/telemon/telegram-dashboard && git log --oneline -1)"
+
+      - name: Notify production deploy result
+        uses: fjogeleit/http-request-action@v1
+        continue-on-error: true
+        with:
+          url: ${{ secrets.ALERT_WEBHOOK_URL }}
+          method: POST
+          data: >-
+            {"text":"✅ [production] TeleMon frontend deployed: $(cd /opt/telemon/telegram-dashboard && git log --oneline -1)","username":"TeleMon CI","icon_emoji":":rocket:"}
+          preventFailureOnNoResponse: true

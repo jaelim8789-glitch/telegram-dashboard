@@ -9,8 +9,8 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { getToken } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import * as api from "@/lib/api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -40,13 +40,6 @@ interface StyleProfile {
   updated_at: string;
 }
 
-function authHeaders() {
-  const token = getToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 const TONE_LABELS: Record<string, string> = {
   formal: "격식체", casual: "캐주얼", friendly: "친근함",
@@ -75,7 +68,7 @@ export function StyleProfileTab() {
   async function loadProfiles() {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/style-profiles`, { headers: authHeaders() });
+      const res = await fetch(`${BASE_URL}/api/style-profiles`, { headers: api.authHeaders() });
       if (res.ok) setProfiles(await res.json());
     } catch { toast("error", "스타일 프로필 로드 실패"); }
     finally { setLoading(false); }
@@ -88,7 +81,7 @@ export function StyleProfileTab() {
     try {
       const res = await fetch(`${BASE_URL}/api/style-profiles/analyze`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({
           name: name.trim() || `스타일 ${new Date().toLocaleDateString("ko-KR")}`,
           source_type: "text",
@@ -114,7 +107,7 @@ export function StyleProfileTab() {
     setDeletingId(id);
     try {
       await fetch(`${BASE_URL}/api/style-profiles/${id}`, {
-        method: "DELETE", headers: authHeaders(),
+        method: "DELETE", headers: api.authHeaders(),
       });
       setProfiles((prev) => prev.filter((p) => p.id !== id));
       if (selectedProfile?.id === id) setSelectedProfile(null);

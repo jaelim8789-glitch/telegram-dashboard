@@ -112,10 +112,10 @@ export function predictBanRisk(
 
   if (score >= 80) {
     riskLevel = "critical";
-    estimatedDaysLeft = Math.max(1, Math.round(Math.random() * 3 + 1));
+    estimatedDaysLeft = Math.max(1, Math.round((100 - score) * 0.5));
   } else if (score >= 50) {
     riskLevel = "high";
-    estimatedDaysLeft = Math.max(3, Math.round(Math.random() * 7 + 3));
+    estimatedDaysLeft = Math.max(3, Math.round((100 - score) * 0.8));
   } else if (score >= 25) {
     riskLevel = "medium";
     estimatedDaysLeft = null;

@@ -82,7 +82,13 @@ export function Sidebar() {
 
   async function loadHealth() {
     try {
-      setHealthItems(await api.fetchAccountHealth());
+      const manager = RuntimeManager.getInstance();
+      const cached = manager.getHealthItems();
+      if (cached.length > 0) {
+        setHealthItems(cached);
+      } else {
+        setHealthItems(await api.fetchAccountHealth());
+      }
     } catch {
       // Health poll failures are non-fatal — keep showing the last known state
     }

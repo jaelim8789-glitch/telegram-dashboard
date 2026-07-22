@@ -192,14 +192,14 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: true }),
-      }).catch(() => {});
+      }).catch((e) => console.warn("TelegramChatView: typing start fetch 실패", e));
     }
     typingTimeoutRef.current = setTimeout(() => {
       lastTypingStatus.current = false;
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: false }),
-      }).catch(() => {});
+      }).catch((e) => console.warn("TelegramChatView: typing end fetch 실패", e));
     }, 2000);
   }, [input, accountId, chatId]);
 

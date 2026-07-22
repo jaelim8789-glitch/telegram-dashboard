@@ -13,19 +13,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
-import { getToken, getSessionToken } from "@/lib/auth";
+import * as api from "@/lib/api";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  const sessionToken = getSessionToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (sessionToken) headers["X-Session-Token"] = sessionToken;
-  return headers;
-}
 
 // ── Scheduled Message ────────────────────────────────────────────────
 
@@ -103,7 +94,7 @@ function GroupSettings() {
     setError(null);
     try {
       const res = await fetch(`${BASE_URL}/api/bot/ai/style-profile/${chatId.trim()}`, {
-        headers: authHeaders(),
+        headers: api.authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -133,7 +124,7 @@ function GroupSettings() {
 
       const res = await fetch(`${BASE_URL}/api/bot/ai/style-profile/${chatId.trim()}`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({
           style_profile_id: styleProfileId,
           available_actions: actions.length > 0 ? actions : undefined,
@@ -262,7 +253,7 @@ function ScheduledMessages() {
       if (statusFilter) params.set("status", statusFilter);
       params.set("limit", "50");
       const res = await fetch(`${BASE_URL}/api/bot/ai/scheduled-messages?${params.toString()}`, {
-        headers: authHeaders(),
+        headers: api.authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -284,7 +275,7 @@ function ScheduledMessages() {
     try {
       const res = await fetch(`${BASE_URL}/api/bot/ai/scheduled-messages/${id}/cancel`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
       });
       if (res.ok) {
         toast("success", "예약 메시지가 취소되었습니다.");
@@ -398,7 +389,7 @@ function CustomCommands() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/bot/ai/scheduled-messages?limit=1`, { headers: authHeaders() });
+      const res = await fetch(`${BASE_URL}/api/bot/ai/scheduled-messages?limit=1`, { headers: api.authHeaders() });
       // Custom commands are loaded through the guest engine
       // For now we show a message about how to register them
       setCommands([]);

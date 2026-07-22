@@ -47,7 +47,7 @@ const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 2_000;
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   const token = getToken();
   const sessionToken = getSessionToken();
   const headers: Record<string, string> = {};
@@ -662,6 +662,8 @@ export interface LogFilters {
   date?: string;
   /** Number of recent days to fetch. When set, overrides backend default (all). */
   days?: number;
+  /** Max items to return. */
+  limit?: number;
 }
 
 export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> {
@@ -670,8 +672,10 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
   if (filters.status) params.set("status", filters.status);
   if (filters.date) params.set("date", filters.date);
   if (filters.days != null) params.set("days", String(filters.days));
+  if (filters.limit != null) params.set("limit", String(filters.limit));
   const qs = params.toString();
-  const logs = await request<ApiBroadcast[]>(`/api/logs${qs ? `?${qs}` : ""}`);
+  const raw = await request<ApiBroadcast[] | { items: ApiBroadcast[] }>(`/api/logs${qs ? `?${qs}` : ""}`);
+  const logs = Array.isArray(raw) ? raw : raw.items;
   return logs.map(toBroadcast);
 }
 
@@ -755,15 +759,15 @@ export async function fetchBroadcastEstimate(input: {
   });
 }
 
-let _idempotencyKey: string | null = null;
-
 export function createIdempotencyKey(): string {
-  if (!_idempotencyKey) _idempotencyKey = crypto.randomUUID();
-  return _idempotencyKey;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 export function clearIdempotencyKey(): void {
-  _idempotencyKey = null;
+  // Idempotency key is now per-call; no-op kept for backward compat.
 }
 
 export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {
