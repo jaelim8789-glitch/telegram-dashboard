@@ -1,125 +1,38 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+import { useRef, useCallback, useEffect, type DependencyList } from "react";
 
-export interface PerformanceMetrics {
-  cls: number | null;
-  fid: number | null;
-  fcp: number | null;
-  lcp: number | null;
-  ttfb: number | null;
+export function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  return useCallback((...args: any[]) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => fn(...args), delay);
+  }, [fn, delay]) as T;
 }
 
-class PerformanceMonitor {
-  private metrics: PerformanceMetrics = {
-    cls: null,
-    fid: null,
-    fcp: null,
-    lcp: null,
-    ttfb: null
-  };
-
-  private observers: PerformanceObserver[] = [];
-
-  init() {
-    // Core Web Vitals 수집
-    getCLS(this.handleCLS);
-    getFID(this.handleFID);
-    getFCP(this.handleFCP);
-    getLCP(this.handleLCP);
-    getTTFB(this.handleTTFB);
-
-    // 성능 타임라인 이벤트 수집
-    this.observePaint();
-    this.observeNavigation();
-  }
-
-  private handleCLS = (metric: any) => {
-    this.metrics.cls = metric.value;
-    this.reportMetric('CLS', metric.value);
-  };
-
-  private handleFID = (metric: any) => {
-    this.metrics.fid = metric.value;
-    this.reportMetric('FID', metric.value);
-  };
-
-  private handleFCP = (metric: any) => {
-    this.metrics.fcp = metric.value;
-    this.reportMetric('FCP', metric.value);
-  };
-
-  private handleLCP = (metric: any) => {
-    this.metrics.lcp = metric.value;
-    this.reportMetric('LCP', metric.value);
-  };
-
-  private handleTTFB = (metric: any) => {
-    this.metrics.ttfb = metric.value;
-    this.reportMetric('TTFB', metric.value);
-  };
-
-  private observePaint = () => {
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.name === 'first-paint') {
-            this.reportMetric('FP', entry.startTime);
-          } else if (entry.name === 'first-contentful-paint') {
-            this.reportMetric('FCP', entry.startTime);
-          }
-        });
-      });
-      observer.observe({ entryTypes: ['paint'] });
-      this.observers.push(observer);
+export function useThrottle<T extends (...args: any[]) => void>(fn: T, limit: number): T {
+  const inThrottle = useRef(false);
+  return useCallback((...args: any[]) => {
+    if (!inThrottle.current) {
+      fn(...args);
+      inThrottle.current = true;
+      setTimeout(() => { inThrottle.current = false; }, limit);
     }
-  };
-
-  private observeNavigation = () => {
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          this.reportMetric('Navigation', {
-            url: (entry as PerformanceNavigationTiming).name,
-            loadTime: entry.loadEventEnd - entry.loadEventStart,
-            domContentLoaded: entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart
-          });
-        });
-      });
-      observer.observe({ entryTypes: ['navigation'] });
-      this.observers.push(observer);
-    }
-  };
-
-  private reportMetric(name: string, value: any) {
-    // 성능 메트릭을 콘솔에 로깅 (실제 배포 시에는 분석 서버로 전송)
-    if (process.env.NODE_ENV === 'development') {
-      console.group(`📊 ${name} Metric`);
-      console.log('Value:', value);
-      console.log('Timestamp:', new Date().toISOString());
-      console.groupEnd();
-    }
-  }
-
-  getMetrics(): PerformanceMetrics {
-    return { ...this.metrics };
-  }
-
-  destroy() {
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers = [];
-  }
-
-  // 성능 테스트를 위한 메서드
-  simulateHeavyTask(duration: number) {
-    const start = performance.now();
-    while (performance.now() - start < duration) {
-      // CPU 바인딩 작업 시뮬레이션
-    }
-  }
+  }, [fn, limit]) as T;
 }
 
-export const performanceMonitor = new PerformanceMonitor();
+export function usePollingInterval(hasActiveJob: boolean): number {
+  return hasActiveJob ? 3000 : 60000;
+}
 
-// 앱 시작 시 초기화
-if (typeof window !== 'undefined') {
-  performanceMonitor.init();
+export function usePasteImage(onPaste: (file: File) => void) {
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const item = e.clipboardData?.items?.[0];
+      if (!item || !item.type.startsWith("image/")) return;
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (file) onPaste(file);
+    };
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+  }, [onPaste]);
 }

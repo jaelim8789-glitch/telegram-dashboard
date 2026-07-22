@@ -144,3 +144,24 @@ export const GroupSelectCard = memo(function GroupSelectCard({
   prevProps.selected === nextProps.selected &&
   prevProps.disabled === nextProps.disabled
 );
+
+export function SkeletonGroupSelectCard() {
+  return (
+    <div className="flex animate-pulse flex-col gap-2 rounded-2xl border border-app-border bg-app-card p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-app-card-hover" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-4 w-28 rounded bg-app-card-hover" />
+            <div className="h-3 w-16 rounded bg-app-card-hover" />
+          </div>
+        </div>
+        <div className="h-7 w-7 rounded-full bg-app-card-hover" />
+      </div>
+      <div className="flex gap-1">
+        <div className="h-5 w-12 rounded-full bg-app-card-hover" />
+        <div className="h-5 w-16 rounded-full bg-app-card-hover" />
+      </div>
+    </div>
+  );
+}
