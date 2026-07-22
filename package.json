@@ -126,7 +126,7 @@
     "eslint-plugin-import": "^2.31.0",
     "glob": "^10.3.10",
     "jest": "^29.7.0",
-    "jscpd": "^4",
+    "jscpd": "^5",
     "jwt-decode": "^4.0.0",
     "knip": "^5",
     "openapi-typescript": "^7",
