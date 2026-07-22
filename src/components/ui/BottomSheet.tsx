@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -13,26 +13,43 @@ interface BottomSheetProps {
 
 export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const startYRef = useRef(0);
+  const swipingRef = useRef(false);
+
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    const touch = e.changedTouches[0];
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const rect = sheet.getBoundingClientRect();
+    if (touch.clientY > rect.top + 60) return;
+    startYRef.current = touch.clientY;
+    swipingRef.current = true;
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!swipingRef.current) return;
+    const dy = e.changedTouches[0].clientY - startYRef.current;
+    if (dy > 80) {
+      swipingRef.current = false;
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleTouchEnd = useCallback(() => {
+    swipingRef.current = false;
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: TouchEvent) => {
-      const touch = e.changedTouches[0];
-      const sheet = sheetRef.current;
-      if (!sheet) return;
-      const rect = sheet.getBoundingClientRect();
-      if (touch.clientY > rect.top + 60) return;
-      const startY = touch.clientY;
-      const onMove = (ev: TouchEvent) => {
-        const dy = ev.changedTouches[0].clientY - startY;
-        if (dy > 80) onClose();
-      };
-      window.addEventListener("touchmove", onMove, { once: true });
-      return () => window.removeEventListener("touchmove", onMove);
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
-    window.addEventListener("touchstart", handler, { once: true });
-    return () => window.removeEventListener("touchstart", handler);
-  }, [open, onClose]);
+  }, [open, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   return (
     <AnimatePresence>

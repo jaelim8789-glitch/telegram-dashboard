@@ -120,7 +120,7 @@ export function SwipeableRow({
       {/* Content */}
       <motion.div
         drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
+        dragConstraints={{ left: -rightWidth, right: leftWidth }}
         dragElastic={0.1}
         style={{ x }}
         onDragEnd={handleDragEnd}

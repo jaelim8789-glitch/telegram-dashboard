@@ -151,7 +151,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast: addToast, dismissToast: removeToast, clearAll }}>
       {children}
       <div
-        className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 w-[calc(100vw-2rem)] sm:max-w-sm pointer-events-none"
+        className="fixed bottom-20 right-4 z-[100] flex flex-col gap-2 w-[calc(100vw-2rem)] sm:bottom-4 sm:max-w-sm pointer-events-none"
         aria-live="polite"
         aria-label="Notifications"
       >
@@ -195,10 +195,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   </div>
                   <button
                     onClick={() => removeToast(t.id)}
-                    className={cn("shrink-0 rounded-md p-0.5 opacity-60 hover:opacity-100 transition-opacity", isCritical && "text-purple-300")}
+                    className={cn("shrink-0 rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity", isCritical && "text-purple-300")}
                     aria-label="Dismiss"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </motion.div>
               );

@@ -68,13 +68,13 @@ export function AppShell({ children }: AppShellProps) {
       <GoldSplash show={splash} onDone={() => {}} />
 
       <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "var(--color-bg)" }}>
-        {/* Sidebar — icon rail, hidden on mobile (< sm), shown on tablet+ */}
-        <aside className="hidden sm:flex w-14 shrink-0 flex-col items-center gap-2 border-r border-[var(--color-border)] py-4" style={{ backgroundColor: "var(--color-bg-surface)" }}>
+        {/* Sidebar — icon rail, shown on mobile and desktop alike (user-requested) */}
+        <aside className="flex w-14 shrink-0 flex-col items-center gap-2 border-r border-[var(--color-border)] py-4" style={{ backgroundColor: "var(--color-bg-surface)" }}>
           {/* Logo — click always goes home (AI 채팅 화면) */}
           <button
             type="button"
             onClick={() => { navigateToChat(); }}
-            className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+            className="mb-4 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(135deg, #D4AF37, #a08030)" }}
             title="홈으로"
             aria-label="홈으로"
@@ -89,7 +89,7 @@ export function AppShell({ children }: AppShellProps) {
               whileTap={{ scale: 0.95 }}
               onClick={() => navigateToChat()}
               className={cn(
-                "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-all",
                 isChatActive
                   ? "text-white"
                   : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"
@@ -118,7 +118,7 @@ export function AppShell({ children }: AppShellProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveTab(item.id)}
                   className={cn(
-                    "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                    "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-all",
                     isActive
                       ? "text-white"
                       : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"

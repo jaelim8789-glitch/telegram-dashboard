@@ -35,6 +35,7 @@ import { useApiKeyGuard } from "@/lib/useApiKeyGuard";
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 import { ErrorAction } from "@/components/workspace/ErrorAction";
 import { useFavoriteGroups, useGroupTags, useRecentGroups } from "@/lib/groupPreferences";
+import { MessageComposer } from "@/components/workspace/tabs/send/MessageComposer";
 import * as api from "@/lib/api";
 import * as folderApi from "@/lib/folderApi";
 import { cn } from "@/lib/cn";
@@ -1701,10 +1702,12 @@ export function SendTab() {
             </div>
 
             {/* Message */}
-            <Field label="메시지 내용">
-              <textarea ref={textareaRef} rows={5} value={message} onChange={(e) => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 320) + 'px'; }}
-                placeholder="발송할 메시지를 입력하세요." required
-                className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 resize-none min-h-[88px]" />
+            <MessageComposer
+              message={message}
+              recentMessages={recentMessages}
+              onMessageChange={(v) => setMessage(v)}
+              onRecentSelect={(p) => setMessage(p)}
+            />
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex-1 h-1.5 rounded-full bg-app-bg overflow-hidden">
                   <div className={cn("h-full rounded-full transition-all",

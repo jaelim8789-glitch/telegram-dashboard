@@ -14,6 +14,7 @@ import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 import { getSafeAreaStyle } from "@/lib/safeArea";
+import { useTouchGesture } from "@/hooks/useTouchGesture"; // 터치 제스처 훅 추가
 import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -71,7 +72,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
       className={cn(
         "focus-ring relative flex items-center justify-center transition-all duration-200",
         mobile
-          ? "flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2" // 터치 타겟 크기 증가
+          ? "flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2 px-1" // 터치 영역 확대를 위해 px-1 추가
           : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
         active
           ? "text-[var(--color-accent)]"
@@ -228,6 +229,29 @@ export function TabBar() {
   if (isMobile) {
     const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
     const accountLabel = selectedAccount ? getAccountDisplayName(selectedAccount).slice(0, 6) : "계정";
+    
+    // 터치 제스처 훅 사용
+    const { bindTouchEvents } = useTouchGesture({
+      onSwipeLeft: () => {
+        // 다음 탭으로 이동
+        const currentIndex = mobileMainTabs.findIndex((t) => t.id === activeTab);
+        if (currentIndex !== -1 && currentIndex < mobileMainTabs.length - 1) {
+          const nextTab = mobileMainTabs[currentIndex + 1];
+          haptics.light();
+          setActiveTab(nextTab.id);
+        }
+      },
+      onSwipeRight: () => {
+        // 이전 탭으로 이동
+        const currentIndex = mobileMainTabs.findIndex((t) => t.id === activeTab);
+        if (currentIndex > 0) {
+          const prevTab = mobileMainTabs[currentIndex - 1];
+          haptics.light();
+          setActiveTab(prevTab.id);
+        }
+      }
+    });
+
     return (
       <>
         {/* Top gold accent line on the bottom nav */}
@@ -243,6 +267,7 @@ export function TabBar() {
             onTouchEnd={(e) => e.stopPropagation()}
             role="navigation"
             aria-label="모바일 하단 내비게이션"
+            ref={bindTouchEvents} // 터치 제스처 바인딩
           >
             <div
               ref={scrollRef}
