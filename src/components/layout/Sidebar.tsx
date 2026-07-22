@@ -84,7 +84,7 @@ export function Sidebar() {
   async function loadHealth() {
     try {
       const manager = RuntimeManager.getInstance();
-      const cached = manager.getHealthItems();
+      const cached = manager.getAllHealth();
       if (cached.length > 0) {
         setHealthItems(cached);
       } else {

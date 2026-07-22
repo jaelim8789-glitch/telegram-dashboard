@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ImageIcon, ShieldCheck } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
-import { Image } from '@/components/ui/Image';
+import Image from "next/image";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { getAccountDisplayName, getAccountInitials, type AccountStatus } from "@/types";
 

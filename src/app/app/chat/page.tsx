@@ -244,7 +244,7 @@ export default function AgentChatPage() {
     try {
       const res = await fetch(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
         method: "POST",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ content: text }),
         signal: controller.signal,
       });

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
-import { Image } from '@/components/ui/Image';
+import Image from "next/image";
 
 interface Dialog {
   id: number;

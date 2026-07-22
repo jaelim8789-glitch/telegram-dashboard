@@ -39,7 +39,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings/watermark`, {
         method: "PUT",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ value: watermarkValue }),
       });
       if (res.ok) {

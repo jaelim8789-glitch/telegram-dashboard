@@ -15,7 +15,7 @@ interface PwaRegisterProps {
  * and push notification subscriptions. Also syncs stale IndexedDB cache
  * when the app comes back online after being offline.
  */
-export function PwaRegister() {
+export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
   const { online, wasOffline } = useOnlineStatus();
   const syncingRef = useRef(false);
 
@@ -84,15 +84,15 @@ export function PwaRegister() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         // 푸시 메시지 수신 이벤트
-        registration.addEventListener('message', (event) => {
+        registration.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const { notificationId } = event.data;
             trackDelivered(notificationId);
           }
-        });
+        }) as EventListener);
 
         // 알림 클릭 이벤트
-        navigator.serviceWorker.addEventListener('message', (event) => {
+        navigator.serviceWorker.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
             const { notificationId } = event.data;
             trackOpened(notificationId);
@@ -101,7 +101,7 @@ export function PwaRegister() {
               trackClicked(notificationId);
             }
           }
-        });
+        }) as EventListener);
       });
     }
   }, [trackDelivered, trackOpened, trackClicked]);

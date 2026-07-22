@@ -1,6 +1,6 @@
 "use client";
 
-import { useDashboardStore } from "@/stores/useDashboardStore";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 interface KpiItem {
   key: string;
@@ -11,17 +11,9 @@ interface KpiItem {
 
 export default function PinnedKpiBar() {
   const accounts = useDashboardStore((s) => s.accounts);
-  const todaySent = useDashboardStore((s) => s.todaySent);
-  const todayReceived = useDashboardStore((s) => s.todayReceived);
-  const activeChats = useDashboardStore((s) => s.activeChats);
-  const pendingMessages = useDashboardStore((s) => s.pendingMessages);
 
   const kpis: KpiItem[] = [
-    { key: "accounts", label: "계정", icon: "👤", value: accounts ?? 0 },
-    { key: "sent", label: "보낸 메시지", icon: "📤", value: todaySent ?? 0 },
-    { key: "received", label: "받은 메시지", icon: "📥", value: todayReceived ?? 0 },
-    { key: "chats", label: "활성 채팅", icon: "💬", value: activeChats ?? 0 },
-    { key: "pending", label: "대기 중", icon: "⏳", value: pendingMessages ?? 0 },
+    { key: "accounts", label: "계정", icon: "👤", value: accounts.length },
   ];
 
   return (
