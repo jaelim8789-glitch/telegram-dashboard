@@ -41,7 +41,7 @@ export function useStatusBar() {
           battery.removeEventListener("levelchange", update);
           battery.removeEventListener("chargingchange", update);
         };
-      }).catch(() => {});
+      }).catch((e) => console.warn("useStatusBar: navigator.getBattery 실패", e));
     }
 
     if (typeof CSS !== "undefined" && CSS.supports("top", "env(safe-area-inset-top)")) {

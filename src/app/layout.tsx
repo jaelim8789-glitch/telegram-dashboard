@@ -24,8 +24,6 @@ import { MobileAccessibilityEnhancer } from "@/components/ui/MobileAccessibility
 import { MobilePowerOptimizer } from "@/components/ui/MobilePowerOptimizer";
 import { MobilePushNotifier } from "@/components/ui/MobilePushNotifier";
 import { MobileLocalizationOptimizer } from "@/components/ui/MobileLocalizationOptimizer";
-import { MobileOfflineCapability } from "@/components/ui/MobileOfflineCapability";
-import { MobileFontOptimizer } from "@/components/ui/MobileFontOptimizer";
 import { handleOrientationChange } from "@/lib/mobileOptimization";
 import "./globals.css";
 
@@ -104,8 +102,6 @@ export default function RootLayout({
         <MobilePowerOptimizer />
         <MobilePushNotifier />
         <MobileLocalizationOptimizer />
-        <MobileOfflineCapability />
-        <MobileFontOptimizer />
         <ToastProvider>{children}</ToastProvider>
         <LiveChat />
       </body>

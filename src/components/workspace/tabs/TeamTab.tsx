@@ -65,7 +65,7 @@ function RoleBadge({ role }: { role: RoleBadge }) {
 
 function getTenantId(): string | null {
   try {
-    const stored = localStorage.getItem("telemon_tenant_id");
+        const stored = localStorage.getItem("telemon-tenant-id");
     if (stored) return stored;
     // Fallback: decode JWT from token
     const token = localStorage.getItem("telemon_token");
@@ -120,7 +120,7 @@ export function TeamTab() {
     if (!tid) {
       // Try to resolve tenant_id from /api/auth/me
       fetchAuthMe().then(() => {
-        const stored = localStorage.getItem("telemon_tenant_id");
+    const stored = localStorage.getItem("telemon-tenant-id");
         if (stored) setTenantId(stored);
       }).catch(() => {
         setError("테넌트 정보를 찾을 수 없습니다. 로그인 후 다시 시도해주세요.");

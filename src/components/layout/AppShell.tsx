@@ -5,7 +5,6 @@
  * Core structure: sidebar + main content area
  * This file handles the layout shell only (no business logic)
  */
-"use client";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,12 +39,30 @@ export function AppShell({ children }: AppShellProps) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Splash: show on first load, hide after 3s
+  // Splash: show until data loads, minimum 500ms to prevent flash
   useEffect(() => {
     const shown = sessionStorage.getItem("telemon-splash-shown");
     if (shown) { setSplash(false); return; }
-    const t = setTimeout(() => { setSplash(false); sessionStorage.setItem("telemon-splash-shown", "1"); }, 3000);
-    return () => clearTimeout(t);
+    const accountsLoading = useDashboardStore.getState().accountsLoading;
+    if (!accountsLoading) {
+      setSplash(false);
+      sessionStorage.setItem("telemon-splash-shown", "1");
+      return;
+    }
+    const unsub = useDashboardStore.subscribe((state) => {
+      if (!state.accountsLoading) {
+        setSplash(false);
+        sessionStorage.setItem("telemon-splash-shown", "1");
+        unsub();
+      }
+    });
+    const minTimer = setTimeout(() => {
+      if (!useDashboardStore.getState().accountsLoading) {
+        setSplash(false);
+        sessionStorage.setItem("telemon-splash-shown", "1");
+      }
+    }, 500);
+    return () => { clearTimeout(minTimer); unsub(); };
   }, []);
 
   if (isMobile) return <>{children}</>;

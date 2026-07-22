@@ -1,5 +1,6 @@
 export async function resizeImage(file: File, maxWidth = 1920, maxHeight = 1920, quality = 0.8): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
+  if (typeof document === 'undefined') return file;
 
   const img = await createImageBitmap(file);
   let { width, height } = img;
@@ -14,7 +15,7 @@ export async function resizeImage(file: File, maxWidth = 1920, maxHeight = 1920,
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   ctx.drawImage(img, 0, 0, width, height);
   img.close();
 

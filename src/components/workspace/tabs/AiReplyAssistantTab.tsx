@@ -6,19 +6,10 @@ import { Panel } from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
 import { AiSubTabLayout } from "@/components/ai/AiSubTabLayout";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { getToken, getSessionToken } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import * as api from "@/lib/api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  const sessionToken = getSessionToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (sessionToken) headers["X-Session-Token"] = sessionToken;
-  return headers;
-}
 
 interface RecentMessage {
   id: string;
@@ -50,7 +41,7 @@ export function AiReplyAssistantTab() {
     if (!selectedAccountId) return;
     setRecentLoading(true);
     fetch(`${BASE_URL}/api/bot/recent-messages?account_id=${selectedAccountId}&limit=10`, {
-      headers: authHeaders(),
+      headers: api.authHeaders(),
     })
       .then((r) => r.json().catch(() => []))
       .then((data) => {

@@ -1,0 +1,1 @@
+export function GoldSplash() { return null; }

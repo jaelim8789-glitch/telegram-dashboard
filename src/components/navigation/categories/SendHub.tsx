@@ -5,19 +5,12 @@ import { Send, FileText, CalendarClock, Zap, MessageSquare, CheckCircle2, AlertT
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId } from "@/types";
-import { getToken } from "@/lib/auth";
+import * as api from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  return headers;
-}
 
 const SEND_FEATURES: TabId[] = ["send", "drafts", "scheduler", "replymacro", "templates"];
 
@@ -41,7 +34,7 @@ export function SendHub() {
       setStats((s) => ({ ...s, loading: false }));
       return;
     }
-    fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: authHeaders() })
+    fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: api.authHeaders() })
       .then((r) => r.json().catch(() => ({})))
       .then((data) => {
         if (cancelled) return;

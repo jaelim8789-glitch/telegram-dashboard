@@ -2,6 +2,37 @@
 
 > 마지막 갱신: 2026-07-22 08:45 KST
 
+## 파일 소유자 표 (담당자별 관리 파일)
+
+| 파일/디렉토리 | 담당자 |
+|---------------|--------|
+| src/app/(public)/ | Public Pages Team |
+| src/app/admin/ | Admin Dashboard Team |
+| src/app/api/ | API Team |
+| src/app/app/ | Core App Team |
+| src/app/miniapp/ | Mini App Team |
+| src/components/admin/ | Admin Components Team |
+| src/components/ai/ | AI Team |
+| src/components/inspector/ | Inspector Team |
+| src/components/landing/ | Landing Team |
+| src/components/layout/ | Layout Team |
+| src/components/navigation/ | Navigation Team |
+| src/components/onboarding/ | Onboarding Team |
+| src/components/sidebar/ | Sidebar Team |
+| src/components/telegram-chat/ | Chat Team |
+| src/components/ui/ | UI Components Team |
+| src/components/workspace/ | Workspace Team |
+| src/hooks/ | Hooks Team |
+| src/lib/ | Lib Team |
+| src/messages/ | Messages Team |
+| src/store/ | Store Team |
+| src/types/ | Types Team |
+| src/workers/ | Workers Team |
+| backend/ | Backend Team |
+| e2e/ | E2E Test Team |
+| public/ | Public Assets Team |
+| config/ | Config Team |
+
 ## V3 리디자인 — 완료 (3단계)
 
 | 단계 | 커밋 | 내용 |

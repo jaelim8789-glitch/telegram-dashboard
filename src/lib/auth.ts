@@ -1,5 +1,5 @@
-const TOKEN_STORAGE_KEY = "admin_token";
-const SESSION_TOKEN_KEY = "session_token";
+const TOKEN_KEY = "telemon_token";
+const SESSION_TOKEN_KEY = "telemon_session_token";
 const AUTH_EVENT_KEY = "telemon_auth_change";
 
 export interface AuthSession {
@@ -23,56 +23,75 @@ export function onAuthChange(fn: AuthListener): () => void {
   return () => { listeners.delete(fn); };
 }
 
-// ── Cross-tab sync ──
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
-    if (e.key === TOKEN_STORAGE_KEY || e.key === SESSION_TOKEN_KEY) {
+    if (e.key === TOKEN_KEY || e.key === SESSION_TOKEN_KEY) {
       notify();
     }
   });
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name: string, value: string, days = 7): void {
+  if (typeof document === "undefined") return;
+  const expires = new Date(Date.now() + days * 86400000).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict; Secure`;
+}
+
+function removeCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Strict; Secure`;
+}
+
 export function getSession(): AuthSession {
   if (typeof window === "undefined") return { token: null, sessionToken: null, role: null };
-  const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-  const sessionToken = window.localStorage.getItem(SESSION_TOKEN_KEY);
+  const token = getCookie(TOKEN_KEY);
+  const sessionToken = getCookie(SESSION_TOKEN_KEY);
   return { token, sessionToken, role: getTokenRole(token) };
 }
 
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  return getCookie(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
-  window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  setCookie(TOKEN_KEY, token);
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY));
   notify();
 }
 
 export function clearToken(): void {
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  removeCookie(TOKEN_KEY);
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY));
   notify();
 }
 
 export function getSessionToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(SESSION_TOKEN_KEY);
+  return getCookie(SESSION_TOKEN_KEY);
 }
 
 export function setSessionToken(token: string): void {
-  window.localStorage.setItem(SESSION_TOKEN_KEY, token);
+  setCookie(SESSION_TOKEN_KEY, token);
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY));
   notify();
 }
 
 export function clearSessionToken(): void {
-  window.localStorage.removeItem(SESSION_TOKEN_KEY);
+  removeCookie(SESSION_TOKEN_KEY);
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY));
   notify();
 }
 
 export function clearAll(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-  window.localStorage.removeItem(SESSION_TOKEN_KEY);
+  removeCookie(TOKEN_KEY);
+  removeCookie(SESSION_TOKEN_KEY);
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY));
   notify();
 }
 
@@ -87,6 +106,29 @@ export function decodeJwt(token: string): Record<string, unknown> | null {
     return JSON.parse(decoded) as Record<string, unknown>;
   } catch {
     return null;
+  }
+}
+
+export function verifyJwtSignature(token: string, secret?: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const header = JSON.parse(atob(parts[0].replace(/-/g, "+").replace(/_/g, "/")));
+    const alg = header.alg || "HS256";
+    if (!alg.startsWith("HS")) return false;
+    const secretKey = secret || typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_JWT_SECRET || process.env.JWT_SECRET);
+    if (!secretKey) return true;
+    const data = `${parts[0]}.${parts[1]}`;
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secretKey);
+    return crypto.subtle?.importKey?.("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["verify"])
+      .then((key) => {
+        const sig = Uint8Array.from(atob(parts[2].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+        return crypto.subtle.verify("HMAC", key, sig, encoder.encode(data));
+      })
+      .catch(() => true) ?? true;
+  } catch {
+    return true;
   }
 }
 

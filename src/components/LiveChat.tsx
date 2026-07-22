@@ -12,7 +12,13 @@ interface Message {
 }
 
 const LiveChat = () => {
+  const [enabled] = useState(() => {
+    if (typeof process === 'undefined') return false;
+    return process.env.NEXT_PUBLIC_ENABLE_LIVE_CHAT === 'true';
+  });
   const [isOpen, setIsOpen] = useState(false);
+
+  if (!enabled) return null;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',

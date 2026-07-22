@@ -9,21 +9,12 @@ import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
+import * as api from "@/lib/api";
 import * as agentApi from "@/lib/agent-api";
-import { getToken, getSessionToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  const sessionToken = getSessionToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (sessionToken) headers["X-Session-Token"] = sessionToken;
-  return headers;
-}
 
 interface StreamMessage {
   role: "user" | "agent";
@@ -253,7 +244,7 @@ export default function AgentChatPage() {
     try {
       const res = await fetch(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({ content: text }),
         signal: controller.signal,
       });
@@ -273,7 +264,7 @@ export default function AgentChatPage() {
           duration: 5000,
         });
         // Refresh agent list to update level/exp
-        agentApi.fetchAgents().then(setAgents).catch(() => {});
+        agentApi.fetchAgents().then(setAgents).catch((e) => console.warn("chat/page: fetchAgents 갱신 실패", e));
       }
 
       // Reload messages
@@ -447,7 +438,7 @@ export default function AgentChatPage() {
                 ) : messagesError ? (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <InlineError className="max-w-md">{messagesError}</InlineError>
-                    <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch(() => {})}>
+                    <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch((e) => console.warn("chat/page: fetchChatMessages 재시도 실패", e))}>
                       다시 시도
                     </Button>
                   </div>
