@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play, BarChart3, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Download, FileWarning, Hourglass, RefreshCw, RotateCcw, ScrollText, XCircle, SendHorizonal, ChevronUp, Play, BarChart3, Trash2, Copy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
@@ -76,7 +76,7 @@ function matchesLogQuery(log: Broadcast, query: string, accountName: string): bo
 }
 
 function LogRow({
-  log, retrying, sendingNow, accountLabel, accounts, selected, onToggleSelect, onRetry, onEditResend, onNavigate, onSendNow,
+  log, retrying, sendingNow, accountLabel, accounts, selected, onToggleSelect, onRetry, onEditResend, onNavigate, onSendNow, onClone,
 }: {
   log: Broadcast;
   retrying: string | null;
@@ -89,6 +89,7 @@ function LogRow({
   onEditResend: (b: Broadcast) => void;
   onNavigate: (tab: string) => void;
   onSendNow: (b: Broadcast) => void;
+  onClone: (b: Broadcast) => void;
 }) {
   const meta = STATUS_META[log.status];
   const Icon = meta.icon;
@@ -238,6 +239,20 @@ function LogRow({
                   <SendHorizonal className="h-4 w-4" />
                 </button>
               )}
+              {!isSending && (
+                <button
+                  type="button"
+                  onClick={() => onClone(log)}
+                  aria-label="복제"
+                  title="복제하여 새 발송"
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-lg transition-colors active:scale-95 touch-target",
+                    "text-app-text-muted hover:bg-app-card-hover hover:text-app-info",
+                  )}
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              )}
             </div>
         </div>
 
@@ -275,6 +290,11 @@ function LogRow({
               {!isFailed && !isSending && (
                 <Button variant="ghost" size="md" onClick={() => onEditResend(log)}>
                   <SendHorizonal className="h-4 w-4" /> 재사용
+                </Button>
+              )}
+              {!isSending && (
+                <Button variant="ghost" size="md" onClick={() => onClone(log)}>
+                  <Copy className="h-4 w-4" /> 복제
                 </Button>
               )}
               {showRetryButton && (
@@ -470,6 +490,12 @@ export function LogTab() {
     }
     store.setActiveTab("send");
     toast("info", "실패한 발송 내용을 불러왔습니다. 대상을 확인하고 다시 발송하세요.");
+  }
+
+  function handleClone(broadcast: Broadcast) {
+    const store = useDashboardStore.getState();
+    store.reuseBroadcast(broadcast);
+    toast("success", "발송이 복제되었습니다. 메시지와 대상을 확인 후 발송하세요.");
   }
 
   function handleNavigateTab(tab: string) {
@@ -939,6 +965,7 @@ export function LogTab() {
               onEditResend={handleEditResend}
               onNavigate={handleNavigateTab}
               onSendNow={handleSendNow}
+              onClone={handleClone}
             />
           ))
         )}

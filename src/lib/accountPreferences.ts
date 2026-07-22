@@ -1,16 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Account, AccountHealthState } from "@/types";
-import { useAccountFavorites } from "@/lib/accountLabels";
+import { useCallback, useEffect, useState } from "react";
 
+const FAVORITES_KEY = "telemon-account-favorites";
 const RECENT_KEY = "telemon-account-recent";
 const MAX_RECENT = 10;
-
-interface AccountHealthItem {
-  accountId: string;
-  status: AccountHealthState;
-}
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -24,21 +18,33 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch { /* silently ignore */ }
+  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+export function useAccountFavorites() {
+  const [favorites, setFavorites] = useState<string[]>(() => readJson(FAVORITES_KEY, []));
+
+  const toggleFavorite = useCallback((accountId: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(accountId) ? prev.filter((id) => id !== accountId) : [...prev, accountId];
+      writeJson(FAVORITES_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const isFavorite = useCallback((accountId: string) => favorites.includes(accountId), [favorites]);
+
+  return { favorites, isFavorite, toggleFavorite };
 }
 
 export function useRecentAccounts(selectedAccountId: string | null) {
   const [recent, setRecent] = useState<string[]>(() => readJson(RECENT_KEY, []));
-  const prevIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!selectedAccountId || selectedAccountId === prevIdRef.current) return;
-    prevIdRef.current = selectedAccountId;
+    if (!selectedAccountId) return;
     setRecent((prev) => {
-      if (prev[0] === selectedAccountId) return prev;
-      const next = [selectedAccountId, ...prev.filter((id) => id !== selectedAccountId)].slice(0, MAX_RECENT);
+      const filtered = prev.filter((id) => id !== selectedAccountId);
+      const next = [selectedAccountId, ...filtered].slice(0, MAX_RECENT);
       writeJson(RECENT_KEY, next);
       return next;
     });
@@ -47,63 +53,29 @@ export function useRecentAccounts(selectedAccountId: string | null) {
   return { recent };
 }
 
-const HEALTH_SORT_ORDER: Record<AccountHealthState, number> = {
-  healthy: 0,
-  unknown: 1,
-  not_configured: 2,
-  unauthorized: 3,
-  rate_limited: 4,
-  error: 5,
-  restricted: 6,
-  banned: 7,
-};
-
 export function useAccountSort(
-  accounts: Account[],
-  healthByAccountId: Record<string, AccountHealthItem>,
-  selectedAccountId: string | null,
+  accounts: Array<{ id: string; status?: string }>,
+  selectedAccountId: string | null
 ) {
   const { isFavorite } = useAccountFavorites();
   const { recent } = useRecentAccounts(selectedAccountId);
 
-  const sorted = useMemo(() => {
-    const recents = [...recent];
+  const sorted = [...accounts].sort((a, b) => {
+    const aFav = isFavorite(a.id) ? 0 : 1;
+    const bFav = isFavorite(b.id) ? 0 : 1;
+    if (aFav !== bFav) return aFav - bFav;
 
-    const favoritePool: Account[] = [];
-    const recentPool: Account[] = [];
-    const rest: Account[] = [];
+    const aIdx = recent.indexOf(a.id);
+    const bIdx = recent.indexOf(b.id);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
 
-    for (const acc of accounts) {
-      if (isFavorite(acc.id)) {
-        favoritePool.push(acc);
-        continue;
-      }
-      if (recents.indexOf(acc.id) !== -1) {
-        recentPool.push(acc);
-        continue;
-      }
-      rest.push(acc);
-    }
-
-    favoritePool.sort((a, b) => a.id.localeCompare(b.id));
-
-    recentPool.sort((a, b) => {
-      const ai = recents.indexOf(a.id);
-      const bi = recents.indexOf(b.id);
-      return ai - bi;
-    });
-
-    rest.sort((a, b) => {
-      const ah = healthByAccountId[a.id]?.status;
-      const bh = healthByAccountId[b.id]?.status;
-      const aOrder = ah ? (HEALTH_SORT_ORDER[ah] ?? 99) : 99;
-      const bOrder = bh ? (HEALTH_SORT_ORDER[bh] ?? 99) : 99;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return (a.name ?? "").localeCompare(b.name ?? "");
-    });
-
-    return [...favoritePool, ...recentPool, ...rest];
-  }, [accounts, isFavorite, recent, healthByAccountId]);
+    const healthOrder = ["healthy", "unknown", "not_configured", "unauthorized", "rate_limited", "error", "restricted", "banned"];
+    const aHealth = healthOrder.indexOf(a.status ?? "unknown");
+    const bHealth = healthOrder.indexOf(b.status ?? "unknown");
+    return aHealth - bHealth;
+  });
 
   return sorted;
 }
