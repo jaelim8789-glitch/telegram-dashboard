@@ -19,9 +19,16 @@ export function useBatchActions() {
 
   const batchCancel = useCallback(async (ids: string[]) => {
     let success = 0;
-    for (const id of ids) { try { await api.cancelBroadcast(id); success++; } catch {} }
-    toast({ type: "info", title: `${success}건 취소됨` });
+    for (const id of ids) {
+      try {
+        await api.cancelBroadcasts(id); // 함수명 수정
+        success++;
+      } catch {}
+    }
+    const failed = ids.length - success;
+    toast({ type: failed === 0 ? "success" : "warning", title: `${ids.length}건 처리`, message: `${success}건 성공, ${failed}건 실패` });
     fetchAccounts();
+    return { success, failed };
   }, [toast, fetchAccounts]);
 
   return { batchRetry, batchCancel };
