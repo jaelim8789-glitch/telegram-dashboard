@@ -1,99 +1,75 @@
 #!/usr/bin/env bash
-# worktree-dashboard.sh ??Git ?Œí¬?¸ë¦¬ ?íƒœ ?œëˆˆ??ë³´ê¸°
-#
-# Usage:
-#   ./scripts/worktree-dashboard.sh                # ëª¨ë“  ?Œí¬?¸ë¦¬ ?íƒœ
-#   ./scripts/worktree-dashboard.sh --json          # JSON ì¶œë ¥ (?Œì‹±??
-#   ./scripts/worktree-dashboard.sh --watch         # 5ì´ˆë§ˆ???ˆë¡œê³ ì¹¨
+# scripts/worktree-dashboard.sh — ???? ?? ?? ??? ??
+# ???: bash scripts/worktree-dashboard.sh
 
 set -euo pipefail
 
-ROOT="${TELEMON_ROOT:-/c/Dev/TeleMon}"
-MODE="${1:-}"
+echo "??????????????????????????????????????????????????????????????"
+echo "  ?? TeleMon Worktree Dashboard"
+echo "  $(date '+%Y-%m-%d %H:%M:%S KST')"
+echo "??????????????????????????????????????????????????????????????"
+echo ""
 
-if [ "$MODE" = "--watch" ]; then
-  while true; do
-    clear
-    "$0" --plain
-    sleep 5
+PARENT_DIR="C:/Dev"
+
+# List all worktrees from the parent repo
+if [ -d "$PARENT_DIR" ]; then
+  for wt in "$PARENT_DIR"/TeleMon-*; do
+    [ -d "$wt" ] || continue
+    NAME=$(basename "$wt")
+    echo "?? $NAME ??"
+    
+    if git -C "$wt" rev-parse --git-dir > /dev/null 2>&1; then
+      BRANCH=$(git -C "$wt" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "(detached)")
+      COMMIT=$(git -C "$wt" log --oneline -1 2>/dev/null || echo "")
+      DIRTY=""
+      if [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
+        DIRTY=" ??  uncommitted"
+      fi
+      AHEAD=$(git -C "$wt" rev-list --count @{u}..HEAD 2>/dev/null || echo "?")
+      BEHIND=$(git -C "$wt" rev-list --count HEAD..@{u} 2>/dev/null || echo "?")
+      echo "   Branch: $BRANCH$DIRTY"
+      echo "   Latest: $COMMIT"
+      echo "   ${AHEAD} ahead · ${BEHIND} behind origin"
+    else
+      echo "   (not a git directory)"
+    fi
+    echo ""
   done
-  exit 0
+else
+  echo "??  $PARENT_DIR not found — no canonical worktrees"
+  echo "   (running in emergency/backup session)"
+  echo ""
 fi
 
-render_row() {
-  local wt="$1" path="$2" branch="$3" ahead="$4" dirty="$5" last_commit="$6" behind_remote="$7"
-  local STATUS_ICON="??
-  local DIRTY_FLAG=""
-  [ "$dirty" != "clean" ] && STATUS_ICON="?? && DIRTY_FLAG=" ${dirty}"
-  [ -n "$behind_remote" ] && STATUS_ICON="??
+# Current repo status
+echo "?? Current (emergency session) ??"
+CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+CUR_COMMIT=$(git log --oneline -1 2>/dev/null || echo "")
+CUR_DIRTY=$(git status --short 2>/dev/null | head -5 || echo "")
+echo "   Path: $(pwd)"
+echo "   Branch: $CUR_BRANCH"
+echo "   Latest: $CUR_COMMIT"
+if [ -n "$CUR_DIRTY" ]; then
+  echo "   ??  Uncommitted changes:"
+  echo "$CUR_DIRTY" | sed 's/^/        /'
+fi
+echo ""
 
-  if [ "$MODE" = "--json" ]; then
-    printf '{"worktree":"%s","path":"%s","branch":"%s","ahead":%s,"dirty":"%s","last_commit":"%s"}\n' \
-      "$wt" "$path" "$branch" "$ahead" "$dirty" "$last_commit"
-  else
-    printf "%-20s %-40s %-30s %4s %-10s %s\n" \
-      "$wt" "(${path})" "${branch}" "${ahead}" "${STATUS_ICON}${DIRTY_FLAG}" "${last_commit}"
+# Backend repo status
+if [ -d "telegram-dashboard-backend/.git" ]; then
+  echo "?? Backend (separate repo) ??"
+  BE_BRANCH=$(git -C telegram-dashboard-backend rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  BE_COMMIT=$(git -C telegram-dashboard-backend log --oneline -1 2>/dev/null || echo "")
+  BE_DIRTY=$(git -C telegram-dashboard-backend status --short 2>/dev/null | head -5 || echo "")
+  echo "   Path: telegram-dashboard-backend/"
+  echo "   Branch: $BE_BRANCH"
+  echo "   Latest: $BE_COMMIT"
+  if [ -n "$BE_DIRTY" ]; then
+    echo "   ??  Uncommitted changes:"
+    echo "$BE_DIRTY" | sed 's/^/        /'
   fi
-}
-
-[ "$MODE" != "--json" ] && [ "$MODE" != "--plain" ] && cat <<'HEADER'
-
-TeleMon Worktree Dashboard
-==========================
-HEADER
-
-if [ "$MODE" != "--json" ]; then
-  printf "%-20s %-40s %-30s %4s %-10s %s\n" "WORKTREE" "PATH" "BRANCH" "AHEAD" "STATUS" "LAST COMMIT"
-  printf "%-20s %-40s %-30s %4s %-10s %s\n" "--------" "----" "------" "----" "------" "-----------"
 fi
 
-declare -A WORKTREES=(
-  ["TeleMon-release"]="/c/Dev/TeleMon-release"
-  ["TeleMon-cline"]="/c/Dev/TeleMon-cline"
-  ["TeleMon-opencode"]="/c/Dev/TeleMon-opencode"
-  ["TeleMon-kiro"]="/c/Dev/TeleMon-kiro"
-)
-
-for wt in "TeleMon-release" "TeleMon-cline" "TeleMon-opencode" "TeleMon-kiro"; do
-  path="${WORKTREES[$wt]}"
-
-  if [ ! -d "$path" ]; then
-    render_row "$wt" "??NOT FOUND" "-" "-" "missing" "-" ""
-    continue
-  fi
-
-  pushd "$path" > /dev/null 2>&1 || { render_row "$wt" "??CANNOT ACCESS" "-" "-" "error" "-" ""; continue; }
-
-  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")
-  ahead=$(git rev-list --count HEAD..@{upstream} 2>/dev/null || echo "0")
-  behind=$(git rev-list --count @{upstream}..HEAD 2>/dev/null || echo "0")
-  dirty=""
-  git diff --quiet 2>/dev/null || dirty="uncommitted"
-  [ -z "$dirty" ] && git diff --cached --quiet 2>/dev/null || dirty="staged"
-  [ -z "$dirty" ] && dirty="clean"
-
-  last_commit=$(git log --oneline -1 2>/dev/null || echo "N/A")
-  behind_remote=""
-  [ "$behind" != "0" ] && behind_remote="${behind} behind"
-
-  render_row "$wt" "$(basename $path)" "$branch" "$ahead" "$dirty" "$last_commit" "$behind_remote"
-
-  popd > /dev/null 2>&1 || true
-done
-
-# Show the backend repo separately (not a git worktree)
-BACKEND_PATH="$ROOT/telegram-dashboard-backend"
-if [ -d "$BACKEND_PATH/.git" ]; then
-  pushd "$BACKEND_PATH" > /dev/null 2>&1 || true
-  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "-")
-  ahead=$(git rev-list --count HEAD..@{upstream} 2>/dev/null || echo "0")
-  dirty=""
-  git diff --quiet 2>/dev/null || dirty="uncommitted"
-  [ -z "$dirty" ] && git diff --cached --quiet 2>/dev/null || dirty="staged"
-  [ -z "$dirty" ] && dirty="clean"
-  last_commit=$(git log --oneline -1 2>/dev/null || echo "N/A")
-  if [ "$MODE" != "--json" ]; then
-    printf "%-20s %-40s %-30s %4s %-10s %s\n" "backend(repo)" "(telegram-dashboard-backend)" "$branch" "$ahead" "$dirty" "$last_commit"
-  fi
-  popd > /dev/null 2>&1 || true
-fi
+echo ""
+echo "??????????????????????????????????????????????????????????????"
