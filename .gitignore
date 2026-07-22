@@ -1,27 +1,16 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+node_modules/
+.pnp
+.pnp.js
 
 # testing
-/coverage
-/test-results
-/playwright-report
-/e2e/.auth
+coverage/
 
 # next.js
-/.next/
-/out/
-
-# production
-/build
+.next/
+out/
+build/
+dist/
 
 # misc
 .DS_Store
@@ -31,51 +20,30 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# local env files
+.env
+.env*.local
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
+.tsbuildinfo
 next-env.d.ts
 
-# IDE
-.vscode/*
-!.vscode/settings.json
-.idea/
-
-*.lnk
-*.pyc  
-__pycache__/  
-*.session  
-data/  
-nul  
-.kilo/  
-*.db  
-e2e/test-results/  
-sessions/*.session  
-.aider*
-.mcp.json.bak*
-.playwright-mcp/
-tmp_*
-test_screenshot.png
+# project-specific
+temp_*
+*.tmp
+__pycache__/
+*.pyc
+.aider.*
+.vscode/
+*.db
+sessions/
 logs/
-
-# generated reports
-/report/
-
-# ad-hoc local audit/debug scripts (hardcoded local temp paths, not reusable tooling)
-audit_*.cjs
-build_output.txt
-dev_*.txt
-resp.txt
-test_server.ps1
-
-# nested backend repo checked out locally (separate git repo, not a submodule) + stray log dump
-/telegram-dashboard-backend/
-/git_log.txt
-TeleMon-qoder-backend/
+data/
+nul
+dev_out*.txt
+git_log*.txt

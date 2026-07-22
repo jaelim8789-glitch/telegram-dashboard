@@ -210,7 +210,8 @@ export function InlineAiChat() {
     const currentAccountId = selectedAccountId;
     setSummaryLoading(true);
 
-    api.authHeaders().then((headers) => Promise.all([
+    const headers = api.authHeaders();
+    Promise.all([
       fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers })
         .then((r) => r.json().catch(() => ({})))
         .then((data) => ({ kind: "usage" as const, data }))
@@ -221,7 +222,7 @@ export function InlineAiChat() {
             .then((data) => ({ kind: "broadcast" as const, data }))
             .catch(() => ({ kind: "broadcast" as const, data: {} }))
         : Promise.resolve({ kind: "broadcast" as const, data: {} }),
-    ])).then((results) => {
+    ]).then((results) => {
       if (cancelled) return;
 
       const usageData = results.find((r) => r.kind === "usage")?.data || {};
@@ -245,7 +246,7 @@ export function InlineAiChat() {
       if (failed > 0 || scheduled > 0) {
         useDashboardStore.getState().setTabBadge("send", failed + scheduled);
       }
-    }).catch((e) => console.warn("InlineAiChat: fetch agents summary 실패", e)).finally(() => {
+    }).catch((e) => console.error("[InlineAiChat] fetch agents summary 실패", e)).finally(() => {
       if (!cancelled) setSummaryLoading(false);
     });
 
@@ -324,7 +325,7 @@ export function InlineAiChat() {
           description: `${data.exp_gained || 0} EXP를 획득했습니다.`,
           duration: 5000,
         });
-        agentApi.fetchAgents().then(setAgents).catch((e) => console.warn("InlineAiChat: fetchAgents 갱신 실패", e));
+        agentApi.fetchAgents().then(setAgents).catch((e) => console.error("[InlineAiChat] fetchAgents 갱신 실패", e));
       }
       const msgs = await agentApi.fetchChatMessages(activeChatId!);
       setMessages(msgs);

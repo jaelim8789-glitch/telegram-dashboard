@@ -238,7 +238,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
         await manager.initialize();
       } else {
         // 이미 초기화됨 — 백그라운드 refresh만 트리거
-        manager.refreshAll().catch((e) => console.warn("useDashboardStore: 백그라운드 refresh 실패", e));
+        manager.refreshAll().catch((e) => console.error("[useDashboardStore] 백그라운드 refresh 실패", e));
       }
 
       const accounts = manager.accounts;

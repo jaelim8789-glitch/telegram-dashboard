@@ -1,5 +1,9 @@
 name: Preview Deploy (PR)
 
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -19,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: actions/setup-node@v4
         with:

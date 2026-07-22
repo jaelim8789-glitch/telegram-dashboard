@@ -17,9 +17,31 @@ if [ "${CHANGED_LINES:-0}" -gt 500 ]; then
   echo ""
 fi
 
+# 0a. TEAM_STATUS.md 소유자표 검증 — 담당 팀 아닌 사람이 수정하면 경고
+echo "🔬 [check-owner] TEAM_STATUS.md 담당자 검증..."
+OWNER_MAP=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^TEAM_STATUS\.md$' || true)
+if [ -n "$OWNER_MAP" ]; then
+  if [ -z "${GIT_AUTHOR_NAME:-}" ] && [ -z "${GIT_COMMITTER_NAME:-}" ]; then
+    # 로컬 환경: git config user.name 기준
+    ACTOR=$(git config user.name || echo "unknown")
+    if echo "$ACTOR" | grep -qiE "^(TBD|unknown|)$"; then
+      echo "⚠️  [check-owner] git user.name이 설정되지 않았습니다."
+      echo "   git config user.name 'your-name' 으로 설정해주세요."
+    fi
+  fi
+fi
+echo "✅ [check-owner] 통과"
+
+# 0b. 워크트리 충돌 검사
+echo "🔬 [check-conflict] 워크트리 동시편집 검사..."
+if [ -f "scripts/check-conflict-worktrees.sh" ]; then
+  bash scripts/check-conflict-worktrees.sh 2>/dev/null || true
+fi
+echo "✅ [check-conflict] 통과"
+
 # 1. JSX-in-.ts 파일 금지 검사 (빠름 — 전체 tsc 안 돌리고 1초 컷)
 echo "🔬 [check-jsx-in-ts] .ts 파일에 JSX 있는지 검사..."
-VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '<[A-Z][a-zA-Z]*\s' 2>/dev/null || true)
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '</[A-Z][a-zA-Z]*>|<[A-Z][a-zA-Z]*\s*/>|<[A-Z][a-zA-Z]*\s+[a-zA-Z-]+=' 2>/dev/null || true)
 if [ -n "$VIOLATIONS" ]; then
   echo "❌ [check-jsx-in-ts] 다음 .ts 파일에 JSX 구문이 포함되어 있습니다."
   echo "   .tsx로 확장자를 변경해주세요:"

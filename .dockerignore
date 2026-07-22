@@ -1,6 +1,11 @@
 node_modules
 .next
 .git
+.gitattributes
+.gitignore
+.tsbuildinfo*
+report/
+.pnpm-store
 # ═══════════════════════════════════════════════════════════════════════════
 # CRITICAL: Stray root-level Python backend dirs that live in this repo for
 # historical reasons — NOT part of the Next.js frontend. A root /app directory

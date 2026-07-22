@@ -37,7 +37,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
     fetch(`${API_BASE}/api/smart-folders/rules`, { headers: authHeaders })
       .then((r) => r.json())
       .then(setRules)
-      .catch((e) => console.warn("SmartFolders: smart-folders rules fetch 실패", e));
+      .catch((e) => console.error("[SmartFolders] smart-folders rules fetch 실패", e));
   }, []);
 
   const categorize = useCallback(async () => {

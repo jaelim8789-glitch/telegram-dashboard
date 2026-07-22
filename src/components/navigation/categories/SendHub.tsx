@@ -34,8 +34,7 @@ export function SendHub() {
       setStats((s) => ({ ...s, loading: false }));
       return;
     }
-    api.authHeaders()
-      .then((headers) => fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers }))
+    fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: api.authHeaders() })
       .then((r) => r.json().catch(() => ({})))
       .then((data) => {
         if (cancelled) return;
