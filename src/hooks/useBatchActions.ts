@@ -13,7 +13,7 @@ export function useBatchActions() {
     let success = 0;
     for (const id of ids) {
       try {
-        await api.deleteBroadcast(id);
+        await api.deleteBroadcasts([id]);
         success++;
       } catch {}
     }
