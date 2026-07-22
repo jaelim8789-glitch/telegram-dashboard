@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/formatTime";
 import { PLAN_LABEL } from "@/lib/constants/plans";
 import * as api from "@/lib/api";
+import type { ApiKey } from "@/lib/api";
 
 const PLAN_OPTIONS = [
   { value: "free", label: "Free (1계정, 하루 100회)" },
