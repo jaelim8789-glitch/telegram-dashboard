@@ -8,6 +8,7 @@ interface MiniAppNavProps {
   activeTab: MiniAppTab;
   onTabChange: (tab: MiniAppTab) => void;
   unreadCount?: number;
+  lastUpdated?: string;
 }
 
 const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -20,9 +21,9 @@ const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = 
 export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-2 pt-2"
+      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
         backgroundColor: "var(--tg-theme-bg-color, #17212b)",
         borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
       }}
@@ -34,25 +35,25 @@ export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavPr
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="relative flex flex-col items-center gap-0.5 px-3 py-3 min-w-[72px] transition-colors active:scale-95"
+            className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[64px] transition-all active:scale-90"
             style={{
               color: isActive
                 ? "var(--tg-theme-button-color, #5288c1)"
                 : "var(--tg-theme-hint-color, #708499)",
             }}
           >
-            <div className="relative">
-              <Icon className="h-6 w-6" />
-              {tab.id === "chat" && unreadCount && unreadCount > 0 ? (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white min-w-[16px] h-[16px] leading-[16px]">
+            <div className="relative flex items-center justify-center h-6 w-6">
+              <Icon className={isActive ? "h-5 w-5" : "h-5 w-5"} />
+              {tab.id === "chat" && unreadCount && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex min-w-[16px] h-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
-              ) : null}
+              )}
             </div>
-            <span className="text-[11px] font-medium">{tab.label}</span>
+            <span className={`text-[10px] font-medium ${isActive ? "opacity-100" : "opacity-60"}`}>{tab.label}</span>
             {isActive && (
               <span
-                className="absolute -top-[1px] left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full"
+                className="absolute -top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
                 style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }}
               />
             )}
