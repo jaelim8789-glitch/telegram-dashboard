@@ -21,6 +21,7 @@ import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import type { AccountHealthItem, AccountHealthState, TabId } from "@/types";
 
 const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: typeof Ban | null }[] = [
@@ -828,12 +829,12 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Collapse toggle button */}
-      <div className="border-t border-app-border px-1.5 py-2">
+      {/* Collapse toggle button + theme quick toggle */}
+      <div className="border-t border-app-border px-1.5 py-2 flex items-center gap-1">
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="flex w-full items-center justify-center rounded-lg py-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+          className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
           title={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
         >
           {collapsed ? (
@@ -842,6 +843,8 @@ export function Sidebar() {
             <ChevronLeft className="h-4 w-4" />
           )}
         </button>
+        <ThemeToggle className="min-h-8 min-w-8 rounded-lg" />
+      </div>
       </div>
 
       {/* Hint text at very bottom */}

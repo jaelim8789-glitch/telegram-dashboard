@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { TabLoadingFallback } from '@/components/ui/TabLoadingFallback';
 
 // Lazy load 탭 컴포넌트들 - 코드 스플리팅을 위해 dynamic import 사용
 const SendTab = lazy(() => import('./tabs/SendTab'));
@@ -49,7 +49,7 @@ export function TabContent({ activeTab }: TabContentProps) {
   };
 
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner /></div>}>
+    <Suspense fallback={<TabLoadingFallback />}>
       {renderTabContent()}
     </Suspense>
   );
