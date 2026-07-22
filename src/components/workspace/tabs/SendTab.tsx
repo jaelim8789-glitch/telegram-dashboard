@@ -2663,7 +2663,7 @@ export function SendTab() {
           onKeySet={onKeySet}
         >
           <button type="button"
-            onClick={() => { if (selectedRecipientIds.length >= 10) setSendConfirmOpen(true); else document.getElementById('send-form')?.requestSubmit(); }}
+            onClick={() => { if (selectedRecipientIds.length >= 10) setSendConfirmOpen(true); else (document.getElementById('send-form') as HTMLFormElement | null)?.requestSubmit(); }}
             className="inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-medium shadow-lg shadow-app-primary/30 bg-app-primary text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
             disabled={!canSubmit}>
             <SendIcon className="h-4 w-4" />
@@ -2685,8 +2685,8 @@ export function SendTab() {
         open={sendConfirmOpen}
         title="발송 확인"
         description={`${selectedRecipientIds.length}개 그룹에 메시지를 발송합니다.\n\n메시지: ${message.slice(0, 80)}${message.length > 80 ? '...' : ''}`}
-        confirmLabel="발송" cancelLabel="취소" variant="primary"
-        onConfirm={() => { setSendConfirmOpen(false); document.getElementById('send-form')?.requestSubmit(); }}
+        confirmLabel="발송" cancelLabel="취소"
+        onConfirm={() => { setSendConfirmOpen(false); (document.getElementById('send-form') as HTMLFormElement | null)?.requestSubmit(); }}
         onCancel={() => setSendConfirmOpen(false)}
       />
     </div>

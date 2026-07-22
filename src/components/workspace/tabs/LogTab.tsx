@@ -909,7 +909,7 @@ export function LogTab() {
             ))}
           </div>
         ) : error ? (
-          <InlineError title="로그를 불러올 수 없습니다" message={error} />
+          <InlineError title="로그를 불러올 수 없습니다">{error}</InlineError>
         ) : filteredLogs.length === 0 ? (
           <EmptyState
             icon={ScrollText}
@@ -994,7 +994,7 @@ export function LogTab() {
         variant={bulkAction === "delete" ? "danger" : "default"}
         confirmLabel={bulkAction === "delete" ? "삭제" : "실행"}
         cancelLabel="취소"
-        onConfirm={() => bulkAction && handleBulkAction(bulkAction)}
+        onConfirm={() => { if (bulkAction) handleBulkAction(bulkAction); }}
         onCancel={() => setBulkAction(null)}
       />
     </Panel>
