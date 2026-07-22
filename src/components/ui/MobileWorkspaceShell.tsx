@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useScrollStore, recordWidgetClick, getTopWidgets } from "@/lib/mobileWorkspaceUtils";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { GestureGuide } from "@/components/ui/GestureGuide";
 import { MobileSendSheet } from "@/components/ui/MobileSendSheet";
-import { NetworkStatusBar } from "@/components/ui/NetworkStatusBar";
-import { QuickActionBar } from "@/components/ui/QuickActionBar"; // 퀵 액션 바 추가
+import { QuickActionBar } from "@/components/ui/QuickActionBar";
 import { cn } from "@/lib/cn";
 
 const QUICK_ACTIONS = [
@@ -16,6 +16,14 @@ const QUICK_ACTIONS = [
   { id: "log", label: "로그", icon: "📋" },
   { id: "myai", label: "AI", icon: "🤖" },
 ];
+
+const MOBILE_TAB_ORDER = ["dashboard", "send", "group", "myai", "profile"];
+
+const slideVariants = {
+  enter: (direction: number) => ({ x: direction > 0 ? 60 : -60, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction < 0 ? 60 : -60, opacity: 0 }),
+};
 
 export function MobileWorkspaceShell({ children, tabId }: { children: React.ReactNode; tabId: string }) {
   const setActiveTab = useDashboardStore(s => s.setActiveTab);
@@ -53,10 +61,14 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
   }, []);
 
   const topWidgets = getTopWidgets(4);
+  const prevTabIndexRef = useRef(MOBILE_TAB_ORDER.indexOf(tabId));
+  const currentTabIndex = MOBILE_TAB_ORDER.indexOf(tabId);
+  const direction = currentTabIndex - prevTabIndexRef.current;
+  prevTabIndexRef.current = currentTabIndex;
 
   return (
     <div className="flex flex-col h-full">
-      <NetworkStatusBar online={online} latency={latency}>
+      <div className={cn("h-[3px] shrink-0 transition-colors duration-300", online ? "bg-emerald-500" : "bg-red-500")} />
 
       <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-app-border/50 shrink-0" style={{ scrollbarWidth: "none" }}>
         <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">자주 사용</span>
@@ -69,9 +81,20 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}
-        role="region" aria-label="대시보드 컨텐츠">
-        {children}
-        {/* 퀵 액션 바 추가 */}
+        role="region" aria-label="대시보드 컨텐츠" data-content-scroll-container>
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={tabId}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", stiffness: 380, damping: 30, opacity: { duration: 0.15 } }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
         <QuickActionBar />
       </div>
 

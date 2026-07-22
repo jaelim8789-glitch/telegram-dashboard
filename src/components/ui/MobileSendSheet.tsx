@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, CheckCircle2, Loader2, Users } from "lucide-react";
+import { Send, CheckCircle2, Loader2, Users, Paperclip, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { hapticFeedback } from "@tma.js/sdk-react";
@@ -15,12 +15,18 @@ const STEPS: { label: string; icon: typeof Send }[] = [
   { label: "확인", icon: CheckCircle2 },
 ];
 
+const TEMPLATE_CHIPS = ["프로모션", "공지사항", "이벤트"];
+
 export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onClose: () => void; onSent?: () => void }) {
   const [step, setStep] = useState<Step>("account");
   const [selectedAccount, setSelectedAccount] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const stepIndex = ["account", "message", "confirm"].indexOf(step);
 
   const handleSend = useCallback(async () => {
@@ -30,10 +36,12 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
     await new Promise(r => setTimeout(r, 1000));
     setSent(true); setSending(false);
     try { hapticFeedback.notificationOccurred("success"); } catch {}
-    setTimeout(() => { onSent?.(); onClose(); setSent(false); setStep("account"); setMessage(""); }, 1500);
+    setTimeout(() => { onSent?.(); onClose(); setSent(false); setStep("account"); setMessage(""); setScheduled(false); setScheduledTime(""); setImageFile(null); }, 1500);
   }, [message, sending, onClose, onSent]);
 
-  function handleClose() { if (!sending) { onClose(); setTimeout(() => { setStep("account"); setMessage(""); setSelectedAccount(""); }, 200); } }
+  function handleClose() { if (!sending) { onClose(); setTimeout(() => { setStep("account"); setMessage(""); setSelectedAccount(""); setScheduled(false); setScheduledTime(""); setImageFile(null); }, 200); } }
+
+  const charCount = message.length;
 
   return (
     <AnimatePresence>
@@ -41,7 +49,7 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/50" onClick={handleClose} />
           <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] rounded-t-2xl bg-app-card pb-8 shadow-2xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] rounded-2xl bg-app-card pb-8 shadow-2xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
             <div className="mx-auto mb-2 mt-2 h-1 w-10 rounded-full bg-app-border" />
             <div className="flex items-center justify-between px-5 py-2 border-b border-app-border/50">
               <button onClick={handleClose} className="text-sm text-app-text-muted hover:text-app-text">취소</button>
@@ -72,14 +80,38 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
               )}
               {step === "message" && (
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold">발송할 메시지</p>
-                  <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="메시지를 입력하세요..." rows={6} autoFocus
-                    className="w-full rounded-xl border border-app-border bg-app-card px-4 py-3 text-sm text-app-text outline-none resize-none" aria-label="발송 메시지" />
-                  <div className="flex gap-2">
-                    {["안녕하세요!", "감사합니다.", "이벤트 안내"].map(t => (
-                      <button key={t} onClick={() => setMessage(t)} className="rounded-full border border-app-border px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-text active:scale-95">{t}</button>
+                  {/* Template chips */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {TEMPLATE_CHIPS.map(t => (
+                      <button key={t} onClick={() => setMessage(t)} className="shrink-0 rounded-full border border-app-border bg-app-card-hover px-3 py-1.5 text-[11px] text-app-text-muted hover:border-app-primary/30 hover:text-app-text active:scale-95">{t}</button>
                     ))}
                   </div>
+
+                  <p className="text-sm font-semibold">발송할 메시지</p>
+                  <div className="relative">
+                    <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="메시지를 입력하세요..." rows={6} autoFocus
+                      className="w-full rounded-xl border border-app-border bg-app-card px-4 py-3 text-sm text-app-text outline-none resize-none" aria-label="발송 메시지" />
+                    <span className="absolute bottom-2 right-3 text-[10px] text-app-text-muted">{charCount}자</span>
+                  </div>
+
+                  {/* Attachment + Scheduled send row */}
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-card-hover px-3 py-2 text-[11px] text-app-text-muted hover:text-app-text active:scale-95">
+                      <Paperclip className="h-4 w-4" />
+                      {imageFile ? imageFile.name : "첨부"}
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setImageFile(f); e.target.value = ""; }} />
+
+                    <button onClick={() => setScheduled(!scheduled)} className={cn("flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] active:scale-95", scheduled ? "border-app-primary bg-app-primary-muted text-app-primary" : "border-app-border bg-app-card-hover text-app-text-muted")}>
+                      <Calendar className="h-4 w-4" />
+                      예약발송
+                    </button>
+                  </div>
+
+                  {scheduled && (
+                    <input type="datetime-local" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)}
+                      className="w-full rounded-xl border border-app-border bg-app-card px-4 py-2.5 text-sm text-app-text outline-none" />
+                  )}
                 </div>
               )}
               {step === "confirm" && (
@@ -88,13 +120,15 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
                   <div className="rounded-xl bg-app-card-hover p-4 text-left space-y-2">
                     <p className="text-xs text-app-text-muted">계정: {selectedAccount}</p>
                     <p className="text-sm text-app-text line-clamp-3">{message}</p>
+                    {imageFile && <p className="text-xs text-app-text-muted">이미지 첨부: {imageFile.name}</p>}
+                    {scheduled && scheduledTime && <p className="text-xs text-app-text-muted">예약: {scheduledTime}</p>}
                   </div>
                 </div>
               )}
             </div>
             <div className="px-5 pt-2">
               {step === "account" && !selectedAccount && (
-                <button disabled className="w-full rounded-xl bg-app-primary/50 py-3.5 text-sm font-semibold text-white" disabled>계정을 선택해주세요</button>
+                <button disabled className="w-full rounded-xl bg-app-primary/50 py-3.5 text-sm font-semibold text-white">계정을 선택해주세요</button>
               )}
               {step === "confirm" && (
                 <button onClick={handleSend} disabled={sending} className="w-full rounded-xl bg-app-primary py-3.5 text-sm font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition-all">

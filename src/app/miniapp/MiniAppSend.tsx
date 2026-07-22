@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, memo, useEffect, useCallback, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info } from "lucide-react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 import * as api from "@/lib/api";
@@ -143,6 +144,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       setSent(true);
       setImageFile(null);
       draft.clearDraft();
+      try { hapticFeedback.notificationOccurred("success"); } catch {}
       toast({ type: "success", title: "발송 완료", message: `${success}개 계정 발송 성공` });
       setTimeout(() => setSent(false), 3000);
     } else {
@@ -308,14 +310,34 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         </div>
       )}
 
-      <button onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}으로 발송합니다`)}
+      <motion.button
+        onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}으로 발송합니다`)}
         disabled={(!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0}
+        animate={sent ? { backgroundColor: "var(--tg-theme-button-color, #5288c1)", transition: { duration: 0.3 } } : {}}
         style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}
         className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 active:scale-[0.98]"
         aria-label={sending ? "발송 중" : sent ? "발송 완료" : "발송하기"}>
-        {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : sent ? <CheckCircle className="h-5 w-5" /> : <Send className="h-5 w-5" />}
-        {sending ? "발송 중..." : sent ? "발송 완료!" : `발송 (${selectedAccountIds.length}개 계정)`}
-      </button>
+        <AnimatePresence mode="wait">
+          {sending ? (
+            <motion.div key="spinner" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="flex items-center gap-2">
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                <Loader2 className="h-5 w-5" />
+              </motion.div>
+              발송 중...
+            </motion.div>
+          ) : sent ? (
+            <motion.div key="check" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 15 }} className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              발송 완료!
+            </motion.div>
+          ) : (
+            <motion.div key="send" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              {`발송 (${selectedAccountIds.length}개 계정)`}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
 
       {selectedGroupIds.length === 0 && (
         <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹을 선택하지 않으면 상위 5개 그룹에 자동 발송됩니다</p>

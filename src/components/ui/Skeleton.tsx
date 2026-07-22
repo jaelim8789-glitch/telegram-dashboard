@@ -107,3 +107,63 @@ export const SkeletonText = memo(function SkeletonText({ width = "w-full", class
     />
   );
 });
+
+export const SkeletonDashboard = memo(function SkeletonDashboard({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("space-y-4", className)}>
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton-shimmer rounded-2xl p-4 space-y-2">
+            <div className="h-3 w-12 rounded bg-current opacity-20" />
+            <div className="h-6 w-16 rounded bg-current opacity-20" />
+          </div>
+        ))}
+      </div>
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className="skeleton-shimmer rounded-2xl p-4 space-y-3">
+          <div className="h-3 w-24 rounded bg-current opacity-20" />
+          <div className="h-3 w-full rounded bg-current opacity-20" />
+          <div className="h-3 w-3/4 rounded bg-current opacity-20" />
+        </div>
+      ))}
+    </div>
+  );
+});
+
+export const SkeletonSend = memo(function SkeletonSend({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("space-y-4 p-4", className)}>
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton-shimmer h-7 w-16 rounded-full" />
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="skeleton-shimmer h-7 w-20 rounded-full" />
+        ))}
+      </div>
+      <div className="skeleton-shimmer h-32 w-full rounded-2xl" />
+      <div className="skeleton-shimmer h-11 w-full rounded-xl" />
+    </div>
+  );
+});
+
+export const SkeletonChat = memo(function SkeletonChat({ className }: { className?: string }) {
+  const rightBubbles = Array.from({ length: 2 });
+  const leftBubbles = Array.from({ length: 3 });
+  return (
+    <div aria-hidden="true" className={cn("space-y-3 p-4", className)}>
+      {rightBubbles.map((_, i) => (
+        <div key={`r-${i}`} className="flex justify-end">
+          <div className="skeleton-shimmer h-8 w-3/5 rounded-2xl rounded-br-sm" />
+        </div>
+      ))}
+      {leftBubbles.map((_, i) => (
+        <div key={`l-${i}`} className="flex justify-start">
+          <div className="skeleton-shimmer h-8 w-2/4 rounded-2xl rounded-bl-sm" />
+        </div>
+      ))}
+    </div>
+  );
+});

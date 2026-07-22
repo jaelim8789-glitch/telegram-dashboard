@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
   CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
@@ -14,9 +14,11 @@ import { TABS, type TabDef, getAccountDisplayName } from "@/types";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 import { getSafeAreaStyle } from "@/lib/safeArea";
-import { useTouchGesture } from "@/hooks/useTouchGesture"; // 터치 제스처 훅 추가
-import { useRouter } from "next/navigation"; // 라우터 추가
-import { TabPeek } from "@/components/ui/TabPeek"; // 탭 미리보기 컴포넌트 추가
+import { useTouchGesture } from "@/hooks/useTouchGesture";
+import { useRouter } from "next/navigation";
+import { TabPeek } from "@/components/ui/TabPeek";
+import { BottomSheetWrapper } from "@/components/ui/BottomSheetWrapper";
+import { useLongPress } from "@/hooks/useLongPress";
 import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -60,8 +62,25 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 // 모바일 하단 핵심 탭 — 모든 5개 그룹 (더보기 시트 제거)
 const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "group", "myai", "profile"];
 
-function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
+function TabButton({ tab, active, onSelect, badge, mobile, onDoubleTap, onLongPress }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean; onDoubleTap?: () => void; onLongPress?: () => void }) {
   const Icon = TAB_ICONS[tab.id];
+  const lastTapRef = useRef(0);
+  const longPress = useLongPress(() => onLongPress?.(), 500);
+
+  const handleClick = () => {
+    const now = Date.now();
+    if (active && now - lastTapRef.current < 300) {
+      onDoubleTap?.();
+      lastTapRef.current = 0;
+      return;
+    }
+    lastTapRef.current = now;
+    onSelect();
+  };
+
+  const buttonHandlers = mobile
+    ? { ...longPress, onClick: handleClick }
+    : { onClick: handleClick };
   
   // 탭 미리보기 내용
   const previewContent = (
@@ -86,7 +105,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
     >
       <button
         type="button"
-        onClick={onSelect}
+        {...buttonHandlers}
         role="tab"
         aria-selected={active}
         aria-current={active ? "page" : undefined}
@@ -162,12 +181,15 @@ export function TabBar() {
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentScrollRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [contextTab, setContextTab] = useState<TabDef | null>(null);
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -187,6 +209,15 @@ export function TabBar() {
     window.visualViewport?.addEventListener("resize", handler);
     return () => window.visualViewport?.removeEventListener("resize", handler);
   }, [isMobile]);
+
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -276,11 +307,27 @@ export function TabBar() {
       }
     });
 
+    const prevTabIndex = mobileMainTabs.findIndex((t) => t.id === activeTab);
+
+    const handleDoubleTap = useCallback(() => {
+      haptics.impact();
+      const el = document.querySelector<HTMLElement>('[data-content-scroll-container]');
+      if (el) {
+        el.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, [haptics]);
+
+    const handleLongPress = useCallback((tab: TabDef) => {
+      haptics.medium();
+      setContextTab(tab);
+    }, [haptics]);
+
     return (
       <>
-        {/* Top gold accent line on the bottom nav */}
         <div className={cn("fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300", isKeyboardVisible && "translate-y-full")}>
           <div className="h-px bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
+          {/* Network status bar (3px) */}
+          <div className={cn("h-[3px] transition-colors duration-300", online ? "bg-emerald-500" : "bg-red-500")} />
           <nav
             className="border-t-0 bg-app-surface/95 backdrop-blur-xl"
             style={{
@@ -291,7 +338,7 @@ export function TabBar() {
             onTouchEnd={(e) => e.stopPropagation()}
             role="navigation"
             aria-label="모바일 하단 내비게이션"
-            ref={bindTouchEvents} // 터치 제스처 바인딩
+            ref={bindTouchEvents}
           >
             <div
               ref={scrollRef}
@@ -308,6 +355,8 @@ export function TabBar() {
                     haptics.light(); 
                     setActiveTab(tab.id); 
                   }}
+                  onDoubleTap={handleDoubleTap}
+                  onLongPress={() => handleLongPress(tab)}
                   badge={tabBadges[tab.id]}
                   mobile
                 />
@@ -367,7 +416,7 @@ export function TabBar() {
                           setShowAccountPicker(false);
                         }}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[50px]", // 계정 선택 항목의 최소 높이 증가
+                          "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[50px]",
                           isSelected ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
                         )}
                         aria-current={isSelected ? "page" : undefined}
@@ -384,6 +433,59 @@ export function TabBar() {
             </>
           )}
         </AnimatePresence>
+
+        {/* Long-press context menu */}
+        <BottomSheetWrapper
+          open={contextTab !== null}
+          onClose={() => setContextTab(null)}
+          title={contextTab?.label ?? ""}
+        >
+          {contextTab?.id === "send" && (
+            <div className="space-y-2 py-2">
+              <div className="text-[11px] font-medium text-app-text-muted uppercase tracking-wider px-1">최근 템플릿</div>
+              <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-app-text hover:bg-app-card-hover transition-colors min-h-[44px]">
+                <FileText className="h-4 w-4 text-app-text-muted" /> 템플릿 1: 프로모션
+              </button>
+              <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-app-text hover:bg-app-card-hover transition-colors min-h-[44px]">
+                <FileText className="h-4 w-4 text-app-text-muted" /> 템플릿 2: 공지사항
+              </button>
+              <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-app-text hover:bg-app-card-hover transition-colors min-h-[44px]">
+                <FileText className="h-4 w-4 text-app-text-muted" /> 템플릿 3: 이벤트
+              </button>
+            </div>
+          )}
+          {contextTab?.id === "profile" && (
+            <div className="space-y-2 py-2">
+              <div className="text-[11px] font-medium text-app-text-muted uppercase tracking-wider px-1">계정 전환</div>
+              {accounts.slice(0, 5).map((account) => (
+                <button
+                  key={account.id}
+                  type="button"
+                  onClick={() => {
+                    haptics.light();
+                    useDashboardStore.getState().selectAccount(account.id);
+                    setContextTab(null);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-app-text hover:bg-app-card-hover transition-colors min-h-[44px]"
+                >
+                  <UserCog className="h-4 w-4 text-app-text-muted" />
+                  <span className="truncate flex-1">{getAccountDisplayName(account)}</span>
+                  {account.id === selectedAccountId && (
+                    <span className="text-[10px] font-semibold text-app-primary">선택됨</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {contextTab && contextTab.id !== "send" && contextTab.id !== "profile" && (
+            <div className="py-2">
+              <div className="text-[11px] font-medium text-app-text-muted uppercase tracking-wider px-1 pb-2">{contextTab.label} 작업</div>
+              <button type="button" onClick={() => { setContextTab(null); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-app-text hover:bg-app-card-hover transition-colors min-h-[44px]">
+                <ArrowLeft className="h-4 w-4 text-app-text-muted" /> 새로고침
+              </button>
+            </div>
+          )}
+        </BottomSheetWrapper>
       </>
     );
   }
