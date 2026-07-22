@@ -31,10 +31,10 @@ export const AccountDetailSheet = memo(function AccountDetailSheet({ account, on
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg rounded-t-2xl border border-app-border bg-app-card shadow-2xl sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-app-border px-5 py-4">
-          <h3 className="text-base font-semibold text-app-text">{account.name}</h3>
+          <h3 className="text-base font-bold tracking-tight text-app-text">{account.name}</h3>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -42,26 +42,26 @@ export const AccountDetailSheet = memo(function AccountDetailSheet({ account, on
 
         <div className="space-y-4 px-5 py-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-app-border bg-app-surface p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
+            <div className="rounded-xl border border-app-border bg-app-surface p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
                 <Phone className="h-3 w-3" /> 전화번호
               </div>
               <p className="text-sm font-medium text-app-text">{account.phone}</p>
             </div>
-            <div className="rounded-xl border border-app-border bg-app-surface p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
+            <div className="rounded-xl border border-app-border bg-app-surface p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
                 <Send className="h-3 w-3" /> 오늘 발송
               </div>
-              <p className="text-sm font-medium text-app-text">{account.todaySent.toLocaleString()}건</p>
+              <p className="text-sm font-medium tabular-nums text-app-text">{account.todaySent.toLocaleString()}건</p>
             </div>
-            <div className="rounded-xl border border-app-border bg-app-surface p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
+            <div className="rounded-xl border border-app-border bg-app-surface p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
                 <Hash className="h-3 w-3" /> 그룹 수
               </div>
-              <p className="text-sm font-medium text-app-text">{account.groupCount}개</p>
+              <p className="text-sm font-medium tabular-nums text-app-text">{account.groupCount}개</p>
             </div>
-            <div className="rounded-xl border border-app-border bg-app-surface p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
+            <div className="rounded-xl border border-app-border bg-app-surface p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
                 <Calendar className="h-3 w-3" /> 등록일
               </div>
               <p className="text-sm font-medium text-app-text">
@@ -70,8 +70,8 @@ export const AccountDetailSheet = memo(function AccountDetailSheet({ account, on
             </div>
           </div>
 
-          <div className="rounded-xl border border-app-border bg-app-surface p-3">
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
+          <div className="rounded-xl border border-app-border bg-app-surface p-4">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-app-text-muted">
               <Activity className="h-3 w-3" /> 마지막 활동
             </div>
             <p className="text-sm font-medium text-app-text">{formatTime(account.lastActive)}</p>

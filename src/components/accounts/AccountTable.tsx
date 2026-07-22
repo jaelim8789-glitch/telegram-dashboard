@@ -1,7 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { Edit3, Trash2, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Edit3, Trash2, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { AccountEntry, AccountStatus } from "./types";
 
 interface AccountTableProps {
@@ -18,10 +19,10 @@ interface AccountTableProps {
 type SortableColumn = "name" | "status" | "lastActive" | "todaySent";
 
 const STATUS_BADGE: Record<AccountStatus, { bg: string; text: string; label: string; dot: boolean }> = {
-  active: { bg: "bg-green-500/10", text: "text-green-400", label: "연결됨", dot: true },
-  suspended: { bg: "bg-yellow-500/10", text: "text-yellow-400", label: "대기중", dot: false },
-  error: { bg: "bg-red-500/10", text: "text-red-400", label: "오류", dot: false },
-  unconfigured: { bg: "bg-gray-500/10", text: "text-gray-400", label: "미설정", dot: false },
+  active: { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "연결됨", dot: true },
+  suspended: { bg: "bg-amber-500/15", text: "text-amber-400", label: "대기중", dot: false },
+  error: { bg: "bg-red-500/15", text: "text-red-400", label: "오류", dot: false },
+  unconfigured: { bg: "bg-slate-500/15", text: "text-slate-400", label: "미설정", dot: false },
 };
 
 function formatTime(iso: string): string {
@@ -70,13 +71,12 @@ const SortableHeader = memo(function SortableHeader({ label, column, sortKey, so
 export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDelete, onRefresh, onRowClick }: AccountTableProps) {
   if (accounts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-app-text-muted">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-app-card-hover">
-          <RefreshCw className="h-6 w-6 opacity-40" />
-        </div>
-        <p className="text-sm font-medium">표시할 계정이 없습니다</p>
-        <p className="mt-1 text-xs">검색 조건을 변경하거나 새 계정을 추가하세요.</p>
-      </div>
+      <EmptyState
+        icon={SearchX}
+        title="표시할 계정이 없습니다"
+        description="검색 조건을 변경하거나 새 계정을 추가하세요."
+        compact
+      />
     );
   }
 
@@ -114,43 +114,43 @@ export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDel
                   <span className="text-sm font-medium text-app-text">{account.name}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="text-sm text-app-text-secondary">{account.phone}</span>
+                  <span className="text-sm font-medium text-app-text-secondary">{account.phone}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="text-sm tabular-nums text-app-text">
+                  <span className="text-sm tabular-nums font-medium text-app-text">
                     {account.todaySent.toLocaleString()}건
                   </span>
                 </td>
                 <td className="px-5 py-3.5">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text}`}>
                     {badge.dot && (
-                      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     )}
                     {badge.label}
                   </span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="text-sm text-app-text-muted">{formatTime(account.lastActive)}</span>
+                  <span className="text-sm font-normal text-app-text-muted">{formatTime(account.lastActive)}</span>
                 </td>
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => onEdit(account.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-violet-500/10 hover:text-violet-400"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-violet-500/10 hover:text-violet-400 hover:scale-[1.02] active:scale-[0.98]"
                       aria-label="편집"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => onDelete(account.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-red-500/10 hover:text-red-400 hover:scale-[1.02] active:scale-[0.98]"
                       aria-label="삭제"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => onRefresh(account.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-violet-500/10 hover:text-violet-400"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-violet-500/10 hover:text-violet-400 hover:scale-[1.02] active:scale-[0.98]"
                       aria-label="새로고침"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />

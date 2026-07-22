@@ -36,7 +36,7 @@ export function ChatInputBar({ value, onChange, onSend, disabled, placeholder }:
     <div className="flex items-end gap-2 rounded-2xl border border-violet-500/20 bg-app-card px-4 py-2.5 transition-colors focus-within:border-violet-500/60 focus-within:ring-2 focus-within:ring-violet-500/10">
       <button
         type="button"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-app-text-muted transition-all hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
         aria-label="음성 입력"
       >
         <Mic className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function ChatInputBar({ value, onChange, onSend, disabled, placeholder }:
       <button
         onClick={onSend}
         disabled={disabled || !value.trim()}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white shadow-sm shadow-violet-500/25 transition-all hover:from-violet-600 hover:to-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white shadow-sm shadow-violet-500/25 transition-all hover:from-violet-600 hover:to-blue-600 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
         aria-label="전송"
       >
         <Send className="h-3.5 w-3.5" />

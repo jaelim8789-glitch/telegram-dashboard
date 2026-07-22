@@ -34,31 +34,31 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
 
   return (
     <div className="flex flex-col items-center gap-3 px-5 py-3 sm:flex-row sm:justify-between">
-      <span className="text-xs text-app-text-muted">
+      <span className="text-xs tabular-nums text-app-text-muted">
         {startItem}-{endItem} / {totalItems}
       </span>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           aria-label="이전 페이지"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         {getPageNumbers().map((page, idx) =>
           page === "..." ? (
-            <span key={`ellipsis-${idx}`} className="flex h-8 w-8 items-center justify-center text-xs text-app-text-muted">
+            <span key={`ellipsis-${idx}`} className="flex h-8 w-8 items-center justify-center text-xs tabular-nums text-app-text-muted">
               ...
             </span>
           ) : (
             <button
               key={page}
               onClick={() => onPageChange(page as number)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium tabular-nums transition-all ${
                 currentPage === page
                   ? "bg-violet-500 text-white"
-                  : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+                  : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98]"
               }`}
             >
               {page}
@@ -68,7 +68,7 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           aria-label="다음 페이지"
         >
           <ChevronRight className="h-4 w-4" />

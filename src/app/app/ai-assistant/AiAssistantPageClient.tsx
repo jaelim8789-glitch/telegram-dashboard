@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import { SummaryPanel } from "@/components/ai-assistant/SummaryPanel";
 import { ChatPanel } from "@/components/ai-assistant/ChatPanel";
 import { MOCK_SUMMARY_ITEMS, MOCK_CHAT_HISTORY } from "@/components/ai-assistant/mockData";
@@ -150,7 +151,13 @@ export function AiAssistantPageClient() {
   }, [handleSendMessage]);
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] bg-app-bg" ref={chatContainerRef}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex h-[calc(100dvh-3.5rem)] bg-app-bg"
+      ref={chatContainerRef}
+    >
       <div className="hidden w-[300px] shrink-0 border-r border-app-border bg-app-surface lg:block">
         <SummaryPanel
           items={MOCK_SUMMARY_ITEMS}
@@ -168,6 +175,6 @@ export function AiAssistantPageClient() {
           onRetry={handleRetry}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }

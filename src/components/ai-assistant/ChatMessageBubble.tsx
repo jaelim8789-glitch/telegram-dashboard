@@ -52,7 +52,7 @@ export function ChatMessageBubble({ message, streaming }: ChatMessageBubbleProps
           {!isUser && message.content && !streaming && (
             <button
               onClick={handleCopy}
-              className="absolute -top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md bg-app-card border border-app-border/50 text-app-text-muted opacity-0 transition-all hover:bg-app-card-hover hover:text-app-text group-hover:opacity-100"
+              className="absolute -top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md bg-app-card border border-app-border/50 text-app-text-muted opacity-0 transition-all hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98] group-hover:opacity-100 cursor-pointer"
               aria-label={copied ? "복사됨" : "복사"}
             >
               {copied ? (

@@ -6,6 +6,7 @@ import { MOCK_SUGGESTED_QUESTIONS } from "./mockData";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatInputBar } from "./ChatInputBar";
 import { SuggestedQuestions } from "./SuggestedQuestions";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import type { ChatMessage } from "./types";
 
 interface ChatPanelProps {
@@ -14,9 +15,10 @@ interface ChatPanelProps {
   isLoading?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  initialLoading?: boolean;
 }
 
-export function ChatPanel({ messages, onSendMessage, isLoading, error, onRetry }: ChatPanelProps) {
+export function ChatPanel({ messages, onSendMessage, isLoading, error, onRetry, initialLoading }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -49,11 +51,11 @@ export function ChatPanel({ messages, onSendMessage, isLoading, error, onRetry }
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500">
             <Sparkles className="h-5 w-5 text-white" />
           </div>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-app-card bg-green-500" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-app-card bg-emerald-500" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-app-text">AI 비서</p>
-          <p className="text-xs text-green-400">온라인</p>
+          <p className="text-sm font-bold tracking-tight text-app-text">AI 비서</p>
+          <p className="text-xs text-emerald-400">온라인</p>
         </div>
       </div>
 
@@ -67,7 +69,7 @@ export function ChatPanel({ messages, onSendMessage, isLoading, error, onRetry }
               {onRetry && (
                 <button
                   onClick={onRetry}
-                  className="mt-2 rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                  className="mt-2 rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-400 transition-all hover:bg-red-500/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
                   다시 시도
                 </button>
@@ -75,7 +77,11 @@ export function ChatPanel({ messages, onSendMessage, isLoading, error, onRetry }
             </div>
           </div>
         )}
-        {showSuggestions && messages.length === 0 ? (
+        {initialLoading ? (
+          <div className="px-5 py-4">
+            <SkeletonList count={3} />
+          </div>
+        ) : showSuggestions && messages.length === 0 ? (
           <SuggestedQuestions questions={MOCK_SUGGESTED_QUESTIONS} onSelect={handleSuggestedQuestion} />
         ) : (
           <div className="space-y-4">

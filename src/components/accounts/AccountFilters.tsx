@@ -35,10 +35,10 @@ export function AccountFiltersBar({ search, statusFilter, onSearchChange, onStat
           <button
             key={opt.value}
             onClick={() => onStatusChange(opt.value)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
               statusFilter === opt.value
                 ? "bg-violet-500 text-white"
-                : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+                : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text hover:scale-[1.02] active:scale-[0.98]"
             }`}
           >
             {opt.label}

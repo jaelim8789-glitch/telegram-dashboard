@@ -51,8 +51,8 @@ export function SummaryPanel({ items, selectedCardId, onCardClick }: SummaryPane
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b border-app-border px-5 py-4">
-        <h2 className="text-sm font-semibold text-app-text">오늘의 요약</h2>
-        <p className="mt-0.5 text-xs text-app-text-muted">{dateStr}</p>
+        <h2 className="text-sm font-bold tracking-tight text-app-text">오늘의 요약</h2>
+        <p className="mt-0.5 text-xs font-normal text-app-text-muted">{dateStr}</p>
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {items.map((item) => {
@@ -61,10 +61,10 @@ export function SummaryPanel({ items, selectedCardId, onCardClick }: SummaryPane
             <button
               key={item.id}
               onClick={() => onCardClick?.(item.id, item.title)}
-              className={`w-full cursor-pointer rounded-xl border p-3 text-left transition-all ${
+              className={`w-full cursor-pointer rounded-xl border p-4 text-left transition-all hover:shadow-lg hover:shadow-purple-500/10 ${
                 isSelected
                   ? "border-violet-500/60 bg-violet-500/5 ring-1 ring-violet-500/20"
-                  : "border-violet-500/10 bg-app-card-hover hover:border-violet-500/30"
+                  : "border-violet-500/10 bg-app-card-hover hover:border-violet-500/30 hover:scale-[1.02] active:scale-[0.98]"
               }`}
             >
               <div className="mb-1.5 flex items-center gap-2">
@@ -73,8 +73,8 @@ export function SummaryPanel({ items, selectedCardId, onCardClick }: SummaryPane
                 </span>
                 <span className="text-xs font-medium text-app-text">{item.title}</span>
               </div>
-              <p className="text-xs leading-relaxed text-app-text-muted">{item.description}</p>
-              <p className="mt-2 text-[10px] text-app-text-subtle">{formatRelativeTime(item.timestamp)}</p>
+              <p className="text-xs font-medium leading-relaxed text-app-text-muted">{item.description}</p>
+              <p className="mt-2 text-[10px] font-normal text-app-text-subtle">{formatRelativeTime(item.timestamp)}</p>
             </button>
           );
         })}
