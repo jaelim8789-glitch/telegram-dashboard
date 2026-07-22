@@ -108,7 +108,7 @@ function SettlementsContent() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-3 py-2 text-left">시간</th>
                   <th className="px-3 py-2 text-left">액션</th>

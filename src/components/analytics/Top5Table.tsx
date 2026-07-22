@@ -26,7 +26,7 @@ export function Top5Table({ data }: Top5TableProps) {
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-app-card">
             <tr className="border-b border-app-border text-left">
               <th className="px-5 py-3 text-xs font-medium text-app-text-muted w-16">순위</th>
               <th className="px-5 py-3 text-xs font-medium text-app-text-muted">채팅방 이름</th>

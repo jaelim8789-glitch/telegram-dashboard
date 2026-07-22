@@ -47,7 +47,7 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead>
+        <thead className="sticky top-0 z-10 bg-app-card">
           <tr className="border-b border-app-border text-left">
             <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">계정 이름</th>
             <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">전화번호</th>

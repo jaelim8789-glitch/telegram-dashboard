@@ -313,7 +313,7 @@ function DistributorsContent() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-2 py-2 text-left">전화번호</th>
                   <th className="px-2 py-2 text-left">코드</th>
@@ -402,7 +402,7 @@ function DistributorsContent() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-2 py-2 text-left">총판</th>
                   <th className="px-2 py-2 text-right">금액</th>

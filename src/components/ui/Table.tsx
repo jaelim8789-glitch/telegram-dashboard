@@ -17,7 +17,7 @@ export function Table({ children, className }: { children: ReactNode; className?
 }
 
 export function TableHeader({ children, className }: { children: ReactNode; className?: string }) {
-  return <thead className={className}>{children}</thead>;
+  return <thead className={cn("sticky top-0 z-10 bg-app-card", className)}>{children}</thead>;
 }
 
 export function TableBody({ children, className }: { children: ReactNode; className?: string }) {

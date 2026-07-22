@@ -238,11 +238,26 @@ export function Sidebar() {
     setConfirmDeleteId(id);
   }
 
-  function executeDelete() {
+  async function executeDelete() {
     const id = confirmDeleteId;
     if (!id) return;
     setDeleteError(null);
-    removeAccount(id).catch((err) => setDeleteError(err instanceof Error ? err.message : "삭제 실패"));
+    const accountName = accounts.find(a => a.id === id)?.name ?? id;
+    try {
+      await removeAccount(id);
+      toast("success", `"${accountName}" 계정이 삭제되었습니다.`, {
+        duration: 5000,
+        action: {
+          label: "되돌리기",
+          onClick: () => {
+            useDashboardStore.getState().setActiveTab("register");
+            toast("info", "계정 등록 탭에서 다시 추가할 수 있습니다.");
+          },
+        },
+      });
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "삭제 실패");
+    }
     setConfirmDeleteId(null);
   }
 

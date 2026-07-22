@@ -171,7 +171,7 @@ export function AiUsageTab() {
         <Panel title="플랜 제한">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border">
                   <th className="text-left py-2 px-2 text-app-text-muted font-medium">기능</th>
                   <th className="text-right py-2 px-2 text-app-text-muted font-medium">일일 요청</th>

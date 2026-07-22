@@ -668,7 +668,7 @@ function UsersContent() {
         {!loading && filteredUsers.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-4 py-3 text-center font-semibold">
                     <input
@@ -804,7 +804,7 @@ function UsersContent() {
         {!commissionLoading && commissions.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-2 py-2 text-left">상태</th>
                   <th className="px-2 py-2 text-left">금액</th>
