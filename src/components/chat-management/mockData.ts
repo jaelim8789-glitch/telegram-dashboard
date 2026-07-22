@@ -11,6 +11,7 @@ export interface ChatRoom {
   isOnline?: boolean;
   isFavorite?: boolean;
   isPinned?: boolean;
+  lastSeen?: Date;
 }
 
 export type MessageStatus = "sent" | "delivered" | "read";
@@ -57,6 +58,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     lastMessageTime: new Date(now - 23 * MIN),
     unreadCount: 0,
     isOnline: false,
+    lastSeen: new Date(now - 15 * MIN),
   },
   {
     id: "personal-3",
@@ -75,6 +77,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     lastMessageTime: new Date(now - 3 * HOUR),
     unreadCount: 0,
     isOnline: false,
+    lastSeen: new Date(now - 45 * MIN),
   },
   {
     id: "group-1",

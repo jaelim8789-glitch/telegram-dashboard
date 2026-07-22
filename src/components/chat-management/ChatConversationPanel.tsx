@@ -14,11 +14,14 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowDown,
-  Heart,
+  Forward,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ChatMessage, ChatRoom } from "./mockData";
+import { CHAT_ROOMS } from "./mockData";
 
 interface ChatConversationPanelProps {
   room: ChatRoom | null;
@@ -32,12 +35,23 @@ interface ContextMenuState {
   messageId: string;
 }
 
+const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])/g;
+const MENTION_REGEX = /(@\S+)/g;
+
 function formatTimeOnly(date: Date): string {
   return date.toLocaleString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
   });
+}
+
+function formatLastSeen(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  if (diff < 60000) return "방금 전 접속";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전 접속`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}시간 전 접속`;
+  return date.toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) + " 접속";
 }
 
 function formatDateDivider(date: Date): string {
@@ -76,18 +90,6 @@ function TimeGapLabel({ time }: { time: string }) {
   );
 }
 
-function UnreadDivider() {
-  return (
-    <div className="my-3 flex items-center gap-2">
-      <div className="h-px flex-1 bg-violet-500/30" />
-      <span className="shrink-0 rounded-full bg-violet-500/15 px-3 py-0.5 text-[10px] font-medium text-violet-400">
-        여기까지 읽음
-      </span>
-      <div className="h-px flex-1 bg-violet-500/30" />
-    </div>
-  );
-}
-
 function TypingIndicator() {
   return (
     <motion.div
@@ -107,13 +109,57 @@ function TypingIndicator() {
 
 function StatusIcon({ status }: { status?: "sent" | "delivered" | "read" }) {
   if (!status) return null;
-  if (status === "sent") {
-    return <Check className="h-3 w-3 text-white/60" />;
-  }
-  if (status === "delivered") {
-    return <CheckCheck className="h-3 w-3 text-white/60" />;
-  }
+  if (status === "sent") return <Check className="h-3 w-3 text-white/60" />;
+  if (status === "delivered") return <CheckCheck className="h-3 w-3 text-white/60" />;
   return <CheckCheck className="h-3 w-3 text-violet-300" />;
+}
+
+function formatMessageContent(content: string) {
+  const parts: React.ReactNode[] = [];
+  const combined = new RegExp(
+    `(${URL_REGEX.source})|(${MENTION_REGEX.source})`,
+    "g"
+  );
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = combined.exec(content)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(content.slice(lastIdx, match.index));
+    }
+    const matched = match[0];
+    if (URL_REGEX.test(matched)) {
+      parts.push(
+        <a
+          key={`url-${match.index}`}
+          href={matched}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-white/30 underline-offset-2 transition-colors hover:decoration-white/60"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {matched}
+        </a>
+      );
+      URL_REGEX.lastIndex = 0;
+    } else if (MENTION_REGEX.test(matched)) {
+      parts.push(
+        <span key={`mention-${match.index}`} className="font-medium text-violet-300">
+          {matched}
+        </span>
+      );
+      MENTION_REGEX.lastIndex = 0;
+    } else {
+      parts.push(matched);
+    }
+    lastIdx = match.index + matched.length;
+  }
+
+  if (lastIdx < content.length) {
+    parts.push(content.slice(lastIdx));
+  }
+
+  return parts.length > 0 ? parts : content;
 }
 
 export function ChatConversationPanel({
@@ -129,12 +175,15 @@ export function ChatConversationPanel({
   const [convSearchIdx, setConvSearchIdx] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [sendAnim, setSendAnim] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showForwardPicker, setShowForwardPicker] = useState(false);
+  const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const convSearchRef = useRef<HTMLInputElement>(null);
   const scrollMemory = useRef<Map<string, number>>(new Map());
   const prevRoomIdRef = useRef<string | null>(null);
-  const unreadMarkerIdx = useRef<number>(-1);
 
   const saveScroll = useCallback(() => {
     if (prevRoomIdRef.current && scrollRef.current) {
@@ -164,10 +213,9 @@ export function ChatConversationPanel({
       saveScroll();
     }
 
-    const saved = scrollMemory.current.get(room.id);
-
     requestAnimationFrame(() => {
       if (!scrollRef.current) return;
+      const saved = scrollMemory.current.get(room.id);
       if (saved !== undefined) {
         scrollRef.current.scrollTop = saved;
         checkAtBottom();
@@ -179,6 +227,8 @@ export function ChatConversationPanel({
     prevRoomIdRef.current = room.id;
     setShowConvSearch(false);
     setConvSearch("");
+    setSelectMode(false);
+    setSelectedIds(new Set());
 
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
@@ -251,9 +301,14 @@ export function ChatConversationPanel({
       e.preventDefault();
       handleSend();
     }
+    if (e.key === "Escape" && selectMode) {
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    }
   }
 
   function handleContextMenu(e: React.MouseEvent, messageId: string) {
+    if (selectMode) return;
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, messageId });
@@ -270,13 +325,40 @@ export function ChatConversationPanel({
     inputRef.current?.focus();
   }
 
+  function handleForwardClick(msgId: string) {
+    setForwardMsgId(msgId);
+    setContextMenu(null);
+    setShowForwardPicker(true);
+  }
+
+  function handleForwardToTarget(targetRoomId: string) {
+    setShowForwardPicker(false);
+    setForwardMsgId(null);
+  }
+
   function handleDelete(msgId: string) {
     setContextMenu(null);
   }
 
-  function handleDoubleClick(msg: ChatMessage) {
-    if (msg.sender === "me") return;
-    if (msg.reaction === "heart") return;
+  function handleBatchDelete() {
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  }
+
+  function toggleSelectMode() {
+    setSelectMode((p) => {
+      if (p) setSelectedIds(new Set());
+      return !p;
+    });
+  }
+
+  function toggleSelectMessage(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   function handleToggleConvSearch() {
@@ -323,7 +405,6 @@ export function ChatConversationPanel({
     );
   }
 
-  const lastReadIdx = messages.length > 0 ? Math.max(0, messages.length - 1 - unreadMarkerIdx.current) : -1;
   const chatNodes: React.ReactNode[] = [];
   let lastDate: string | null = null;
   let lastSender: string | null = null;
@@ -364,14 +445,16 @@ export function ChatConversationPanel({
     const isMatch = matchedIds.includes(msg.id);
     const isActiveMatch =
       isMatch && highlightedIdx >= 0 && msg.id === matchedIds[highlightedIdx];
+    const isSelected = selectedIds.has(msg.id);
 
     const renderContent = () => {
-      if (!convSearch || !isMatch) return msg.content;
+      const formatted = formatMessageContent(msg.content);
+      if (!convSearch || !isMatch) return formatted;
       const idx = msg.content.indexOf(convSearch);
-      if (idx === -1) return msg.content;
+      if (idx === -1) return formatted;
       return (
         <>
-          {msg.content.slice(0, idx)}
+          {formatMessageContent(msg.content.slice(0, idx))}
           <mark
             className={`rounded-sm px-0.5 ${
               isActiveMatch
@@ -381,7 +464,7 @@ export function ChatConversationPanel({
           >
             {msg.content.slice(idx, idx + convSearch.length)}
           </mark>
-          {msg.content.slice(idx + convSearch.length)}
+          {formatMessageContent(msg.content.slice(idx + convSearch.length))}
         </>
       );
     };
@@ -389,14 +472,28 @@ export function ChatConversationPanel({
     chatNodes.push(
       <div
         key={msg.id}
-        className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in ${spacingClass} ${
+        className={`flex items-start gap-2 ${isMe ? "justify-end flex-row-reverse" : "justify-start"} animate-fade-in ${spacingClass} ${
           isActiveMatch ? "rounded-lg ring-2 ring-violet-400/50" : ""
-        }`}
+        } ${isSelected ? "rounded-lg ring-1 ring-violet-500/50 bg-violet-500/5" : ""}`}
       >
+        {selectMode && msg.sender === "me" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSelectMessage(msg.id);
+            }}
+            className="mt-3 shrink-0 self-start"
+          >
+            {isSelected ? (
+              <CheckSquare className="h-4 w-4 text-violet-400" />
+            ) : (
+              <Square className="h-4 w-4 text-app-text-muted" />
+            )}
+          </button>
+        )}
         <div
           className={`max-w-[70%] ${isMe ? "items-end" : "items-start"}`}
           onContextMenu={(e) => handleContextMenu(e, msg.id)}
-          onDoubleClick={() => handleDoubleClick(msg)}
         >
           {!isMe && !prevConsecutive && (
             <div className="mb-1 ml-0.5 flex items-center gap-1.5">
@@ -415,7 +512,7 @@ export function ChatConversationPanel({
                 : "bg-[#1a1a24] text-app-text rounded-2xl rounded-bl-sm"
             }`}
           >
-            {msg.content}
+            {renderContent()}
             {msg.reaction === "heart" && (
               <span className="absolute -bottom-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-app-card text-[10px] shadow-sm">
                 ❤️
@@ -456,7 +553,7 @@ export function ChatConversationPanel({
               </span>
               {room.isOnline !== undefined && (
                 <span
-                  className={`inline-block h-2 w-2 rounded-full ${
+                  className={`inline-block h-2 w-2 shrink-0 rounded-full ${
                     room.isOnline
                       ? "bg-green-500 animate-pulse"
                       : "bg-app-text-subtle"
@@ -468,26 +565,51 @@ export function ChatConversationPanel({
                   입력 중...
                 </span>
               )}
+              {!room.isOnline && room.lastSeen && !isTyping && (
+                <span className="shrink-0 text-[10px] text-app-text-subtle">
+                  {formatLastSeen(room.lastSeen)}
+                </span>
+              )}
             </div>
-            {room.subscriberCount != null && (
-              <span className="text-[11px] text-app-text-muted">
-                구독자 {room.subscriberCount.toLocaleString()}명
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {room.isOnline && (
+                <span className="text-[11px] text-green-400">온라인</span>
+              )}
+              {room.subscriberCount != null && (
+                <span className="text-[11px] text-app-text-muted">
+                  구독자 {room.subscriberCount.toLocaleString()}명
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={handleToggleConvSearch}
-          aria-label="대화 내 검색"
-          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-            showConvSearch
-              ? "bg-violet-500/20 text-violet-400"
-              : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-          }`}
-        >
-          <Search className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              onClick={toggleSelectMode}
+              aria-label="메시지 선택 모드"
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                selectMode
+                  ? "bg-violet-500/20 text-violet-400"
+                  : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={handleToggleConvSearch}
+            aria-label="대화 내 검색"
+            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+              showConvSearch
+                ? "bg-violet-500/20 text-violet-400"
+                : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+            }`}
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {showConvSearch && (
@@ -540,6 +662,33 @@ export function ChatConversationPanel({
         </div>
       )}
 
+      {selectMode && (
+        <div className="flex items-center justify-between border-b border-violet-500/20 bg-violet-500/5 px-4 py-2">
+          <span className="text-xs text-app-text-muted">
+            {selectedIds.size}개 선택됨
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setSelectedIds(new Set());
+                setSelectMode(false);
+              }}
+              className="rounded-lg px-2.5 py-1 text-xs text-app-text-muted transition-colors hover:text-app-text"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleBatchDelete}
+              disabled={selectedIds.size === 0}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-app-danger transition-colors hover:bg-red-500/10 disabled:opacity-30"
+            >
+              <Trash2 className="h-3 w-3" />
+              삭제
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         className="relative flex-1 overflow-y-auto scrollbar-thin px-4 py-3"
@@ -550,7 +699,7 @@ export function ChatConversationPanel({
         </AnimatePresence>
 
         <AnimatePresence>
-          {!isAtBottom && (
+          {!isAtBottom && !selectMode && (
             <motion.button
               initial={{ opacity: 0, y: 8, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -585,11 +734,7 @@ export function ChatConversationPanel({
           <motion.button
             onClick={handleSend}
             disabled={!input.trim()}
-            animate={
-              sendAnim
-                ? { scale: [1, 0.85, 1.1, 1] }
-                : {}
-            }
+            animate={sendAnim ? { scale: [1, 0.85, 1.1, 1] } : {}}
             transition={{ duration: 0.4 }}
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -626,6 +771,13 @@ export function ChatConversationPanel({
             답장
           </button>
           <button
+            onClick={() => handleForwardClick(contextMessage.id)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+          >
+            <Forward className="h-3.5 w-3.5 text-app-text-muted" />
+            전달
+          </button>
+          <button
             onClick={() => handleDelete(contextMessage.id)}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-danger transition-colors hover:bg-red-500/10 rounded-b-xl"
           >
@@ -634,6 +786,55 @@ export function ChatConversationPanel({
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {showForwardPicker && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50"
+              onClick={() => {
+                setShowForwardPicker(false);
+                setForwardMsgId(null);
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.96 }}
+              className="fixed left-1/2 top-1/2 z-50 w-[300px] max-h-[400px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-violet-500/30 bg-app-card shadow-2xl shadow-black/50"
+            >
+              <div className="border-b border-violet-500/20 px-4 py-3">
+                <h3 className="text-sm font-semibold text-app-text">메시지 전달</h3>
+                <p className="mt-0.5 text-[11px] text-app-text-muted">
+                  전달할 대화방을 선택하세요
+                </p>
+              </div>
+              <div className="max-h-[280px] overflow-y-auto scrollbar-thin p-2">
+                {CHAT_ROOMS.filter((r) => r.id !== room.id).map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => handleForwardToTarget(r.id)}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-violet-500/10"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-xs font-bold text-white">
+                      {r.name[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-app-text">{r.name}</p>
+                      <p className="text-[10px] text-app-text-subtle">
+                        {r.type === "personal" ? "개인" : r.type === "group" ? "그룹" : "채널"}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
