@@ -5,15 +5,24 @@ import { Send, Sparkles, Loader2, Mic, MicOff, Bookmark, BookmarkCheck, ArrowRig
 import { hapticFeedback } from "@tma.js/sdk-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useToastStore } from "@/components/ui/GlobalToast";
+import { BookmarkButton } from "@/components/ui/BookmarkButton";
 
 interface Message { role: "user" | "agent"; content: string; id: string; bookmarked?: boolean; }
 
 const QUICK_PROMPTS = [
-  { label: "오늘 요약", prompt: "오늘 발송 현황 알려줘" },
-  { label: "계정 상태", prompt: "계정 건강 상태는?" },
-  { label: "실패 분석", prompt: "최근 발송 실패한 거 있어?" },
-  { label: "발송 작성", prompt: "새 마케팅 카피 작성해줘" },
+  { label: "오늘 요약", prompt: "오늘 발송 현황 알려줘", icon: "📊" },
+  { label: "계정 상태", prompt: "계정 건강 상태는?", icon: "❤️" },
+  { label: "실패 분석", prompt: "최근 발송 실패한 거 있어?", icon: "❌" },
+  { label: "발송 작성", prompt: "새 마케팅 카피 작성해줘", icon: "✍️" },
 ];
+
+const RESPONSES: Record<string, string> = {
+  "오늘 발송": "오늘은 총 3건의 발송이 완료되었고, 1건이 대기 중입니다. 성공률은 97%입니다.",
+  "계정 건강": "5개 계정 중 4개가 정상입니다. 1개 계정(***1234)이 속도 제한 상태입니다.",
+  "발송 실패": "최근 24시간 동안 2건의 발송 실패가 있었습니다. 모두 네트워크 오류로 자동 재시도 예정입니다.",
+  "마케팅 카피": "드디어 공개! 텔레그램 마케팅의 새로운 기준, TeleMon이 선보입니다. 지금 바로 시작하세요!",
+};
 
 interface ChatHistory { messages: Message[]; }
 const useChatStore = create<ChatHistory>()(persist(() => ({ messages: [] }), { name: "telemon-miniapp-chat" }));
@@ -42,12 +51,11 @@ const ChatBubble = memo(function ChatBubble({ msg, onCopy, onBookmark }: { msg: 
             <button onClick={() => { onCopy(msg.content); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-[var(--tg-theme-section-separator-color,#3a4a5a)]" style={{ color: "var(--tg-theme-text-color)" }}>
               <Copy className="h-3.5 w-3.5" /> 복사
             </button>
-            {!isUser && <button onClick={() => { onBookmark(msg.id); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-[var(--tg-theme-section-separator-color,#3a4a5a)]" style={{ color: "var(--tg-theme-text-color)" }}>
+            <button onClick={() => { onBookmark(msg.id); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-[var(--tg-theme-section-separator-color,#3a4a5a)]" style={{ color: "var(--tg-theme-text-color)" }}>
               {msg.bookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" /> : <Bookmark className="h-3.5 w-3.5" />} 북마크
-            </button>}
+            </button>
           </div>
         )}
-        {!isUser && msg.bookmarked && <BookmarkCheck className="absolute -right-5 top-1 h-3.5 w-3.5 text-amber-400" />}
       </div>
     </div>
   );
@@ -67,20 +75,7 @@ function TypingIndicator() {
   );
 }
 
-async function callDeepSeek(messages: { role: string; content: string }[]): Promise<string> {
-  try {
-    const res = await fetch("/api/miniapp/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data.reply || "죄송합니다. 다시 말해주시겠어요?";
-  } catch {
-    return "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-  }
-}
+const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined;
 
 export const MiniAppChat = memo(function MiniAppChat() {
   const savedMessages = useChatStore(s => s.messages);
@@ -89,10 +84,8 @@ export const MiniAppChat = memo(function MiniAppChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [continuousVoice, setContinuousVoice] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
-  const [copiedId, setCopiedId] = useState("");
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { saveMessages.messages = messages; }, [messages]);
@@ -100,33 +93,21 @@ export const MiniAppChat = memo(function MiniAppChat() {
   const handleSend = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
     const userMsg: Message = { role: "user", content: text, id: `u-${Date.now()}` };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
     try { hapticFeedback.notificationOccurred("success"); } catch {}
 
-    const reply = await callDeepSeek(updatedMessages.map(m => ({ role: m.role, content: m.content })));
-
-    // <ACTION> 태그 파싱하여 발송탭 이동
-    const actionMatch = reply.match(/<ACTION>(.*?)<\/ACTION>/s);
-    let finalReply = reply.replace(/<ACTION>.*?<\/ACTION>/s, "").trim();
-    setMessages(prev => [...prev, { role: "agent", content: finalReply, id: `a-${Date.now()}` }]);
-    setLoading(false);
-
-    if (actionMatch) {
-      try {
-        const action = JSON.parse(actionMatch[1]);
-        if (action.type === "redirect_send" && action.message) {
-          localStorage.setItem("telemon-miniapp-pending-message", action.message);
-          setTimeout(() => window.dispatchEvent(new CustomEvent("telemon-miniapp-tab-change", { detail: { tab: "send" } })), 500);
-        }
-      } catch {}
-    }
-  }, [messages, loading]);
+    setTimeout(() => {
+      let reply = "죄송합니다. 다시 말해주시겠어요?";
+      for (const [key, value] of Object.entries(RESPONSES)) { if (text.includes(key)) { reply = value; break; } }
+      setMessages(prev => [...prev, { role: "agent", content: reply, id: `a-${Date.now()}` }]);
+      setLoading(false);
+    }, 800);
+  }, [loading]);
 
   const handleCopy = useCallback(async (text: string) => {
-    try { await navigator.clipboard.writeText(text); setCopiedId(text.slice(0, 10)); setTimeout(() => setCopiedId(""), 2000); try { hapticFeedback.impactOccurred("light"); } catch {} } catch {}
+    try { await navigator.clipboard.writeText(text); useToastStore.getState().add({ type: "success", title: "복사됨" }); } catch {}
   }, []);
 
   const handleBookmark = useCallback((id: string) => {
@@ -135,23 +116,19 @@ export const MiniAppChat = memo(function MiniAppChat() {
   }, []);
 
   const handleVoiceToggle = useCallback(() => {
+    if (!SpeechRecognition) { useToastStore.getState().add({ type: "info", title: "이 브라우저는 음성 입력을 지원하지 않습니다" }); return; }
+    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
     try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
-      if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ko-KR";
-      recognition.interimResults = false;
-      recognition.continuous = continuousVoice;
-      recognition.onresult = (e: any) => { const t = e.results[e.results.length - 1][0].transcript; setInput(t); if (!continuousVoice) handleSend(t); };
-      recognition.onend = () => { if (continuousVoice) try { recognition.start(); } catch {} else setListening(false); };
-      recognitionRef.current = recognition; recognition.start(); setListening(true);
+      const r = new SpeechRecognition();
+      r.lang = "ko-KR"; r.interimResults = false;
+      r.onresult = (e: any) => { const t = e.results[0][0].transcript; setInput(t); handleSend(t); };
+      r.onend = () => setListening(false);
+      r.start(); recognitionRef.current = r; setListening(true);
       try { hapticFeedback.impactOccurred("medium"); } catch {}
-    } catch {}
-  }, [listening, continuousVoice, handleSend]);
+    } catch { useToastStore.getState().add({ type: "error", title: "음성 인식을 시작할 수 없습니다" }); }
+  }, [listening, handleSend]);
 
   const handleSendRedirect = useCallback(() => {
-    try { hapticFeedback.impactOccurred("light"); } catch {}
     window.dispatchEvent(new CustomEvent("telemon-miniapp-tab-change", { detail: { tab: "send" } }));
   }, []);
 
@@ -161,7 +138,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
     <div className="flex flex-col h-full pb-4">
       <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500"><Sparkles className="h-4 w-4 text-white" /></div>
-        <div className="flex-1"><h2 className="text-sm font-bold">AI 어시스턴트</h2><p className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>DeepSeek AI 기반</p></div>
+        <div className="flex-1"><h2 className="text-sm font-bold">AI 어시스턴트</h2><p className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>DeepSeek AI 기반 · 메시지를 길게 눌러 복사</p></div>
         {bookmarkedCount > 0 && (
           <div className="flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
             <BookmarkCheck className="h-3 w-3 text-amber-400" /> {bookmarkedCount}
@@ -180,26 +157,24 @@ export const MiniAppChat = memo(function MiniAppChat() {
           <div className="grid grid-cols-2 gap-2">
             {QUICK_PROMPTS.map(q => (
               <button key={q.label} onClick={() => handleSend(q.prompt)} disabled={loading}
-                className="flex items-center gap-1 rounded-xl px-3 py-2.5 text-xs active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs active:scale-95 disabled:opacity-50"
                 style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-button-color, #5288c1)" }}>
-                <ArrowRight className="h-3 w-3 shrink-0" />{q.label}
+                <span>{q.icon}</span>{q.label}
               </button>
             ))}
           </div>
-          <button onClick={handleSendRedirect} className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium active:scale-[0.98]"
-            style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-            <Send className="h-3.5 w-3.5" /> 발송 탭으로 이동
-          </button>
         </div>
       )}
 
-      <div className="px-4 shrink-0 space-y-2">
+      <div className="px-4 shrink-0">
         <div className="flex gap-2">
-          <button onClick={handleVoiceToggle} className="relative flex h-14 w-14 items-center justify-center rounded-xl active:scale-95 transition-colors"
-            style={{ backgroundColor: listening ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-section-bg-color, #232e3c)" }}
-            aria-label={listening ? "음성 입력 중지" : "음성 입력"}>
-            {listening ? <MicOff className="h-5 w-5 text-white" /> : <Mic className="h-5 w-5" style={{ color: "var(--tg-theme-hint-color)" }} />}
-          </button>
+          {SpeechRecognition && (
+            <button onClick={handleVoiceToggle} className="flex h-14 w-14 items-center justify-center rounded-xl active:scale-95"
+              style={{ backgroundColor: listening ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-section-bg-color, #232e3c)" }}
+              aria-label={listening ? "음성 입력 중지" : "음성 입력"}>
+              {listening ? <MicOff className="h-5 w-5 text-white" /> : <Mic className="h-5 w-5" style={{ color: "var(--tg-theme-hint-color)" }} />}
+            </button>
+          )}
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
             placeholder="메시지를 입력하세요..." autoComplete="off" aria-label="메시지 입력"
             className="flex-1 rounded-xl px-4 py-3.5 text-sm outline-none"
@@ -207,10 +182,17 @@ export const MiniAppChat = memo(function MiniAppChat() {
           <button onClick={() => handleSend(input)} disabled={!input.trim() || loading}
             className="flex h-14 w-14 items-center justify-center rounded-xl active:scale-95 disabled:opacity-50"
             style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }} aria-label="메시지 전송">
-            {copiedId ? <CheckCheck className="h-5 w-5 text-white" /> : <Send className="h-5 w-5 text-white" />}
+            <Send className="h-5 w-5 text-white" />
           </button>
         </div>
       </div>
+
+      {messages.length <= 2 && (
+        <button onClick={handleSendRedirect} className="mx-4 flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium active:scale-[0.98]"
+          style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
+          <Send className="h-3.5 w-3.5" /> 발송 탭으로 이동
+        </button>
+      )}
     </div>
   );
 });

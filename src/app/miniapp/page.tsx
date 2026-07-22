@@ -7,11 +7,11 @@ import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { MiniAppNav, type MiniAppTab } from "./MiniAppNav";
 import { MiniAppDashboard } from "./MiniAppDashboard";
 import { MiniAppSend } from "./MiniAppSend";
-import { GlobalToast } from "@/components/ui/GlobalToast";
 import { ThemeQuickToggle } from "@/components/ui/ThemeQuickToggle";
-import { useThemeStore } from "@/store/useThemeStore";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
+import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
 import { ConnectionStatusCard } from "@/components/ui/ConnectionStatusCard";
+import { useAutoDraft } from "@/hooks/useAutoDraft";
 
 const MiniAppChat = dynamic(() => import("./MiniAppChat").then((m) => ({ default: m.MiniAppChat })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
@@ -28,8 +28,7 @@ export default function MiniAppPage() {
   const [online, setOnline] = useState(true);
   const initDataState = useSignal(initData.state);
   const user = initDataState?.user;
-  const setTheme = useThemeStore(s => s.setTheme);
-  const cycleTheme = useThemeStore(s => s.cycle);
+  const setOpen = useCommandPaletteStore(s => s.setOpen);
 
   const handleRefresh = useCallback(() => {
     try { hapticFeedback.impactOccurred("medium"); } catch {}
@@ -37,28 +36,16 @@ export default function MiniAppPage() {
     setLastUpdated(new Date());
   }, []);
 
+  useKeyboardShortcut("k", () => setOpen(true), { ctrl: true });
+
   useEffect(() => {
-    try {
-      backButton.mount();
-      const off = backButton.onClick(() => {
-        if (activeTab !== "dashboard") { setActiveTab("dashboard"); }
-      });
-      return () => { off(); try { backButton.unmount(); } catch {} };
-    } catch { return undefined; }
+    try { backButton.mount(); const off = backButton.onClick(() => { if (activeTab !== "dashboard") setActiveTab("dashboard"); }); return () => { off(); try { backButton.unmount(); } catch {} }; }
+    catch { return undefined; }
   }, [activeTab]);
 
   useEffect(() => {
-    let off: (() => void) | undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { mainButton } = await import("@tma.js/sdk-react");
-        if (cancelled) return;
-        mainButton.mount();
-        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false });
-        off = mainButton.onClick(handleRefresh);
-      } catch {}
-    })();
+    let off: (() => void) | undefined; let cancelled = false;
+    (async () => { try { const { mainButton } = await import("@tma.js/sdk-react"); if (cancelled) return; mainButton.mount(); mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false }); off = mainButton.onClick(handleRefresh); } catch {} })();
     return () => { cancelled = true; if (off) off(); };
   }, [handleRefresh]);
 
@@ -70,51 +57,25 @@ export default function MiniAppPage() {
 
   useEffect(() => {
     setOnline(navigator.onLine);
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
+    const onOnline = () => setOnline(true); const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline); window.addEventListener("offline", onOffline);
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
-
-  // Ctrl+K → command palette
-  useKeyboardShortcut("k", () => {
-    import("@/store/useCommandPaletteStore").then(m => m.useCommandPaletteStore.getState().setOpen(true));
-  }, { ctrl: true });
 
   const greeting = user ? user.first_name + "님" : "TeleMon";
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        backgroundColor: "var(--tg-theme-bg-color, #17212b)",
-        color: "var(--tg-theme-text-color, #f5f5f5)",
-      }}
-    >
-      <GlobalToast />
-
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", color: "var(--tg-theme-text-color, #f5f5f5)" }}>
       {activeTab === "dashboard" && (
-        <div
-          className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
-          style={{
-            backgroundColor: "var(--tg-theme-bg-color, #17212b)",
-            borderBottom: "1px solid var(--tg-theme-section-separator-color, #3a4a5a)",
-          }}
-        >
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", borderBottom: "1px solid var(--tg-theme-section-separator-color, #3a4a5a)" }}>
           <div className="flex flex-col">
             <span className="text-base font-bold">{greeting}</span>
-            <span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-              TeleMon · {lastUpdated.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 갱신
-            </span>
+            <span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>TeleMon · Ctrl+K 검색</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeQuickToggle />
-            <div className="flex items-center gap-1" aria-label={online ? "온라인" : "오프라인"}>
-              {online ? <Wifi className="h-3.5 w-3.5 text-emerald-500" /> : <WifiOff className="h-3.5 w-3.5 text-red-500" />}
-            </div>
-            <button onClick={handleRefresh} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-90"
-              style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="새로고침">
+            {online ? <Wifi className="h-3.5 w-3.5 text-emerald-500" /> : <WifiOff className="h-3.5 w-3.5 text-red-500" />}
+            <button onClick={handleRefresh} className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="새로고침">
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>
