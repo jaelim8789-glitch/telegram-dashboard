@@ -22,6 +22,7 @@ const CATEGORY_ICONS: Record<CategoryId, React.ComponentType<{ className?: strin
   macro: Workflow,
   analytics: BarChart3,
   settings: Settings,
+  "ai-chat": Sparkles,
 };
 
 export function CategorySidebar() {
