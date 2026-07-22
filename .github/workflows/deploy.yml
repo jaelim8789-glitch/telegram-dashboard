@@ -29,6 +29,24 @@ env:
 
 jobs:
   # ============================================
+  # 0. Lockfile integrity check
+  # ============================================
+  lockfile-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+        name: Verify lockfile matches package.json
+      - run: pnpm ls --depth=0 2>&1 | head -5
+
+  # ============================================
   # 1a. Frontend — typecheck
   # ============================================
   frontend-typecheck:
@@ -348,10 +366,10 @@ jobs:
       - run: uv pip install --system -r requirements-dev.txt
         name: Install Python deps (uv pip)
 
-      - run: uv run pytest tests/ -v --ignore=tests/test_alembic_downgrade.py -m "not slow" --junitxml=test-results/junit.xml --cov=app --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:coverage_html
+      - run: uv run pytest tests/ -n auto -v --ignore=tests/test_alembic_downgrade.py -m "not slow" --junitxml=test-results/junit.xml --cov=app --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:coverage_html
         name: Run pytest with coverage
         env:
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
           ENVIRONMENT: development
           DEBUG: "true"
           ENCRYPTION_KEY: I62a0BiduGAdZjg9UH_vg3VuIEQMpe2AyDm2DfM2HlA=
