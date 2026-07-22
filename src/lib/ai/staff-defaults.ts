@@ -1,4 +1,4 @@
-export interface StaffDefault {
+﻿export interface StaffDefault {
   avatar: string;
   roleTitle: string;
   emoji: string;
