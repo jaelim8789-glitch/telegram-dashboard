@@ -7,25 +7,25 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark-pure"], [data-theme="dark"] *, [data-theme="dark-pure"] *));
 
 @theme {
-  --color-accent: #D4AF37;
-  --color-accent-hover: #e0bc44;
-  --color-accent-light: rgba(212, 175, 55, 0.12);
-  --color-accent-border: rgba(212, 175, 55, 0.30);
-  --color-accent-glow: rgba(212, 175, 55, 0.25);
+  --color-accent: #8B5CF6;
+  --color-accent-hover: #A78BFA;
+  --color-accent-light: rgba(139, 92, 246, 0.12);
+  --color-accent-border: rgba(139, 92, 246, 0.30);
+  --color-accent-glow: rgba(139, 92, 246, 0.20);
+  --color-accent-secondary: #3B82F6;
   --color-cyan: #00D4FF;
   --color-cyan-muted: rgba(0, 212, 255, 0.10);
-  --color-gold-deep: #a08030;
   --color-accent-contrast: #ffffff;
-  --color-bg: #f5f0e8;
-  --color-bg-surface: #ece6dc;
-  --color-card: #e0d8cc;
-  --color-card-hover: #d4ccc0;
-  --color-border: #c8c0b4;
-  --color-border-strong: #b0a898;
-  --color-text: #1c1a16;
-  --color-text-secondary: #4c4844;
-  --color-text-muted: #7c7872;
-  --color-text-subtle: #acaaa4;
+  --color-bg: #0a0a1a;
+  --color-bg-surface: #0f0f2a;
+  --color-card: #151530;
+  --color-card-hover: #1a1a40;
+  --color-border: #1e1e3a;
+  --color-border-strong: #2a2a4a;
+  --color-text: #e8e8f0;
+  --color-text-secondary: #a0a0c0;
+  --color-text-muted: #6868a0;
+  --color-text-subtle: #484880;
   --color-success: #5a8a4a;
   --color-warning: #d4a373;
   --color-danger: #b04a4a;
@@ -34,28 +34,15 @@
   --color-warning-muted: rgba(212, 163, 115, 0.14);
   --color-danger-muted: rgba(176, 74, 74, 0.10);
   --color-info-muted: rgba(90, 138, 154, 0.10);
-  --color-glass-bg: rgba(245, 240, 232, 0.88);
-  --color-gold-deep: #a08030;
-  /* Fixed near-black for text drawn on top of the gold accent (buttons,
-     filled badges). Gold is a light-ish mid-tone in both themes, so this
-     intentionally does NOT flip between light/dark — a light/off-white
-     label on gold reads at ~1.5:1 contrast and is effectively invisible. */
-  --color-accent-contrast: #1a1712;
+  --color-glass-bg: rgba(10, 10, 26, 0.88);
+  --color-accent-contrast: #ffffff;
 
   --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 
-  /* ────────────────────────────────────────────────────────────────
-   * Semantic "app-*" tokens — consumed via bg-app-*, text-app-*, border-app-*
-   * utilities across every dashboard, admin, and auth component (Button,
-   * Panel, Field, Badge, Modal, Table, Header, Sidebar, all workspace tabs).
-   * These are var()-aliases of the primitive tokens above, not a second
-   * palette: CSS custom properties resolve at used-value time, so once
-   * [data-theme="dark"]/[data-theme="light"] override the primitives below,
-   * every app-* consumer repaints correctly without its own overrides.
-   * ──────────────────────────────────────────────────────────────── */
+  /* Semantic "app-*" tokens */
   --color-app-bg: var(--color-bg);
   --color-app-surface: var(--color-bg-surface);
   --color-app-card: var(--color-card);
@@ -116,33 +103,29 @@
     color: var(--color-accent-contrast);
   }
 
-  /* Subtle shadow on all cards for depth */
   .rounded-xl, .rounded-2xl {
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
 }
 
-/* ── Light mode ──
- * Explicit mirror of the @theme defaults above, rather than relying on the
- * absence of [data-theme="dark"]. Keeps light/dark symmetric and makes the
- * theme switch a real attribute-driven override in both directions instead
- * of one side being "whatever's left when the other selector doesn't match". */
+/* ── Light mode ── */
 [data-theme="light"] {
-  --color-accent: #b8a060;
-  --color-accent-hover: #c8b070;
-  --color-accent-light: rgba(184, 160, 96, 0.12);
-  --color-accent-border: rgba(184, 160, 96, 0.30);
-  --color-accent-glow: rgba(184, 160, 96, 0.20);
-  --color-bg: #f5f0e8;
-  --color-bg-surface: #ece6dc;
-  --color-card: #e0d8cc;
-  --color-card-hover: #d4ccc0;
-  --color-border: #c8c0b4;
-  --color-border-strong: #b0a898;
-  --color-text: #1c1a16;
-  --color-text-secondary: #4c4844;
-  --color-text-muted: #7c7872;
-  --color-text-subtle: #acaaa4;
+  --color-accent: #7C3AED;
+  --color-accent-hover: #8B5CF6;
+  --color-accent-light: rgba(124, 58, 237, 0.12);
+  --color-accent-border: rgba(124, 58, 237, 0.30);
+  --color-accent-glow: rgba(124, 58, 237, 0.20);
+  --color-accent-secondary: #2563EB;
+  --color-bg: #f8f6ff;
+  --color-bg-surface: #f0ecf8;
+  --color-card: #e8e2f4;
+  --color-card-hover: #ddd5ee;
+  --color-border: #c8c0e0;
+  --color-border-strong: #b0a8c8;
+  --color-text: #1a1625;
+  --color-text-secondary: #4a4460;
+  --color-text-muted: #7a7290;
+  --color-text-subtle: #aaa4b8;
   --color-success: #5a8a4a;
   --color-warning: #d4a373;
   --color-danger: #b04a4a;
@@ -151,34 +134,28 @@
   --color-warning-muted: rgba(212, 163, 115, 0.14);
   --color-danger-muted: rgba(176, 74, 74, 0.10);
   --color-info-muted: rgba(90, 138, 154, 0.10);
-  --color-glass-bg: rgba(245, 240, 232, 0.88);
-  --color-gold-deep: #a08030;
+  --color-glass-bg: rgba(248, 246, 255, 0.88);
 }
 
-/* ── Pure black OLED dark mode ──
- * Inherits the same accent/text/semantic palette as [data-theme="dark"] but
- * replaces backgrounds with true black (#000) for OLED display power savings
- * and deeper blacks. Only the color-* variables that control surface tones
- * differ — accent gold, text contrast, and semantic colors are identical
- * to the regular dark theme so components need no dark-pure awareness. */
+/* ── Pure black OLED dark mode ── */
 [data-theme="dark-pure"] {
   --color-bg: #000000;
-  --color-bg-surface: #0a0a0a;
-  --color-card: #111111;
-  --color-card-hover: #181818;
-  --color-border: #1a1a1a;
-  --color-border-strong: #2a2a2a;
-  --color-text: #f0ece4;
-  --color-text-secondary: #b8b0a0;
-  --color-text-muted: #8a8070;
-  --color-text-subtle: #605850;
+  --color-bg-surface: #08081a;
+  --color-card: #10102a;
+  --color-card-hover: #161636;
+  --color-border: #1a1a35;
+  --color-border-strong: #282850;
+  --color-text: #e8e8f0;
+  --color-text-secondary: #a0a0c0;
+  --color-text-muted: #6868a0;
+  --color-text-subtle: #484880;
   --color-glass-bg: rgba(0, 0, 0, 0.88);
-  --color-accent: #bfa260;
-  --color-accent-hover: #d4b06a;
-  --color-accent-light: rgba(191, 162, 96, 0.12);
-  --color-accent-border: rgba(191, 162, 96, 0.30);
-  --color-accent-glow: rgba(191, 162, 96, 0.20);
-  --color-gold-deep: #a8843a;
+  --color-accent: #8B5CF6;
+  --color-accent-hover: #A78BFA;
+  --color-accent-light: rgba(139, 92, 246, 0.12);
+  --color-accent-border: rgba(139, 92, 246, 0.30);
+  --color-accent-glow: rgba(139, 92, 246, 0.20);
+  --color-accent-secondary: #3B82F6;
 
   --color-success: #6fae5c;
   --color-warning: #e0b483;
@@ -192,23 +169,23 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --color-bg: #090909;
-  --color-bg-surface: #0d0d0d;
-  --color-card: #121212;
-  --color-card-hover: #1a1a1a;
-  --color-border: #1e1e1e;
-  --color-border-strong: #2a2a2a;
-  --color-text: #ece8e0;
-  --color-text-secondary: #a8a090;
-  --color-text-muted: #786e60;
-  --color-text-subtle: #504840;
-  --color-glass-bg: rgba(9, 9, 9, 0.88);
-  --color-accent: #D4AF37;
-  --color-accent-hover: #e0bc44;
-  --color-accent-light: rgba(212, 175, 55, 0.12);
-  --color-accent-border: rgba(212, 175, 55, 0.30);
-  --color-accent-glow: rgba(212, 175, 55, 0.20);
-  --color-gold-deep: #a08030;
+  --color-bg: #0a0a1a;
+  --color-bg-surface: #0f0f2a;
+  --color-card: #151530;
+  --color-card-hover: #1a1a40;
+  --color-border: #1e1e3a;
+  --color-border-strong: #2a2a4a;
+  --color-text: #e8e8f0;
+  --color-text-secondary: #a0a0c0;
+  --color-text-muted: #6868a0;
+  --color-text-subtle: #484880;
+  --color-glass-bg: rgba(10, 10, 26, 0.88);
+  --color-accent: #8B5CF6;
+  --color-accent-hover: #A78BFA;
+  --color-accent-light: rgba(139, 92, 246, 0.12);
+  --color-accent-border: rgba(139, 92, 246, 0.30);
+  --color-accent-glow: rgba(139, 92, 246, 0.20);
+  --color-accent-secondary: #3B82F6;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -231,7 +208,7 @@
     ),
     radial-gradient(
       circle at 50% 50%,
-      rgba(191, 162, 96, 0.015) 0%,
+      rgba(139, 92, 246, 0.015) 0%,
       transparent 70%
     );
   background-blend-mode: overlay, normal;
@@ -256,7 +233,7 @@
     ),
     radial-gradient(
       circle at 50% 50%,
-      rgba(191, 162, 96, 0.015) 0%,
+      rgba(139, 92, 246, 0.015) 0%,
       transparent 70%
     );
   background-blend-mode: overlay, normal;
@@ -296,15 +273,15 @@
   font-weight: 600;
   border-radius: 0.5rem;
   padding: 0.5rem 1.25rem;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-gold-deep));
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
   color: var(--color-accent-contrast);
   transition: all 0.3s ease;
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(184, 160, 96, 0.25);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
 }
 .btn-heritage:hover {
-  box-shadow: 0 4px 24px rgba(184, 160, 96, 0.4);
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
   transform: translateY(-1px);
 }
 .btn-heritage:active {
@@ -372,13 +349,13 @@
   text-decoration: none;
 }
 .btn-luxury-primary {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-gold-deep));
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
   color: var(--color-accent-contrast);
   border: none;
-  box-shadow: 0 2px 12px rgba(184, 160, 96, 0.25);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
 }
 .btn-luxury-primary:hover {
-  box-shadow: 0 4px 24px rgba(184, 160, 96, 0.4);
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
   transform: translateY(-1px);
 }
 .btn-luxury-secondary {
@@ -466,12 +443,12 @@
   background: var(--color-card);
   border: 1px solid var(--color-accent-border);
   border-radius: 0.75rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(184, 160, 96, 0.04);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(139, 92, 246, 0.04);
   transition: all 0.3s ease;
 }
 .card-premium:hover {
   border-color: var(--color-accent);
-  box-shadow: 0 4px 24px rgba(184, 160, 96, 0.12);
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.12);
 }
 
 .glass-card {
@@ -492,12 +469,13 @@
 .bg-app-cyan { background-color: rgba(0, 212, 255, 0.1); }
 .border-app-cyan { border-color: rgba(0, 212, 255, 0.3); }
 
-/* ── Gold accent glow animation ── */
-@keyframes gold-pulse {
+/* ── Accent glow animation ── */
+@keyframes accent-pulse {
   0%, 100% { box-shadow: 0 0 8px var(--color-accent-glow); }
   50% { box-shadow: 0 0 16px var(--color-accent-glow), 0 0 24px var(--color-accent-glow); }
 }
-.gold-glow { animation: gold-pulse 3s ease-in-out infinite; }
+.accent-glow { animation: accent-pulse 3s ease-in-out infinite; }
+.gold-glow { animation: accent-pulse 3s ease-in-out infinite; }
 
 /* ── Count-up number styling ── */
 .stat-number {
@@ -545,11 +523,7 @@
 }
 .animate-slide-up-fade { animation: slide-up-fade 0.3s ease-out; }
 
-/* ── Smooth theme transition ──
- * Applied to all color/bg/border/shadow properties so that toggling
- * data-theme between "light" and "dark" animates smoothly instead of
- * snapping instantly. Uses a dedicated CSS class so it can be toggled
- * on/off without affecting other transitions. */
+/* ── Smooth theme transition ── */
 .theme-transitioning,
 .theme-transitioning *,
 .theme-transitioning *::before,
@@ -580,7 +554,13 @@
 
 @keyframes bounce-chevron { 0%, 100% { transform: rotate(45deg) translateY(0); } 50% { transform: rotate(45deg) translateY(4px); } }
 
+@keyframes accent-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 @keyframes gold-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+@utility animate-accent-shimmer {
+  background: linear-gradient(90deg, var(--color-card) 0%, var(--color-accent-light) 25%, var(--color-card) 50%);
+  background-size: 200% 100%;
+  animation: accent-shimmer 3s ease-in-out infinite;
+}
 @utility animate-gold-shimmer {
   background: linear-gradient(90deg, var(--color-card) 0%, var(--color-accent-light) 25%, var(--color-card) 50%);
   background-size: 200% 100%;
@@ -604,7 +584,7 @@
   animation: progress-indeterminate 1.5s ease-in-out infinite;
 }
 
-@utility accent-border-lux { border: 1px solid var(--color-accent-border); box-shadow: inset 0 0 0 1px rgba(184, 160, 96, 0.08); }
+@utility accent-border-lux { border: 1px solid var(--color-accent-border); box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.08); }
 
 /* ── Scroll indicator ── */
 .scroll-indicator {
@@ -623,14 +603,10 @@
 .scroll-line { display: block; width: 1px; height: 1.5rem; background: linear-gradient(to bottom, var(--color-accent), transparent); animation: scroll-indicator-line 2s ease-in-out infinite; }
 .scroll-chevron { display: block; width: 0.75rem; height: 0.75rem; border-right: 2px solid var(--color-accent); border-bottom: 2px solid var(--color-accent); transform: rotate(45deg); margin-top: -0.125rem; animation: bounce-chevron 2s ease-in-out infinite; }
 
-/* ── Select ──
- * The chevron is a baked SVG data URI (can't reference a CSS var() from
- * inside the encoded markup), so light/dark each get their own copy tinted
- * to that theme's --color-text-muted — otherwise dark mode keeps the light
- * (#7c7872) stroke, which reads low-contrast on a near-black field. */
-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c7872' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; padding-right: 2rem; }
-[data-theme="dark"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
-[data-theme="dark-pure"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+/* ── Select ── */
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7290' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; padding-right: 2rem; }
+[data-theme="dark"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236868a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+[data-theme="dark-pure"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236868a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
 
 /* ── Scroll progress ── */
 .scroll-progress {
@@ -638,7 +614,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   top: 0;
   left: 0;
   height: 1px;
-  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-secondary));
   z-index: 100;
   transition: width 0.1s ease;
 }
@@ -733,41 +709,41 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
     padding-top: 3rem;
     padding-bottom: 3rem;
   }
-  
+
   .luxury-hero {
     min-height: 90vh;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-  
+
   .luxury-hero-title {
     font-size: 2rem;
     line-height: 1.1;
     letter-spacing: -0.03em;
   }
-  
+
   .luxury-hero-subtitle {
     font-size: 0.875rem;
     line-height: 1.7;
     margin-top: 1rem;
   }
-  
+
   .luxury-section-title {
     font-size: 1.5rem;
     line-height: 1.15;
     letter-spacing: -0.02em;
   }
-  
+
   .luxury-section-desc {
     font-size: 0.8125rem;
     line-height: 1.8;
   }
-  
+
   .luxury-card {
     padding: 1.25rem;
     border-radius: 0.75rem;
   }
-  
+
   .luxury-stack > * + * {
     margin-top: 0.75rem;
   }
@@ -779,27 +755,27 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
     font-size: 2rem;
     letter-spacing: -0.03em;
   }
-  
+
   .text-heading {
     font-size: 1.375rem;
     letter-spacing: -0.02em;
   }
-  
+
   .text-subheading {
     font-size: 0.8125rem;
     letter-spacing: 0.15em;
   }
-  
+
   .text-body-sm {
     font-size: 0.8125rem;
     line-height: 1.8;
   }
-  
+
   .gold-smallcaps {
     font-size: 0.625rem;
     letter-spacing: 0.12em;
   }
-  
+
   .section-heading {
     font-size: 1.5rem;
   }
@@ -832,7 +808,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   .tap-highlight {
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   .tap-highlight:active {
     background: var(--color-accent-light);
     transition: background 0.05s ease;
@@ -844,7 +820,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   .scroll-snap-mobile {
     scroll-snap-type: y proximity;
   }
-  
+
   .scroll-snap-mobile > section {
     scroll-snap-align: start;
   }
@@ -933,12 +909,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   font-size: 0.75rem;
 }
 
-/* ── Dashboard/admin/auth chrome — previously referenced by Header, Sidebar,
-   Modal, and the admin/login + signup + get-api-key + pricing + features
-   forms but never actually defined, so these elements rendered with no
-   background/border/text styling at all (transparent, browser-default black
-   text). Defined here against the app-* semantic tokens so they track theme
-   changes the same way every other dashboard component does. ── */
+/* ── Dashboard/admin/auth chrome ── */
 
 .dashboard-header {
   background: var(--color-app-card);
@@ -972,23 +943,21 @@ body.modal-open {
   overflow: hidden;
 }
 
-/* Buttons used across admin/login, signup, get-api-key, pricing, and
-   features — pair with layout utilities (h-*, px-*, rounded-*, text-*) at
-   each call site, so only color/border/interaction states live here. */
+/* Buttons used across admin/login, signup, get-api-key, pricing, and features */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-app-primary), var(--color-gold-deep));
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
   color: var(--color-accent-contrast);
   border: none;
   font-weight: 600;
   cursor: pointer;
   transition: box-shadow 0.25s ease, transform 0.15s ease, opacity 0.15s ease;
-  box-shadow: 0 2px 12px rgba(184, 160, 96, 0.25);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
 }
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 4px 24px rgba(184, 160, 96, 0.4);
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
   transform: translateY(-1px);
 }
 .btn-primary:active:not(:disabled) {
@@ -1019,18 +988,14 @@ body.modal-open {
   cursor: not-allowed;
 }
 
-/* Referenced by AccountRegisterTab's OTP field — the base Input component
-   already supplies theme-aware colors/border, this just adds the spaced,
-   centered "code entry" treatment on top. */
+/* Referenced by AccountRegisterTab's OTP field */
 .otp-input {
   text-align: center;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
 
-/* Thin, theme-aware scrollbar for overflow-y-auto panels (Inspector, log
-   panels). Firefox + WebKit; falls back to the default scrollbar on
-   browsers supporting neither. */
+/* Thin, theme-aware scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-app-border-strong) transparent;
@@ -1050,7 +1015,7 @@ body.modal-open {
   background-color: var(--color-app-text-subtle);
 }
 
-/* ── Luxury gold scrollbar (site-wide, desktop only) ── */
+/* ── Accent scrollbar (site-wide, desktop only) ── */
 @media (hover: hover) and (pointer: fine) {
   html {
     scrollbar-width: thin;
@@ -1063,7 +1028,7 @@ body.modal-open {
     background: transparent;
   }
   html::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--color-accent), var(--color-gold-deep));
+    background: linear-gradient(180deg, var(--color-accent), var(--color-accent-secondary));
     border-radius: 9999px;
     border: 2px solid transparent;
     background-clip: content-box;
@@ -1075,11 +1040,7 @@ body.modal-open {
   }
 }
 
-/* Subtle sheen used on the marketing header/hero — restrained, theme-aware
-   (the accent-glow token already differs slightly light vs. dark). Doesn't
-   set position itself: both current consumers (a `fixed` header, a
-   `relative` hero section) already establish a positioning context, and
-   forcing `relative` here would break the header's `fixed` placement. */
+/* Subtle sheen used on the marketing header/hero */
 .satin-overlay::before {
   content: "";
   position: absolute;
@@ -1203,7 +1164,7 @@ html {
   overscroll-behavior: contain;
 }
 
-/* Gold highlight for selected items on mobile */
+/* Selected items on mobile */
 .mobile-selected {
   background: var(--color-accent-light);
   border-color: var(--color-accent-border);
@@ -1231,7 +1192,6 @@ html {
 /* ── iOS keyboard scroll fix (6. iOS 키보드 대응) ── */
 @supports (-webkit-touch-callout: none) {
   .keyboard-aware {
-    /* Prevent iOS from auto-scrolling on input focus */
     position: static;
   }
 
@@ -1298,3 +1258,12 @@ html { font-size: 100%; }
 [data-slow-network="true"] .lazy-image { display: none; }
 [data-slow-network="true"] .poll-interval { animation-duration: 30s; }
 [data-low-battery="true"] .animate-pulse { animation: none; }
+
+/* ── Card utility class ── */
+.card {
+  background: var(--color-card);
+  border: 1px solid rgba(139, 92, 246, 0.20);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}

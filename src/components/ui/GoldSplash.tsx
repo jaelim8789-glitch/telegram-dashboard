@@ -47,8 +47,8 @@ export function GoldSplash({ show, onDone }: GoldSplashProps) {
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               className="flex h-24 w-24 items-center justify-center rounded-3xl"
               style={{
-                background: "linear-gradient(135deg, #D4AF37, #a08030)",
-                boxShadow: "0 0 60px rgba(212,175,55,0.3), 0 0 120px rgba(212,175,55,0.15)",
+                background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
+                boxShadow: "0 0 60px rgba(139,92,246,0.3), 0 0 120px rgba(139,92,246,0.15)",
               }}
             >
               <Sparkles className="h-10 w-10 text-white" />
@@ -59,7 +59,7 @@ export function GoldSplash({ show, onDone }: GoldSplashProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="mt-6 text-lg font-serif font-bold tracking-wide"
-            style={{ color: "#D4AF37" }}
+            style={{ color: "#8B5CF6" }}
           >
             TeleMon
           </motion.p>
@@ -67,7 +67,7 @@ export function GoldSplash({ show, onDone }: GoldSplashProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-1 text-xs text-[#786e60]"
+            className="mt-1 text-xs text-app-text-muted"
           >
             AI 운영 플랫폼
           </motion.p>
@@ -77,7 +77,7 @@ export function GoldSplash({ show, onDone }: GoldSplashProps) {
             transition={{ delay: 1.5 }}
             className="mt-8"
           >
-            <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#D4AF37" }} />
+            <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#8B5CF6" }} />
           </motion.div>
         </motion.div>
       )}
