@@ -1380,6 +1380,7 @@ export function DashboardTab() {
             </div>
           ) : (
             <div className="relative">
+            <div className="relative">
               <div className="overflow-x-auto -mx-1">
                 <Table>
                   <TableHeader>
@@ -1435,6 +1436,9 @@ export function DashboardTab() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Scroll hint: right-edge gradient overlay */}
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-app-card via-app-card/60 to-transparent" />
+            </div>
               <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-app-bg to-transparent" />
             </div>
           )}

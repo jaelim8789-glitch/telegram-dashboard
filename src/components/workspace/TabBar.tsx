@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
   CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
-  Share2, TrendingUp, Sparkles, Building2,
+  Share2, TrendingUp, Sparkles, Building2, ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
@@ -15,6 +15,8 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 import { getSafeAreaStyle } from "@/lib/safeArea";
 import { useTouchGesture } from "@/hooks/useTouchGesture"; // 터치 제스처 훅 추가
+import { useRouter } from "next/navigation"; // 라우터 추가
+import { TabPeek } from "@/components/ui/TabPeek"; // 탭 미리보기 컴포넌트 추가
 import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -60,73 +62,95 @@ const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "group", "myai", "profile"];
 
 function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
+  
+  // 탭 미리보기 내용
+  const previewContent = (
+    <div className="space-y-2">
+      <div className="text-xs text-app-text-muted">{tab.description || tab.label} 탭 정보</div>
+      <div className="text-xs">
+        {tab.id === 'dashboard' && '대시보드 요약 정보가 여기에 표시됩니다.'}
+        {tab.id === 'autoreply' && '자동 응답 규칙 수와 최근 활동이 표시됩니다.'}
+        {tab.id === 'send' && '최근 발송 건수와 성공률이 표시됩니다.'}
+        {tab.id === 'group' && '그룹 수와 최근 활동이 표시됩니다.'}
+        {tab.id === 'myai' && 'AI 사용량과 최근 챗 기록이 표시됩니다.'}
+        {tab.id !== 'dashboard' && tab.id !== 'autoreply' && tab.id !== 'send' && tab.id !== 'group' && tab.id !== 'myai' && '탭 미리보기 내용이 여기에 표시됩니다.'}
+      </div>
+    </div>
+  );
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      role="tab"
-      aria-selected={active}
-      aria-current={active ? "page" : undefined}
-      tabIndex={active ? 0 : -1}
-      data-tour={`nav-${tab.id}`}
-      className={cn(
-        "focus-ring relative flex items-center justify-center transition-all duration-200",
-        mobile
-          ? "flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2 px-1" // 터치 영역 확대를 위해 px-1 추가
-          : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
-        active
-          ? "text-[var(--color-accent)]"
-          : "text-app-text-muted hover:text-app-text-secondary"
-      )}
+    <TabPeek 
+      previewContent={previewContent} 
+      tabName={tab.label} 
+      className={mobile ? "flex-1 min-h-[60px]" : ""}
     >
-      {Icon && (
-        <Icon className={cn(
-          "transition-all duration-200",
-          mobile ? "h-6 w-6" : "h-3.5 w-3.5", // 모바일 아이콘 크기 증가
-          active ? "text-[var(--color-accent)]" : "text-app-text-subtle"
-        )} />
-      )}
-      <span className={mobile ? "text-[11px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
-      <span className={cn(mobile ? "hidden" : "sm:hidden")}>{tab.shortLabel ?? tab.label}</span>
-      {badge != null && badge > 0 && (
-        <span className={cn(
-          "flex items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white",
-          mobile ? "absolute -top-0.5 right-1/4 h-5 min-w-[20px]" : "h-4 min-w-[16px]"
-        )}>
-          {badge > 99 ? "99+" : badge}
-        </span>
-      )}
-      {active && !mobile && (
-        <motion.span
-          layoutId="tab-underline"
-          transition={{ type: "spring", stiffness: 500, damping: 40 }}
-          className="absolute inset-x-3 bottom-0 h-[2px] rounded-full"
-          style={{ background: "var(--color-accent)" }}
-        />
-      )}
-      {mobile && (
-        <>
-          {/* Active indicator: gold top line */}
-          <motion.span
-            layoutId="mobile-tab-active"
-            transition={{ type: "spring", stiffness: 500, damping: 40 }}
-            className={cn(
-              "absolute top-0 w-8 h-0.5 rounded-full",
-              active ? "opacity-100" : "opacity-0"
-            )}
-            style={{
-              background: active ? "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))" : undefined,
-              boxShadow: active ? "0 0 8px var(--color-accent-glow)" : undefined,
-            }}
-          />
-          {/* Background highlight */}
-          <span className={cn(
-            "absolute inset-1.5 rounded-xl transition-all duration-200",
-            active ? "bg-[var(--color-accent)]/8 shadow-sm" : "hover:bg-app-card-hover/50"
+      <button
+        type="button"
+        onClick={onSelect}
+        role="tab"
+        aria-selected={active}
+        aria-current={active ? "page" : undefined}
+        tabIndex={active ? 0 : -1}
+        data-tour={`nav-${tab.id}`}
+        className={cn(
+          "focus-ring relative flex items-center justify-center transition-all duration-200",
+          mobile
+            ? "flex-col gap-0.5 flex-1 min-h-[60px] py-2 px-1" // 터치 영역 확대를 위해 px-1 추가
+            : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
+          active
+            ? "text-[var(--color-accent)]"
+            : "text-app-text-muted hover:text-app-text-secondary"
+        )}
+      >
+        {Icon && (
+          <Icon className={cn(
+            "transition-all duration-200",
+            mobile ? "h-6 w-6" : "h-3.5 w-3.5", // 모바일 아이콘 크기 증가
+            active ? "text-[var(--color-accent)]" : "text-app-text-subtle"
           )} />
-        </>
-      )}
-    </button>
+        )}
+        <span className={mobile ? "text-[11px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
+        <span className={cn(mobile ? "hidden" : "sm:hidden")}>{tab.shortLabel ?? tab.label}</span>
+        {badge != null && badge > 0 && (
+          <span className={cn(
+            "flex items-center justify-center rounded-full bg-app-danger px-1 text-[10px] font-bold leading-none text-white",
+            mobile ? "absolute -top-0.5 right-1/4 h-5 min-w-[20px]" : "h-4 min-w-[16px]"
+          )}>
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+        {active && !mobile && (
+          <motion.span
+            layoutId="tab-underline"
+            transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            className="absolute inset-x-3 bottom-0 h-[2px] rounded-full"
+            style={{ background: "var(--color-accent)" }}
+          />
+        )}
+        {mobile && (
+          <>
+            {/* Active indicator: gold top line */}
+            <motion.span
+              layoutId="mobile-tab-active"
+              transition={{ type: "spring", stiffness: 500, damping: 40 }}
+              className={cn(
+                "absolute top-0 w-8 h-0.5 rounded-full",
+                active ? "opacity-100" : "opacity-0"
+              )}
+              style={{
+                background: active ? "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))" : undefined,
+                boxShadow: active ? "0 0 8px var(--color-accent-glow)" : undefined,
+              }}
+            />
+            {/* Background highlight */}
+            <span className={cn(
+              "absolute inset-1.5 rounded-xl transition-all duration-200",
+              active ? "bg-[var(--color-accent)]/8 shadow-sm" : "hover:bg-app-card-hover/50"
+            )} />
+          </>
+        )}
+      </button>
+    </TabPeek>
   );
 }
 
