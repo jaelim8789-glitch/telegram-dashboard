@@ -15,40 +15,62 @@ function subscribeToOnline(callback: () => void): () => void {
   };
 }
 
+function safeSessionGet(key: string): string | null {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionSet(key: string, value: string): void {
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(key, value);
+    }
+  } catch {}
+}
+
+function safeSessionRemove(key: string): void {
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(key);
+    }
+  } catch {}
+}
+
 export function useOnlineStatus() {
   const online = useSyncExternalStore(subscribeToOnline, getOnlineStatus, () => true);
 
-  const snapshot = useSyncExternalStore(
+  const wasOffline = useSyncExternalStore(
     subscribeToOnline,
-    () => {
-      const raw = sessionStorage.getItem("telemon:wasOffline");
-      return raw === "true";
-    },
+    () => safeSessionGet("telemon:wasOffline") === "true",
     () => false,
   );
 
   const lastOnline = useSyncExternalStore(
     subscribeToOnline,
     () => {
-      const raw = sessionStorage.getItem("telemon:lastOnline");
+      const raw = safeSessionGet("telemon:lastOnline");
       return raw ? new Date(raw).toISOString() : null;
     },
     () => null,
   );
 
   if (online) {
-    const wasOffline = sessionStorage.getItem("telemon:wasOffline") === "true";
-    if (wasOffline) {
-      sessionStorage.removeItem("telemon:wasOffline");
+    const stored = safeSessionGet("telemon:wasOffline") === "true";
+    if (stored) {
+      safeSessionRemove("telemon:wasOffline");
     }
-    sessionStorage.setItem("telemon:lastOnline", new Date().toISOString());
+    safeSessionSet("telemon:lastOnline", new Date().toISOString());
   } else {
-    sessionStorage.setItem("telemon:wasOffline", "true");
+    safeSessionSet("telemon:wasOffline", "true");
   }
 
   return {
     online,
-    wasOffline: snapshot,
+    wasOffline,
     lastOnline: lastOnline ? new Date(lastOnline) : null,
   };
 }

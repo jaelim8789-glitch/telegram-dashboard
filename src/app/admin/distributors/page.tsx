@@ -104,6 +104,7 @@ export default function DistributorsPage() {
 }
 
 function DistributorsContent() {
+  type SortKey = "referral_count" | "total_commission" | "total_revenue" | "total_payout" | null;
   const { toast } = useToast();
   const [distributors, setDistributors] = useState<Distributor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -306,7 +307,7 @@ function DistributorsContent() {
           <div className="space-y-2">
             {[1,2,3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <EmptyState icon={Users} title="총판이 없습니다" description="아직 등록된 총판이 없습니다." />
         ) : (
           <div className="overflow-x-auto">
@@ -315,17 +316,18 @@ function DistributorsContent() {
                 <tr className="border-b border-app-border text-app-text-muted">
                   <th className="px-2 py-2 text-left">전화번호</th>
                   <th className="px-2 py-2 text-left">코드</th>
-                  <th className="px-2 py-2 text-right">유치</th>
-                  <th className="px-2 py-2 text-right">매출</th>
-                  <th className="px-2 py-2 text-right">커미션</th>
-                  <th className="px-2 py-2 text-right">지급</th>
+                  <th className="px-2 py-2 text-right">유치{sortBy === "referral_count" ? <span className="ml-0.5">↑</span> : ""}</th>
+                  <th className="px-2 py-2 text-right">매출{sortBy === "total_revenue" ? <span className="ml-0.5">↑</span> : ""}</th>
+                  <th className="px-2 py-2 text-right">커미션{sortBy === "total_commission" ? <span className="ml-0.5">↑</span> : ""}</th>
+                  <th className="px-2 py-2 text-right">지급{sortBy === "total_payout" ? <span className="ml-0.5">↑</span> : ""}</th>
+                  <th className="px-2 py-2 text-center">메모</th>
                   <th className="px-2 py-2 text-center">상태</th>
                   <th className="px-2 py-2 text-center">수수료율</th>
                   <th className="px-2 py-2 text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
-                {filtered.map((d) => (
+                {sorted.map((d) => (
                   <tr key={d.tenant_id} className="hover:bg-app-card-hover/50 transition-colors">
                     <td className="px-2 py-2.5 font-medium text-app-text">{d.phone}</td>
                     <td className="px-2 py-2.5 font-mono text-app-text-muted">{d.referral_code}</td>
@@ -333,6 +335,11 @@ function DistributorsContent() {
                     <td className="px-2 py-2.5 text-right text-app-text">{d.total_revenue.toLocaleString()}</td>
                     <td className="px-2 py-2.5 text-right text-violet-500">{d.total_commission.toLocaleString()}</td>
                     <td className="px-2 py-2.5 text-right text-app-text-muted">{d.total_payout.toLocaleString()}</td>
+                    <td className="px-2 py-2.5">
+                      <input type="text" value={memos[d.tenant_id] ?? ""}
+                        onChange={(e) => { const v = e.target.value; setMemos({...memos, [d.tenant_id]: v}); }}
+                        placeholder="메모" className="w-24 rounded border border-app-border/60 bg-app-bg/50 px-1 py-0.5 text-[10px] text-app-text placeholder:text-app-text-subtle outline-none" />
+                    </td>
                     <td className="px-2 py-2.5 text-center">
                       <Badge tone={d.status === "suspended" ? "danger" : "success"}>
                         {d.status === "suspended" ? "정지" : "활성"}
@@ -378,9 +385,18 @@ function DistributorsContent() {
         title={<div className="flex items-center gap-2"><DollarSign className="h-4 w-4" /> 지급 대기 목록</div>}
         description="수동 검토 후 지급 승인 또는 거절 처리"
       >
+        <div className="mb-3 flex gap-1.5">
+          {["all","today","7d","30d"].map((key) => (
+            <button key={key} onClick={() => setDateRange(key)}
+              className={cn("rounded px-2.5 py-1 text-[10px] font-medium transition-colors",
+                dateRange === key ? "bg-app-primary/15 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover")}>
+              {key === "all" ? "전체" : key === "today" ? "오늘" : key === "7d" ? "7일" : "30일"}
+            </button>
+          ))}
+        </div>
         {payoutsLoading ? (
           <Skeleton className="h-20 w-full rounded-xl" />
-        ) : pendingPayouts.length === 0 ? (
+        ) : filteredPayouts.length === 0 ? (
           <EmptyState icon={CheckCircle2} title="지급 대기 없음" description="모든 정산이 처리되었습니다." />
         ) : (
           <div className="overflow-x-auto">
@@ -395,7 +411,7 @@ function DistributorsContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
-                {pendingPayouts.map((p) => (
+                {filteredPayouts.map((p) => (
                   <tr key={p.id} className="hover:bg-app-card-hover/50 transition-colors">
                     <td className="px-2 py-2.5 font-medium text-app-text">{p.referrer_phone}</td>
                     <td className="px-2 py-2.5 text-right font-semibold text-violet-500">{p.amount.toLocaleString()}원</td>
@@ -429,9 +445,9 @@ function DistributorsContent() {
   );
 }
 
-function SummaryCard({ icon: Icon, label, value, color, suffix }: { icon: any; label: string; value: string | number; color: string; suffix?: string }) {
+function SummaryCard({ icon: Icon, label, value, color, suffix, onClick }: { icon: any; label: string; value: string | number; color: string; suffix?: string; onClick?: () => void }) {
   return (
-    <div className="rounded-xl border border-app-border/50 bg-app-card p-3">
+    <div className={cn("rounded-xl border border-app-border/50 bg-app-card p-3", onClick && "cursor-pointer hover:bg-app-card-hover transition-colors")} onClick={onClick}>
       <div className="flex items-center gap-2 mb-1">
         <Icon className={`h-4 w-4 ${color}`} />
         <span className="text-[10px] text-app-text-muted">{label}</span>
