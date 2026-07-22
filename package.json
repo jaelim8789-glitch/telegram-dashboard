@@ -129,5 +129,8 @@
     "webpack-bundle-analyzer": "^4.10.1",
     "glob": "^10.3.10",
     "eslint-plugin-import": "^2.31.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
   }
 }
