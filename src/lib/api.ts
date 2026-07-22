@@ -87,7 +87,6 @@ export async function authHeaders(): Promise<Record<string, string>> {
 
 function extractDetailMessage(body: unknown): string | null {
   if (typeof body === "string") return body.trim() || null;
-}
 
   if (!body || typeof body !== "object" || !("detail" in body)) return null;
   const detail = (body as { detail: unknown }).detail;
@@ -257,22 +256,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         continue;
       }
 
-      // Last attempt failed — surface the final network error
-      if (err instanceof DOMException && err.name === "AbortError") {
-        throw new ApiError(
-      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-      throw new ApiError(detail, res.status, false);
-    }
-
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
-  } catch (err) {
-    // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
-    if (err instanceof ApiError && !err.isNetworkError) {
-      throw err;
-    }
-
-    // First attempt failed — surface the error to the UI immediately
+      // First attempt failed — surface the error to the UI immediately
     const firstError = err instanceof DOMException && err.name === "AbortError"
       ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
       : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
@@ -288,7 +272,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
           const hasJsonBody = typeof init?.body === "string";
           const defaultHeaders: Record<string, string> = {
             ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-            ...authHeaders(),
+            ...(await authHeaders()),
           };
           const res = await fetch(`${API_BASE_URL}${path}`, {
             ...init,
@@ -315,6 +299,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } finally {
     clearTimeout(timeoutId);
   }
+  }
+  throw new ApiError("요청이 최대 재시도 횟수를 초과했습니다.", undefined, true);
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
