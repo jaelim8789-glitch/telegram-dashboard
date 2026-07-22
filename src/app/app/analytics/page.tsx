@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
-import { Send, MessageSquare, Users, UserPlus, RefreshCw } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, RefreshCw, Zap, Database } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import * as api from "@/lib/api";
 import { InlineError } from "@/components/ui/InlineError";
 import type { DateRangeKey, StatCardData, LineChartPoint, DonutSegment, TopChatRoom } from "@/components/analytics/mockData";
@@ -69,8 +70,10 @@ export default function AnalyticsPage() {
     donutTotal: number;
     topChatRooms: TopChatRoom[];
   } | null>(null);
+  const [isLive, setIsLive] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [dataKey, setDataKey] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const transformData = useCallback((result: Awaited<ReturnType<typeof api.fetchAnalyticsDashboard>>) => {
@@ -99,12 +102,16 @@ export default function AnalyticsPage() {
       if (result) {
         setApiData(transformData(result));
         setLastUpdated(new Date());
+        setIsLive(true);
+        setDataKey((k) => k + 1);
       } else if (showLoading) {
         setApiData(null);
+        setIsLive(false);
       }
     } catch (err) {
       if (showLoading) {
         setError(err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.");
+        setIsLive(false);
       }
     } finally {
       setLoading(false);
@@ -135,6 +142,29 @@ export default function AnalyticsPage() {
     setShowDatePicker(false);
   }, []);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      switch (e.key.toLowerCase()) {
+        case "r":
+          e.preventDefault();
+          load(false);
+          break;
+        case "e":
+          e.preventDefault();
+          document.querySelector<HTMLButtonElement>('[data-export-trigger]')?.click();
+          break;
+        case "1": e.preventDefault(); handleDateRangeChange("today"); break;
+        case "2": e.preventDefault(); handleDateRangeChange("7days"); break;
+        case "3": e.preventDefault(); handleDateRangeChange("30days"); break;
+        case "4": e.preventDefault(); handleDateRangeChange("thisMonth"); break;
+        case "5": e.preventDefault(); handleDateRangeChange("custom"); break;
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [load, handleDateRangeChange]);
+
   const statCards = useMemo(() => apiData?.statCards ?? MOCK_STAT_CARDS, [apiData]);
   const lineData = useMemo(() => apiData?.lineData ?? MOCK_LINE_CHART_DATA, [apiData]);
   const donutData = useMemo(() => apiData?.donutData ?? MOCK_DONUT_DATA, [apiData]);
@@ -148,19 +178,19 @@ export default function AnalyticsPage() {
         new Date()
       );
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const exportData = useMemo(() => ({ statCards, lineData, donutData, topChatRooms, dateDisplay }), [statCards, lineData, donutData, topChatRooms, dateDisplay]);
 
   if (loading && !apiData) {
     return (
       <div className="flex flex-col gap-5 pb-8">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3">
           <div>
             <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
             <p className="text-xs text-app-text-muted">{dateDisplay}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
-            <ExportDropdown />
+            <ExportDropdown {...exportData} />
           </div>
         </header>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -178,14 +208,14 @@ export default function AnalyticsPage() {
   if (error && !apiData) {
     return (
       <div className="flex flex-col gap-5 pb-8">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3">
           <div>
             <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
             <p className="text-xs text-app-text-muted">{dateDisplay}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
-            <ExportDropdown />
+            <ExportDropdown {...exportData} />
           </div>
         </header>
         <InlineError title="데이터를 불러오지 못했습니다" action={<button onClick={() => load(true)} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg">다시 시도</button>}>
@@ -197,10 +227,22 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3 -mt-3">
         <div>
-          <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
           <div className="flex items-center gap-2">
+            <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                isLive
+                  ? "bg-green-500/10 text-green-400"
+                  : "bg-amber-500/10 text-amber-400"
+              }`}
+            >
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${isLive ? "bg-green-400 animate-pulse" : "bg-amber-400"}`} />
+              {isLive ? "실시간" : "샘플"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
             <p className="text-xs text-app-text-muted">{dateDisplay}</p>
             {lastUpdated && (
               <span className="text-xs text-app-text-muted/60">
@@ -215,11 +257,11 @@ export default function AnalyticsPage() {
             onClick={() => load(false)}
             disabled={refreshing}
             className={`p-1.5 rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors ${refreshing ? "animate-spin" : ""}`}
-            title="새로고침"
+            title="새로고침 (R)"
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
-          <ExportDropdown />
+          <ExportDropdown {...exportData} />
           {showDatePicker && (
             <CustomDatePicker
               startDate={customStart}
@@ -250,14 +292,33 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <LineChartCard data={lineData} />
-        </div>
-        <DonutChartCard data={donutData} total={donutTotal} />
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={dataKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+        >
+          <div className="lg:col-span-2">
+            <LineChartCard data={lineData} />
+          </div>
+          <DonutChartCard data={donutData} total={donutTotal} />
+        </motion.div>
+      </AnimatePresence>
 
-      <Top5Table data={topChatRooms} />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={dataKey}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.25, delay: 0.05 }}
+        >
+          <Top5Table data={topChatRooms} />
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
