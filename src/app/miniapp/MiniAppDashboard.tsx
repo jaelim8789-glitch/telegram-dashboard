@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, memo, useCallback, useMemo, useRef } from "react";
+import { motion, useSpring, useTransform } from "framer-motion";
 import { Send, CheckCircle2, Coins, Clock, Users, Loader2, TrendingUp, Plug, Plus, RefreshCw, CircleAlert, WifiOff, Sparkles, Bot, ChevronRight, User as UserIcon, Zap } from "lucide-react";
 import * as api from "@/lib/api";
 import { fetchTokenBalance, fetchRecentBroadcasts } from "@/lib/api-miniapp";
@@ -20,7 +21,7 @@ const DEFAULT_STAFF: PixelOfficeStaff[] = [
   { id: "telemon-ai", name: "AI 텔레몬", emoji: "🤖", status: "online", role: "자동 응답" },
 ];
 
-const StatCard = memo(function StatCard({ type, value, onClick }: { type: string; value: string; onClick?: () => void }) {
+const StatCard = memo(function StatCard({ type, value, refreshKey, onClick }: { type: string; value: string; refreshKey?: number; onClick?: () => void }) {
   const configs: Record<string, { icon: typeof Send; label: string; bg: string; iconBg: string }> = {
     activeAccounts: { icon: Users, label: "활성 계정", bg: "from-emerald-600/20 to-emerald-800/10", iconBg: "bg-emerald-500" },
     queueCount: { icon: Clock, label: "대기", bg: "from-blue-600/20 to-blue-800/10", iconBg: "bg-blue-500" },
@@ -29,13 +30,22 @@ const StatCard = memo(function StatCard({ type, value, onClick }: { type: string
   };
   const s = configs[type] || configs.activeAccounts;
   const Icon = s.icon;
+  const parsedValue = parseInt(value, 10) || 0;
+  const spring = useSpring(0, { stiffness: 80, damping: 20 });
+  const displayValue = useTransform(spring, (v) => String(Math.round(v)));
+  const prevVal = useRef(0);
+  useEffect(() => {
+    spring.set(parsedValue);
+    prevVal.current = parsedValue;
+  }, [refreshKey, spring, parsedValue]);
+
   return (
     <button onClick={onClick} className={`rounded-2xl p-3 flex flex-col gap-1 bg-gradient-to-br ${s.bg} text-left active:scale-[0.97] transition-transform`}>
       <div className="flex items-center gap-1.5">
         <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${s.iconBg}`}><Icon className="h-3.5 w-3.5 text-white" /></div>
         <span className="text-[10px] font-medium opacity-70" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{s.label}</span>
       </div>
-      <span className="text-xl font-bold tabular-nums">{value}</span>
+      <motion.span className="text-xl font-bold tabular-nums">{displayValue}</motion.span>
     </button>
   );
 });
@@ -155,10 +165,10 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
       <WeeklySummaryCard />
 
       <div className="grid grid-cols-4 gap-2">
-        <StatCard type="activeAccounts" value={`${state.activeAccounts}`} onClick={() => handleTabChange("profile")} />
-        <StatCard type="queueCount" value={`${state.queueCount}`} />
-        <StatCard type="tokenBalance" value={String(state.tokenBalance)} />
-        <StatCard type="recentBroadcasts" value={`${state.recentBroadcasts.length}`} />
+        <StatCard type="activeAccounts" value={`${state.activeAccounts}`} refreshKey={state.lastUpdated?.getTime()} onClick={() => handleTabChange("profile")} />
+        <StatCard type="queueCount" value={`${state.queueCount}`} refreshKey={state.lastUpdated?.getTime()} />
+        <StatCard type="tokenBalance" value={String(state.tokenBalance)} refreshKey={state.lastUpdated?.getTime()} />
+        <StatCard type="recentBroadcasts" value={`${state.recentBroadcasts.length}`} refreshKey={state.lastUpdated?.getTime()} />
       </div>
 
       {state.todayTotal > 0 && (

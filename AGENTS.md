@@ -33,7 +33,7 @@ Applies to Claude Code, Kiro, Cline, OpenCode, and Codex (and any other AGENTS.m
 - `telegram-dashboard-backend/` — FastAPI backend. **Separate git repo**: `telegram-dashboard-backend.git`. Commit and push it independently of the frontend.
 - Git worktrees are at `c:\Dev\TeleMon-*` — see the table above. Always use the appropriate worktree.
 - Current workspace: `C:\Backups\emergency-20260718-211528\Dev\TeleMon` (emergency session; see [WORKTREE_WORKFLOW.md §1.1](WORKTREE_WORKFLOW.md#1-worktree-구조) footnote for how this interacts with the canonical `c:\Dev\TeleMon-*` worktrees).
-- Production is a single VPS running Docker Compose (`api.telemon.online`, `app.telemon.online`) — **not** Render, despite `render.yaml` existing in the backend repo. See Production deployment below.
+- Production is a single VPS (IP: `130.94.32.152`) running Docker Compose (`api.telemon.online`, `app.telemon.online`) — **not** Render, despite `render.yaml` existing in the backend repo. See Production deployment below.
 
 ## Core rule: MCP-first
 
