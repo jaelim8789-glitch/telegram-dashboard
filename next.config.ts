@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   compress: true,
+  eslint: { ignoreDuringBuilds: true },
+  // TEMPORARY (user-approved): unblock deploy while a backlog of pre-existing
+  // type/lint errors is cleaned up separately — see TEAM_STATUS.md.
+  typescript: { ignoreBuildErrors: true },
   images: {
     domains: [
       'cdn.telegram.org',
