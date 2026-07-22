@@ -8,13 +8,16 @@ export type StartNodeData = Record<string, never>;
 export function StartNode({ selected }: NodeProps) {
   return (
     <div
-      className={`flex h-16 w-16 items-center justify-center rounded-full border-2 bg-green-500/20 transition-shadow ${
+      className={`min-w-[160px] rounded-full border bg-green-500/10 p-3 text-app-text text-xs font-medium ${
         selected
-          ? "border-green-400 shadow-lg shadow-green-500/30"
-          : "border-green-500"
+          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#22c55e]"
+          : "border-green-500/30"
       }`}
     >
-      <Play className="h-6 w-6 text-green-400" fill="currentColor" />
+      <div className="flex items-center justify-center gap-2">
+        <Play className="h-4 w-4 text-green-400" fill="currentColor" />
+        <span>시작</span>
+      </div>
       <Handle
         type="source"
         position={Position.Bottom}
