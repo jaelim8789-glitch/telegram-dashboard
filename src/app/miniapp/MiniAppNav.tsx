@@ -1,7 +1,7 @@
 "use client";
 
-import { memo } from "react";
-import { LayoutDashboard, MessageSquare, Send, User, RefreshCw } from "lucide-react";
+import { memo, useRef } from "react";
+import { LayoutDashboard, MessageSquare, Send, User } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export type MiniAppTab = "dashboard" | "chat" | "send" | "profile";
