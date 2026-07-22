@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
-import { Send, MessageSquare, Users, UserPlus } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, RefreshCw } from "lucide-react";
 import * as api from "@/lib/api";
 import { InlineError } from "@/components/ui/InlineError";
 import type { DateRangeKey, StatCardData, LineChartPoint, DonutSegment, TopChatRoom } from "@/components/analytics/mockData";
@@ -32,8 +32,14 @@ const DONUT_LABELS = ["개인", "그룹", "채널"];
 
 const STAT_ICONS = [Send, MessageSquare, Users, UserPlus] as const;
 
+const REFRESH_INTERVAL_MS = 30000;
+
 function formatDateDisplay(start: Date, end: Date): string {
   return `${format(start, "yyyy.MM.dd")} - ${format(end, "yyyy.MM.dd")}`;
+}
+
+function formatLastUpdated(date: Date): string {
+  return format(date, "HH:mm:ss");
 }
 
 function getPeriodDays(key: DateRangeKey): number {
@@ -63,38 +69,55 @@ export default function AnalyticsPage() {
     donutTotal: number;
     topChatRooms: TopChatRoom[];
   } | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const transformData = useCallback((result: Awaited<ReturnType<typeof api.fetchAnalyticsDashboard>>) => {
+    if (!result) return null;
+    return {
+      statCards: [
+        { label: "총 발송", value: result.stat_cards.total_sent.toLocaleString(), change: result.stat_cards.total_sent_change, positive: result.stat_cards.total_sent_change >= 0 },
+        { label: "응답률", value: `${result.stat_cards.response_rate}%`, change: result.stat_cards.response_rate_change, positive: result.stat_cards.response_rate_change >= 0 },
+        { label: "활성 채팅방", value: result.stat_cards.active_chat_rooms.toLocaleString(), change: result.stat_cards.active_chat_rooms_change, positive: result.stat_cards.active_chat_rooms_change >= 0 },
+        { label: "신규 가입자", value: result.stat_cards.new_subscribers.toLocaleString(), change: result.stat_cards.new_subscribers_change, positive: result.stat_cards.new_subscribers_change >= 0 },
+      ],
+      lineData: result.timeline.map((p) => ({ date: p.date, 발송: p.sent, 응답: p.responses })),
+      donutData: result.distribution.map((s, i) => ({ name: DONUT_LABELS[i] ?? s.name, value: s.value, color: DONUT_COLORS[i] ?? "#8b5cf6" })),
+      donutTotal: result.total_chat_rooms,
+      topChatRooms: result.top_chat_rooms,
+    };
+  }, []);
+
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    setRefreshing(true);
     setError(null);
     try {
       const periodDays = dateRange === "custom" ? null : String(getPeriodDays(dateRange));
       const result = await api.fetchAnalyticsDashboard(periodDays ?? undefined);
       if (result) {
-        setApiData({
-          statCards: [
-            { label: "총 발송", value: result.stat_cards.total_sent.toLocaleString(), change: result.stat_cards.total_sent_change, positive: result.stat_cards.total_sent_change >= 0 },
-            { label: "응답률", value: `${result.stat_cards.response_rate}%`, change: result.stat_cards.response_rate_change, positive: result.stat_cards.response_rate_change >= 0 },
-            { label: "활성 채팅방", value: result.stat_cards.active_chat_rooms.toLocaleString(), change: result.stat_cards.active_chat_rooms_change, positive: result.stat_cards.active_chat_rooms_change >= 0 },
-            { label: "신규 가입자", value: result.stat_cards.new_subscribers.toLocaleString(), change: result.stat_cards.new_subscribers_change, positive: result.stat_cards.new_subscribers_change >= 0 },
-          ],
-          lineData: result.timeline.map((p) => ({ date: p.date, 발송: p.sent, 응답: p.responses })),
-          donutData: result.distribution.map((s, i) => ({ name: DONUT_LABELS[i] ?? s.name, value: s.value, color: DONUT_COLORS[i] ?? "#8b5cf6" })),
-          donutTotal: result.total_chat_rooms,
-          topChatRooms: result.top_chat_rooms,
-        });
-      } else {
+        setApiData(transformData(result));
+        setLastUpdated(new Date());
+      } else if (showLoading) {
         setApiData(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.");
+      if (showLoading) {
+        setError(err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.");
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [dateRange, customStart, customEnd]);
+  }, [dateRange, customStart, customEnd, transformData]);
 
   useEffect(() => {
-    load();
+    load(true);
+    intervalRef.current = setInterval(() => load(false), REFRESH_INTERVAL_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [load]);
 
   const handleDateRangeChange = useCallback((key: DateRangeKey) => {
@@ -124,6 +147,8 @@ export default function AnalyticsPage() {
         (() => { const d = new Date(); d.setDate(d.getDate() - getPeriodDays(dateRange)); return d; })(),
         new Date()
       );
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   if (loading && !apiData) {
     return (
@@ -163,7 +188,7 @@ export default function AnalyticsPage() {
             <ExportDropdown />
           </div>
         </header>
-        <InlineError title="데이터를 불러오지 못했습니다" action={<button onClick={load} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg">다시 시도</button>}>
+        <InlineError title="데이터를 불러오지 못했습니다" action={<button onClick={() => load(true)} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg">다시 시도</button>}>
           {error}
         </InlineError>
       </div>
@@ -175,10 +200,25 @@ export default function AnalyticsPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
-          <p className="text-xs text-app-text-muted">{dateDisplay}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-app-text-muted">{dateDisplay}</p>
+            {lastUpdated && (
+              <span className="text-xs text-app-text-muted/60">
+                · 업데이트: {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3 relative">
           <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
+          <button
+            onClick={() => load(false)}
+            disabled={refreshing}
+            className={`p-1.5 rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors ${refreshing ? "animate-spin" : ""}`}
+            title="새로고침"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
           <ExportDropdown />
           {showDatePicker && (
             <CustomDatePicker
