@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Ban, CheckSquare, Clock, Layers, Plug, RefreshCw, Search, Settings, ShieldAlert, Square, UserPlus, Users, WifiOff, X } from "lucide-react";
+import {
+  Ban, BarChart3, Bot, CheckSquare, Clock, Layers, LayoutDashboard,
+  MessageSquare, Plug, RefreshCw, Search, Send, Settings, ShieldAlert,
+  Sparkles, Square, UserPlus, Users, WifiOff, Workflow, X, Zap,
+} from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { AccountCard } from "@/components/sidebar/AccountCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -14,7 +18,7 @@ import { GroupManagementModal } from "@/components/sidebar/GroupManagementModal"
 import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import { useToast } from "@/components/ui/Toast";
-import type { AccountHealthItem, AccountHealthState } from "@/types";
+import type { AccountHealthItem, AccountHealthState, TabId } from "@/types";
 
 const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: typeof Ban | null }[] = [
   { key: "all", label: "전체", icon: null },
@@ -24,6 +28,18 @@ const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: ty
   { key: "error", label: "오류", icon: ShieldAlert },
   { key: "not_configured", label: "미설정", icon: WifiOff },
   { key: "banned", label: "차단", icon: Ban },
+];
+
+const NAV_ITEMS: { id: TabId | "chat" | "macro" | "analysis" | "ai"; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
+  { id: "dashboard", label: "대시보드", icon: LayoutDashboard },
+  { id: "group", label: "계정관리", icon: Users, badge: 0 },
+  { id: "chat", label: "채팅관리", icon: MessageSquare },
+  { id: "send", label: "발송", icon: Send },
+  { id: "register", label: "자동응답", icon: Bot },
+  { id: "macro", label: "매크로", icon: Workflow },
+  { id: "analysis", label: "분석", icon: BarChart3 },
+  { id: "ai", label: "AI비서", icon: Sparkles },
+  { id: "profile", label: "설정", icon: Settings },
 ];
 
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
@@ -36,6 +52,9 @@ export function Sidebar() {
   const selectAccount = useDashboardStore((s) => s.selectAccount);
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
   const removeAccount = useDashboardStore((s) => s.removeAccount);
+  const activeTab = useDashboardStore((s) => s.activeTab);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const navigateToChat = useDashboardStore((s) => s.navigateToChat);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [healthItems, setHealthItems] = useState<AccountHealthItem[]>([]);
   const [healthFilter, setHealthFilter] = useState<AccountHealthState | "all">("all");
@@ -58,7 +77,7 @@ export function Sidebar() {
   const groups = useAccountGroups();
   const { toast } = useToast();
 
-  // ── Batch selection ──
+  // Batch selection
   const [batchMode, setBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchUpdating, setBatchUpdating] = useState(false);
@@ -91,7 +110,6 @@ export function Sidebar() {
         setHealthItems(await api.fetchAccountHealth());
       }
     } catch {
-      // Health poll failures are non-fatal — keep showing the last known state
     }
   }
 
@@ -102,7 +120,6 @@ export function Sidebar() {
     loadHealth();
   }, [accounts]);
 
-  // 30s background polling — uses a tick counter to survive API failures
   useEffect(() => {
     if (bgPollTimer.current) clearTimeout(bgPollTimer.current);
     if (accounts.length === 0) return;
@@ -123,17 +140,14 @@ export function Sidebar() {
 
   const filteredAccounts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    // Apply health filter
     let filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
-    // Apply group filter
     if (groupFilter) {
       const groupAccountIds = new Set(groups.find((g) => g.id === groupFilter)?.accountIds ?? []);
       filtered = filtered.filter((a) => groupAccountIds.has(a.id));
     }
-    // Apply search filter (by name or phone)
     if (query) {
       filtered = filtered.filter((a) => {
         const name = (a.name ?? "").toLowerCase();
@@ -141,7 +155,6 @@ export function Sidebar() {
         return name.includes(query) || phone.includes(query);
       });
     }
-    // Sort: favorites first
     filtered.sort((a, b) => {
       const aFav = isFavorite(a.id) ? 1 : 0;
       const bFav = isFavorite(b.id) ? 1 : 0;
@@ -160,7 +173,6 @@ export function Sidebar() {
     return counts;
   }, [accounts, healthByAccountId]);
 
-  // ── Batch selection callbacks (defined after filteredAccounts) ──
   const selectAllFiltered = useCallback(() => {
     setSelectedIds(new Set(filteredAccounts.map((a) => a.id)));
   }, [filteredAccounts]);
@@ -203,7 +215,7 @@ export function Sidebar() {
 
   async function handleClearError(id: string) {
     try { await api.clearAccountError(id); await fetchAccounts(); }
-    catch { /* icon just stays until next successful refresh */ }
+    catch { }
   }
 
   async function handleResume(id: string) {
@@ -211,52 +223,171 @@ export function Sidebar() {
     catch (err) { toast("error", err instanceof Error ? err.message : "재개에 실패했습니다."); }
   }
 
+  function handleNavClick(item: typeof NAV_ITEMS[number]) {
+    if (item.id === "chat") {
+      navigateToChat();
+    } else if (item.id === "macro" || item.id === "analysis" || item.id === "ai") {
+      setActiveTab("dashboard" as TabId);
+    } else {
+      setActiveTab(item.id as TabId);
+    }
+  }
+
+  function isNavActive(item: typeof NAV_ITEMS[number]): boolean {
+    if (item.id === "chat") return false;
+    if (item.id === "macro" || item.id === "analysis" || item.id === "ai") return false;
+    return activeTab === item.id;
+  }
+
+  const updatedNavItems = NAV_ITEMS.map(item => {
+    if (item.id === "group") {
+      const unhealthyCount = accounts.filter(a => {
+        const h = healthByAccountId[a.id];
+        return h && h.status !== "healthy";
+      }).length;
+      return { ...item, badge: unhealthyCount > 0 ? unhealthyCount : undefined };
+    }
+    return item;
+  });
+
   return (
     <aside className="dashboard-sidebar flex w-64 shrink-0 flex-col">
-      <div className="flex items-center justify-between border-b border-app-border px-4 py-3.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-app-text-muted">
-          계정 목록 (<span className="text-app-primary">{accounts.length}</span>)
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 border-b border-app-border px-4 py-3.5">
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" }}
+        >
+          <Sparkles className="h-4 w-4 text-white" />
+        </div>
+        <span className="text-sm font-bold tracking-tight text-app-text">
+          Tele<span className="text-app-primary">Mon</span>
         </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setBatchMode(!batchMode)}
-            className={cn(
-              "flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-all",
-              batchMode
-                ? "bg-app-primary text-white"
-                : "text-app-text-muted hover:text-app-text hover:bg-app-card"
-            )}
-            aria-label="배치 모드 전환"
-            title={batchMode ? "일괄 선택 종료" : "일괄 선택 모드"}
-          >
-            <CheckSquare className="h-4 w-4" />
-          </button>
-          {groups.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setGroupMgmtOpen(true)}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
-              title="그룹 관리"
-              aria-label="그룹 관리"
-            >
-              <Layers className="h-4 w-4" />
+      </div>
+
+      {/* Search bar */}
+      <div className="relative border-b border-app-border px-3 py-2.5">
+        <Search aria-hidden="true" className="pointer-events-none absolute left-[22px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setShowRecent(true)}
+            onBlur={() => setTimeout(() => setShowRecent(false), 200)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchQuery.trim()) {
+                const q = searchQuery.trim();
+                setRecentSearches(prev => {
+                  const next = [q, ...prev.filter(s => s !== q)].slice(0, 5);
+                  try { localStorage.setItem("telemon-sidebar-recent-searches", JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
+            }}
+            placeholder="계정 검색..."
+            aria-label="계정 검색"
+            className="w-full rounded-xl border border-app-border bg-app-card py-2 pl-8 pr-16 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-all duration-150 focus:border-[#8B5CF6]/50 focus:ring-2 focus:ring-[#8B5CF6]/15"
+          />
+          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md bg-app-border/50 px-1.5 py-0.5 text-[10px] text-app-text-muted">
+            <span className="text-[9px]">⌘</span>K
+          </div>
+          {searchQuery && (
+            <button type="button" onClick={() => { setSearchQuery(""); setRecentSearches([]); try { localStorage.removeItem("telemon-sidebar-recent-searches"); } catch {} }}
+              className="absolute right-10 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
+              title="검색 지우기"
+              aria-label="검색 초기화">
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
+          {showRecent && recentSearches.length > 0 && !searchQuery && (
+            <div className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-app-border bg-app-card shadow-lg z-50 py-1">
+              {recentSearches.map((s) => (
+                <button key={s} type="button" onMouseDown={() => setSearchQuery(s)}
+                  className="w-full px-3 py-1.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors">
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation items */}
+      <nav className="flex flex-col gap-0.5 border-b border-app-border px-2 py-2">
+        {updatedNavItems.map((item) => {
+          const Icon = item.icon;
+          const active = isNavActive(item);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleNavClick(item)}
+              className={cn(
+                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150 group",
+                active
+                  ? "bg-[#8B5CF6]/15 text-app-text"
+                  : "text-app-text-muted hover:bg-[#8B5CF6]/8 hover:text-app-text"
+              )}
+            >
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full" style={{ background: "linear-gradient(180deg, #8B5CF6, #3B82F6)" }} />
+              )}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.label}</span>
+              {item.badge != null && item.badge > 0 && (
+                <span className="ml-auto flex min-w-[20px] h-5 items-center justify-center rounded-full bg-[#8B5CF6]/20 px-1.5 text-[11px] font-semibold text-[#A78BFA]">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Toolbar: batch / group / refresh */}
+      <div className="flex items-center gap-1 border-b border-app-border px-3 py-2">
+        <button
+          type="button"
+          onClick={() => setBatchMode(!batchMode)}
+          className={cn(
+            "flex min-h-8 min-w-8 items-center justify-center rounded-lg transition-all text-xs",
+            batchMode
+              ? "bg-[#8B5CF6]/20 text-[#A78BFA]"
+              : "text-app-text-muted hover:text-app-text hover:bg-app-card"
+          )}
+          aria-label="배치 모드 전환"
+          title={batchMode ? "일괄 선택 종료" : "일괄 선택 모드"}
+        >
+          <CheckSquare className="h-3.5 w-3.5" />
+        </button>
+        {groups.length > 0 && (
           <button
             type="button"
-            onClick={() => { fetchAccounts(); loadHealth(); }}
-            aria-label="계정 새로고침"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+            onClick={() => setGroupMgmtOpen(true)}
+            className="flex min-h-8 min-w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+            title="그룹 관리"
+            aria-label="그룹 관리"
           >
-            <RefreshCw className={`h-4 w-4 ${accountsLoading ? "animate-spin" : ""}`} />
+            <Layers className="h-3.5 w-3.5" />
           </button>
-        </div>
+        )}
+        <span className="flex-1 text-center text-[10px] text-app-text-subtle">
+          계정 <span className="text-app-primary font-medium">{accounts.length}</span>개
+        </span>
+        <button
+          type="button"
+          onClick={() => { fetchAccounts(); loadHealth(); }}
+          aria-label="계정 새로고침"
+          className="flex min-h-8 min-w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
       {/* Batch action bar */}
       {batchMode && (
-        <div className="flex items-center gap-2 border-b border-app-border bg-app-primary-muted/20 px-3 py-2">
+        <div className="flex items-center gap-1.5 border-b border-app-border bg-[#8B5CF6]/5 px-2 py-1.5">
           <button
             type="button"
             onClick={selectAllFiltered}
@@ -269,16 +400,16 @@ export function Sidebar() {
             onClick={clearBatchSelection}
             className="rounded-lg px-2 py-1 text-[10px] font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
           >
-            선택 해제
+            해제
           </button>
           <span className="ml-auto text-[10px] font-medium text-app-text-muted">
-            {selectedIds.size}개 선택됨
+            {selectedIds.size}개
           </span>
           <button
             type="button"
             onClick={handleBatchEnable}
             disabled={selectedIds.size === 0 || batchUpdating}
-            className="rounded-lg bg-app-success/80 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-app-success transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-app-success/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-app-success transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {batchUpdating ? "..." : "활성화"}
           </button>
@@ -286,7 +417,7 @@ export function Sidebar() {
             type="button"
             onClick={handleBatchDisable}
             disabled={selectedIds.size === 0 || batchUpdating}
-            className="rounded-lg bg-app-warning/80 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-app-warning transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-app-warning/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-app-warning transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {batchUpdating ? "..." : "비활성화"}
           </button>
@@ -302,56 +433,9 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Search bar */}
-      {accounts.length > 0 && (
-        <div className="relative border-b border-app-border px-3 py-2">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-[18px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowRecent(true)}
-              onBlur={() => setTimeout(() => setShowRecent(false), 200)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && searchQuery.trim()) {
-                  const q = searchQuery.trim();
-                  setRecentSearches(prev => {
-                    const next = [q, ...prev.filter(s => s !== q)].slice(0, 5);
-                    try { localStorage.setItem("telemon-sidebar-recent-searches", JSON.stringify(next)); } catch {}
-                    return next;
-                  });
-                }
-              }}
-              placeholder="계정 이름 또는 전화번호 검색"
-              aria-label="계정 검색"
-              className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
-            />
-            {searchQuery && (
-              <button type="button" onClick={() => { setSearchQuery(""); setRecentSearches([]); try { localStorage.removeItem("telemon-sidebar-recent-searches"); } catch {} }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
-                title="검색 지우기"
-                aria-label="검색 초기화">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {showRecent && recentSearches.length > 0 && !searchQuery && (
-              <div className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-app-border bg-app-card shadow-lg z-50 py-1">
-                {recentSearches.map((s, i) => (
-                  <button key={s} type="button" onMouseDown={() => setSearchQuery(s)}
-                    className="w-full px-3 py-1.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Health filter pills */}
       {accounts.length > 0 && (
-        <div className="flex flex-wrap gap-1 border-b border-app-border px-3 py-2">
+        <div className="flex flex-wrap gap-1 border-b border-app-border px-2 py-1.5">
           {HEALTH_FILTERS.map((f) => {
             const count = healthCounts[f.key] ?? 0;
             if (f.key !== "all" && count === 0) return null;
@@ -362,9 +446,9 @@ export function Sidebar() {
                 type="button"
                 onClick={() => { setHealthFilter(f.key); setGroupFilter(null); }}
                 className={cn(
-                  "focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
                   healthFilter === f.key && !groupFilter
-                    ? "bg-app-primary text-white"
+                    ? "bg-[#8B5CF6]/20 text-[#A78BFA]"
                     : "bg-app-card-hover text-app-text-muted hover:text-app-text"
                 )}
               >
@@ -379,7 +463,7 @@ export function Sidebar() {
 
       {/* Group filter pills */}
       {groups.length > 0 && (
-        <div className="flex flex-wrap gap-1 border-b border-app-border px-3 py-2">
+        <div className="flex flex-wrap gap-1 border-b border-app-border px-2 py-1.5">
           {groupFilter && (
             <button
               type="button"
@@ -398,7 +482,7 @@ export function Sidebar() {
                 type="button"
                 onClick={() => { setGroupFilter(g.id); setHealthFilter("all"); }}
                 className={cn(
-                  "focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
                   groupFilter === g.id
                     ? "text-white"
                     : "bg-app-card-hover text-app-text-muted hover:text-app-text"
@@ -424,7 +508,8 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="flex-1 space-y-1 overflow-y-auto [-webkit-overflow-scrolling:touch] p-3">
+      {/* Account list */}
+      <div className="flex-1 space-y-1 overflow-y-auto [-webkit-overflow-scrolling:touch] p-2">
         {showDormantBanner && dormantAccounts.length > 0 && (
           <div className="mx-0 mb-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
             <div className="flex items-start justify-between gap-2">
@@ -474,7 +559,7 @@ export function Sidebar() {
                 aria-label={isBatchSelected ? "선택 해제" : "선택"}
               >
                   {isBatchSelected ? (
-                    <CheckSquare className="h-4 w-4 text-app-primary" />
+                    <CheckSquare className="h-4 w-4 text-[#8B5CF6]" />
                   ) : (
                     <Square className="h-4 w-4 text-app-text-subtle hover:text-app-text" />
                   )}
@@ -501,11 +586,11 @@ export function Sidebar() {
       </div>
 
       {groups.length === 0 && (
-        <div className="border-t border-app-border px-4 py-3">
+        <div className="border-t border-app-border px-3 py-2">
           <button
             type="button"
             onClick={() => setGroupMgmtOpen(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#8B5CF6]/30 py-2 text-[11px] font-medium text-[#8B5CF6]/70 hover:border-[#8B5CF6]/50 hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/5 transition-colors"
           >
             <Layers className="h-3.5 w-3.5" />
             계정 그룹 만들기
@@ -513,8 +598,70 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="border-t border-app-border px-4 py-3">
-        <p className="text-[11px] text-app-text-muted">계정에 마우스를 올리면 삭제 가능</p>
+      {/* Usage summary */}
+      <div className="border-t border-app-border px-3 py-3 space-y-3">
+        <p className="text-[11px] font-semibold text-app-text-muted">사용량 요약</p>
+        {/* Message send */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-app-text-muted">메시지 발송</span>
+            <span className="text-app-text-secondary">1,234 / 5,000</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-[#8B5CF6]/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: "24.7%",
+                background: "linear-gradient(90deg, #8B5CF6, #3B82F6)",
+              }}
+            />
+          </div>
+        </div>
+        {/* AI response */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-app-text-muted">AI 응답</span>
+            <span className="text-app-text-secondary">456 / 1,000</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-[#8B5CF6]/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: "45.6%",
+                background: "linear-gradient(90deg, #8B5CF6, #3B82F6)",
+              }}
+            />
+          </div>
+        </div>
+        {/* Storage */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-app-text-muted">스토리지</span>
+            <span className="text-app-text-secondary">2.1 / 5.0 GB</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-[#8B5CF6]/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: "42%",
+                background: "linear-gradient(90deg, #8B5CF6, #3B82F6)",
+              }}
+            />
+          </div>
+        </div>
+        {/* Upgrade button */}
+        <button
+          type="button"
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" }}
+        >
+          <Zap className="h-3.5 w-3.5" />
+          업그레이드
+        </button>
+      </div>
+
+      <div className="border-t border-app-border px-3 py-2">
+        <p className="text-[10px] text-app-text-subtle text-center">계정에 마우스를 올리면 삭제 가능</p>
       </div>
 
       <GroupManagementModal open={groupMgmtOpen} onClose={() => setGroupMgmtOpen(false)} />

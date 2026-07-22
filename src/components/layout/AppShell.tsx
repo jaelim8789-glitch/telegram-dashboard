@@ -75,7 +75,7 @@ export function AppShell({ children }: AppShellProps) {
             type="button"
             onClick={() => { navigateToChat(); }}
             className="mb-4 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl"
-            style={{ background: "linear-gradient(135deg, #D4AF37, #a08030)" }}
+            style={{ background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" }}
             title="홈으로"
             aria-label="홈으로"
           >
@@ -94,7 +94,7 @@ export function AppShell({ children }: AppShellProps) {
                   ? "text-white"
                   : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"
               )}
-              style={isChatActive ? { background: "linear-gradient(135deg, #D4AF37, #a08030)" } : {}}
+              style={isChatActive ? { background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" } : {}}
               title="채팅하기"
             >
               <MessageSquare className="h-5 w-5" />
@@ -102,7 +102,7 @@ export function AppShell({ children }: AppShellProps) {
                 <motion.span
                   layoutId="sidebar-active"
                   className="absolute -left-[1px] h-5 w-0.5 rounded-full"
-                  style={{ backgroundColor: "#D4AF37" }}
+                  style={{ backgroundColor: "#8B5CF6" }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -123,7 +123,7 @@ export function AppShell({ children }: AppShellProps) {
                       ? "text-white"
                       : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"
                   )}
-                  style={isActive ? { background: "linear-gradient(135deg, #D4AF37, #a08030)" } : {}}
+                  style={isActive ? { background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" } : {}}
                   title={item.label}
                 >
                   <Icon className="h-5 w-5" />
@@ -131,8 +131,8 @@ export function AppShell({ children }: AppShellProps) {
                     <motion.span
                       layoutId="sidebar-active"
                       className="absolute -left-[1px] h-5 w-0.5 rounded-full"
-                      style={{ backgroundColor: "#D4AF37" }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  style={{ backgroundColor: "#8B5CF6" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
                 </motion.button>

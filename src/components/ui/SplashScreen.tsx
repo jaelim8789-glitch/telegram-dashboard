@@ -31,7 +31,7 @@ export function SplashScreen() {
             style={{
               background: `linear-gradient(135deg, transparent 0%, var(--color-accent-glow) 30%, transparent 50%, var(--color-accent-glow) 70%, transparent 100%)`,
               backgroundSize: '400% 400%',
-              animation: 'gold-shimmer 4s ease-in-out infinite',
+              animation: 'accent-shimmer 4s ease-in-out infinite',
             }}
           />
 
@@ -49,7 +49,7 @@ export function SplashScreen() {
             className="relative"
           >
             {/* Logo */}
-            <div className="flex h-16 w-16 items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] shadow-2xl shadow-[var(--color-accent-glow)]">
+            <div className="flex h-16 w-16 items-center justify-center bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] shadow-2xl shadow-[var(--color-accent-glow)]">
               <span className="text-lg font-bold tracking-wider" style={{ color: "var(--color-accent-contrast)" }}>
                 TM
               </span>
