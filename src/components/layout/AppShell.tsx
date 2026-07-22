@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Workspace layout — TeleMon V3 Phase 2
  * Core structure: sidebar + main content area

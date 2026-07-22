@@ -462,6 +462,14 @@ export function SendTab() {
   const mountGuardRef = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('visualViewport' in window)) return;
+    const handler = () => setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+    window.visualViewport?.addEventListener('resize', handler);
+    handler();
+    return () => window.visualViewport?.removeEventListener('resize', handler);
+  }, []);
 
   // ── Recent recipient sets ──
   useEffect(() => {
@@ -1292,6 +1300,15 @@ export function SendTab() {
           </div>
         }
         description={`${account.name ?? account.phone} · 계정당 1분 간격`}
+        action={
+          canSubmit ? (
+            <button type="button" onClick={() => (document.getElementById('send-form') as HTMLFormElement | null)?.requestSubmit()}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-app-primary text-white hover:opacity-90 transition-opacity md:hidden">
+              <SendIcon className="h-3.5 w-3.5" />
+              {submitting ? "처리 중..." : "발송"}
+            </button>
+          ) : null
+        }
       >
         {/* ── Today Stats ── */}
         {account && (
@@ -1384,8 +1401,9 @@ export function SendTab() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setTimeout(() => searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   placeholder="그룹/채널 이름 또는 ID 검색"
-                  className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+                  className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 scroll-mt-24"
                 />
                 {search && (
                   <button
@@ -1513,7 +1531,7 @@ export function SendTab() {
                       className="text-[10px] text-app-primary hover:underline">모두 선택</button>
                     <span className="text-[10px] text-app-text-subtle">{savedSendGroups.length}개</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {savedSendGroups.map((g) => {
                       const selected = selectedRecipientIds.includes(g.id);
                       return (
@@ -1589,7 +1607,7 @@ export function SendTab() {
                               <hr className="my-2 border-app-border" />
                             </div>
                           )}
-                          <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto [-webkit-overflow-scrolling:touch] pr-1 md:max-h-96">
+                          <div className="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto [-webkit-overflow-scrolling:touch] pr-1 md:grid-cols-2 md:max-h-96">
                           {filteredByTag.map((g) => {
                             const selected = selectedRecipientIds.includes(g.id);
                             return (
@@ -2655,7 +2673,7 @@ export function SendTab() {
         initial={false}
         animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0.5, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="sticky bottom-4 flex items-center justify-end gap-2 w-full"
+        className={cn("sticky bottom-4 flex items-center justify-end gap-2 w-full transition-transform duration-300", viewportHeight > 0 && viewportHeight < 600 ? "translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100")}
       >
         <ApiKeyGuard
           description="발송 기능을 사용하려면 API 키가 필요합니다. 봇 메뉴에서 '🔑 내 API 키'를 통해 발급받으세요."

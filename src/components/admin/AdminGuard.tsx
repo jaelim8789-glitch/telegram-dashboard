@@ -8,20 +8,28 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 
 interface AdminGuardProps {
   children: ReactNode;
-  /** Set on pages that are strictly admin-only (dashboard, API keys, user management).
-   * A valid but non-admin session (a phone-verified user, or a raw API key) is sent
-   * back to the main dashboard instead of the login page — it's a real session, just
-   * not one allowed on this particular page. */
   requireAdmin?: boolean;
 }
 
-/** Wrap any page that should require a logged-in session (admin, phone-verified user,
- * or API key). Redirects to /admin/login if there's no token or it's invalid/expired. */
+async function fetchPendingPayoutCount(): Promise<number> {
+  try {
+    const token = getToken();
+    if (!token) return 0;
+    const res = await fetch(`/api/referral/admin/payouts/pending-count`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.count ?? 0;
+  } catch { return 0; }
+}
+
 export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) {
   const router = useRouter();
   const setRole = useDashboardStore((s) => s.setRole);
   const setSubscription = useDashboardStore((s) => s.setSubscription);
   const [checked, setChecked] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +49,11 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
           return;
         }
         setChecked(true);
+
+        if (me.role === "admin") {
+          const count = await fetchPendingPayoutCount();
+          if (!cancelled) setPendingCount(count);
+        }
       } catch {
         clearToken();
         clearSessionToken();
@@ -49,9 +62,7 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
     }
 
     check();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [router, requireAdmin, setRole, setSubscription]);
 
   if (!checked) {
@@ -62,5 +73,15 @@ export function AdminGuard({ children, requireAdmin = false }: AdminGuardProps) 
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {pendingCount > 0 && (
+        <div className="flex items-center justify-center gap-1.5 bg-amber-500/10 border-b border-amber-500/20 px-3 py-1.5 text-[11px] text-amber-700">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">{pendingCount}</span>
+          <span>건의 지급 대기 항목이 있습니다 — <a href="/admin/distributors" className="underline font-medium hover:text-amber-800">총판 관리</a></span>
+        </div>
+      )}
+      {children}
+    </>
+  );
 }
