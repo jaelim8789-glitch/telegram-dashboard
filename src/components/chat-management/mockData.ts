@@ -9,6 +9,7 @@ export interface ChatRoom {
   unreadCount: number;
   subscriberCount?: number;
   isOnline?: boolean;
+  isFavorite?: boolean;
 }
 
 export interface ChatMessage {
@@ -40,6 +41,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     lastMessageTime: new Date(now - 5 * MIN),
     unreadCount: 2,
     isOnline: true,
+    isFavorite: true,
   },
   {
     id: "personal-2",
@@ -91,6 +93,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "이번 주는 북한산 어떠세요?",
     lastMessageTime: new Date(now - 2 * HOUR),
     unreadCount: 0,
+    isFavorite: true,
   },
   {
     id: "group-4",
@@ -212,31 +215,31 @@ export const AI_MACROS: AiMacro[] = [
   {
     id: "spam-filter",
     label: "스팸 필터",
-    description: "스팸 및 광고성 메시지를 자동으로 차단합니다",
+    description: "스팸/광고 메시지를 자동 차단합니다",
     enabled: true,
   },
   {
     id: "keyword-alert",
     label: "키워드 알림",
-    description: "설정한 키워드가 포함된 메시지 수신 시 알림을 보냅니다",
+    description: "특정 키워드 포함 시 알림을 보냅니다",
     enabled: false,
   },
   {
     id: "translate",
     label: "번역",
-    description: "외국어 메시지를 자동으로 한국어로 번역합니다",
+    description: "외국어 메시지를 자동 번역합니다",
     enabled: false,
   },
   {
     id: "sentiment",
     label: "감정 분석",
-    description: "메시지의 감정 톤을 분석하여 긍정/부정/중립으로 분류합니다",
+    description: "메시지의 감정을 분석합니다",
     enabled: true,
   },
   {
     id: "summary",
     label: "요약 생성",
-    description: "긴 대화 내용을 AI가 자동으로 요약해 드립니다",
+    description: "긴 메시지를 자동 요약합니다",
     enabled: false,
   },
 ];
