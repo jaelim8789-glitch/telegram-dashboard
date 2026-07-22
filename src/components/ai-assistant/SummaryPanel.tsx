@@ -21,7 +21,8 @@ const ICON_COLOR: Record<string, string> = {
 
 interface SummaryPanelProps {
   items: SummaryItem[];
-  onCardClick?: (title: string) => void;
+  selectedCardId?: string | null;
+  onCardClick?: (id: string, title: string) => void;
 }
 
 function formatRelativeTime(iso: string): string {
@@ -38,7 +39,7 @@ function formatRelativeTime(iso: string): string {
   return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
-export function SummaryPanel({ items, onCardClick }: SummaryPanelProps) {
+export function SummaryPanel({ items, selectedCardId, onCardClick }: SummaryPanelProps) {
   const today = new Date();
   const dateStr = today.toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -54,22 +55,29 @@ export function SummaryPanel({ items, onCardClick }: SummaryPanelProps) {
         <p className="mt-0.5 text-xs text-app-text-muted">{dateStr}</p>
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onCardClick?.(item.title)}
-            className="w-full cursor-pointer rounded-xl border border-violet-500/10 bg-app-card-hover p-3 text-left transition-colors hover:border-violet-500/30"
-          >
-            <div className="mb-1.5 flex items-center gap-2">
-              <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${ICON_COLOR[item.iconColor ?? "violet"]}`}>
-                {ICON_MAP[item.icon]}
-              </span>
-              <span className="text-xs font-medium text-app-text">{item.title}</span>
-            </div>
-            <p className="text-xs leading-relaxed text-app-text-muted">{item.description}</p>
-            <p className="mt-2 text-[10px] text-app-text-subtle">{formatRelativeTime(item.timestamp)}</p>
-          </button>
-        ))}
+        {items.map((item) => {
+          const isSelected = selectedCardId === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onCardClick?.(item.id, item.title)}
+              className={`w-full cursor-pointer rounded-xl border p-3 text-left transition-all ${
+                isSelected
+                  ? "border-violet-500/60 bg-violet-500/5 ring-1 ring-violet-500/20"
+                  : "border-violet-500/10 bg-app-card-hover hover:border-violet-500/30"
+              }`}
+            >
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${ICON_COLOR[item.iconColor ?? "violet"]}`}>
+                  {ICON_MAP[item.icon]}
+                </span>
+                <span className="text-xs font-medium text-app-text">{item.title}</span>
+              </div>
+              <p className="text-xs leading-relaxed text-app-text-muted">{item.description}</p>
+              <p className="mt-2 text-[10px] text-app-text-subtle">{formatRelativeTime(item.timestamp)}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

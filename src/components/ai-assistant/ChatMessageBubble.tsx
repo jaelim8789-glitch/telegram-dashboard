@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatMessage } from "./types";
+import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
 import { Sparkles } from "lucide-react";
 
 interface ChatMessageBubbleProps {
@@ -26,7 +27,11 @@ export function ChatMessageBubble({ message, streaming }: ChatMessageBubbleProps
               : "bg-[#1a1a24] text-app-text rounded-bl-sm border border-app-border/50"
           }`}
         >
-          {message.content}
+          {isUser ? (
+            message.content
+          ) : (
+            <MarkdownMessage content={message.content} />
+          )}
           {streaming && (
             <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-400 align-text-bottom" />
           )}
