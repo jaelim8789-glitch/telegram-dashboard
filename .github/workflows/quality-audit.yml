@@ -11,12 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: "pnpm"
 
-      - run: npm ci --prefer-offline
+      - run: pnpm install --frozen-lockfile
 
       # ── 1. jscpd: 중복 코드 감지 ──
       - run: npx jscpd src/ --min-lines 10 --min-tokens 50 --pattern "src/**/*.{ts,tsx}" --output report/jscpd --formatters json,html

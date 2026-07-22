@@ -40,9 +40,8 @@ export function AiReplyAssistantTab() {
   useEffect(() => {
     if (!selectedAccountId) return;
     setRecentLoading(true);
-    fetch(`${BASE_URL}/api/bot/recent-messages?account_id=${selectedAccountId}&limit=10`, {
-      headers: api.authHeaders(),
-    })
+    api.authHeaders()
+      .then((headers) => fetch(`${BASE_URL}/api/bot/recent-messages?account_id=${selectedAccountId}&limit=10`, { headers }))
       .then((r) => r.json().catch(() => []))
       .then((data) => {
         setRecentMessages(Array.isArray(data) ? data : (data.messages || []));

@@ -27,9 +27,8 @@ export function ReplyMacroTab() {
   useEffect(() => {
     if (!selectedAccountId) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-      headers: api.authHeaders(),
-    })
+    api.authHeaders()
+      .then((headers) => fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers }))
       .then((r) => r.json())
       .then((data) => {
         setIsActive(!!data.is_active);
@@ -45,7 +44,7 @@ export function ReplyMacroTab() {
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
         method: "PUT",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: message }),
       });
       const data = await res.json();

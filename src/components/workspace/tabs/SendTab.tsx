@@ -20,6 +20,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineError } from "@/components/ui/InlineError";
 import { GroupSelectCard } from "@/components/workspace/tabs/send/GroupSelectCard";
+import {
+  POLL_INTERVAL_MS, HISTORY_POLL_INTERVAL_MS,
+  TYPE_LABEL, TYPE_ICON, FILTER_ORDER, FILTER_LABEL,
+  DELIVERY_PRESET_LABEL,
+  replyDedupeKey, loadReplyDedupeSet, addToReplyDedupeSet, shuffled,
+  type SortMode, type HistoryFilter, type DeliveryPreset,
+} from "@/components/workspace/tabs/send/sendTabTypes";
 import { useDashboardStore, addRecentRecipientSet, getRecentRecipientSets } from "@/store/useDashboardStore";
 import { useAccountCache, useRuntimeActions } from "@/lib/useAccountCache";
 import { RuntimeManager } from "@/lib/runtimeManager";
@@ -61,71 +68,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
 import { computeViralScore, viralColor, viralBg, viralLabel, type ViralScoreResult } from "@/lib/viralScore";
-
-
-
-const POLL_INTERVAL_MS = 3000;
-const HISTORY_POLL_INTERVAL_MS = 30000;
-type SortMode = "default" | "members" | "favorites";
-type HistoryFilter = BroadcastStatus | "all" | "recurring";
-type DeliveryPreset = "safe" | "balanced" | "fast";
-
-// 답장매크로 "중복 제거" — 계정+답장 대상 메시지 ID 조합으로 이미 답장한 수신자를 브라우저에 기억해뒀다가 다음 발송에서 제외한다.
-function replyDedupeKey(accountId: string, replyToMessageId: string) {
-  return `telemon-reply-dedupe:${accountId}:${replyToMessageId}`;
-}
-function loadReplyDedupeSet(accountId: string, replyToMessageId: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(replyDedupeKey(accountId, replyToMessageId));
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
-}
-function addToReplyDedupeSet(accountId: string, replyToMessageId: string, recipientIds: string[]) {
-  try {
-    const key = replyDedupeKey(accountId, replyToMessageId);
-    const existing = loadReplyDedupeSet(accountId, replyToMessageId);
-    recipientIds.forEach((id) => existing.add(id));
-    localStorage.setItem(key, JSON.stringify([...existing]));
-  } catch { /* ignore */ }
-}
-function shuffled<T>(arr: T[]): T[] {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-// Mirrors GroupTab's type taxonomy so a group/channel filters identically in both places.
-const TYPE_LABEL: Record<GroupType, string> = {
-  group: "그룹",
-  megagroup: "슈퍼그룹",
-  channel: "채널",
-};
-const TYPE_ICON: Record<GroupType, typeof Users> = {
-  group: Users,
-  megagroup: Users2,
-  channel: Megaphone,
-};
-
-const FILTER_ORDER: HistoryFilter[] = ["all", "pending", "sending", "sent", "failed", "cancelled"];
-
-const FILTER_LABEL: Record<HistoryFilter, string> = {
-  all: "전체",
-  pending: "대기",
-  sending: "발송 중",
-  sent: "완료",
-  failed: "실패",
-  cancelled: "취소",
-  recurring: "반복",
-};
-const DELIVERY_PRESET_LABEL: Record<DeliveryPreset, string> = {
-  safe: "안전 우선",
-  balanced: "균형",
-  fast: "속도 우선",
-};
-
 
 export function SendTab() {
   const { hasApiKey, onKeySet } = useApiKeyGuard();
@@ -1279,9 +1221,8 @@ export function SendTab() {
   useEffect(() => {
     if (!selectedAccountId) return;
     setReplyMacroLoading(true);
-    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-      headers: api.authHeaders(),
-    })
+    api.authHeaders()
+      .then((headers) => fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers }))
       .then((r) => r.json())
       .then((data) => {
         setReplyMacroActive(!!data.is_active);
@@ -1306,7 +1247,7 @@ export function SendTab() {
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
         method: "PUT",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: replyMacroMessage }),
       });
       const data = await res.json();

@@ -68,7 +68,7 @@ export function StyleProfileTab() {
   async function loadProfiles() {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/style-profiles`, { headers: api.authHeaders() });
+      const res = await fetch(`${BASE_URL}/api/style-profiles`, { headers: await api.authHeaders() });
       if (res.ok) setProfiles(await res.json());
     } catch { toast("error", "스타일 프로필 로드 실패"); }
     finally { setLoading(false); }
@@ -81,7 +81,7 @@ export function StyleProfileTab() {
     try {
       const res = await fetch(`${BASE_URL}/api/style-profiles/analyze`, {
         method: "POST",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({
           name: name.trim() || `스타일 ${new Date().toLocaleDateString("ko-KR")}`,
           source_type: "text",
@@ -107,7 +107,7 @@ export function StyleProfileTab() {
     setDeletingId(id);
     try {
       await fetch(`${BASE_URL}/api/style-profiles/${id}`, {
-        method: "DELETE", headers: api.authHeaders(),
+        method: "DELETE", headers: await api.authHeaders(),
       });
       setProfiles((prev) => prev.filter((p) => p.id !== id));
       if (selectedProfile?.id === id) setSelectedProfile(null);

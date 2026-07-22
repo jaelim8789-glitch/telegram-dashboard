@@ -1,0 +1,56 @@
+name: E2E Full Suite (Nightly)
+
+on:
+  schedule:
+    - cron: "0 21 * * *"  # 매일 06:00 KST
+  workflow_dispatch:
+
+jobs:
+  e2e-full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: nm-nightly-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+
+      - run: npm ci --prefer-offline
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-nightly-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+
+      - run: npx playwright install --with-deps
+
+      - run: npx playwright test --reporter=list 2>&1 | tail -100
+        name: Run full E2E suite
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Notify nightly e2e result
+        if: failure()
+        uses: fjogeleit/http-request-action@v1
+        continue-on-error: true
+        with:
+          url: ${{ secrets.ALERT_WEBHOOK_URL }}
+          method: POST
+          data: >-
+            {"text":"❌ Nightly E2E failed — check artifacts","username":"TeleMon CI","icon_emoji":":test_tube:"}
+          preventFailureOnNoResponse: true

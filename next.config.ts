@@ -9,8 +9,51 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   images: {
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60 * 60 * 24 * 30,
+    domains: [
+      'cdn.telegram.org',
+      'telegra.ph',
+      'localhost',
+      '127.0.0.1',
+    ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.example.com", // CDN 호스트명
+        port: "",
+        pathname: "/images/**",
+      },
+      // Telegram 프로필 사진 등 외부 이미지 허용
+      {
+        protocol: "https",
+        hostname: "cdn.telegram.org",
+        port: "",
+        pathname: "/file/**",
+      },
+      {
+        protocol: "https",
+        hostname: "telegra.ph",
+        port: "",
+        pathname: "/**",
+      },
+      // CDN 패턴 추가
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com", // AWS CloudFront 또는 S3
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.cloudfront.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.cdn.telemon.online", // TeleMon 전용 CDN
+        pathname: "/**",
+      },
+    ],
+    formats: ['image/webp', 'image/avif'], // Modern image formats
+    minimumCacheTTL: 60 * 60 * 24, // 24 hours caching
   },
   experimental: {
     esmExternals: 'loose',
@@ -58,3 +101,54 @@ export default withSentryConfig(
   typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
   sentryWebpackPluginOptions
 );
+
+/**
+ * Content Security Policy (CSP) headers
+ */
+export async function headers() {
+  return [
+    {
+      source: '/(.*)',
+      headers: [
+        {
+          key: 'Content-Security-Policy',
+          value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.telegram.org https://*.tma.js https://*.sentry.io",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: blob: https: http:",
+            "font-src 'self' https://fonts.gstatic.com",
+            "connect-src 'self' https://*.sentry.io https://api.telegram.org https://*.telegram.org wss: http:",
+            "media-src 'self' https: http:",
+            "frame-src 'self' https://*.telegram.org https://*.tma.js",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "upgrade-insecure-requests"
+          ].join('; ')
+        },
+        {
+          key: 'X-Content-Type-Options',
+          value: 'nosniff'
+        },
+        {
+          key: 'X-Frame-Options',
+          value: 'DENY'
+        },
+        {
+          key: 'X-XSS-Protection',
+          value: '1; mode=block'
+        },
+        {
+          key: 'Referrer-Policy',
+          value: 'strict-origin-when-cross-origin'
+        },
+        {
+          key: 'Permissions-Policy',
+          value: 'geolocation=(), microphone=(), camera=()'
+        }
+      ]
+    }
+  ];
+}

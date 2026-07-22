@@ -23,7 +23,8 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/admin/settings/watermark`, { headers: api.authHeaders() })
+    api.authHeaders()
+      .then((headers) => fetch(`${API_BASE}/api/admin/settings/watermark`, { headers }))
       .then((r) => r.json())
       .then((data) => {
         setWatermarkValue(data.value || "");
@@ -39,7 +40,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings/watermark`, {
         method: "PUT",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ value: watermarkValue }),
       });
       if (res.ok) {

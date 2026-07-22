@@ -2,7 +2,9 @@
 // Cache-first for static assets, network-first for API calls.
 // Supports push notifications + IndexedDB offline data layer.
 
-const CACHE_NAME = "telemon-v6";
+// 캐시 이름을 빌드 해시로 관리하여 자동 갱신
+const CACHE_NAME = `telemon-v${self.__BUILD_HASH || 'latest'}`;
+const TEMP_CACHE_NAME = 'telemon-temp-v1';
 const STATIC_ASSETS = [
   "/",
   "/app",
@@ -78,6 +80,9 @@ function openIndexedDB() {
       if (!db.objectStoreNames.contains("api-responses")) {
         db.createObjectStore("api-responses");
       }
+      if (!db.objectStoreNames.contains("notification-metrics")) {
+        db.createObjectStore("notification-metrics");
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -99,200 +104,239 @@ function idbGet(storeName, key) {
       const store = tx.objectStore(storeName);
       const request = store.get(key);
       request.onsuccess = () => {
-        const entry = request.result;
-        if (!entry) return resolve(null);
-        if (entry.expiry && Date.now() > entry.expiry) {
-          db.transaction(storeName, "readwrite").objectStore(storeName).delete(key);
-          return resolve(null);
+        const result = request.result;
+        if (result && result.expiry > Date.now()) {
+          resolve(result.data);
+        } else {
+          resolve(null);
         }
-        resolve(entry.data);
       };
       request.onerror = () => resolve(null);
     });
   });
 }
 
-// Install: cache static assets
-self.addEventListener("install", (event) => {
+// 푸시 알림 메트릭스 저장 함수
+function trackNotificationEvent(notificationId, eventType, data = {}) {
+  return openIndexedDB().then((db) => {
+    const tx = db.transaction("notification-metrics", "readwrite");
+    const store = tx.objectStore("notification-metrics");
+    
+    return store.get(notificationId).then((existingRecord) => {
+      const now = Date.now();
+      const record = existingRecord || { 
+        id: notificationId, 
+        createdAt: now,
+        events: []
+      };
+      
+      record.events.push({
+        type: eventType,
+        timestamp: now,
+        ...data
+      });
+      
+      store.put(record);
+    });
+  });
+}
+
+// 이전 캐시 정리
+function cleanupOldCaches() {
+  return caches.keys().then((cacheNames) => {
+    return Promise.all(
+      cacheNames
+        .filter((cacheName) => {
+          return cacheName.startsWith('telemon-') && cacheName !== CACHE_NAME;
+        })
+        .map((cacheName) => {
+          console.log(`Deleting old cache: ${cacheName}`);
+          return caches.delete(cacheName);
+        })
+    );
+  });
+}
+
+// SW 설치 시
+self.addEventListener('install', (event) => {
+  console.log(`Installing service worker with cache: ${CACHE_NAME}`);
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
+      return cache.addAll(STATIC_ASSETS).then(() => {
+        self.skipWaiting(); // 새로운 SW가 즉시 활성화되도록
+      });
     })
   );
-  self.skipWaiting();
 });
 
-// Activate: clean old caches
-self.addEventListener("activate", (event) => {
+// SW 활성화 시
+self.addEventListener('activate', (event) => {
+  console.log(`Activating service worker with cache: ${CACHE_NAME}`);
+  
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      );
-    })
+    Promise.all([
+      cleanupOldCaches(), // 이전 캐시 정리
+      self.clients.claim() // 새 SW가 즉시 제어권 획득
+    ])
   );
-  self.clients.claim();
 });
 
-// Push event: show notification
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
-
-  try {
-    const data = event.data.json();
-    const options = {
-      body: data.body ?? "",
-      icon: data.icon ?? "/icons/icon-192.svg",
-      badge: "/icons/icon-192.svg",
-      tag: data.tag ?? "telemon-default",
-      data: {
-        url: data.url ?? "/",
-      },
-      vibrate: data.vibrate ?? [10, 30, 10],
-      requireInteraction: data.requireInteraction ?? false,
-      actions: data.actions ?? [],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(
-        data.title ?? "TeleMon",
-        options
-      )
-    );
-  } catch {
-    event.waitUntil(
-      self.registration.showNotification("TeleMon", {
-        body: event.data.text(),
-        icon: "/icons/icon-192.svg",
+// 요청 처리
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+  
+  // 외부 리소스는 캐시하지 않음
+  if (url.origin !== self.location.origin) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match('/offline');
       })
     );
+    return;
   }
-});
-
-// Notification click: navigate to URL or focus existing client
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-
-  const url = event.notification.data?.url ?? "/";
-  const action = event.action;
-
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      if (action && event.notification.data?.actions) {
-        const actionConfig = event.notification.data.actions.find(
-          (a) => a.action === action
-        );
-        if (actionConfig?.url) {
-          return openOrFocus(actionConfig.url);
-        }
-      }
-
-      return openOrFocus(url);
-    })
-  );
-
-  function openOrFocus(targetUrl) {
-    return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.focus();
-          client.navigate(targetUrl);
-          return;
-        }
-      }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
-      }
-    });
-  }
-});
-
-// Fetch: network-first for API (IndexedDB + Cache Storage fallback),
-// cache-first for static, offline fallback for navigation
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  if (request.method !== "GET") return;
-
-  const url = new URL(request.url);
-
-  if (url.origin !== self.location.origin) return;
-
-  // API routes: network-first, fall back to Cache Storage then IndexedDB
-  if (url.pathname.startsWith("/api/")) {
+  
+  // API 요청은 네트워크 우선
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
-          });
-          clone.json().then((json) => {
-            idbPut("api-responses", request.url, json, 5 * 60 * 1000);
-          }).catch(() => {});
-          return response;
-        })
-        .catch(async () => {
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) return cachedResponse;
-          const idbData = await idbGet("api-responses", request.url);
-          if (idbData) {
-            return new Response(JSON.stringify(idbData), {
-              headers: { "Content-Type": "application/json" },
+          // 응답을 캐시에 저장 (특정 조건에 따라)
+          if (response.ok && request.method === 'GET') {
+            const responseClone = response.clone();
+            caches.open(TEMP_CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
             });
           }
-          return new Response(JSON.stringify({ error: "offline" }), {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
+          return response;
+        })
+        .catch(() => {
+          // 네트워크 실패 시 캐시에서 제공
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            return new Response(OFFLINE_HTML, {
+              headers: { 'Content-Type': 'text/html' }
+            });
           });
         })
     );
     return;
   }
-
-  // Static Next.js assets: cache-first with network update
-  if (url.pathname.startsWith("/_next/static")) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        return (
-          cached ||
-          fetch(request).then((response) => {
-            const clone = response.clone();
+  
+  // 정적 자산은 캐시 우선
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        // 개발 환경에서는 최신 자산을 위해 네트워크 요청 시도
+        if (process.env.NODE_ENV === 'development') {
+          return fetch(request)
+            .then((networkResponse) => {
+              // 네트워크 응답이 더 최신이면 캐시 갱신
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, networkResponse.clone());
+              });
+              return networkResponse;
+            })
+            .catch(() => cachedResponse); // 네트워크 실패 시 캐시 반환
+        }
+        return cachedResponse;
+      }
+      
+      // 캐시에 없으면 네트워크에서 가져옴
+      return fetch(request)
+        .then((response) => {
+          // 응답이 유효하면 캐시에 저장
+          if (response.status === 200) {
+            const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, clone);
+              cache.put(request, responseClone);
             });
-            return response;
-          })
-        );
-      })
-    );
-    return;
+          }
+          return response;
+        })
+        .catch(() => {
+          // 네트워크 실패 시 오프라인 페이지 반환
+          if (request.destination === 'document') {
+            return new Response(OFFLINE_HTML, {
+              headers: { 'Content-Type': 'text/html' }
+            });
+          }
+          return new Response(OFFLINE_HTML, {
+            headers: { 'Content-Type': 'text/html' }
+          });
+        });
+    })
+  );
+});
+
+// 푸시 이벤트 처리
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  const payload = event.data.json();
+  const title = payload.title || 'TeleMon';
+  const options = {
+    body: payload.body || '',
+    icon: '/icons/icon-192.svg',
+    badge: '/icons/icon-monochrome.svg',
+    tag: payload.tag || 'telemon-notification',
+    data: {
+      ...payload.data || {},
+      notificationId: payload.notificationId || Date.now().toString()
+    }
+  };
+
+  // 알림 전달 이벤트 기록
+  const notificationId = options.data.notificationId;
+  trackNotificationEvent(notificationId, 'delivered', {
+    title: title,
+    body: options.body
+  }).catch(err => console.error('Failed to track notification delivery:', err));
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// 알림 클릭 이벤트 처리
+self.addEventListener('notificationclick', (event) => {
+  const notificationId = event.notification.data?.notificationId;
+  
+  // 알림 클릭 이벤트 기록
+  if (notificationId) {
+    trackNotificationEvent(notificationId, 'clicked', {
+      action: event.action || 'default'
+    }).catch(err => console.error('Failed to track notification click:', err));
   }
 
-  // All other requests: network-first, offline fallback for navigation
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, clone);
-        });
-        return response;
-      })
-      .catch(() => {
-        if (request.mode === "navigate") {
-          return caches.match("/offline").then((cachedOfflinePage) => {
-            if (cachedOfflinePage) return cachedOfflinePage;
-            return new Response(OFFLINE_HTML, {
-              headers: {
-                "Content-Type": "text/html; charset=utf-8",
-                "Cache-Control": "no-store",
-              },
-            });
-          });
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if ('focus' in client) {
+          return client.focus();
         }
-        return caches.match(request);
-      })
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
   );
+});
+
+// 알림 닫힘 이벤트 처리
+self.addEventListener('notificationclose', (event) => {
+  const notificationId = event.notification.data?.notificationId;
+  
+  // 알림 닫힘 이벤트 기록
+  if (notificationId) {
+    trackNotificationEvent(notificationId, 'closed', {
+      wasClicked: false
+    }).catch(err => console.error('Failed to track notification close:', err));
+  }
 });

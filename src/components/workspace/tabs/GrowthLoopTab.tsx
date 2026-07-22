@@ -64,7 +64,7 @@ export function GrowthLoopTab() {
 
   async function loadLoops() {
     try {
-      const res = await fetch(`${BASE}/api/growth-loop/status`, { headers: api.authHeaders() });
+      const res = await fetch(`${BASE}/api/growth-loop/status`, { headers: await api.authHeaders() });
       if (res.ok) setLoops(await res.json());
     } catch {}
     finally { setLoading(false); }
@@ -77,7 +77,7 @@ export function GrowthLoopTab() {
     try {
       const res = await fetch(`${BASE}/api/growth-loop/start`, {
         method: "POST",
-        headers: api.authHeaders(),
+        headers: await api.authHeaders(),
         body: JSON.stringify({ goal: goal.trim(), channel_count: channels, cycle_interval_hours: intervalHours }),
       });
       if (res.ok) {
@@ -96,11 +96,11 @@ export function GrowthLoopTab() {
     setActioning(id);
     try {
       if (act === "delete") {
-        await fetch(`${BASE}/api/growth-loop/${id}`, { method: "DELETE", headers: api.authHeaders() });
+        await fetch(`${BASE}/api/growth-loop/${id}`, { method: "DELETE", headers: await api.authHeaders() });
         setLoops((prev) => prev.filter((l) => l.id !== id));
       } else {
         const res = await fetch(`${BASE}/api/growth-loop/${id}/${act}`, {
-          method: "POST", headers: api.authHeaders(),
+          method: "POST", headers: await api.authHeaders(),
           body: JSON.stringify({ cycle_interval_hours: intervalHours }),
         });
         if (res.ok) {

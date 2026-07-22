@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { subscribeToPush } from "@/lib/pushManager";
 import { cacheClear } from "@/lib/cacheStorage";
 import { useOnlineStatus } from "@/lib/offlineDetector";
+import { usePushNotificationTracking } from '@/hooks/usePushNotificationTracking';
 
 interface PwaRegisterProps {
   onUpdateAvailable?: () => void;
@@ -75,6 +76,35 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
     return () => clearTimeout(timer);
   }, [onUpdateAvailable]);
+
+  const { trackDelivered, trackOpened, trackClicked, trackError } = usePushNotificationTracking();
+
+  // 푸시 알림 이벤트 등록
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        // 푸시 메시지 수신 이벤트
+        registration.addEventListener('message', ((event: MessageEvent) => {
+          if (event.data && event.data.type === 'PUSH_RECEIVED') {
+            const { notificationId } = event.data;
+            trackDelivered(notificationId);
+          }
+        }) as EventListener);
+
+        // 알림 클릭 이벤트
+        navigator.serviceWorker.addEventListener('message', ((event: MessageEvent) => {
+          if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+            const { notificationId } = event.data;
+            trackOpened(notificationId);
+            // 클릭 이벤트는 사용자가 알림을 실제로 클릭했을 때 발생
+            if (event.data.action === 'CLICK_ACTION') {
+              trackClicked(notificationId);
+            }
+          }
+        }) as EventListener);
+      });
+    }
+  }, [trackDelivered, trackOpened, trackClicked]);
 
   return null;
 }
