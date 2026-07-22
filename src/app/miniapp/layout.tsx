@@ -7,6 +7,7 @@ import { GlobalToast } from "@/components/ui/GlobalToast";
 import { CommandPalette as CommandPaletteMobile } from "@/components/ui/CommandPaletteMobile";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
+import { MobileKeyboardHandler } from "@/components/ui/MobileKeyboardHandler";
 
 export default function MiniAppLayout({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -50,6 +51,7 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", color: "var(--tg-theme-text-color, #f5f5f5)", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)" }}>
+      <MobileKeyboardHandler />
       <GlobalToast />
       {children}
       <CommandPaletteMobile />

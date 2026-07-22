@@ -37,6 +37,7 @@ export const MiniAppProfile = memo(function MiniAppProfile() {
   const [planName, setPlanName] = useState("Free");
   const [accounts, setAccounts] = useState<AccountHealth[]>([]);
   const [stats, setStats] = useState({ todaySent: 0, weekSent: 0, successRate: 0 });
+  const [loading, setLoading] = useState(true);
   const toast = useToastStore(s => s.add);
 
   useEffect(() => {
@@ -51,11 +52,26 @@ export const MiniAppProfile = memo(function MiniAppProfile() {
           healthScore: healthResults[i]?.status === "fulfilled" ? (healthResults[i] as any).value : 0,
         })));
         setStats({ todaySent: active.reduce((s, a) => s + a.todaySent, 0), weekSent: 0, successRate: 94 });
+        setLoading(false);
       })
-    ).catch(() => {});
+    ).catch(() => setLoading(false));
   }, []);
 
   const handleLogout = useCallback(() => { try { hapticFeedback.notificationOccurred("warning"); } catch {} clearAll(); window.location.href = "/"; }, []);
+
+  if (loading) {
+    return (
+      <div className="pb-4 p-4 space-y-4">
+        <div className="flex flex-col items-center py-8">
+          <div className="mb-3 h-20 w-20 rounded-full animate-pulse" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }} />
+          <div className="h-5 w-24 rounded animate-pulse mb-2" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }} />
+          <div className="h-3 w-16 rounded animate-pulse" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }} />
+        </div>
+        <div className="h-32 rounded-2xl animate-pulse" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }} />
+        <div className="h-40 rounded-2xl animate-pulse" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }} />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">

@@ -35,8 +35,8 @@ function inputStyle(invalid?: boolean, touchTargetSize?: 'default' | 'large') {
     "w-full rounded-xl border bg-app-card px-3 py-2 text-sm text-app-text",
     "placeholder:text-app-text-subtle outline-none transition-colors duration-150",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-app-card-hover",
-    // 터치 타겟 크기 옵션에 따라 높이 조정
-    touchTargetSize === 'large' ? 'min-h-[48px] py-3 text-base' : 'min-h-[44px]',
+    // 터치 타겟 크기 옵션에 따라 높이 조정 - ensuring minimum 44px height
+    touchTargetSize === 'large' ? 'min-h-[48px] py-3 text-base' : 'min-h-[44px] py-3',
     invalid
       ? "border-app-danger/60 focus:border-app-danger focus:ring-2 focus:ring-app-danger/15"
       : "border-app-border focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"

@@ -18,8 +18,8 @@ export const useSwipeTemplate = ({
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartTime = useRef<number | null>(null);
-  const minSwipeDistance = 50;
-  const maxSwipeTime = 500; // 최대 스와이프 시간(ms)
+  const minSwipeDistance = 30; // Reduced for more responsive swipes
+  const maxSwipeTime = 300; // Reduced for more responsive swipes
 
   const handleTouchStart = (e: TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -40,11 +40,21 @@ export const useSwipeTemplate = ({
         setSwipeDirection('right');
         setShowRecent(true);
         setShowTemplates(false);
+        // Automatically hide after showing
+        setTimeout(() => {
+          setShowRecent(false);
+          setSwipeDirection(null);
+        }, 2000);
       } else if (diffX < 0 && Math.abs(diffX) > minSwipeDistance) {
         // 왼쪽 스와이프 - 템플릿
         setSwipeDirection('left');
         setShowTemplates(true);
         setShowRecent(false);
+        // Automatically hide after showing
+        setTimeout(() => {
+          setShowTemplates(false);
+          setSwipeDirection(null);
+        }, 2000);
       }
     }
 
@@ -71,9 +81,9 @@ export const useSwipeTemplate = ({
   };
 
   useEffect(() => {
-    // 3초 후 패널 자동 숨김
+    // 2초 후 패널 자동 숨김
     if (showTemplates || showRecent) {
-      const timer = setTimeout(hidePanels, 3000);
+      const timer = setTimeout(hidePanels, 2000);
       return () => clearTimeout(timer);
     }
   }, [showTemplates, showRecent]);

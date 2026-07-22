@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { motion } from "framer-motion";
 import { initData, useSignal, backButton, hapticFeedback } from "@tma.js/sdk-react";
 import dynamic from "next/dynamic";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
@@ -10,8 +11,8 @@ import { MiniAppSend } from "./MiniAppSend";
 import { ThemeQuickToggle } from "@/components/ui/ThemeQuickToggle";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
-import { ConnectionStatusCard } from "@/components/ui/ConnectionStatusCard";
-import { useAutoDraft } from "@/hooks/useAutoDraft";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 const MiniAppChat = dynamic(() => import("./MiniAppChat").then((m) => ({ default: m.MiniAppChat })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
@@ -21,31 +22,44 @@ const MiniAppProfile = dynamic(() => import("./MiniAppProfile").then((m) => ({ d
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
+const TAB_ORDER: MiniAppTab[] = ["dashboard", "chat", "send", "profile"];
+
 export default function MiniAppPage() {
   const [activeTab, setActiveTab] = useState<MiniAppTab>("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [online, setOnline] = useState(true);
-  const initDataState = useSignal(initData.state);
-  const user = initDataState?.user;
+  const user = useSignal(initData.state)?.user;
   const setOpen = useCommandPaletteStore(s => s.setOpen);
+  const { isOnline: online } = useNetworkStatus();
 
   const handleRefresh = useCallback(() => {
     try { hapticFeedback.impactOccurred("medium"); } catch {}
-    setRefreshKey((k) => k + 1);
-    setLastUpdated(new Date());
+    setRefreshKey(k => k + 1);
   }, []);
 
   useKeyboardShortcut("k", () => setOpen(true), { ctrl: true });
 
   useEffect(() => {
-    try { backButton.mount(); const off = backButton.onClick(() => { if (activeTab !== "dashboard") setActiveTab("dashboard"); }); return () => { off(); try { backButton.unmount(); } catch {} }; }
-    catch { return undefined; }
+    try {
+      backButton.mount();
+      const off = backButton.onClick(() => {
+        if (activeTab !== "dashboard") setActiveTab("dashboard");
+      });
+      return () => { off(); try { backButton.unmount(); } catch {} };
+    } catch { return; }
   }, [activeTab]);
 
   useEffect(() => {
-    let off: (() => void) | undefined; let cancelled = false;
-    (async () => { try { const { mainButton } = await import("@tma.js/sdk-react"); if (cancelled) return; mainButton.mount(); mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false }); off = mainButton.onClick(handleRefresh); } catch {} })();
+    let off: (() => void) | undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { mainButton } = await import("@tma.js/sdk-react");
+        if (cancelled) return;
+        mainButton.mount();
+        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false });
+        off = mainButton.onClick(handleRefresh);
+      } catch {}
+    })();
     return () => { cancelled = true; if (off) off(); };
   }, [handleRefresh]);
 
@@ -55,14 +69,15 @@ export default function MiniAppPage() {
     return () => window.removeEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
   }, []);
 
-  useEffect(() => {
-    setOnline(navigator.onLine);
-    const onOnline = () => setOnline(true); const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline); window.addEventListener("offline", onOffline);
-    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
-  }, []);
+  const handleSwipe = useCallback((_e: any, info: { offset: { x: number } }) => {
+    if (Math.abs(info.offset.x) < 50) return;
+    const idx = TAB_ORDER.indexOf(activeTab);
+    const dir = info.offset.x > 0 ? -1 : 1;
+    const next = TAB_ORDER[idx + dir];
+    if (next) { setActiveTab(next); try { hapticFeedback.impactOccurred("light"); } catch {} }
+  }, [activeTab]);
 
-  const greeting = user ? user.first_name + "님" : "TeleMon";
+  const greeting = user?.first_name ? `${user.first_name}님` : "TeleMon";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", color: "var(--tg-theme-text-color, #f5f5f5)" }}>
@@ -82,12 +97,27 @@ export default function MiniAppPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 68px)" }}>
-        {activeTab === "dashboard" && <MiniAppDashboard key={`dash-${refreshKey}`} />}
-        {activeTab === "chat" && <MiniAppChat key={`chat-${refreshKey}`} />}
-        {activeTab === "send" && <MiniAppSend key={`send-${refreshKey}`} user={user} />}
-        {activeTab === "profile" && <MiniAppProfile key={`profile-${refreshKey}`} />}
-      </div>
+      <motion.div
+        className="flex-1 overflow-y-auto"
+        style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 120px)" }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleSwipe}
+      >
+        <ErrorBoundary>
+          {activeTab === "dashboard" && <MiniAppDashboard key={`dash-${refreshKey}`} />}
+        </ErrorBoundary>
+        <ErrorBoundary>
+          {activeTab === "chat" && <MiniAppChat />}
+        </ErrorBoundary>
+        <ErrorBoundary>
+          {activeTab === "send" && <MiniAppSend user={user} />}
+        </ErrorBoundary>
+        <ErrorBoundary>
+          {activeTab === "profile" && <MiniAppProfile />}
+        </ErrorBoundary>
+      </motion.div>
 
       <MiniAppNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
