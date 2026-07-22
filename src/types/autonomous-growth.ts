@@ -5,6 +5,8 @@ export interface AutonomousGrowthLoop {
   goal: string;           // "회원 1000명 만들기"
   status: 'idle' | 'running' | 'paused' | 'completed' | 'failed';
   currentCycle: number;
+  retryCount: number;
+  lastError?: string;
   successMetrics: Metrics;
   strategy: Strategy;
   createdAt: Date;

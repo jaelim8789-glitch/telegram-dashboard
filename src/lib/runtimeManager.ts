@@ -124,7 +124,7 @@ export class RuntimeManager {
     this._selectedAccountId = null;
     this._initialized = false;
     this._initPromise = null;
-    this._notifySubscribers();
+    this._subscribers.clear();
   }
 
   // ── 계정 관리 ─────────────────────────────────────────────────

@@ -110,7 +110,7 @@ interface DashboardState extends DashboardStateValue {
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
 const LAST_TAB_KEY = "telemon-last-tab";
-let runtimeManagerSubscription: (() => void) | null = null;
+const runtimeManagerSubscriptions: Set<() => void> = new Set();
 
 function getTabCategory(tabId: TabId): TabGroup {
   const tab = TABS.find((t) => t.id === tabId);
@@ -176,8 +176,10 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
   },
 
   resetStore: () => {
-    runtimeManagerSubscription?.();
-    runtimeManagerSubscription = null;
+    for (const unsub of runtimeManagerSubscriptions) {
+      unsub();
+    }
+    runtimeManagerSubscriptions.clear();
     RuntimeManager.getInstance().destroy();
     set({ ...INITIAL_STATE, navView: "chat", navCategory: null, navFeature: null });
   },
@@ -234,14 +236,16 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
     set({ accountsLoading: true, accountsError: null });
     try {
       const manager = RuntimeManager.getInstance();
-      if (!runtimeManagerSubscription) {
-        runtimeManagerSubscription = manager.subscribe(() => {
-          const currentAccounts = manager.accounts;
-          set({
-            accounts: currentAccounts,
-            selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
-          });
+      const notify = () => {
+        const currentAccounts = manager.accounts;
+        set({
+          accounts: currentAccounts,
+          selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
         });
+      };
+      if (runtimeManagerSubscriptions.size === 0) {
+        const unsub = manager.subscribe(notify);
+        runtimeManagerSubscriptions.add(unsub);
       }
       // RuntimeManager가 초기화되어 있지 않으면 초기화
       if (!manager.accounts.length) {

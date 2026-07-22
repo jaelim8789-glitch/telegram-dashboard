@@ -13,6 +13,15 @@ export async function requestPushPermission(): Promise<boolean> {
   return perm === "granted";
 }
 
+function getApplicationServerKey(): Uint8Array | undefined {
+  const key = process.env.NEXT_PUBLIC_VAPID_KEY;
+  if (!key) {
+    console.warn("NEXT_PUBLIC_VAPID_KEY is not set; push subscription will fail in most browsers");
+    return undefined;
+  }
+  return urlBase64ToUint8Array(key);
+}
+
 export async function subscribeToPush(registration: ServiceWorkerRegistration): Promise<PushSubscription | null>;
 export async function subscribeToPush(): Promise<PushSubscription | null>;
 export async function subscribeToPush(registration?: ServiceWorkerRegistration): Promise<PushSubscription | null> {
@@ -29,8 +38,10 @@ export async function subscribeToPush(registration?: ServiceWorkerRegistration):
   try {
     let subscription = await reg.pushManager.getSubscription();
     if (!subscription) {
+      const applicationServerKey = getApplicationServerKey();
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
+        applicationServerKey,
       });
     }
     return subscription;

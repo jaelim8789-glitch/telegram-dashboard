@@ -548,7 +548,7 @@ export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[
     const body = await request<{ id: string; title: string; group_ids: string[] }[]>(
       `/api/accounts/${accountId}/groups/folders`
     );
-    return body.map((f) => ({ id: f.id, title: f.title, groupIds: f.group_ids }));
+    return body.map((f) => camelCaseKeys<GroupFolder>(f));
   } catch {
     return [];
   }
@@ -1615,7 +1615,7 @@ export async function manualIssueApiKey(
     method: "POST",
     body: JSON.stringify({ user_identifier: userIdentifier, memo: memo ?? null, plan: plan ?? null }),
   });
-  return { userId: result.user_id, phone: result.phone, apiKey: result.api_key, alreadyIssued: result.already_issued };
+  return camelCaseKeys<ManualIssueResult>(result);
 }
 
 // ─── Channel Hub ────────────────────────────────────────────────────
@@ -1657,11 +1657,7 @@ export async function publishChannelPost(input: ChannelHubPublishInput): Promise
       pin_message: input.pinMessage ?? false,
     }),
   });
-  return {
-    id: result.id,
-    messageId: result.message_id,
-    publishedAt: result.published_at,
-  };
+  return camelCaseKeys<ChannelHubPublishResult>(result);
 }
 
 // ─── Delivery Analytics ──────────────────────────────────────────────
