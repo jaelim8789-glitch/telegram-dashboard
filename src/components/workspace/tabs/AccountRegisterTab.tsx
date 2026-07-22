@@ -164,7 +164,7 @@ export function AccountRegisterTab() {
     } finally {
       setSubmitting(false);
     }
-  }, [formData, passwordStrength, addAccountToStore, selectAccount]);
+  }, [formData, passwordStrength, registerAccount, selectAccount]);
 
   // 계정 삭제
   const handleDelete = useCallback(() => {
@@ -192,8 +192,8 @@ export function AccountRegisterTab() {
     const riskAnalysis = analyzeSendRisk(
       {
         id: "temp",
-        name: formData.name,
         phone: formData.phone,
+        name: formData.name,
         status: "active",
         todaySent: 0,
         plan: "free" as const,

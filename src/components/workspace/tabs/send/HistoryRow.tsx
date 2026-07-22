@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { formatRelativeTime, formatDateTime, formatDuration } from "@/lib/formatTime";
 import { cn } from "@/lib/cn";
@@ -64,7 +64,7 @@ interface HistoryRowProps {
   onToggleSelect?: (id: string) => void;
 }
 
-export function HistoryRow({
+export const HistoryRow = memo(function HistoryRow({
   h,
   cancelling,
   retrying,
@@ -369,6 +369,26 @@ export function HistoryRow({
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+});
+
+export function SkeletonHistoryRow() {
+  return (
+    <div className="flex animate-pulse items-stretch gap-2 rounded-xl border border-app-border bg-app-bg/60 px-3 py-2.5">
+      <div className="mt-1 w-1 shrink-0 rounded-full bg-app-card-hover" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="h-4 w-3/4 rounded bg-app-card-hover" />
+        <div className="flex gap-2">
+          <div className="h-3 w-12 rounded bg-app-card-hover" />
+          <div className="h-3 w-20 rounded bg-app-card-hover" />
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-app-card-hover" />
+      </div>
+      <div className="flex gap-1">
+        <div className="h-9 w-9 rounded-full bg-app-card-hover" />
+        <div className="h-9 w-9 rounded-full bg-app-card-hover" />
       </div>
     </div>
   );

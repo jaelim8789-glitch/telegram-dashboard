@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, memo } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete, Download, FileWarning, Eye,
@@ -56,6 +56,12 @@ import { Modal } from "@/components/ui/Modal";
 import { downloadLogsCsv } from "@/lib/exportCsv";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
+import { SendProgressBar } from "@/components/ui/SendProgressBar";
+import { useDebounce, usePasteImage } from "@/lib/performance";
+import { resizeImage } from "@/lib/imageResize";
+import { hapticFeedback } from "@/lib/haptic";
+import { fireConfetti } from "@/lib/confetti";
+import { enqueueSend } from "@/lib/offlineQueue";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
 import { computeViralScore, viralColor, viralBg, viralLabel, type ViralScoreResult } from "@/lib/viralScore";
@@ -324,6 +330,8 @@ export function SendTab() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
 
   const [batchRetrying, setBatchRetrying] = useState(false);
+  const [historyEntry] = useState<string | null>(null);
+  const inFlightCount = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt)).length;
   const [batchRetryDelay, setBatchRetryDelay] = useState(5);
   const [dedupeNormalSend, setDedupeNormalSend] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
@@ -1320,7 +1328,7 @@ export function SendTab() {
 
   const canSubmit = !submitting && selectedRecipientIds.length > 0 && message.trim().length > 0 && (!isScheduled || !!scheduledAtLocal) && (!isRecurring || !!recurringInterval) && !spamBlocked && !riskBlocked;
 
-  return (
+  return (<>
     <div className="space-y-4 pb-20">
       {/* Send Confirmation Modal */}
       {/* ── Compose Panel ── */}
@@ -1618,23 +1626,23 @@ export function SendTab() {
                             <div className="mb-2">
                               <p className="text-[10px] font-semibold text-app-text-muted tracking-wider px-1 mb-1">📌 자주 사용하는 그룹</p>
                               <div className="space-y-0.5">
-                                {recentGroupIds.map((gid) => {
-                                  const group = groups.find((g) => g.id === gid);
-                                  if (!group) return null;
-                                  return (
-                                    <GroupSelectCard
-                                      key={gid}
-                                      group={group}
-                                      selected={selectedIds.includes(gid)}
-                                      isFavorite={isFavorite(group.id)}
-                                      isRecent={true}
-                                      tags={tagsByGroup[group.id] ?? []}
-                                      onToggleSelect={toggleGroup}
-                                      onToggleFavorite={toggleFavorite}
-                                      onAddTag={handleAddTag}
-                                    />
-                                  );
-                                })}
+                                  {recentGroupIds.map((gid) => {
+                                    const group = groups.find((g) => g.id === gid);
+                                    if (!group) return null;
+                                    return (
+                                      <GroupSelectCard
+                                        key={gid}
+                                        group={group}
+                                        selected={selectedIds.includes(gid)}
+                                        isFavorite={isFavorite(group.id)}
+                                        isRecent={true}
+                                        tags={tagsByGroup[group.id] ?? []}
+                                        onToggleSelect={toggleGroup}
+                                        onToggleFavorite={toggleFavorite}
+                                        onAddTag={handleAddTag}
+                                      />
+                                    );
+                                  })}
                               </div>
                               <hr className="my-2 border-app-border" />
                             </div>
@@ -2095,6 +2103,11 @@ export function SendTab() {
                     <div className="mt-1 text-center text-[11px] text-app-text-subtle">
                       클릭하거나 파일을 끌어다 놓아 교체
                     </div>
+                    {imageFile && imageFile.size > 5 * 1024 * 1024 && (
+                      <p className="mt-1 text-center text-[10px] text-app-warning">
+                        ⚠ 파일 크기가 {(imageFile.size / (1024*1024)).toFixed(1)}MB로 큽니다. 전송이 실패할 수 있습니다.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 py-4 text-app-text-muted">
@@ -2415,6 +2428,7 @@ export function SendTab() {
         onConfirm={handleSend}
         onCancel={() => setSendConfirmOpen(false)}
       />
-    </>
+      <SendProgressBar inFlightCount={inFlightCount} onTap={() => setActiveTab(historyEntry?.id ? "" : "log")} />
+  </>
   );
 }
