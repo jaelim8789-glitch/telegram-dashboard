@@ -302,19 +302,19 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
       ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
       : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
 
-    // Fire-and-forget background retry with exponential backoff
-    (async () => {
+    // Retry with exponential backoff, returning the first success or final error
+    const lastError = await (async () => {
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
         await new Promise((resolve) => setTimeout(resolve, delay));
+        const bgController = new AbortController();
+        const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+        const hasJsonBody = typeof init?.body === "string";
+        const defaultHeaders: Record<string, string> = {
+          ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+          ...(await authHeaders()),
+        };
         try {
-          const bgController = new AbortController();
-          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
-          const hasJsonBody = typeof init?.body === "string";
-          const defaultHeaders: Record<string, string> = {
-            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-            ...(await authHeaders()),
-          };
           const res = await fetch(`${API_BASE_URL}${path}`, {
             ...init,
             signal: bgController.signal,
@@ -330,13 +330,16 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
 
           if (res.status === 204) return undefined as T;
           return res.json() as Promise<T>;
-        } catch {
-          // Background retry failed — try again or give up silently
+        } catch (bgErr) {
+          clearTimeout(bgTimeout);
+          if (attempt < MAX_RETRIES - 1) continue;
+          throw bgErr;
         }
       }
+      throw firstError;
     })();
 
-    throw firstError;
+    return lastError;
   } finally {
     clearTimeout(timeoutId);
   }
