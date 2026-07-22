@@ -305,6 +305,10 @@ export function SendTab() {
   const [templateSearch, setTemplateSearch] = useState("");
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
+  const [quickSaveOpen, setQuickSaveOpen] = useState(false);
+  const [quickSaveName, setQuickSaveName] = useState("");
+  const quickSaveInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (quickSaveOpen) quickSaveInputRef.current?.focus(); }, [quickSaveOpen]);
   const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
   const [showRecentMessages, setShowRecentMessages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -373,7 +377,7 @@ export function SendTab() {
   const router = useRouter();
   const urlSyncedRef = useRef(false);
 
-  // On mount, read URL params and apply (overrides localStorage)
+  // On mount, read URL params and apply (localStorage 우선, URL은 보조)
   useEffect(() => {
     if (urlSyncedRef.current) return;
     const sp = new URLSearchParams(window.location.search);
@@ -381,7 +385,10 @@ export function SendTab() {
     const qParam = sp.get("q");
     const fromParam = sp.get("from");
     const toParam = sp.get("to");
-    if (filterParam && FILTER_ORDER.includes(filterParam as HistoryFilter)) {
+    const savedFilter = localStorage.getItem(HISTORY_FILTER_KEY);
+    if (savedFilter && FILTER_ORDER.includes(savedFilter as HistoryFilter)) {
+      setHistoryFilter(savedFilter as HistoryFilter);
+    } else if (filterParam && FILTER_ORDER.includes(filterParam as HistoryFilter)) {
       setHistoryFilter(filterParam as HistoryFilter);
       try { localStorage.setItem(HISTORY_FILTER_KEY, filterParam); } catch {}
     }
@@ -615,17 +622,19 @@ export function SendTab() {
 
   useEffect(() => { refreshTemplates(); }, []);
 
-  function handleSaveTemplate() {
+  function handleSaveTemplate(name?: string) {
     if (!message.trim()) {
       toast("error", "템플릿으로 저장할 메시지 내용을 입력하세요.");
       return;
     }
-    if (!saveTemplateName.trim()) return;
-    persistTemplate(saveTemplateName.trim(), message);
+    const templateName = (name || saveTemplateName).trim();
+    if (!templateName) return;
+    persistTemplate(templateName, message);
     refreshTemplates();
     setSaveTemplateDialogOpen(false);
     setSaveTemplateName("");
-    toast("success", `"${saveTemplateName.trim()}" 템플릿이 저장되었습니다.`);
+    setQuickSaveName("");
+    toast("success", `"${templateName}" 템플릿이 저장되었습니다.`);
   }
 
   function handleLoadTemplate(tpl: MessageTemplate) {
@@ -634,8 +643,22 @@ export function SendTab() {
     toast("info", `"${tpl.name}" 템플릿을 불러왔습니다.`);
   }
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   function handleInsertVariable(variable: string) {
-    useDashboardStore.setState({ sendMessage: message + variable });
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newMsg = message.slice(0, start) + variable + message.slice(end);
+      useDashboardStore.setState({ sendMessage: newMsg });
+      requestAnimationFrame(() => {
+        textarea.focus();
+        const pos = start + variable.length;
+        textarea.setSelectionRange(pos, pos);
+      });
+    } else {
+      useDashboardStore.setState({ sendMessage: message + variable });
+    }
     toast("info", `변수 ${variable}를 추가했습니다.`);
   }
 
@@ -962,6 +985,7 @@ export function SendTab() {
   // Selecting a folder (Send Group) adds every group in it to the current manual
   // selection — same additive pattern as handleSelectSavedSendGroup/handleSelectAllVisible,
   // so manual checkbox selection keeps working unchanged before and after.
+  const [folderConfirm, setFolderConfirm] = useState<{ name: string; ids: string[] } | null>(null);
   function handleSelectFolder(folder: GroupFolder | { id: string; title: string; groupIds: string[] }) {
     const folderName = "name" in folder ? folder.name : folder.title;
     const folderGroupIds = "group_ids" in folder ? folder.group_ids : folder.groupIds;
@@ -971,10 +995,17 @@ export function SendTab() {
       toast("error", "이 폴더에는 현재 계정에서 사용할 수 있는 그룹이 없습니다.");
       return;
     }
+    if (valid.length >= 5) {
+      setFolderConfirm({ name: folderName, ids: valid });
+    } else {
+      applyFolderSelection(folderName, valid);
+    }
+  }
+  function applyFolderSelection(folderName: string, valid: string[]) {
     const next = [...selectedIds, ...valid];
     setSendSelectedGroupIds(next);
     toast("success", `"${folderName}" 폴더에서 ${valid.length}개 그룹을 선택했습니다.`);
-    }
+  }
     function applyDeliveryPreset(preset: DeliveryPreset) {
       setDeliveryPreset(preset);
       if (preset === "safe") {
@@ -1291,6 +1322,7 @@ export function SendTab() {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* Send Confirmation Modal */}
       {/* ── Compose Panel ── */}
       <Panel
         title={
@@ -1713,7 +1745,7 @@ export function SendTab() {
 
             {/* Message */}
             <Field label="메시지 내용">
-              <textarea rows={5} value={message} onChange={(e) => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 320) + 'px'; }}
+              <textarea ref={textareaRef} rows={5} value={message} onChange={(e) => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 320) + 'px'; }}
                 placeholder="발송할 메시지를 입력하세요." required
                 className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 resize-none min-h-[88px]" />
               <div className="flex items-center gap-2 mt-1">
@@ -1788,7 +1820,7 @@ export function SendTab() {
 
             {/* AI message insights */}
             {message.trim().length > 0 && (
-              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {/* Spam Score */}
                 <div className="rounded-lg border border-app-border bg-app-card p-2.5">
                   <div className="mb-1 flex items-center justify-between">
@@ -1867,13 +1899,30 @@ export function SendTab() {
               >
                 <Copy className="h-3 w-3" /> 템플릿
               </button>
-              <button
-                type="button"
-                onClick={() => { setSaveTemplateName(""); setSaveTemplateDialogOpen(true); }}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-              >
-                <Plus className="h-3 w-3" /> 현재 메시지 저장
-              </button>
+              {quickSaveOpen ? (
+                <div className="flex items-center gap-1">
+                  <input ref={quickSaveInputRef} type="text" value={quickSaveName} onChange={(e) => setQuickSaveName(e.target.value)}
+                    placeholder="템플릿 이름" maxLength={30}
+                    onKeyDown={(e) => { if (e.key === "Enter") { handleSaveTemplate(quickSaveName); } if (e.key === "Escape") { setQuickSaveOpen(false); setQuickSaveName(""); } }}
+                    className="w-28 rounded-lg border border-app-border bg-app-bg px-2 py-1 text-[11px] text-app-text outline-none focus:border-app-primary/60" />
+                  <button onClick={() => handleSaveTemplate(quickSaveName)} disabled={!quickSaveName.trim()}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors">
+                    저장
+                  </button>
+                  <button onClick={() => { setQuickSaveOpen(false); setQuickSaveName(""); }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text transition-colors">
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setQuickSaveOpen(true); setQuickSaveName(""); }}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
+                >
+                  <Plus className="h-3 w-3" /> 빠른 저장
+                </button>
+              )}
               <button type="button" onClick={() => {
                 const recent = history.slice(0, 5).map(h => h.message);
                 if (recent.length > 0) setMessage(recent[0]);
@@ -1924,18 +1973,18 @@ export function SendTab() {
                 {filteredTemplates.length > 0 ? (
                   <div className="max-h-48 space-y-0.5 overflow-y-auto">
                     {filteredTemplates.map((tpl) => (
-                      <div key={tpl.id} className="group flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
+                      <div key={tpl.id} className="flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-app-card-hover transition-colors">
                         <button
                           type="button"
                           onClick={() => handleToggleTemplateFavorite(tpl.id)}
-                          className={`shrink-0 flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded transition-colors ${
                             tpl.isFavorite
                               ? "text-app-warning hover:text-app-warning/70"
-                              : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-warning"
+                              : "text-app-text-subtle hover:text-app-warning"
                           }`}
                           title={tpl.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
                         >
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill={tpl.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                           </svg>
                         </button>
@@ -1949,15 +1998,15 @@ export function SendTab() {
                         </button>
                         <button type="button"
                           onClick={() => { setMessage(tpl.content); handleSubmit({ preventDefault: () => {} } as FormEvent); }}
-                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                          className="shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors"
                           title="바로 발송">🚀</button>
                         <button
                           type="button"
                           onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger transition-all"
+                          className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-app-text-subtle hover:text-app-danger transition-all"
                           title="삭제"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
@@ -2032,11 +2081,17 @@ export function SendTab() {
                         e.stopPropagation();
                         setImageFile(null);
                       }}
-                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
                       title="이미지 제거"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-5 w-5" />
                     </button>
+                    <div className="mt-1 flex justify-center gap-2">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setImageFile(null); }}
+                        className="rounded-lg bg-app-danger/20 px-3 py-1.5 text-xs text-app-danger font-medium min-h-[44px]">
+                        이미지 제거
+                      </button>
+                    </div>
                     <div className="mt-1 text-center text-[11px] text-app-text-subtle">
                       클릭하거나 파일을 끌어다 놓아 교체
                     </div>
@@ -2103,9 +2158,10 @@ export function SendTab() {
             {/* Timing & Delivery mode options */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
-                <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
+                <label className="flex items-center gap-2 min-h-[44px] text-sm text-app-text cursor-pointer">
                   <input type="checkbox" checked={isScheduled}
-                    onChange={(e) => { setIsScheduled(e.target.checked); if (e.target.checked) setIsRecurring(false); }} />
+                    onChange={(e) => { setIsScheduled(e.target.checked); if (e.target.checked) setIsRecurring(false); }}
+                    className="h-5 w-5 rounded border-app-border text-app-primary focus:ring-app-primary/30" />
                   <Clock className="h-3.5 w-3.5 text-app-text-muted" />
                   예약 발송
                 </label>
@@ -2122,35 +2178,36 @@ export function SendTab() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
-                <label className="flex items-center gap-2 text-sm text-app-text cursor-pointer">
-                  <input type="checkbox" checked={isRecurring}
-                    onChange={(e) => { setIsRecurring(e.target.checked); if (e.target.checked) setIsScheduled(false); }} />
-                  <RefreshCw className="h-3.5 w-3.5 text-app-text-muted" />
-                  반복 발송
-                </label>
-                {isRecurring && (
-                  <div className="mt-2">
-                    <div className="flex gap-1 mb-1.5">
-                      {RECURRING_INTERVALS.filter((opt) => [30, 60, 360].includes(opt.value)).map((opt) => (
-                        <button key={opt.value} type="button" onClick={() => setRecurringInterval(opt.value)}
-                          className={`rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${recurringInterval === opt.value ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted"}`}>
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    <Field label="반복 간격">
-                      <select value={recurringInterval} onChange={(e) => setRecurringInterval(Number(e.target.value))}
-                        className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60">
-                        {RECURRING_INTERVALS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <div className="rounded-xl border border-app-border bg-app-card/50 px-3 py-2.5">
+                  <label className="flex items-center gap-2 min-h-[44px] text-sm text-app-text cursor-pointer">
+                    <input type="checkbox" checked={isRecurring}
+                      onChange={(e) => { setIsRecurring(e.target.checked); if (e.target.checked) setIsScheduled(false); }}
+                      className="h-5 w-5 rounded border-app-border text-app-primary focus:ring-app-primary/30" />
+                    <RefreshCw className="h-3.5 w-3.5 text-app-text-muted" />
+                    반복 발송
+                  </label>
+                  {isRecurring && (
+                    <div className="mt-2">
+                      <div className="flex gap-1 mb-1.5">
+                        {RECURRING_INTERVALS.filter((opt) => [30, 60, 360].includes(opt.value)).map((opt) => (
+                          <button key={opt.value} type="button" onClick={() => setRecurringInterval(opt.value)}
+                            className={`rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${recurringInterval === opt.value ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted"}`}>
+                            {opt.label}
+                          </button>
                         ))}
-                      </select>
-                    </Field>
-                  </div>
-                )}
+                      </div>
+                      <Field label="반복 간격">
+                        <select value={recurringInterval} onChange={(e) => setRecurringInterval(Number(e.target.value))}
+                          className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2 text-sm text-app-text outline-none focus:border-app-primary/60">
+                          {RECURRING_INTERVALS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             </div>
 
             {(isScheduled || isRecurring) && (
@@ -2161,552 +2218,203 @@ export function SendTab() {
 
             {/* Delivery Mode Selector */}
             <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
-                  <SendIcon className="h-3.5 w-3.5 text-app-text-muted" />
-                  발송 방식
-                </label>
-                <div className="flex flex-col gap-2">
-                  <label className="flex items-start gap-2.5 rounded-lg border border-app-success/30 bg-app-success-muted/10 p-2.5 cursor-pointer hover:border-app-success/60 transition-colors">
-                    <input type="radio" name="deliveryMode" value="normal" checked={deliveryMode === "normal"}
-                      onChange={() => setDeliveryMode("normal")} className="mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-app-text">일반 발송</div>
-                        <Badge tone="success" className="text-[9px] px-1.5 py-0">권장</Badge>
-                      </div>
-                      {deliveryMode === "normal" ? (
-                        <div className="mt-1.5 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-app-text-muted">방마다</span>
-                            <select value={normalDelaySeconds}
-                              onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
-                              className="rounded-lg border border-app-border bg-app-card px-2 py-1 text-xs text-app-text outline-none focus:border-app-primary/60"
-                              onClick={(e) => e.stopPropagation()}>
-                              {NORMAL_DELAY_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                              ))}
-                            </select>
-                            <span className="text-xs text-app-text-muted">간격으로 순차 전송</span>
-                          </div>
-                          {/* Batch size selector */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-app-text-muted">묶음:</span>
-                            {[1, 5, 10].map((size) => (
-                              <button
-                                key={size}
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setBatchSize(size); }}
-                                className={cn(
-                                  "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
-                                  batchSize === size
-                                    ? "border-app-primary bg-app-primary text-white"
-                                    : "border-app-border bg-app-card text-app-text-muted hover:border-app-border-strong hover:text-app-text",
-                                )}
-                              >
-                                {size}개씩
-                                {size === 10 && <span className="ml-1 text-[9px] opacity-70">⚠️</span>}
-                                {size === 1 && <span className="ml-1 text-[9px] opacity-70">✅</span>}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-app-text-subtle">
-                            <span className={batchSize === 1 ? "text-app-success font-medium" : ""}>1개씩: 가장 안전</span>
-                            <span className={batchSize === 5 ? "text-app-warning font-medium" : ""}>5개씩: 보통</span>
-                            <span className={batchSize === 10 ? "text-app-danger font-medium" : ""}>10개씩: 위험 ⚠️</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-app-text-muted mt-1.5">간격과 묶음 개수를 선택하세요</div>
-                      )}
-                    </div>
-                  </label>
-                  <label className="flex items-start gap-2.5 rounded-lg border border-app-info/30 bg-app-info-muted/5 p-2.5 cursor-pointer hover:border-app-info/60 transition-colors">
-                    <input type="radio" name="deliveryMode" value="replyMacro" checked={deliveryMode === "replyMacro"}
-                      onChange={() => setDeliveryMode("replyMacro")} className="mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-app-text">답장매크로</div>
-                        <Badge tone="info" className="text-[9px] px-1.5 py-0">자동</Badge>
-                      </div>
-                      <div className="hidden sm:block text-xs text-app-text-muted">랜덤리플라이 — 켜면 모든 그룹에서 무작위 대상에게 자동 답장</div>
-                    </div>
-                  </label>
-                  <label className="flex items-start gap-2.5 rounded-lg border border-app-danger/30 bg-app-danger-muted/20 p-2.5 cursor-pointer hover:border-app-danger/60 transition-colors">
-                    <input type="radio" name="deliveryMode" value="bulk" checked={deliveryMode === "bulk"}
-                      onChange={() => setDeliveryMode("bulk")} className="mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-app-text">전체 즉시 발송</div>
-                        <Badge tone="danger" className="text-[9px] px-1.5 py-0">위험</Badge>
-                      </div>
-                      <div className="hidden sm:block text-xs text-app-text-muted">한 번에 모든 방에 전송합니다. Telegram 제한에 걸릴 위험이 있습니다.</div>
-                      {deliveryMode === "bulk" && (
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <input type="checkbox" id="dedupeNormal" checked={dedupeNormalSend}
-                            onChange={(e) => setDedupeNormalSend(e.target.checked)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-3.5 w-3.5 rounded border-app-border" />
-                          <label htmlFor="dedupeNormal" className="text-[10px] text-app-text-muted cursor-pointer select-none">
-                            최근 24시간 내 발송된 수신자 자동 제외
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  </label>
-              </div>
+              <label className="flex items-center gap-2 text-sm text-app-text">
+                <input
+                  type="radio"
+                  name="deliveryMode"
+                  checked={deliveryMode === "normal"}
+                  onChange={() => setDeliveryMode("normal")}
+                  className="h-4 w-4 text-app-primary focus:ring-app-primary/30"
+                />
+                일반 발송
+              </label>
+              <label className="flex items-center gap-2 text-sm text-app-text mt-1.5">
+                <input
+                  type="radio"
+                  name="deliveryMode"
+                  checked={deliveryMode === "cycle"}
+                  onChange={() => setDeliveryMode("cycle")}
+                  className="h-4 w-4 text-app-primary focus:ring-app-primary/30"
+                />
+                순차 발송
+                <Badge tone="info" className="text-xs">
+                  베타
+                </Badge>
+              </label>
+              <label className="flex items-center gap-2 text-sm text-app-text mt-1.5">
+                <input
+                  type="radio"
+                  name="deliveryMode"
+                  checked={deliveryMode === "bulk"}
+                  onChange={() => setDeliveryMode("bulk")}
+                  className="h-4 w-4 text-app-primary focus:ring-app-primary/30"
+                />
+                대량 발송
+                <Badge tone="info" className="text-xs">
+                  베타
+                </Badge>
+              </label>
             </div>
 
-            {/* 발송 간격 슬라이더는 전체 즉시 발송 모드일 때만 표시 */}
-            {deliveryMode === "bulk" && (
-              <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-app-text">
-                  <Hourglass className="h-3.5 w-3.5 text-app-text-muted" />
-                  발송 간격
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="1"
-                    max="60"
-                    step="1"
-                    value={normalDelaySeconds}
-                    onChange={(e) => setNormalDelaySeconds(Number(e.target.value))}
-                    className="flex-1 accent-app-primary cursor-pointer"
-                  />
-                  <span className="w-12 text-right text-sm font-medium text-app-text tabular-nums">
-                    {normalDelaySeconds}초
-                  </span>
-                </div>
-                <div className="mt-1 flex justify-between text-[10px] text-app-text-subtle">
-                  <span>1초</span>
-                  <span>60초</span>
-                </div>
-              </div>
-            )}
-
-          {submitError && <InlineError className="mt-3">{submitError}</InlineError>}
-          {submitNotice && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-success/20 bg-app-success-muted px-3 py-2.5 text-xs text-app-success">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{submitNotice}</span>
-            </div>
-          )}
-          {reuseNotice && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-app-info/20 bg-app-info-muted px-3 py-2.5 text-xs text-app-info">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="flex-1">{reuseNotice}</span>
-              <button
-                type="button"
-                onClick={() => setReuseNotice(null)}
-                className="shrink-0 rounded-full p-0.5 text-app-info/60 hover:text-app-info transition-colors"
-                aria-label="닫기"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </form>
-      </Panel>
-
-      {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
-      {distributionBatchId && distributionSiblings.length > 0 && (
-        <Panel
-          title={
-            <div className="flex items-center gap-2">
-              <Users2 className="h-4 w-4 text-app-primary" />
-              계정별 분산 발송 현황
-            </div>
-          }
-          description={`대상이 많아 계정 ${distributionSiblings.length}개에 나눠서 보냈습니다`}
-          action={
-            <div className="flex items-center gap-2">
-              {recoverableFailedIds.length > 0 && (
-                <button
+            {/* Inline Buttons Section */}
+            <div className="rounded-xl border border-app-border bg-app-card/50 p-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-app-text">인라인 버튼</h3>
+                <Button
                   type="button"
-                  onClick={handleSelectRecoverableFailures}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-warning hover:bg-app-warning-muted transition-colors"
+                  variant="ghost"
+                  onClick={() => setShowInlineButtons(!showInlineButtons)}
+                  className="h-6 w-6 p-0 text-app-text-subtle"
                 >
-                  <FileWarning className="h-3.5 w-3.5" />
-                  복구형 실패 선택 {recoverableFailedIds.length}개
-                </button>
-              )}
-              <button
-                onClick={() => loadDistributionStatus(distributionBatchId)}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                새로고침
-              </button>
-            </div>
-          }
-        >
-          <div className="space-y-2">
-            {distributionSiblings.map((sib) => {
-              const meta = STATUS_META[sib.broadcast.status];
-              const groupCount = sib.broadcast.recipients.length;
-              return (
-                <div
-                  key={sib.broadcast.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-app-border/60 bg-app-bg/30 px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-app-text truncate">
-                      {sib.accountName || sib.accountPhone}
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${
+                      showInlineButtons ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
+
+              {showInlineButtons && (
+                <div className="mt-3 space-y-3">
+                  {inlineButtons.map((btn, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={btn.label}
+                        onChange={(e) => {
+                          const newButtons = [...inlineButtons];
+                          newButtons[idx].label = e.target.value;
+                          setInlineButtons(newButtons);
+                        }}
+                        placeholder="버튼 라벨"
+                        className="flex-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-sm text-app-text outline-none focus:border-app-primary/60 min-h-[44px]"
+                      />
+                      <input
+                        type="url"
+                        value={btn.url}
+                        onChange={(e) => {
+                          const newButtons = [...inlineButtons];
+                          newButtons[idx].url = e.target.value;
+                          setInlineButtons(newButtons);
+                        }}
+                        placeholder="https://"
+                        className="flex-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-sm text-app-text outline-none focus:border-app-primary/60 min-h-[44px]"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setInlineButtons(inlineButtons.filter((_, i) => i !== idx));
+                        }}
+                        className="h-9 w-9 p-0 text-app-danger"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="text-[11px] text-app-text-muted">{groupCount}개 그룹 배정</div>
-                  </div>
-                  <Badge tone={meta.tone} className="shrink-0 gap-1">
-                    <meta.icon className="h-3 w-3" />
-                    {meta.label}
-                  </Badge>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-      )}
-
-      {/* ── Schedule Calendar ── */}
-      <Panel title={<div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-app-primary" /> 발송 일정</div>}
-        description="예약된 발송을 달력에서 확인하세요">
-        <ScheduleCalendar broadcasts={history} onCancel={(b) => handleCancelClick(b)} />
-      </Panel>
-
-      {/* ── History Panel ── */}
-      <Panel
-        title={
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-app-primary" />
-            발송 이력
-          </div>
-        }
-        description={`${history.length}건${statusSummary.length > 0 ? ` · ${statusSummary.map((s) => `${s.label} ${s.count}`).join(" / ")}` : ""}`}
-        action={
-          <div className="flex items-center gap-1.5">
-            {selectedHistoryIds.size > 0 && (
-              <div className="flex items-center gap-2">
-                <select value={batchRetryDelay} onChange={(e) => setBatchRetryDelay(Number(e.target.value))}
-                  className="rounded-lg border border-app-border bg-app-bg px-2 py-1 text-[10px] text-app-text">
-                  {[1, 3, 5, 10, 15, 30].map((s) => (
-                    <option key={s} value={s}>{s}초 간격</option>
                   ))}
-                </select>
-                <button onClick={handleBatchRetry} disabled={batchRetrying}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-danger hover:bg-app-danger-muted transition-colors disabled:opacity-50">
-                  <RefreshCw className={`h-3.5 w-3.5 ${batchRetrying ? "animate-spin" : ""}`} />
-                  {selectedHistoryIds.size}개 재발송
-                </button>
-              </div>
-            )}
-            {history.length > 0 && (
-              <button onClick={() => downloadLogsCsv(filteredHistory)}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors">
-                <Download className="h-3.5 w-3.5" />
-                CSV
-              </button>
-            )}
-            <button onClick={handleManualRefresh} disabled={historyLoading || historyRefreshing}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors disabled:opacity-50">
-              <RefreshCw className={`h-3.5 w-3.5 ${historyLoading || historyRefreshing ? "animate-spin" : ""}`} />
-              새로고침
-            </button>
-          </div>
-        }
-      >
-        {/* History search & date filter */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
-            <input type="text" value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
-              placeholder="메시지/수신자/오류 검색"
-              className="w-full rounded-lg border border-app-border bg-app-card py-1.5 pl-8 pr-2 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
-            />
-          </div>
-          <input type="date" value={historyDateFrom}
-            onChange={(e) => setHistoryDateFrom(e.target.value)}
-            className="w-36 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-xs text-app-text outline-none transition-colors focus:border-app-primary/60"
-            title="시작 날짜"
-          />
-          <span className="text-[11px] text-app-text-subtle">~</span>
-          <input type="date" value={historyDateTo}
-            onChange={(e) => setHistoryDateTo(e.target.value)}
-            className="w-36 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-xs text-app-text outline-none transition-colors focus:border-app-primary/60"
-            title="종료 날짜"
-          />
-          {(historySearch || historyDateFrom || historyDateTo) && (
-            <button type="button" onClick={() => { setHistorySearch(""); setHistoryDateFrom(""); setHistoryDateTo(""); }}
-              className="flex items-center gap-1 rounded-lg border border-app-border bg-app-card px-2 py-1.5 text-[11px] text-app-text-muted transition-colors hover:border-app-border-strong hover:text-app-text"
-              title="필터 초기화"
-            >
-              <X className="h-3 w-3" /> 초기화
-            </button>
-          )}
-        </div>
-        {/* Status filter pills */}
-        {!historyLoading && history.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {FILTER_ORDER.map((f) => {
-              const count = statusCounts[f] ?? 0;
-              if (f !== "all" && count === 0) return null;
-              return (
-                <button key={f} type="button" onClick={() => saveHistoryFilter(f)}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                    historyFilter === f ? "bg-app-primary text-white" : "bg-app-card-hover text-app-text-muted hover:text-app-text",
-                  )}>
-                  {FILTER_LABEL[f]}
-                  {f !== "all" && <span className="ml-1 opacity-70">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Loading */}
-        {historyLoading && filteredHistory.length === 0 && (
-          <div className="space-y-1.5">
-            <Skeleton className="h-14 w-full rounded-xl" />
-            <Skeleton className="h-14 w-full rounded-xl" />
-            <Skeleton className="h-14 w-full rounded-xl" />
-          </div>
-        )}
-
-        {/* Empty */}
-        {!historyLoading && history.length === 0 && (
-          <EmptyState icon={SendIcon} title="아직 발송 이력이 없습니다" description="위 양식에서 메시지를 작성하고 발송 버튼을 눌러주세요." />
-        )}
-
-        {/* Chronologically grouped history (all filter) */}
-        {!historyLoading && groupedHistory && historyFilter === "all" && (
-          <div className="space-y-3">
-            {groupedHistory.map((g) => (
-              <div key={g.label}>
-                <div className="mb-1.5 flex items-center gap-2 sticky top-0 z-10 bg-app-bg/95 backdrop-blur-sm py-1 -mx-2 px-2">
-                  <span className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider">
-                    {g.label}
-                  </span>
-                  <span className="h-px flex-1 bg-app-border/50" />
-                  <span className="text-[10px] text-app-text-subtle">{g.items.length}건</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setInlineButtons([
+                        ...inlineButtons,
+                        { label: "", url: "" },
+                      ])
+                    }
+                    className="w-full min-h-[44px]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    버튼 추가
+                  </Button>
                 </div>
-                <div className="space-y-1.5">
-                  {g.items.map((h) => (
-              <HistoryRow
-                key={h.id} h={h}
-                cancelling={cancelling} retrying={retrying}
-                onCancelClick={handleCancelClick} onRetry={handleRetry}
-                onReuse={handleReuse}
-                onClone={handleClone}
-                onAiAnalyze={(b) => {
-                  useDashboardStore.getState().setActiveTab("myai");
-                  setTimeout(() => {
-                    const store = useDashboardStore.getState();
-                    store.setSendMessage(`이 발송이 실패한 이유를 분석해줘:\n에러: ${b.errorMessage || "알 수 없음"}\n메시지: ${b.message}`);
-                  }, 300);
-                }}
-                onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
-                selected={selectedHistoryIds.has(h.id)}
-              />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
 
-        {/* Flat list (status filter) */}
-        {!historyLoading && groupedHistory === null && filteredHistory.length > 0 && (
-          <div className="space-y-1.5">
-            {filteredHistory.map((h) => (
-          <HistoryRow
-            key={h.id} h={h}
-            cancelling={cancelling} retrying={retrying}
-            onCancelClick={handleCancelClick} onRetry={handleRetry}
-            onReuse={handleReuse}
-            onClone={handleClone}
-            onPauseResume={(b) => b.isRecurringPaused ? handleUnpauseRecurring(b) : handlePauseRecurring(b)}
-            onAiAnalyze={(b) => {
-              useDashboardStore.getState().setActiveTab("myai");
-              setTimeout(() => {
-                const store = useDashboardStore.getState();
-                store.setSendMessage(`이 발송이 실패한 이유를 분석해줘:\n에러: ${b.errorMessage || "알 수 없음"}\n메시지: ${b.message}`);
-              }, 300);
-            }}
-            onToggleSelect={(id) => setSelectedHistoryIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
-            selected={selectedHistoryIds.has(h.id)}
-          />
-            ))}
-          </div>
-        )}
-
-        {!historyLoading && filteredHistory.length === 0 && history.length > 0 && (
-          <p className="py-4 text-center text-xs text-app-text-subtle">선택한 상태의 발송 내역이 없습니다.</p>
-        )}
-      </Panel>
-
-      {/* Stop / Cancel confirmation */}
-      <ConfirmDialog
-        open={cancelConfirmOpen}
-        title={cancelDialogTitle}
-        description={cancelDialogDescription}
-        confirmLabel={cancelTarget && isRecurringBroadcast(cancelTarget) ? "취소하기" : "중단하기"} cancelLabel="닫기" variant="danger"
-        onConfirm={async () => {
-          if (!cancelTarget) return;
-          await handleStop(cancelTarget);
-          setCancelConfirmOpen(false);
-          setCancelTarget(null);
-        }}
-        onCancel={() => { setCancelConfirmOpen(false); setCancelTarget(null); }}
-      />
-
-      {/* Message preview modal */}
-
-
-      {/* Save template dialog */}
-      <Modal
-        open={saveTemplateDialogOpen}
-        onClose={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}
-        title="메시지 템플릿 저장"
-        description="현재 메시지를 템플릿으로 저장합니다. 저장한 템플릿은 나중에 불러와 사용할 수 있습니다."
-        size="sm"
-        footer={
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={() => { setSaveTemplateDialogOpen(false); setSaveTemplateName(""); }}>
-              취소
-            </Button>
+            {/* Send Button */}
             <Button
               type="button"
-              size="sm"
-              disabled={!saveTemplateName.trim()}
-              onClick={handleSaveTemplate}
+              variant="primary"
+              onClick={handleSendConfirm}
+              disabled={!selectedGroupIds.length || !message.trim() || sending}
+              className="w-full min-h-[48px] text-base font-medium"
             >
-              저장
+              {sending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  발송 중...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  {selectedGroupIds.length > 1
+                    ? `${selectedGroupIds.length}개 그룹에 발송`
+                    : "그룹에 발송"}
+                </>
+              )}
             </Button>
-          </div>
-        }
-      >
-        <div className="space-y-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-app-text-muted">템플릿 이름</label>
-            <input
-              type="text"
-              value={saveTemplateName}
-              onChange={(e) => setSaveTemplateName(e.target.value)}
-              placeholder="예: 공지사항 템플릿"
-              className="w-full rounded-xl border border-app-border bg-app-bg px-3 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && saveTemplateName.trim()) {
-                  handleSaveTemplate();
-                }
-              }}
-            />
-          </div>
-          <div className="rounded-xl border border-app-border bg-app-bg/50 p-3">
-            <p className="mb-1 text-[11px] font-medium text-app-text-muted">미리보기</p>
-            <p className="whitespace-pre-wrap break-words text-sm text-app-text leading-relaxed max-h-28 overflow-y-auto">
-              {message.trim() || (
-                <span className="text-app-text-subtle italic">메시지 내용이 비어 있습니다.</span>
-              )}
-            </p>
-          </div>
-        </div>
-      </Modal>
+          </form>
+        </Panel>
 
-      {riskAnalysis.level !== "safe" && (
-        <div className={cn(
-          "flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs",
-          riskLevelBg(riskAnalysis.level),
-          riskLevelColor(riskAnalysis.level),
-          riskAnalysis.level === "caution" ? "border-app-warning/20" : "border-app-danger/20",
-        )}>
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="space-y-1">
-            <p className="font-medium">{riskLevelLabel(riskAnalysis.level)}: 발송 리스크 분석</p>
-            {riskAnalysis.reasons.length > 0 && (
-              <ul className="list-inside list-disc space-y-0.5 text-[11px] opacity-80">
-                {riskAnalysis.reasons.map((r, i) => <li key={i}>{r}</li>)}
-              </ul>
-            )}
-            {riskAnalysis.recommendations.length > 0 && (
-              <ul className="list-inside list-disc space-y-0.5 text-[11px] opacity-80">
-                {riskAnalysis.recommendations.map((r, i) => <li key={i}>→ {r}</li>)}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Send time estimate */}
-      {estimatePreview && canSubmit && (
-        <div className="flex items-center justify-end gap-2 text-xs text-app-text-muted mb-2">
-          <Hourglass className="h-3.5 w-3.5" />
-          <span>예상 소요 시간: <strong className="text-app-text">{estimatePreview.readable}</strong></span>
-              {bottleneckHints.length > 0 && canSubmit && (
-                <div className="mb-2 rounded-xl border border-app-warning/25 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
-                  <p className="mb-1 font-medium">속도/제한 진단</p>
-                  <ul className="list-inside list-disc space-y-0.5">
-                    {bottleneckHints.map((hint, idx) => <li key={idx}>{hint}</li>)}
-                  </ul>
+        {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
+        {distributionStatus && (
+          <Panel
+            title="배포 상태"
+            description="그룹이 많은 경우 여러 계정에 나누어 발송됩니다"
+          >
+            <div className="space-y-2">
+              {distributionStatus.siblings.map((sibling) => (
+                <div
+                  key={sibling.broadcast.id}
+                  className="rounded-lg border border-app-border bg-app-card p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-app-text">
+                        {sibling.accountName || sibling.accountPhone}
+                      </p>
+                      <p className="text-xs text-app-text-subtle">
+                        {sibling.broadcast.recipients.length}개 그룹
+                      </p>
+                    </div>
+                    <Badge
+                      tone={
+                        sibling.broadcast.status === "sent"
+                          ? "success"
+                          : sibling.broadcast.status === "failed"
+                          ? "danger"
+                          : sibling.broadcast.status === "cancelled"
+                          ? "warning"
+                          : "info"
+                      }
+                    >
+                      {sibling.broadcast.status === "pending"
+                        ? "대기 중"
+                        : sibling.broadcast.status === "sending"
+                        ? "발송 중"
+                        : sibling.broadcast.status === "sent"
+                        ? "완료"
+                        : sibling.broadcast.status === "failed"
+                        ? "실패"
+                        : "취소됨"}
+                    </Badge>
+                  </div>
                 </div>
-              )}
-        </div>
-      )}
-      {estimateLoading && !estimatePreview && canSubmit && (
-        <div className="flex items-center justify-end gap-2 text-xs text-app-text-muted mb-2">
-          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-          <span>예상 시간 계산 중...</span>
-        </div>
-      )}
-      {message.trim().length > 0 && (
-        <p className="text-right text-[10px] text-app-text-subtle -mb-1.5">임시 저장됨</p>
-      )}
-      {selectedRecipientIds.length > 0 && (
-        <div className="sticky bottom-20 flex justify-center mb-2">
-          <span className="rounded-full bg-app-primary/10 px-3 py-1 text-xs font-medium text-app-primary">
-            {selectedRecipientIds.length}개 그룹 선택
-          </span>
-        </div>
-      )}
-      {/* Floating submit button */}
-      <motion.div
-        initial={false}
-        animate={canSubmit ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0.5, scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className={cn("sticky bottom-4 flex items-center justify-end gap-2 w-full transition-transform duration-300", viewportHeight > 0 && viewportHeight < 600 ? "translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100")}
-      >
-        <ApiKeyGuard
-          description="발송 기능을 사용하려면 API 키가 필요합니다. 봇 메뉴에서 '🔑 내 API 키'를 통해 발급받으세요."
-          hasApiKey={hasApiKey}
-          onKeySet={onKeySet}
-        >
-          <button type="button"
-            onClick={() => { if (selectedRecipientIds.length >= 10) setSendConfirmOpen(true); else (document.getElementById('send-form') as HTMLFormElement | null)?.requestSubmit(); }}
-            className="inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-medium shadow-lg shadow-app-primary/30 bg-app-primary text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
-            disabled={!canSubmit}>
-            <SendIcon className="h-4 w-4" />
-            {spamBlocked ? "스팸 차단됨" : riskBlocked ? "위험 차단됨" : submitting ? "처리 중..." : isRecurring ? "반복 설정" : isScheduled ? "예약하기" : "발송"}
-          </button>
-          {spamBlocked && (
-            <p className="text-[10px] text-app-danger mt-1 text-center">
-              스팸 점수 {spamScore.score}/100 — 메시지 수정이 필요합니다
-            </p>
-          )}
-          {riskBlocked && (
-            <p className="text-[10px] text-app-danger mt-1 text-center">
-              발송 리스크 위험 — 문제 해결 후 재시도하세요
-            </p>
-          )}
-        </ApiKeyGuard>
-      </motion.div>
+              ))}
+            </div>
+          </Panel>
+        )}
+      </div>
+
+      {/* Send Confirmation Modal */}
       <ConfirmDialog
         open={sendConfirmOpen}
-        title="발송 확인"
-        description={`${selectedRecipientIds.length}개 그룹에 메시지를 발송합니다.\n\n메시지: ${message.slice(0, 80)}${message.length > 80 ? '...' : ''}`}
-        confirmLabel="발송" cancelLabel="취소"
-        onConfirm={() => { setSendConfirmOpen(false); (document.getElementById('send-form') as HTMLFormElement | null)?.requestSubmit(); }}
+        title="메시지 발송 확인"
+        description={`선택한 ${selectedGroupIds.length}개 그룹에 메시지를 발송하시겠습니까?`}
+        confirmLabel="발송"
+        cancelLabel="취소"
+        onConfirm={handleSend}
         onCancel={() => setSendConfirmOpen(false)}
       />
-    </div>
+    </>
   );
 }

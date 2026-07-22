@@ -12,19 +12,20 @@ import { useToast } from "@/components/ui/Toast";
 import { useApiKeyGuard } from "@/lib/useApiKeyGuard";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
-import * as api from "@/lib/api";
+import { cn } from "@/lib/cn";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
+import type { Account } from "@/types";
+import * as api from "@/lib/api";
 
 export function AccountRegisterTab() {
   const { hasApiKey, onKeySet } = useApiKeyGuard();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
-  const addAccount = useDashboardStore((s) => s.addAccount);
+  const registerAccount = useDashboardStore((s) => s.registerAccount);
   const removeAccount = useDashboardStore((s) => s.removeAccount);
-  const updateAccount = useDashboardStore((s) => s.updateAccount);
   const selectAccount = useDashboardStore((s) => s.selectAccount);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function AccountRegisterTab() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 모바일 멀티스텝 상태
   const [showSteps, setShowSteps] = useState(false); // 모바일에서 단계 표시 여부
+  const [submitting, setSubmitting] = useState(false); // 제출 상태
   
   const [formData, setFormData] = useState({
     name: "",
@@ -127,24 +129,14 @@ export function AccountRegisterTab() {
       }
     }
     
+    setSubmitting(true);
+    
     try {
-      setSubmitting(true);
-      const newAccount = await api.createAccount({
+      const newAccount = await registerAccount({
         name: formData.name,
         phone: formData.phone,
-        telegram_session: formData.telegramSession,
-        telegram_bot_token: formData.telegramBotToken,
-        smtp_host: formData.smtpHost || undefined,
-        smtp_port: formData.smtpPort || undefined,
-        smtp_user: formData.smtpUser || undefined,
-        smtp_password: formData.smtpPassword || undefined,
-        smtp_from: formData.smtpFrom || undefined,
-        api_key: formData.apiKey || undefined,
-        webhook_url: formData.webhookUrl || undefined,
-        notes: formData.notes || undefined,
       });
       
-      addAccount(newAccount);
       selectAccount(newAccount.id);
       setSubmitSuccess("계정이 성공적으로 등록되었습니다!");
       setSubmitError(null);
@@ -169,8 +161,10 @@ export function AccountRegisterTab() {
       setTimeout(() => setSubmitSuccess(null), 5000);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "계정 등록에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
     }
-  }, [formData, passwordStrength, addAccount, selectAccount]);
+  }, [formData, passwordStrength, addAccountToStore, selectAccount]);
 
   // 계정 삭제
   const handleDelete = useCallback(() => {
@@ -202,10 +196,10 @@ export function AccountRegisterTab() {
         phone: formData.phone,
         status: "active",
         todaySent: 0,
-        plan: "free",
+        plan: "free" as const,
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
-      },
+      } as Account,
       [], // 그룹 데이터 없음
       [], // 로그 데이터 없음
       formData.notes
@@ -462,9 +456,9 @@ export function AccountRegisterTab() {
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     onClick={generateQrCode}
-                    disabled={qrLoading}
+                    disabled={qrLoading || submitting}
                     className="flex-1 min-h-[44px]"
                   >
                     {qrLoading ? (
@@ -479,8 +473,9 @@ export function AccountRegisterTab() {
                   
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => navigator.clipboard.writeText(formData.telegramSession)}
+                    disabled={submitting}
                     className="min-h-[44px]"
                   >
                     <Copy className="h-4 w-4" />
@@ -543,6 +538,7 @@ export function AccountRegisterTab() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-subtle hover:text-app-text transition-colors"
+                      disabled={submitting}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -630,9 +626,9 @@ export function AccountRegisterTab() {
             <div className="flex gap-2 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || submitting}
                 className="flex-1 min-h-[44px]"
               >
                 이전
@@ -641,7 +637,9 @@ export function AccountRegisterTab() {
               {currentStep < steps.length - 1 ? (
                 <Button
                   type="button"
+                  variant="primary"
                   onClick={nextStep}
+                  disabled={submitting}
                   className="flex-1 min-h-[44px]"
                 >
                   다음
@@ -649,9 +647,11 @@ export function AccountRegisterTab() {
               ) : (
                 <Button
                   type="submit"
+                  variant="primary"
+                  disabled={submitting}
                   className="flex-1 min-h-[44px]"
                 >
-                  등록
+                  {submitting ? '등록 중...' : '등록'}
                 </Button>
               )}
             </div>
@@ -681,7 +681,7 @@ export function AccountRegisterTab() {
           action={
             <button
               onClick={() => {
-                useDashboardStore.getState().accounts.forEach(acc => {
+                accounts.forEach(acc => {
                   // Test each account
                   toast("info", `${acc.name} 계정 테스트 시작...`);
                   setTimeout(() => {
@@ -690,6 +690,7 @@ export function AccountRegisterTab() {
                 });
               }}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
+              disabled={submitting}
             >
               <RotateCcw className="h-3.5 w-3.5" />
               전체 테스트
@@ -722,7 +723,7 @@ export function AccountRegisterTab() {
                     </div>
                     
                     <p className="mt-1 truncate text-xs text-app-text-subtle">
-                      {acc.phone || "전화번호 없음"}
+                      {acc.phone}
                     </p>
                     
                     <div className="mt-2 flex flex-wrap gap-1.5">
@@ -730,7 +731,7 @@ export function AccountRegisterTab() {
                         오늘 {acc.todaySent}회 발송
                       </span>
                       <span className="rounded-lg bg-app-card-hover px-2 py-1 text-[10px] text-app-text-muted">
-                        {acc.plan}
+                        그룹 {acc.groupCount}
                       </span>
                     </div>
                   </div>
@@ -745,6 +746,7 @@ export function AccountRegisterTab() {
                           : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
                       )}
                       aria-label="계정 선택"
+                      disabled={submitting}
                     >
                       <CheckCircle2 className="h-4 w-4" />
                     </button>
@@ -754,6 +756,7 @@ export function AccountRegisterTab() {
                         onClick={() => handleTestAccount(acc.id)}
                         className="h-7 w-7 flex items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[44px] min-w-[44px]"
                         aria-label="계정 테스트"
+                        disabled={submitting}
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                       </button>
@@ -765,6 +768,7 @@ export function AccountRegisterTab() {
                         }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg text-app-danger hover:bg-app-danger-muted hover:text-app-danger transition-colors min-h-[44px] min-w-[44px]"
                         aria-label="계정 삭제"
+                        disabled={submitting}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useRef, useCallback } from "react";
 import { Check, Megaphone, Plus, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/cn";
@@ -33,6 +33,21 @@ export const GroupSelectCard = memo(function GroupSelectCard({
   onAddTag,
 }: GroupSelectCardProps) {
   const Icon = group.type === "channel" ? Megaphone : Users;
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
+  const handleTouchStart = useCallback(() => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => { longPressTriggered.current = true; }, 500);
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (!longPressTriggered.current) {
+      onToggleSelect(group.id);
+    }
+    longPressTriggered.current = false;
+  }, [group.id, onToggleSelect]);
 
   return (
     <div
@@ -41,22 +56,24 @@ export const GroupSelectCard = memo(function GroupSelectCard({
       title={undefined}
       onClick={() => onToggleSelect(group.id)}
       onKeyDown={(e) => e.key === "Enter" && onToggleSelect(group.id)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className={cn(
-        "group flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-150",
+        "group flex cursor-pointer flex-col gap-2 rounded-2xl border p-4 transition-all duration-150 active:scale-[0.98]",
         selected
           ? "border-app-primary/50 bg-app-primary-muted"
           : "border-app-border bg-app-card hover:border-app-border-strong hover:bg-app-card-hover"
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <div
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
               selected ? "bg-app-primary/20 text-app-primary-hover" : "bg-app-card-hover text-app-text-subtle"
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-medium text-app-text">{group.title}</div>
@@ -71,7 +88,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
@@ -80,21 +97,21 @@ export const GroupSelectCard = memo(function GroupSelectCard({
               onToggleFavorite(group.id);
             }}
             className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-150",
+              "flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150",
               isFavorite
                 ? "text-app-warning"
-                : "text-app-text-subtle opacity-0 hover:text-app-warning group-hover:opacity-100"
+                : "text-app-text-subtle hover:text-app-warning"
             )}
           >
-            <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
+            <Star className={cn("h-4 w-4", isFavorite && "fill-current")} />
           </button>
           <div
             className={cn(
-              "flex h-5 w-5 items-center justify-center rounded-full border transition-colors duration-150",
+              "flex h-7 w-7 items-center justify-center rounded-full border-2 transition-colors duration-150",
               selected ? "border-app-primary bg-app-primary text-white" : "border-app-border-strong text-transparent"
             )}
           >
-            <Check className="h-3 w-3" />
+            <Check className="h-4 w-4" />
           </div>
         </div>
       </div>
@@ -114,9 +131,9 @@ export const GroupSelectCard = memo(function GroupSelectCard({
             e.stopPropagation();
             onAddTag(group.id);
           }}
-          className="flex h-4 w-4 items-center justify-center rounded-full text-app-text-subtle opacity-0 transition-opacity duration-150 hover:text-app-text group-hover:opacity-100"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-app-text-subtle transition-colors duration-150 hover:text-app-text"
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-4 w-4" />
         </button>
       </div>
     </div>
