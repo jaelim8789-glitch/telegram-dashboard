@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ReactFlowProvider,
   useNodesState,
@@ -13,6 +14,11 @@ import {
   type NodeChange,
   type EdgeChange,
 } from "@xyflow/react";
+import {
+  AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignStartVertical, AlignCenterVertical, AlignEndVertical,
+  BetweenHorizontalStart, BetweenVerticalStart,
+} from "lucide-react";
 import { TopBar } from "@/components/macro-editor/TopBar";
 import { NodePalette } from "@/components/macro-editor/NodePalette";
 import { FlowCanvas } from "@/components/macro-editor/MacroFlowCanvas";
@@ -336,7 +342,7 @@ function MacroEditorInner() {
           <NodePalette collapsed={!leftPanelOpen} onToggle={() => setLeftPanelOpen(!leftPanelOpen)} />
         </div>
         {!leftPanelOpen && (
-          <button onClick={() => setLeftPanelOpen(true)} className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-r-lg border border-l-0 border-violet-500/20 bg-app-surface px-1.5 py-3 text-app-text-muted hover:text-app-text">
+          <button onClick={() => setLeftPanelOpen(true)} className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-r-lg border border-l-0 border-violet-500/20 bg-app-surface px-1.5 py-3 text-app-text-muted hover:text-app-text hover:scale-[1.02] active:scale-[0.98] transition-transform">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 18l6-6-6-6" /></svg>
           </button>
         )}
@@ -354,7 +360,7 @@ function MacroEditorInner() {
           />
         </div>
         {!rightPanelOpen && (
-          <button onClick={() => setRightPanelOpen(true)} className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-violet-500/20 bg-app-surface px-1.5 py-3 text-app-text-muted hover:text-app-text">
+          <button onClick={() => setRightPanelOpen(true)} className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-violet-500/20 bg-app-surface px-1.5 py-3 text-app-text-muted hover:text-app-text hover:scale-[1.02] active:scale-[0.98] transition-transform">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15 18l-6-6 6-6" /></svg>
           </button>
         )}
@@ -375,25 +381,25 @@ function MacroEditorInner() {
         >
           {ctxMenu.type === "canvas" && (
             <>
-              <div className="px-3 py-1.5 text-[10px] text-app-text-muted">노드 추가</div>
+              <div className="px-3 py-1.5 text-[11px] font-normal text-app-text-muted">노드 추가</div>
               {nodeTypes.map((t) => (
                 <button key={t} onClick={() => addNodeFromMenu(t)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors"
                 >{nodeLabels[t]}</button>
               ))}
               <div className="my-1 border-t border-violet-500/10" />
               <button onClick={() => { const all = nodes.map((n) => ({ ...n, selected: true })); setNodes(all); setCtxMenu(null); }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors"
               >전체 선택 ⌘A</button>
             </>
           )}
           {ctxMenu.type === "node" && ctxMenu.nodeId && (
             <>
               <button onClick={() => { setSelectedNodeId(ctxMenu.nodeId!); handleDupNode(); setCtxMenu(null); }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-app-text hover:bg-app-card-hover"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-card-hover transition-colors"
               >복제 ⌘D</button>
               <button onClick={() => { handleDelNode(ctxMenu.nodeId!); setCtxMenu(null); }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors"
               >삭제 Delete</button>
             </>
           )}
@@ -401,18 +407,18 @@ function MacroEditorInner() {
       )}
 
       {selNodeCount >= 2 && (
-        <div className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 flex items-center gap-1 rounded-xl border border-violet-500/20 bg-app-surface px-3 py-2 shadow-lg">
-          <span className="text-[10px] text-app-text-muted mr-1">정렬</span>
-          <button onClick={() => alignNodes("x","min")} title="왼쪽 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="4" y2="18"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="14" y2="16"/></svg></button>
-          <button onClick={() => alignNodes("x","mid")} title="중앙 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="8" x2="18" y2="8"/><line x1="8" y1="16" x2="16" y2="16"/></svg></button>
-          <button onClick={() => alignNodes("x","max")} title="오른쪽 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="20" y1="6" x2="20" y2="18"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="10" y1="16" x2="16" y2="16"/></svg></button>
-          <div className="w-px h-4 bg-violet-500/20 mx-1" />
-          <button onClick={() => distNodes("x")} title="가로 균등분배" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="4" y2="18"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="20" y1="6" x2="20" y2="18"/></svg></button>
-          <div className="w-px h-4 bg-violet-500/20 mx-1" />
-          <button onClick={() => alignNodes("y","min")} title="위쪽 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="18" y2="4"/><line x1="8" y1="8" x2="8" y2="16"/><line x1="16" y1="10" x2="16" y2="16"/></svg></button>
-          <button onClick={() => alignNodes("y","mid")} title="세로 중앙 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="6" x2="16" y2="18"/></svg></button>
-          <button onClick={() => alignNodes("y","max")} title="아래쪽 정렬" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="20" x2="18" y2="20"/><line x1="8" y1="8" x2="8" y2="16"/><line x1="16" y1="10" x2="16" y2="16"/></svg></button>
-          <button onClick={() => distNodes("y")} title="세로 균등분배" className="rounded p-1 text-app-text-muted hover:text-app-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="18" y2="4"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="6" y1="20" x2="18" y2="20"/></svg></button>
+        <div className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 flex items-center gap-1 rounded-xl border border-violet-500/20 bg-app-surface px-4 py-2.5 shadow-lg shadow-purple-500/10">
+          <span className="tabular-nums text-[11px] font-normal text-app-text-muted mr-1">{selNodeCount}개 정렬</span>
+          <button onClick={() => alignNodes("x","min")} title="왼쪽 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignStartVertical className="h-3.5 w-3.5" /></button>
+          <button onClick={() => alignNodes("x","mid")} title="중앙 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignCenterHorizontal className="h-3.5 w-3.5" /></button>
+          <button onClick={() => alignNodes("x","max")} title="오른쪽 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignEndVertical className="h-3.5 w-3.5" /></button>
+          <div className="w-px h-5 bg-violet-500/20 mx-1" />
+          <button onClick={() => distNodes("x")} title="가로 균등분배" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><BetweenHorizontalStart className="h-3.5 w-3.5" /></button>
+          <div className="w-px h-5 bg-violet-500/20 mx-1" />
+          <button onClick={() => alignNodes("y","min")} title="위쪽 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignStartHorizontal className="h-3.5 w-3.5" /></button>
+          <button onClick={() => alignNodes("y","mid")} title="세로 중앙 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignCenterVertical className="h-3.5 w-3.5" /></button>
+          <button onClick={() => alignNodes("y","max")} title="아래쪽 정렬" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><AlignEndHorizontal className="h-3.5 w-3.5" /></button>
+          <button onClick={() => distNodes("y")} title="세로 균등분배" className="rounded-md p-1.5 text-app-text-muted hover:text-app-text hover:bg-app-card-hover hover:scale-[1.02] active:scale-[0.98] transition-all"><BetweenVerticalStart className="h-3.5 w-3.5" /></button>
         </div>
       )}
     </div>

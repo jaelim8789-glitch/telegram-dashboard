@@ -15,14 +15,14 @@ export function AIResponseNode({ data, selected }: NodeProps<Node<AIResponseNode
 
   return (
     <div
-      className={`min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-shadow bg-gradient-to-br from-violet-500/10 to-blue-500/10 ${
+      className={`min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-all bg-gradient-to-br from-violet-500/10 to-blue-500/10 ${
         preview
           ? "border-green-400/70 shadow-lg shadow-green-500/40 animate-pulse"
           : invalid
             ? "border-red-500/60 shadow-lg shadow-red-500/20"
             : selected
               ? "shadow-lg shadow-violet-500/20 border-violet-500/60 [outline:2px_solid_#8B5CF6]"
-              : "border-violet-500/30 hover:shadow-md"
+              : "border-violet-500/30 hover:shadow-md hover:shadow-purple-500/10"
       }`}
     >
       <Handle
@@ -35,12 +35,12 @@ export function AIResponseNode({ data, selected }: NodeProps<Node<AIResponseNode
         <span className="font-medium">AI 응답</span>
       </div>
       {data.prompt && (
-        <p className="mt-1.5 line-clamp-2 text-[11px] text-app-text-secondary">
+        <p className="mt-1.5 line-clamp-2 text-[11px] font-normal text-app-text-muted">
           {data.prompt}
         </p>
       )}
       {data.model && (
-        <span className="mt-1 block text-[10px] text-app-text-muted">
+        <span className="mt-1 block text-[10px] font-normal text-app-text-muted">
           모델: {data.model}
         </span>
       )}

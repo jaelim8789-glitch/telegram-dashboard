@@ -16,14 +16,14 @@ export function ConditionNode({ data, selected }: NodeProps<Node<ConditionNodeDa
   return (
     <div className="relative flex items-center justify-center">
       <div
-        className={`flex h-[90px] w-[90px] rotate-45 items-center justify-center border transition-shadow ${
+        className={`flex h-[90px] w-[90px] rotate-45 items-center justify-center border transition-all ${
           preview
             ? "border-green-400/70 bg-green-500/20 shadow-lg shadow-green-500/40 animate-pulse"
             : invalid
               ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
               : selected
                 ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] outline-offset-[3px] border-amber-500/30 bg-amber-500/10"
-                : "border-amber-500/30 bg-amber-500/10"
+                : "border-amber-500/30 bg-amber-500/10 hover:shadow-md hover:shadow-purple-500/10"
         }`}
       >
         <div className="-rotate-45 flex flex-col items-center gap-0.5">
@@ -51,7 +51,7 @@ export function ConditionNode({ data, selected }: NodeProps<Node<ConditionNodeDa
         style={{ bottom: -8 }}
       />
       {data.conditionType && (
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-app-text-muted">
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-normal text-app-text-muted">
           {data.conditionType}
         </div>
       )}

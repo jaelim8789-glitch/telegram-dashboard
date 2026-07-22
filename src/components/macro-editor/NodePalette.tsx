@@ -37,12 +37,12 @@ export function NodePalette({ collapsed, onToggle }: NodePaletteProps) {
   return (
     <div className="flex h-full flex-col border-r border-violet-500/20 bg-app-surface">
       <div className="flex items-center justify-between border-b border-violet-500/20 px-4 py-3">
-        <h2 className="text-sm font-semibold text-app-text">노드</h2>
+        <h2 className="text-sm font-bold tracking-tight text-app-text">노드</h2>
         <button onClick={onToggle} className="rounded p-0.5 text-app-text-muted hover:text-app-text" title="패널 닫기">
           <PanelLeftClose className="h-4 w-4" />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {nodeTypes.map((node) => {
           const c = colorMap[node.color];
           const Icon = node.icon;
@@ -51,7 +51,7 @@ export function NodePalette({ collapsed, onToggle }: NodePaletteProps) {
               key={node.type}
               draggable
               onDragStart={(e) => onDragStart(e, node.type)}
-              className={`cursor-grab rounded-xl border bg-app-card p-3 transition-colors active:cursor-grabbing hover:border-violet-500/50 ${c.border}`}
+              className={`cursor-grab rounded-xl border bg-app-card p-4 transition-all active:cursor-grabbing hover:border-violet-500/50 hover:shadow-lg hover:shadow-purple-500/10 ${c.border}`}
             >
               <div className="flex items-start gap-2">
                 <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-app-text-muted" />
@@ -60,7 +60,7 @@ export function NodePalette({ collapsed, onToggle }: NodePaletteProps) {
                     <Icon className={`h-4 w-4 ${c.icon}`} />
                     <span className="text-xs font-medium text-app-text">{node.label}</span>
                   </div>
-                  <p className="mt-0.5 text-[10px] text-app-text-muted">{node.description}</p>
+                  <p className="mt-1 text-[11px] font-normal text-app-text-muted">{node.description}</p>
                 </div>
               </div>
             </div>

@@ -14,14 +14,14 @@ export function TextNode({ data, selected }: NodeProps<Node<TextNodeData>>) {
 
   return (
     <div
-      className={`min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-shadow ${
+      className={`min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-all ${
         preview
           ? "border-green-400/70 bg-green-500/20 shadow-lg shadow-green-500/40 animate-pulse"
           : invalid
             ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
             : selected
               ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] border-gray-500/30 bg-gray-500/10"
-              : "border-gray-500/30 bg-gray-500/10 hover:shadow-md"
+              : "border-gray-500/30 bg-gray-500/10 hover:shadow-md hover:shadow-purple-500/10"
       }`}
     >
       <Handle
@@ -34,7 +34,7 @@ export function TextNode({ data, selected }: NodeProps<Node<TextNodeData>>) {
         <span className="font-medium">텍스트</span>
       </div>
       {data.content && (
-        <p className="mt-1.5 line-clamp-2 text-[11px] text-app-text-secondary">
+        <p className="mt-1.5 line-clamp-2 text-[11px] font-normal text-app-text-muted">
           {data.content}
         </p>
       )}

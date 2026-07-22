@@ -15,14 +15,14 @@ export function MessageNode({ data, selected }: NodeProps<Node<MessageNodeData>>
 
   return (
     <div
-      className={`relative min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-shadow ${
+      className={`relative min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-all ${
         preview
           ? "border-green-400/70 bg-green-500/20 shadow-lg shadow-green-500/40 animate-pulse"
           : invalid
             ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
             : selected
               ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] border-violet-500/30 bg-violet-500/10"
-              : "border-violet-500/30 bg-violet-500/10 hover:shadow-md"
+              : "border-violet-500/30 bg-violet-500/10 hover:shadow-md hover:shadow-purple-500/10"
       }`}
     >
       <Handle
@@ -35,12 +35,12 @@ export function MessageNode({ data, selected }: NodeProps<Node<MessageNodeData>>
         <span className="font-medium">메시지</span>
       </div>
       {data.content && (
-        <p className="mt-1.5 line-clamp-2 text-[11px] text-app-text-secondary">
+        <p className="mt-1.5 line-clamp-2 text-[11px] font-normal text-app-text-muted">
           {data.content}
         </p>
       )}
       {data.recipient && (
-        <span className="mt-1 block text-[10px] text-app-text-muted">
+        <span className="mt-1 block text-[10px] font-normal text-app-text-muted">
           수신: {data.recipient}
         </span>
       )}

@@ -111,9 +111,14 @@ export function FlowCanvas({
           }} maskColor="rgba(0,0,0,0.7)" />
       </ReactFlow>
       {nodes.length===0&&(
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
-          <ArrowDown className="mb-3 h-10 w-10 text-violet-400/30 blur-[1px]" />
-          <p className="text-sm text-app-text-muted/70">여기에 노드를 드래그해서 시작하세요</p>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10">
+            <ArrowDown className="h-8 w-8 text-violet-400/50" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-app-text-secondary">매크로 흐름이 비어 있습니다</p>
+            <p className="mt-1 text-xs font-normal text-app-text-muted">좌측 패널에서 노드를 드래그해서 추가하세요</p>
+          </div>
         </div>
       )}
     </div>

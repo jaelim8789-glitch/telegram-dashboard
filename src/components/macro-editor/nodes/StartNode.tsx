@@ -14,7 +14,7 @@ export function StartNode({ data, selected }: NodeProps) {
   const invalidCls = "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20";
   const previewCls = "border-green-400/70 bg-green-500/20 shadow-lg shadow-green-500/40 animate-pulse";
   const selectedCls = "shadow-lg shadow-violet-500/20 [outline:2px_solid_#22c55e] border-green-500/30";
-  const normalCls = "border-green-500/30 bg-green-500/10";
+  const normalCls = "border-green-500/30 bg-green-500/10 hover:shadow-md hover:shadow-purple-500/10";
 
   return (
     <div className={`${base} ${preview ? previewCls : invalid ? invalidCls : selected ? selectedCls : normalCls}`}>
