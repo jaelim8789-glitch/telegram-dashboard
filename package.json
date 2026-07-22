@@ -30,6 +30,11 @@
     "quality:full": "npm run typecheck && npm run lint && npm run jscpd && npm run knip",
     "verify": "npm run typecheck && npm run lint && npm run build",
     "prepush": "npm run verify",
+    "status": "python scripts/telemon-status.py",
+    "rollback": "bash scripts/telemon-rollback.sh",
+    "props:docs": "node scripts/generate-props-cheatsheet.js",
+    "pushsafe": "bash scripts/git-push-safe.sh",
+    "merge:master": "bash scripts/git-merge-to-master.sh",
     "analyze": "cross-env ANALYZE=true npm run build",
     "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js"
   },
@@ -89,7 +94,15 @@
     "storybook": "^8",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.12",
+    "ts-jest": "^29.1.2",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@emotion/jest": "^11.11.0",
+    "concurrently": "^8.2.2"
     "@next/bundle-analyzer": "^15.5.20",
-    "webpack-bundle-analyzer": "^4.10.1"
+    "webpack-bundle-analyzer": "^4.10.1",
+    "glob": "^10.3.10"
   }
 }

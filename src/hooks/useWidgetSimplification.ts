@@ -2,27 +2,17 @@
 
 import { useEffect, useState } from "react";
 
-interface WidgetSimplification {
-  compact: boolean;
-  isTiny: boolean;
-}
-
-export function useWidgetSimplification(): WidgetSimplification {
-  const [state, setState] = useState<WidgetSimplification>(() => ({
-    compact: typeof window !== "undefined" && window.innerWidth < 480,
-    isTiny: typeof window !== "undefined" && window.innerWidth < 360,
-  }));
+export function useWidgetSimplification() {
+  const [state, setState] = useState(() => {
+    if (typeof window === "undefined") return { compact: false, isTiny: false };
+    return { compact: window.innerWidth < 480, isTiny: window.innerWidth < 360 };
+  });
 
   useEffect(() => {
-    function update() {
-      setState({
-        compact: window.innerWidth < 480,
-        isTiny: window.innerWidth < 360,
-      });
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    const handleResize = () => setState({ compact: window.innerWidth < 480, isTiny: window.innerWidth < 360 });
+    window.addEventListener("resize", handleResize, { passive: true });
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return state;

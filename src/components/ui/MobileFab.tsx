@@ -2,94 +2,55 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Bell,
-  Send,
-  UserPlus,
-  RefreshCw,
-  ChevronUp,
-} from "lucide-react";
-import { cn } from "@/lib/cn";
-import { safeAreaBottomClass } from "@/lib/safeArea";
+import { Plus, Send, UserPlus, RefreshCw, ChevronUp } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
-interface FabAction {
-  id: string;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}
-
-const ACTIONS: FabAction[] = [
-  { id: "send", icon: <Send className="h-5 w-5" />, label: "새 발송", onClick: () => {} },
-  { id: "register", icon: <UserPlus className="h-5 w-5" />, label: "계정 등록", onClick: () => {} },
-  { id: "refresh", icon: <RefreshCw className="h-5 w-5" />, label: "새로고침", onClick: () => {} },
-  { id: "scroll-top", icon: <ChevronUp className="h-5 w-5" />, label: "위로가기", onClick: () => {} },
-];
-
 export function MobileFab() {
-  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLDivElement>(null);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
-  const actions: FabAction[] = [
-    { id: "send", icon: <Send className="h-5 w-5" />, label: "새 발송", onClick: () => { setActiveTab("send"); setOpen(false); } },
-    { id: "register", icon: <UserPlus className="h-5 w-5" />, label: "계정 등록", onClick: () => { setActiveTab("register"); setOpen(false); } },
-    { id: "refresh", icon: <RefreshCw className="h-5 w-5" />, label: "새로고침", onClick: () => { window.location.reload(); setOpen(false); } },
-    { id: "scroll-top", icon: <ChevronUp className="h-5 w-5" />, label: "위로가기", onClick: () => { window.scrollTo({ top: 0, behavior: "smooth" }); setOpen(false); } },
-  ];
+  const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [open]);
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) { if (fabRef.current && !fabRef.current.contains(e.target as Node)) close(); }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, close]);
+
+  function handleScrollTop() {
+    const el = document.querySelector(".overflow-y-auto") as HTMLElement | null;
+    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  const actions = [
+    { icon: Send, label: "새 발송", action: () => { setActiveTab("send"); close(); } },
+    { icon: UserPlus, label: "계정 등록", action: () => { setActiveTab("register"); close(); } },
+    { icon: RefreshCw, label: "새로고침", action: () => { fetchAccounts(); close(); } },
+    { icon: ChevronUp, label: "위로가기", action: handleScrollTop },
+  ];
 
   return (
-    <div ref={ref} className={cn("fixed right-4 z-50 flex flex-col items-end gap-2", safeAreaBottomClass)} style={{ bottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+    <div ref={fabRef} className="fixed bottom-24 right-4 z-40 flex flex-col items-end" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col items-end gap-2"
-          >
-            {actions.map((action, i) => (
-              <motion.button
-                key={action.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: i * 0.03, type: "spring", stiffness: 300, damping: 25 }}
-                type="button"
-                onClick={action.onClick}
-                className="flex items-center gap-2 rounded-full bg-app-card px-4 py-2.5 shadow-lg border border-app-border/60 text-sm font-medium text-app-text hover:bg-app-card-hover transition-colors"
-              >
-                <span className="text-app-primary">{action.icon}</span>
-                {action.label}
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
+        {open && actions.map((item, i) => {
+          const Icon = item.icon;
+          const angle = (Math.PI / 4) * i - Math.PI / 2;
+          return (
+            <motion.button key={item.label} initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }} animate={{ opacity: 1, x: Math.cos(angle) * 90, y: Math.sin(angle) * 90, scale: 1 }} exit={{ opacity: 0, x: 0, y: 0, scale: 0.5 }} transition={{ type: "spring", stiffness: 400, damping: 28, delay: i * 0.03 }}
+              onClick={item.action} className="absolute flex items-center gap-2 rounded-full bg-app-card px-3 py-2 shadow-lg border border-app-border hover:bg-app-card-hover transition-colors" style={{ minHeight: 44, minWidth: 44 }}>
+              <Icon className="h-4 w-4 text-app-primary" />
+              <span className="whitespace-nowrap text-xs font-medium text-app-text">{item.label}</span>
+            </motion.button>
+          );
+        })}
       </AnimatePresence>
-
-      <motion.button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        whileTap={{ scale: 0.9 }}
-        animate={{ rotate: open ? 45 : 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-shadow"
-      >
-        <Send className="h-6 w-6" />
+      <motion.button type="button" onClick={() => setOpen(v => !v)} className="flex min-h-14 min-w-14 items-center justify-center rounded-full shadow-xl border border-app-border transition-colors" style={{ background: "linear-gradient(135deg, var(--color-accent), var(--color-gold-deep))", color: "var(--color-accent-contrast)" }}
+        whileTap={{ scale: 0.92 }} animate={open ? { rotate: 45 } : { rotate: 0 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} aria-label={open ? "메뉴 닫기" : "빠른 작업 열기"}>
+        <Plus className="h-6 w-6" />
       </motion.button>
     </div>
   );

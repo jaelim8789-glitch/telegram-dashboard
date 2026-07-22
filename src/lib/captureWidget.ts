@@ -1,34 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
+let toBlobFn: ((element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob>) | null = null;
 
-export async function captureElement(ref: React.RefObject<HTMLElement | null>): Promise<Blob | null> {
-  if (!ref.current) return null;
-  try {
-    const dataUrl = await toPng(ref.current, { quality: 0.95, pixelRatio: 2 });
-    const res = await fetch(dataUrl);
-    return res.blob();
-  } catch {
-    return null;
+async function ensureToBlob(): Promise<(element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob>> {
+  if (!toBlobFn) { const mod = await import("html-to-image"); toBlobFn = mod.toBlob; }
+  return toBlobFn!;
+}
+
+export async function captureElement(elementRef: React.RefObject<HTMLElement>): Promise<Blob> {
+  const el = elementRef.current;
+  if (!el) throw new Error("Element ref is not attached");
+  const toBlob = await ensureToBlob();
+  return toBlob(el, { quality: 0.92, pixelRatio: 2, backgroundColor: getComputedStyle(el).backgroundColor || "#ffffff" });
+}
+
+export async function shareImage(blob: Blob, title?: string): Promise<void> {
+  if (typeof navigator !== "undefined" && "share" in navigator && typeof navigator.canShare === "function") {
+    const file = new File([blob], "widget.png", { type: "image/png" });
+    if (navigator.canShare({ files: [file] })) { await navigator.share({ title: title || "TeleMon 위젯", files: [file] }); return; }
   }
+  downloadImage(blob, "widget.png");
 }
 
-export async function shareImage(blob: Blob): Promise<void> {
-  if (!navigator.share) return;
-  try {
-    await navigator.share({
-      files: [new File([blob], "dashboard.png", { type: "image/png" })],
-      title: "TeleMon Dashboard",
-    });
-  } catch {}
-}
-
-export async function downloadImage(blob: Blob, filename = "dashboard.png"): Promise<void> {
+export function downloadImage(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }

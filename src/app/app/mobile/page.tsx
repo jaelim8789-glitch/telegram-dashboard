@@ -2,30 +2,22 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/cn";
+import { AdminGuard } from "@/components/admin/AdminGuard";
 import { MobileDashboard } from "@/components/workspace/MobileDashboard";
-import { MobileFab } from "@/components/ui/MobileFab";
 
-export default function MobilePage() {
+export default function MobileDashboardPage() {
   return (
-    <div className="min-h-screen bg-app-bg">
-      <div className="sticky top-0 z-30 border-b border-app-border/60 bg-app-bg/80 backdrop-blur-lg">
-        <div className="flex items-center gap-2 px-4 h-12">
-          <Link
-            href="/app"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
+    <AdminGuard>
+      <div className="flex min-h-dvh flex-col bg-app-bg">
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-app-border/50 bg-app-surface/95 px-4 py-3 backdrop-blur-xl">
+          <Link href="/app" className="flex items-center gap-1.5 text-sm text-app-text-muted hover:text-app-text transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            <span>뒤로</span>
           </Link>
-          <span className="text-sm font-semibold">모바일 대시보드</span>
+          <h1 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>모바일 대시보드</h1>
         </div>
+        <div className="flex-1 px-4 pt-4"><MobileDashboard /></div>
       </div>
-
-      <div className="px-4 pt-4 pb-24">
-        <MobileDashboard />
-      </div>
-
-      <MobileFab />
-    </div>
+    </AdminGuard>
   );
 }

@@ -2,55 +2,66 @@
 
 import { useCallback, useRef, useState } from "react";
 
-interface SwipeHandlers {
-  onPointerDown: (e: React.PointerEvent) => void;
-  onPointerMove: (e: React.PointerEvent) => void;
-  onPointerUp: (e: React.PointerEvent) => void;
+const SWIPE_THRESHOLD = 50;
+const EDGE_MARGIN = 20;
+
+interface UseSwipeTabsOptions {
+  currentTabId: string;
+  allTabIds: string[];
+  onTabChange?: (tabId: string) => void;
+  enabled?: boolean;
 }
 
-interface SwipeState {
-  direction: "left" | "right" | null;
+interface UseSwipeTabsReturn {
+  handlers: { onPointerDown: (e: React.PointerEvent) => void; onPointerMove: (e: React.PointerEvent) => void; onPointerUp: (e: React.PointerEvent) => void };
+  direction: 1 | -1;
   isSwiping: boolean;
   swipeProgress: number;
 }
 
-const THRESHOLD = 50;
-const EDGE_MARGIN = 20;
-
-export function useSwipeTabs(): { handlers: SwipeHandlers; direction: "left" | "right" | null; isSwiping: boolean; swipeProgress: number } {
-  const [state, setState] = useState<SwipeState>({ direction: null, isSwiping: false, swipeProgress: 0 });
-  const startRef = useRef<{ x: number; y: number } | null>(null);
+export function useSwipeTabs({ currentTabId, allTabIds, onTabChange, enabled = true }: UseSwipeTabsOptions): UseSwipeTabsReturn {
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeProgress, setSwipeProgress] = useState(0);
+  const locked = useRef(false);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.clientX > EDGE_MARGIN && e.clientX < window.innerWidth - EDGE_MARGIN) return;
-    startRef.current = { x: e.clientX, y: e.clientY };
-    setState((s) => ({ ...s, isSwiping: true, swipeProgress: 0, direction: null }));
-  }, []);
+    if (!enabled) return;
+    locked.current = false;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    setIsSwiping(false);
+    setSwipeProgress(0);
+  }, [enabled]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!startRef.current) return;
-    const dx = e.clientX - startRef.current.x;
-    const progress = Math.min(Math.abs(dx) / THRESHOLD, 1);
-    setState({
-      isSwiping: true,
-      direction: dx < 0 ? "left" : "right",
-      swipeProgress: progress,
-    });
-  }, []);
-
-  const onPointerUp = useCallback((_e: React.PointerEvent) => {
-    if (!startRef.current) {
-      setState({ direction: null, isSwiping: false, swipeProgress: 0 });
-      return;
+    if (!enabled || locked.current) return;
+    const dx = e.clientX - startX.current;
+    const dy = e.clientY - startY.current;
+    if (!isSwiping && Math.abs(dy) > Math.abs(dx)) { locked.current = true; return; }
+    if (Math.abs(dx) > 5) {
+      if (dx > 0 && startX.current < EDGE_MARGIN) { locked.current = true; return; }
+      if (dx < 0 && window.innerWidth - startX.current < EDGE_MARGIN) { locked.current = true; return; }
+      setIsSwiping(true);
+      setSwipeProgress(Math.min(Math.abs(dx) / SWIPE_THRESHOLD, 1));
+      setDirection(dx > 0 ? -1 : 1);
     }
-    startRef.current = null;
-    setState({ direction: null, isSwiping: false, swipeProgress: 0 });
-  }, []);
+  }, [enabled, isSwiping]);
 
-  return {
-    handlers: { onPointerDown, onPointerMove, onPointerUp },
-    direction: state.direction,
-    isSwiping: state.isSwiping,
-    swipeProgress: state.swipeProgress,
-  };
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    if (!enabled || locked.current || !isSwiping) return;
+    const dx = e.clientX - startX.current;
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+      const currentIndex = allTabIds.indexOf(currentTabId);
+      if (currentIndex === -1) return;
+      const nextIndex = dx > 0 ? currentIndex - 1 : currentIndex + 1;
+      if (nextIndex >= 0 && nextIndex < allTabIds.length) onTabChange?.(allTabIds[nextIndex]);
+    }
+    setIsSwiping(false);
+    setSwipeProgress(0);
+  }, [enabled, isSwiping, allTabIds, currentTabId, onTabChange]);
+
+  return { handlers: { onPointerDown, onPointerMove, onPointerUp }, direction, isSwiping, swipeProgress };
 }
