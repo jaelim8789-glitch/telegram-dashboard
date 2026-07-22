@@ -264,7 +264,7 @@ export default function AgentChatPage() {
           duration: 5000,
         });
         // Refresh agent list to update level/exp
-        agentApi.fetchAgents().then(setAgents).catch((e) => console.warn("chat/page: fetchAgents 갱신 실패", e));
+        agentApi.fetchAgents().then(setAgents).catch((e) => console.error("[chat/page] fetchAgents 갱신 실패", e));
       }
 
       // Reload messages
@@ -438,7 +438,7 @@ export default function AgentChatPage() {
                 ) : messagesError ? (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <InlineError className="max-w-md">{messagesError}</InlineError>
-                    <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch((e) => console.warn("chat/page: fetchChatMessages 재시도 실패", e))}>
+                      <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch((e) => console.error("[chat/page] fetchChatMessages 재시도 실패", e))}>
                       다시 시도
                     </Button>
                   </div>

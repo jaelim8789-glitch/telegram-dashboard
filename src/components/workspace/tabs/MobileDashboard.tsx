@@ -19,7 +19,7 @@ export function MobileDashboard() {
       .then((logs) => {
         setStats({ total: logs.length, sent: logs.filter((l) => l.status === "sent").length, failed: logs.filter((l) => l.status === "failed").length });
       })
-      .catch((e) => console.warn("MobileDashboard: logs fetch 실패", e))
+      .catch((e) => console.error("[MobileDashboard] logs fetch 실패", e))
       .finally(() => setLoading(false));
   }, []);
 

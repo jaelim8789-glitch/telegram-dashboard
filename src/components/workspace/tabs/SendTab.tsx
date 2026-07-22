@@ -1227,7 +1227,7 @@ export function SendTab() {
         setReplyMacroActive(!!data.is_active);
         setReplyMacroMessage(data.message_content || "");
       })
-      .catch((e) => console.warn("SendTab: reply-macro 설정 fetch 실패", e))
+      .catch((e) => console.error("[SendTab] reply-macro 설정 fetch 실패", e))
       .finally(() => setReplyMacroLoading(false));
   }, [selectedAccountId]);
 

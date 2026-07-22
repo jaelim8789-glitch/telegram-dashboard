@@ -1,5 +1,9 @@
 name: Deploy TeleMon
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [master]
@@ -20,6 +24,8 @@ env:
   FRONTEND_IMAGE: ${{ github.repository_owner }}/telemon-frontend
   BACKEND_IMAGE: ${{ github.repository_owner }}/telemon-backend
   NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
+  NEXT_TELEMETRY_DISABLED: "1"
+  PLAYWRIGHT_WORKERS: 2
 
 jobs:
   # ============================================
@@ -29,6 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -44,6 +52,8 @@ jobs:
         with:
           path: ~/.local/share/pnpm/store
           key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - if: steps.cache-store.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -54,6 +64,14 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
+      - name: Cache .tsbuildinfo (incremental tsc)
+        uses: actions/cache@v4
+        with:
+          path: .tsbuildinfo
+          key: tsb-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-${{ runner.os }}
+          restore-keys: |
+            tsb-${{ runner.os }}-
+
   # ============================================
   # 1b. Frontend — build
   # ============================================
@@ -61,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -76,6 +96,8 @@ jobs:
         with:
           path: ~/.local/share/pnpm/store
           key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - if: steps.cache-store.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -93,6 +115,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -108,6 +132,8 @@ jobs:
         with:
           path: ~/.local/share/pnpm/store
           key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - if: steps.cache-store.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -119,6 +145,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          restore-keys: |
+            pw-${{ runner.os }}-
 
       - if: steps.cache-pw.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
@@ -144,6 +172,8 @@ jobs:
       tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Docker meta
         id: meta
@@ -172,6 +202,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
           build-args: |
+            BUILDKIT_INLINE_CACHE=1
             NEXT_PUBLIC_API_BASE_URL=${{ env.NEXT_PUBLIC_API_BASE_URL }}
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://telemon.online' }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
@@ -276,11 +307,14 @@ jobs:
   # ============================================
   backend-ci:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip backend]') }}
     defaults:
       run:
         working-directory: telegram-dashboard-backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: actions/setup-python@v5
         with:
@@ -328,6 +362,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Docker meta
         id: meta
@@ -355,6 +391,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
   # ============================================
   # 4a. Deploy backend to staging (master push)

@@ -30,6 +30,16 @@ const eslintConfig = [
     },
   },
   {
+    plugins: {
+      local: {
+        rules: { "no-forbidden-props": noForbiddenProps },
+      },
+    },
+    rules: {
+      "local/no-forbidden-props": "error",
+    },
+  },
+  {
     ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
   },
 ];

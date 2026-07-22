@@ -118,6 +118,7 @@ These caused real production outages or hours of wasted rebuild cycles. Check fo
 8. **Multiple alembic heads must be merged before pushing**, not left diverged — run `alembic heads` and confirm exactly one line before committing a new migration. The pre-commit hook now checks this automatically.
 9. **CI env vars must match every required Pydantic Settings field**, not just the obviously-relevant one — `Settings` failing to construct (e.g. missing `encryption_key`) crashes `from app.main import app` before your actual code even runs, producing a confusing error that looks unrelated to what you changed.
 10. **Don't build a second implementation of something that already exists** (e.g. a duplicate inline-buttons UI when `InlineButtonBuilder` already exists and is already wired up) — check `codebase-memory-mcp`/`grep` for an existing component before adding a new one that does the same thing with different, disconnected state.
+11. **Before creating a new utility function or constant** (formatMoney, formatDate, PLAN_LABEL, PLAN_COLOR, etc.), grep `src/lib/` and `src/lib/constants/` first. These are centralized in `src/lib/format.ts` and `src/lib/constants/plans.ts` — duplicates cause merge conflicts and style inconsistency.
 
 ## Do-not-do checklist
 
