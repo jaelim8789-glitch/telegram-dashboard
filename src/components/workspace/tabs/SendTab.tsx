@@ -78,7 +78,7 @@ function InteractiveTemplatePreview({
 }: {
   message: string;
   selectedRecipients: Group[];
-  account: { name?: string; phone?: string } | undefined;
+  account: { name?: string | null; phone?: string | null } | undefined;
 }) {
   const debouncedMessage = useDebouncedValue(message, 300);
 
@@ -86,6 +86,17 @@ function InteractiveTemplatePreview({
     () => TEMPLATE_VARIABLES.some((v) => debouncedMessage.includes(v.key)),
     [debouncedMessage],
   );
+
+}
+
+// 또는 실제 Account 타입을 사용하도록 수정
+interface SendTabProps {
+  message: string;
+  setMessage: (msg: string) => void;
+  selectedRecipients: Group[];
+  account: { name?: string | null; phone?: string | null } | undefined;  // 수정된 타입
+  // ... other props
+}
 
   const resolved = useMemo(
     () =>

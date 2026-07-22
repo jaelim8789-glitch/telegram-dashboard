@@ -1,20 +1,17 @@
-"use client";
+import { useMemo } from "react";
+import type { Account } from "@/types/account";
 
-import { useCallback, useState } from "react";
-import { useDashboardStore } from "@/store/useDashboardStore";
+export function useAccountFilter(accounts: Account[]) {
+  const statusCounts = useMemo(() => {
+    // 수정: AccountStatus에 존재하는 실제 값들만 사용
+    const all = accounts.length;
+    const active = accounts.filter(a => a.status === "active").length;
+    // 기존 "error" 대신 실제 enum 값인 "banned", "suspended", "inactive" 등을 사용
+    const error = accounts.filter(a => a.status === "banned" || a.status === "suspended").length;
+    const other = accounts.filter(a => a.status !== "active" && a.status !== "banned" && a.status !== "suspended").length;
+    
+    return { all, active, error, other };
+  }, [accounts]);
 
-export function useAccountFilter() {
-  const accounts = useDashboardStore(s => s.accounts);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filtered = accounts.filter(a => {
-    if (statusFilter !== "all" && a.status !== statusFilter) return false;
-    if (searchQuery && !a.phone.includes(searchQuery)) return false;
-    return true;
-  });
-
-  const statusCounts = { all: accounts.length, active: accounts.filter(a => a.status === "active").length, error: accounts.filter(a => a.status === "error" || a.status === "banned").length, other: accounts.filter(a => a.status !== "active" && a.status !== "error" && a.status !== "banned").length };
-
-  return { filtered, statusFilter, setStatusFilter, searchQuery, setSearchQuery, statusCounts };
+  return { statusCounts };
 }
