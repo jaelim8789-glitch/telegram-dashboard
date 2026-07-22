@@ -14,17 +14,10 @@ import { InlineError } from "@/components/ui/InlineError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { formatDateTime } from "@/lib/formatTime";
+import { PLAN_LABEL } from "@/lib/constants/plans";
 import * as api from "@/lib/api";
 import type { ApiKey } from "@/lib/api";
-
-import { formatDateTime } from "@/lib/formatTime";
-
-const PLAN_LABEL: Record<string, string> = {
-  free: "Free",
-  pro: "Pro",
-  team: "Team",
-  lifetime: "Lifetime",
-};
 
 const PLAN_OPTIONS = [
   { value: "free", label: "Free (1계정, 하루 100회)" },

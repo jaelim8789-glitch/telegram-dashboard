@@ -210,18 +210,18 @@ export function InlineAiChat() {
     const currentAccountId = selectedAccountId;
     setSummaryLoading(true);
 
-    Promise.all([
-      fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers: api.authHeaders() })
+    api.authHeaders().then((headers) => Promise.all([
+      fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers })
         .then((r) => r.json().catch(() => ({})))
         .then((data) => ({ kind: "usage" as const, data }))
         .catch(() => ({ kind: "usage" as const, data: {} })),
       selectedAccountId
-        ? fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: api.authHeaders() })
+        ? fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers })
             .then((r) => r.json().catch(() => ({})))
             .then((data) => ({ kind: "broadcast" as const, data }))
             .catch(() => ({ kind: "broadcast" as const, data: {} }))
         : Promise.resolve({ kind: "broadcast" as const, data: {} }),
-    ]).then((results) => {
+    ])).then((results) => {
       if (cancelled) return;
 
       const usageData = results.find((r) => r.kind === "usage")?.data || {};
@@ -296,7 +296,7 @@ export function InlineAiChat() {
     sendMessageWithInput(text);
   }
 
-  function sendMessageWithInput(text: string) {
+  async function sendMessageWithInput(text: string) {
     if (!text || !activeChatId || loading) return;
     setInput("");
     try { navigator.vibrate?.(5); } catch {}
@@ -309,7 +309,7 @@ export function InlineAiChat() {
 
     fetchWithTimeout(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
       method: "POST",
-      headers: api.authHeaders(),
+      headers: await api.authHeaders(),
       body: JSON.stringify({ content: text }),
       signal: controller.signal,
     }).then(async (res) => {

@@ -96,8 +96,7 @@ export function clearAll(): void {
 }
 
 // ── JWT helpers ──
-
-export function decodeJwt(token: string): Record<string, unknown> | null {
+function decodeJwt(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -107,6 +106,23 @@ export function decodeJwt(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+export function isTokenExpired(token: string): boolean {
+  const payload = decodeJwt(token);
+  if (!payload) return true;
+  const exp = payload.exp as number | undefined;
+  if (!exp) return false;
+  return Date.now() >= exp * 1000;
+}
+
+export function isTokenExpiringSoon(token: string): boolean {
+  const payload = decodeJwt(token);
+  if (!payload) return true;
+  const exp = payload.exp as number | undefined;
+  if (!exp) return false;
+  const fiveMinutesBeforeExpiry = (exp - 5 * 60) * 1000; // 5 minutes before expiry
+  return Date.now() >= fiveMinutesBeforeExpiry;
 }
 
 export function verifyJwtSignature(token: string, secret?: string): boolean {
@@ -126,14 +142,6 @@ export function verifyJwtSignature(token: string, secret?: string): boolean {
   }
 }
 
-export function isTokenExpired(token: string): boolean {
-  const payload = decodeJwt(token);
-  if (!payload) return true;
-  const exp = payload.exp as number | undefined;
-  if (!exp) return false;
-  return Date.now() >= exp * 1000;
-}
-
 export function getTokenRole(token: string | null): AuthSession["role"] {
   if (!token) return null;
   const payload = decodeJwt(token);
@@ -151,3 +159,84 @@ export function getTokenExpiry(token: string): Date | null {
   const exp = payload.exp as number | undefined;
   return exp ? new Date(exp * 1000) : null;
 }
+
+// 토큰 갱신 요청
+async function refreshToken(): Promise<{ access_token: string; refresh_token: string } | null> {
+  try {
+    const refreshToken = getCookie("telemon_refresh_token");
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const data = await response.json();
+    
+    // Store new tokens
+    if (data.access_token) {
+      setToken(data.access_token);
+    }
+    
+    if (data.refresh_token) {
+      setCookie("telemon_refresh_token", data.refresh_token);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    // 토큰 갱신 실패 시 로그아웃 처리
+    clearAll();
+    window.location.href = '/auth/login';
+    return null;
+  }
+}
+
+// 토큰 갱신 관리자 클래스
+class TokenManager {
+  private refreshPromise: Promise<any> | null = null;
+
+  async getValidToken(): Promise<string | null> {
+    const token = getToken();
+    
+    if (!token) {
+      return null;
+    }
+
+    // 토큰이 곧 만료되거나 이미 만료된 경우 갱신
+    if (isTokenExpired(token) || isTokenExpiringSoon(token)) {
+      // 동시 갱신 요청 방지를 위해 Promise를 공유
+      if (!this.refreshPromise) {
+        this.refreshPromise = refreshToken();
+      }
+
+      try {
+        const result = await this.refreshPromise;
+        return result?.access_token || null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    }
+
+    return token;
+  }
+
+  // 토큰 만료 시간 계산
+  getTokenExpiryTime(token: string): Date | null {
+    const payload = decodeJwt(token);
+    if (!payload) return null;
+    const exp = payload.exp as number | undefined;
+    return exp ? new Date(exp * 1000) : null;
+  }
+}
+
+export const tokenManager = new TokenManager();

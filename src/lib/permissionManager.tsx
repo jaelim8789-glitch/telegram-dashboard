@@ -31,7 +31,6 @@ class PermissionManager {
   hasPermission(permission: Permission, accountId?: string): boolean {
     // 캐시 유효성 확인
     if (Date.now() - this.lastChecked > this.cacheTimeout) {
-      console.warn('권한 캐시 만료, 새로고침 필요');
       return false; // 캐시가 만료되면 잠시 권한 없음으로 처리
     }
 
@@ -94,11 +93,9 @@ class PermissionManager {
       // const permissions = await response.json();
       // this.setUserPermissions(permissions);
       
-      console.log('권한 갱신 완료');
       this.lastChecked = Date.now();
       return true;
-    } catch (error) {
-      console.error('권한 갱신 실패:', error);
+    } catch {
       return false;
     }
   }

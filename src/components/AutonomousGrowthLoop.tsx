@@ -37,6 +37,7 @@ const AutonomousGrowthLoop = ({ userId }: AutonomousGrowthLoopProps) => {
   const [newGoal, setNewGoal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLoop, setSelectedLoop] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // 루프 목록 가져오기
   useEffect(() => {

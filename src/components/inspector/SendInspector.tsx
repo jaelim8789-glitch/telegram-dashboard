@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ImageIcon, ShieldCheck } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Badge";
+import Image from "next/image";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { getAccountDisplayName, getAccountInitials, type AccountStatus } from "@/types";
 
@@ -57,8 +58,18 @@ export function SendInspector() {
               </div>
               <div className="max-w-[280px] max-h-60 overflow-y-auto rounded-2xl rounded-tl-sm bg-app-card px-3 py-2">
                 {imagePreviewUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imagePreviewUrl} alt="" className="mb-1.5 max-h-40 w-full rounded-lg object-cover" />
+                  <div className="mt-2 flex justify-center">
+                    {/* <img src={imagePreviewUrl} alt="" className="mb-1.5 max-h-40 w-full rounded-lg object-cover" /> */}
+                    <Image 
+                      src={imagePreviewUrl} 
+                      alt=""
+                      width={300}
+                      height={200}
+                      className="mb-1.5 max-h-40 w-full rounded-lg object-cover"
+                      priority={false}
+                      unoptimized // 사용자 업로드 이미지이므로 최적화 비활성화
+                    />
+                  </div>
                 )}
                 {message ? (
                   <p className="whitespace-pre-wrap break-words text-sm text-app-text">{message}</p>

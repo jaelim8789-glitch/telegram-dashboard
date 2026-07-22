@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+echo "🔍 [post-merge] 병합 감지..."
+CHANGED_FILES=$(git diff HEAD@{1} HEAD --name-only 2>/dev/null || true)
+if echo "$CHANGED_FILES" | grep -q "package.json"; then
+  echo "  package.json 변경 → npm install 실행"
+  npm install --silent
+fi
+if echo "$CHANGED_FILES" | grep -q "requirements.txt"; then
+  echo "  requirements.txt 변경 → pip install 실행"
+  cd telegram-dashboard-backend && pip install -r requirements.txt --quiet && cd ..
+fi
+echo "✅ [post-merge] 완료"

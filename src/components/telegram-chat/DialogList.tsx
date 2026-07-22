@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
+import Image from "next/image";
 
 interface Dialog {
   id: number;
@@ -263,7 +264,18 @@ export function DialogList({
               >
               {/* Avatar */}
               {photoUrl ? (
-                <img src={photoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200">
+                  {/* <img src={photoUrl} alt="" className="h-10 w-10 rounded-full object-cover" /> */}
+                  <Image 
+                    src={photoUrl} 
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full object-cover"
+                    priority={false}
+                    unoptimized // 외부 이미지이므로 최적화 비활성화
+                  />
+                </div>
               ) : (
               <div className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",

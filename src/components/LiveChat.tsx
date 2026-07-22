@@ -17,8 +17,6 @@ const LiveChat = () => {
     return process.env.NEXT_PUBLIC_ENABLE_LIVE_CHAT === 'true';
   });
   const [isOpen, setIsOpen] = useState(false);
-
-  if (!enabled) return null;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -38,6 +36,8 @@ const LiveChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  if (!enabled) return null;
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;

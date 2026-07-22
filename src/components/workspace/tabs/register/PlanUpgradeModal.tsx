@@ -157,7 +157,7 @@ export function PlanUpgradeModal({
       try {
         const res = await fetch(
           `/api/payments/nowpayments/status/${invoice.payment_id}`,
-          { headers: api.authHeaders() },
+          { headers: await api.authHeaders() },
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -212,7 +212,7 @@ export function PlanUpgradeModal({
           "/api/payments/nowpayments/create-invoice",
           {
             method: "POST",
-            headers: api.authHeaders(),
+            headers: await api.authHeaders(),
             body: JSON.stringify({
               plan: planId,
               amount: plan.price_usdt,

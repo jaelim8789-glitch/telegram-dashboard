@@ -1,16 +1,12 @@
-import type { MetadataRoute } from "next";
+import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online";
-
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/app/", "/admin/"],
-      },
-    ],
-    sitemap: `${base}/sitemap.xml`,
+    rules: {
+      userAgent: "*",
+      allow: ["/"],
+      disallow: ["/admin/", "/workspace/private/", "/api/"],
+    },
+    sitemap: "https://app.telemon.online/sitemap.xml",
   };
 }
