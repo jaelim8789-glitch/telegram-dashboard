@@ -39,9 +39,18 @@ export default function MiniAppPage() {
   useKeyboardShortcut("k", () => setOpen(true), { ctrl: true });
 
   useEffect(() => {
-    try { backButton.mount(); const off = backButton.onClick(() => { if (activeTab !== "dashboard") setActiveTab("dashboard"); }); return () => { off(); try { backButton.unmount(); } catch {} }; }
-    catch { return undefined; }
-  }, [activeTab]);
+    let off: (() => void) | undefined;
+    try {
+      backButton.mount();
+      off = backButton.onClick(() => {
+        if (activeTab !== "dashboard") setActiveTab("dashboard");
+      });
+    } catch {}
+    return () => {
+      if (off) off();
+      try { backButton.unmount(); } catch {}
+    };
+  }, []);
 
   useEffect(() => {
     let off: (() => void) | undefined; let cancelled = false;
@@ -58,7 +67,13 @@ export default function MiniAppPage() {
   }, [handleRefresh]);
 
   useEffect(() => {
-    function handleTabChange(e: CustomEvent) { setActiveTab(e.detail.tab); }
+    const validTabs: MiniAppTab[] = ["dashboard", "chat", "send", "profile"];
+    function handleTabChange(e: CustomEvent) {
+      const tab = e.detail.tab;
+      if (typeof tab === "string" && validTabs.includes(tab as MiniAppTab)) {
+        setActiveTab(tab as MiniAppTab);
+      }
+    }
     window.addEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
     return () => window.removeEventListener("telemon-miniapp-tab-change" as any, handleTabChange as any);
   }, []);
