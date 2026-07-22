@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { retrieveLaunchParams } from "@tma.js/sdk-react";
 import { init } from "./core/init";
 import { GlobalToast } from "@/components/ui/GlobalToast";
 import { CommandPalette as CommandPaletteMobile } from "@/components/ui/CommandPaletteMobile";
@@ -13,7 +12,7 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setOpen = useCommandPaletteStore(s => s.setOpen);
-  const launchParams = retrieveLaunchParams();
+  const launchParams = typeof window !== "undefined" ? (() => { try { const m = require("@tma.js/sdk-react"); return m.retrieveLaunchParams(); } catch { return null; } })() : null;
 
   useKeyboardShortcut("k", () => setOpen(true), { ctrl: true });
 
