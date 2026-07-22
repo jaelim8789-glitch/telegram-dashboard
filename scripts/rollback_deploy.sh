@@ -91,11 +91,25 @@ while [ "$attempt" -le "$MAX_ROLLBACK_ATTEMPTS" ]; do
     info "Rebuilding Docker images..."
 
     if [ "$TARGET" = "production" ]; then
+        PREV_IMAGE=$(docker compose images --quiet frontend)
         docker compose pull frontend
+        NEW_IMAGE=$(docker compose images --quiet frontend)
+        if [ "$PREV_IMAGE" = "$NEW_IMAGE" ]; then
+          warn "Frontend image unchanged during rollback — verifying digest"
+          docker inspect --format='{{.RepoDigests}}' ghcr.io/${GHCR_OWNER:-telemon}/telemon-frontend:latest 2>/dev/null || true
+        fi
         docker compose up -d --no-deps frontend
+        docker compose rm -f frontend || true
     else
+        PREV_IMAGE=$(docker compose -f docker-compose.yml -f docker-compose.staging.yml images --quiet frontend)
         docker compose -f docker-compose.yml -f docker-compose.staging.yml pull frontend
+        NEW_IMAGE=$(docker compose -f docker-compose.yml -f docker-compose.staging.yml images --quiet frontend)
+        if [ "$PREV_IMAGE" = "$NEW_IMAGE" ]; then
+          warn "Frontend image unchanged during rollback — verifying digest"
+          docker inspect --format='{{.RepoDigests}}' ghcr.io/${GHCR_OWNER:-telemon}/telemon-frontend:staging 2>/dev/null || true
+        fi
         docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps frontend
+        docker compose -f docker-compose.yml -f docker-compose.staging.yml rm -f frontend || true
     fi
 
     docker image prune -f || true

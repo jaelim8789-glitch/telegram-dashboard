@@ -234,6 +234,26 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Pre-deploy gateway health check
+        id: gateway-precheck
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 6); do
+              if curl -sf http://localhost/health > /dev/null 2>&1; then
+                echo "✅ Gateway healthy"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "❌ Gateway unhealthy — aborting deploy"
+            exit 1
+
       - name: Zero-downtime deploy (production)
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -243,7 +263,13 @@ jobs:
           script: |
             set -e
             cd /opt/telemon/backend
-            docker compose pull frontend -q
+            PREV_IMAGE=$(docker compose images --quiet frontend)
+            docker compose pull --pull=always frontend -q
+            NEW_IMAGE=$(docker compose images --quiet frontend)
+            if [ "$PREV_IMAGE" = "$NEW_IMAGE" ]; then
+              echo "⚠️ Frontend image unchanged — verifying digest"
+              docker inspect --format='{{.RepoDigests}}' ghcr.io/${{ github.repository_owner }}/telemon-frontend:latest || true
+            fi
             bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost/health staging
             docker compose restart nginx || true
 

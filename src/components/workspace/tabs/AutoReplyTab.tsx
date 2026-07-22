@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef, useMemo, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquareOff, Plus, X, Search, RotateCcw, Copy, ChevronDown, Hash, User, MessageSquare, AtSign } from "lucide-react";
+import { MessageSquareOff, Plus, X, Search, RotateCcw, Copy, ChevronDown, Hash, User, MessageSquare, AtSign, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
+import { BottomSheetWrapper } from "@/components/ui/BottomSheetWrapper";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -102,11 +103,20 @@ export function AutoReplyTab() {
   const submitLockRef = useRef(false);
 
   const { toast } = useToast();
+  const haptics = useHapticFeedback();
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [actionSheetRuleId, setActionSheetRuleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // ── RuntimeManager 캐시에서 AutoReply 데이터 즉시 로드 ──
   const { autoReply, autoReplyLogs } = useAccountCache(selectedAccountId);
-
-  // 캐시에서 데이터 동기화 (계정 전환 시 즉시 표시)
   useEffect(() => {
     if (selectedAccountId) {
       const cache = autoReply;
@@ -645,16 +655,38 @@ export function AutoReplyTab() {
                     : "border-app-border/30 bg-app-card/50 opacity-60"
                 )}
               >
-                {/* Left: info */}
-                <div className="flex-1 min-w-0">
+                {/* Left: info — mobile에서 탭하면 컨텍스트 액션 시트 열기 */}
+                <div
+                  className={cn(
+                    "flex-1 min-w-0",
+                    isMobile && [
+                      "cursor-pointer -mx-1 px-1 py-1 -my-1 rounded-lg active:bg-app-card-hover/60 transition-colors",
+                    ]
+                  )}
+                  onClick={() => {
+                    if (isMobile) {
+                      setActionSheetRuleId(rule.id);
+                      haptics.light();
+                    }
+                  }}
+                  role={isMobile ? "button" : undefined}
+                  tabIndex={isMobile ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (isMobile && e.key === "Enter") {
+                      setActionSheetRuleId(rule.id);
+                      haptics.light();
+                    }
+                  }}
+                >
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-medium text-app-text truncate max-w-[160px]" title={rule.name}>{rule.name}</span>
                     <Badge tone="neutral" className="shrink-0 text-[10px]">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
                     <button
                       type="button"
-                      onClick={() => handleToggleRule(rule)}
+                      onClick={(e) => { e.stopPropagation(); handleToggleRule(rule); }}
                       className={cn(
                         "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                        isMobile && "min-h-[32px] min-w-[32px] flex items-center justify-center",
                         rule.isActive
                           ? "bg-app-success-muted text-app-success hover:bg-app-success-muted/60"
                           : "bg-app-card-hover text-app-text-muted hover:text-app-text"
@@ -673,7 +705,7 @@ export function AutoReplyTab() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopyReply(rule.replyContent)}
+                      onClick={(e) => { e.stopPropagation(); handleCopyReply(rule.replyContent); }}
                       className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors min-h-[24px] min-w-[24px] flex items-center justify-center"
                       aria-label="응답 내용 복사"
                     >
@@ -686,8 +718,16 @@ export function AutoReplyTab() {
                     <span>{formatRuleDateTime(rule.createdAt)}</span>
                   </div>
                 </div>
-                {/* Right: actions */}
-                <div className="flex shrink-0 items-center gap-1">
+
+                {/* Mobile tap indicator */}
+                {isMobile && (
+                  <div className="flex shrink-0 items-center justify-center py-1">
+                    <MoreHorizontal className="h-4 w-4 text-app-text-subtle" />
+                  </div>
+                )}
+
+                {/* Right: actions — desktop only */}
+                <div className={cn("flex shrink-0 items-center gap-1", isMobile && "hidden")}>
                   <button
                     type="button"
                     onClick={() => openEditForm(rule)}
@@ -882,6 +922,54 @@ export function AutoReplyTab() {
           </div>
         )}
       </Panel>
+
+      {(() => {
+        const rule = rules.find(r => r.id === actionSheetRuleId);
+        if (!rule) return null;
+        return (
+          <BottomSheetWrapper
+            open={!!actionSheetRuleId}
+            onClose={() => setActionSheetRuleId(null)}
+            title={rule.name}
+          >
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { openEditForm(rule); setActionSheetRuleId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Edit className="h-5 w-5 text-app-primary" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">수정</p>
+                  <p className="text-xs text-app-text-muted">규칙 내용을 변경합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { openDuplicateForm(rule); setActionSheetRuleId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Copy className="h-5 w-5 text-app-info" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">복제</p>
+                  <p className="text-xs text-app-text-muted">규칙을 복사하여 새 규칙을 만듭니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setConfirmDeleteId(rule.id); setActionSheetRuleId(null); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-danger-muted transition-colors text-left active:scale-[0.98]"
+              >
+                <Trash2 className="h-5 w-5 text-app-danger" />
+                <div>
+                  <p className="text-sm font-medium text-app-danger">삭제</p>
+                  <p className="text-xs text-app-text-muted">이 규칙을 영구 삭제합니다</p>
+                </div>
+              </button>
+            </div>
+          </BottomSheetWrapper>
+        );
+      })()}
 
       <ConfirmDialog
         open={!!confirmDeleteId}

@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
-type Size = "sm" | "md" | "lg";
+type Size = "sm" | "md" | "lg" | "touch"; // 터치 최적화 사이즈 추가
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -27,6 +27,7 @@ const SIZE_STYLE: Record<Size, string> = {
   sm: "rounded-lg px-2.5 py-1 text-xs",
   md: "rounded-xl px-3 py-1.5 text-sm",
   lg: "rounded-xl px-4 py-2.5 text-sm",
+  touch: "rounded-xl px-4 py-3 text-sm min-h-[44px] min-w-[44px] flex items-center justify-center", // 터치 최적화 사이즈 추가
 };
 
 export const Button = memo(function Button({
