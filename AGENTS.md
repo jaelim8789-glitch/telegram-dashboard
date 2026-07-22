@@ -129,3 +129,21 @@ These caused real production outages or hours of wasted rebuild cycles. Check fo
 - Don't push directly to `master` bundling unrelated/unapproved work — confirm scope first.
 - Don't hand-write a frontend type for a backend response — prefer `npm run typegen` from the OpenAPI spec.
 - Don't create a root-level `app/` directory in the frontend repo, ever — it will shadow `src/app/`.
+- Don't use real user accounts for testing — run `bash scripts/team/use-test-tenant.sh` first.
+- Don't ignore PAUSE signal in `.kilo/PAUSE` — run `bash scripts/team/resume-all.sh` when cleared.
+
+## 팀 협업 도구
+
+다음 스크립트가 `scripts/team/`에 있습니다:
+- `update-status.sh` — TEAM_STATUS.md 1줄 요약 갱신 (최신 커밋/CI/이슈)
+- `blame-summary.sh <file>` — 파일 마지막 수정자 1줄 조회
+- `handoff.sh <session-id>` — 인수인계 템플릿 생성
+- `sync-issues.sh` — TEAM_STATUS.md 할일 → GitHub Issue 자동 발급
+- `ci-summary.sh [run-id]` — CI 실패 원인 요약
+- `weekly-report.sh` — 주간 변경 리포트
+- `deploy-checklist.sh` — 배포 전 자동 검증
+- `agent-timeline.sh [date]` — 오늘 작업 타임라인
+- `pause-all.sh "사유"` — 긴급 전체 중단
+- `resume-all.sh` — 중단 해제
+- `test-tenant.sh` — 테스트 계정 규칙 안내
+- `conflict-detect.js` — 동시 작업 충돌 감지

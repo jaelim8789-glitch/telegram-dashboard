@@ -404,7 +404,6 @@ export function BundleOptimizerComponent({
           const [state, setState] = useState(0);
           
           useEffect(() => {
-            console.log('mounted');
           }, []);
           
           return <div>Hello World</div>;
