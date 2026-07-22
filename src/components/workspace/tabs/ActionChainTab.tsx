@@ -10,6 +10,7 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -477,6 +478,7 @@ export function ActionChainTab() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   // Load from localStorage
   useEffect(() => {
@@ -537,11 +539,7 @@ export function ActionChainTab() {
 
   function clearAll() {
     if (chains.length === 0) return;
-    if (window.confirm("모든 액션 체인을 삭제하시겠습니까?")) {
-      setChains([]);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
+    setConfirmDeleteAll(true);
 
   const totalSteps = chains.reduce((acc, c) => acc + c.steps.length, 0);
   const activeCount = chains.filter((c) => c.isActive).length;
@@ -676,6 +674,15 @@ export function ActionChainTab() {
           </Button>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDeleteAll}
+        title="전체 삭제"
+        description="모든 액션 체인을 삭제하시겠습니까?"
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        onConfirm={() => { setChains([]); localStorage.removeItem(STORAGE_KEY); setConfirmDeleteAll(false); }}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
     </div>
   );
 }
