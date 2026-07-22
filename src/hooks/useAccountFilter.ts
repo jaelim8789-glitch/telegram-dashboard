@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Account } from "@/types/account";
+import type { Account } from "@/types"; // 수정: 올바른 경로로 import
 
 export function useAccountFilter(accounts: Account[]) {
   const statusCounts = useMemo(() => {

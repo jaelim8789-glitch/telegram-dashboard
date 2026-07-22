@@ -3,7 +3,7 @@
 import { create } from "zustand";
 
 interface Command { id: string; label: string; icon?: string; action: string; category: string; }
-interface CommandPaletteState { open: boolean; query: string; results: Command[]; setOpen: (o: boolean) => void; setQuery: (q: string) => void; setResults: (r: Command[]) => void; }
+interface CommandPaletteState { open: boolean; query: string; results: Command[]; recent: string[]; toggle: () => void; setOpen: (o: boolean) => void; setQuery: (q: string) => void; setResults: (r: Command[]) => void; addRecent: (cmd: string) => void; }
 
 const DEFAULT_COMMANDS: Command[] = [
   { id: "1", label: "발송하기", action: "tab-send", category: "탭", icon: "✉️" },
@@ -14,9 +14,11 @@ const DEFAULT_COMMANDS: Command[] = [
   { id: "6", label: "다크모드 전환", action: "toggle-theme", category: "설정", icon: "🌙" },
 ];
 
-export const useCommandPaletteStore = create<CommandPaletteState>((set) => ({
-  open: false, query: "", results: DEFAULT_COMMANDS,
+export const useCommandPaletteStore = create<CommandPaletteState>((set, get) => ({
+  open: false, query: "", results: DEFAULT_COMMANDS, recent: [],
+  toggle: () => set(s => ({ open: !s.open, query: "", results: DEFAULT_COMMANDS })),
   setOpen: (o) => set({ open: o, query: "", results: DEFAULT_COMMANDS }),
   setQuery: (q) => set(s => ({ query: q, results: q ? DEFAULT_COMMANDS.filter(c => c.label.includes(q) || c.category.includes(q)) : DEFAULT_COMMANDS })),
   setResults: (r) => set({ results: r }),
+  addRecent: (cmd) => set(s => ({ recent: [cmd, ...s.recent.filter(c => c !== cmd)].slice(0, 10) })),
 }));

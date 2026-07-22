@@ -358,6 +358,7 @@ export function useEventListener<T extends HTMLElement = HTMLElement>(
     element.addEventListener(event, optimizedHandler, options);
     
     return () => {
+      // 수정: 옵션 객체를 올바르게 전달
       element.removeEventListener(event, optimizedHandler, options);
     };
   }, [element, event, handler, options]);

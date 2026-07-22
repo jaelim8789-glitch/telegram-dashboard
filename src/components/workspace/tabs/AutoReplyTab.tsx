@@ -20,6 +20,7 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 import { useToast } from "@/components/ui/Toast";
+import { useHapticFeedback } from "@tma.js/sdk-react";
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 import { useSwipeTemplate } from "@/hooks/useSwipeTemplate"; // 스와이프 템플릿 훅 추가
 import { QuickTemplateSelector } from "@/components/ui/QuickTemplateSelector"; // 퀵 템플릿 선택기 추가
@@ -393,9 +394,9 @@ export function AutoReplyTab() {
             </span>
           </div>
           <Button
-            variant={enabled ? "outline-destructive" : "outline-success"}
+            variant={enabled ? "outline-destructive" as any : "outline-success" as any}
             size="sm"
-            onClick={handleToggleMaster}
+            onClick={() => handleToggleMaster(enabled)}
             disabled={toggling}
             className="whitespace-nowrap"
           >

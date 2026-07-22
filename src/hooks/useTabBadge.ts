@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { Account } from "@/types/account";
+import type { Account } from "@/types";
 
 export function useTabBadge(accounts: Account[]) {
   // 수정: AccountStatus에 존재하는 실제 값들만 사용
