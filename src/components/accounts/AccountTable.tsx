@@ -10,11 +10,11 @@ interface AccountTableProps {
   onRefresh: (id: string) => void;
 }
 
-const STATUS_BADGE: Record<AccountStatus, { bg: string; text: string; label: string }> = {
-  active: { bg: "bg-green-500/20", text: "text-green-400", label: "활성" },
-  suspended: { bg: "bg-amber-500/20", text: "text-amber-400", label: "정지" },
-  error: { bg: "bg-red-500/20", text: "text-red-400", label: "오류" },
-  unconfigured: { bg: "bg-gray-500/20", text: "text-gray-400", label: "미설정" },
+const STATUS_BADGE: Record<AccountStatus, { bg: string; text: string; label: string; dot: boolean }> = {
+  active: { bg: "bg-green-500/10", text: "text-green-400", label: "연결됨", dot: true },
+  suspended: { bg: "bg-yellow-500/10", text: "text-yellow-400", label: "대기중", dot: false },
+  error: { bg: "bg-red-500/10", text: "text-red-400", label: "오류", dot: false },
+  unconfigured: { bg: "bg-gray-500/10", text: "text-gray-400", label: "미설정", dot: false },
 };
 
 function formatTime(iso: string): string {
@@ -48,12 +48,12 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-app-border text-left">
-            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">계정 이름</th>
-            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">전화번호</th>
-            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">상태</th>
-            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">마지막 활동</th>
-            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-app-text-muted">작업</th>
+          <tr className="border-b border-app-border/50 text-left">
+            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">계정명</th>
+            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">전화번호</th>
+            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">상태</th>
+            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">마지막 활동</th>
+            <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-app-text-muted">작업</th>
           </tr>
         </thead>
         <tbody>
@@ -62,7 +62,7 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
             return (
               <tr
                 key={account.id}
-                className="border-b border-app-border/50 transition-colors hover:bg-violet-500/5"
+                className="group border-b border-app-border/50 transition-colors hover:bg-app-card-hover"
               >
                 <td className="px-5 py-3.5">
                   <span className="text-sm font-medium text-app-text">{account.name}</span>
@@ -72,6 +72,9 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
                 </td>
                 <td className="px-5 py-3.5">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text}`}>
+                    {badge.dot && (
+                      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    )}
                     {badge.label}
                   </span>
                 </td>
@@ -79,7 +82,7 @@ export function AccountTable({ accounts, onEdit, onDelete, onRefresh }: AccountT
                   <span className="text-sm text-app-text-muted">{formatTime(account.lastActive)}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => onEdit(account.id)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-violet-500/10 hover:text-violet-400"

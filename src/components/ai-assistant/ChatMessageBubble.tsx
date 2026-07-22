@@ -5,9 +5,10 @@ import { Sparkles } from "lucide-react";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  streaming?: boolean;
 }
 
-export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message, streaming }: ChatMessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -22,10 +23,13 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
             isUser
               ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white rounded-br-sm"
-              : "bg-app-card text-app-text rounded-bl-sm border border-app-border/50"
+              : "bg-[#1a1a24] text-app-text rounded-bl-sm border border-app-border/50"
           }`}
         >
           {message.content}
+          {streaming && (
+            <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-400 align-text-bottom" />
+          )}
         </div>
       </div>
     </div>

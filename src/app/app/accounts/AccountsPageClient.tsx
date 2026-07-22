@@ -78,7 +78,7 @@ export function AccountsPageClient() {
           <h1 className="text-lg font-semibold text-app-text">계정 관리</h1>
           <button
             onClick={handleAddAccount}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/25 transition-all hover:from-violet-600 hover:to-blue-600 hover:shadow-md hover:shadow-violet-500/30 active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/25 transition-all hover:from-violet-600 hover:to-blue-600 hover:shadow-md hover:shadow-violet-500/30 active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" />
             계정 추가
@@ -95,7 +95,7 @@ export function AccountsPageClient() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="rounded-2xl border border-violet-500/20 bg-app-card">
+        <div className="rounded-2xl border border-violet-500/15 bg-app-card overflow-hidden">
           <AccountTable
             accounts={paginatedAccounts}
             onEdit={handleEdit}
