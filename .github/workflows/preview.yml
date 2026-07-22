@@ -3,6 +3,7 @@ name: Preview Deploy (PR)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore: ['**.md', 'docs/**']
   workflow_dispatch:
     inputs:
       branch:
@@ -34,8 +35,16 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
-      - run: npx playwright install chromium --with-deps
-        name: Install Playwright
+      - name: Cache Playwright browsers
+        id: cache-pw
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+
+      - if: steps.cache-pw.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --with-deps
+        name: Install Playwright (miss)
 
       - run: npx playwright test core-flows.spec.ts --project=chromium-no-auth --reporter=list 2>&1 | tail -50
         name: e2e core-flows
