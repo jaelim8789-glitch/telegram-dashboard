@@ -19,6 +19,7 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 import { useToast } from "@/components/ui/Toast";
+import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 
 const MATCH_TYPE_LABEL: Record<AutoReplyMatchType, string> = {
   keyword: "키워드 포함",
@@ -60,6 +61,7 @@ type FilterMode = "all" | "active" | "inactive";
 export function AutoReplyTab() {
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const plan = useDashboardStore((s) => s.plan);
   const account = accounts.find((a) => a.id === selectedAccountId);
 
   const [enabled, setEnabled] = useState(false);
@@ -335,6 +337,9 @@ export function AutoReplyTab() {
           <div className="mt-2 rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{toggleError}</div>
         )}
       </Panel>
+
+      {/* Watermark + Referral Gate — free plan users must enable watermark */}
+      <WatermarkGate plan={plan} />
 
       {/* Rules list */}
       <div>

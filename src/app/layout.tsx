@@ -16,6 +16,17 @@ import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
 import ShareTargetHandler from "@/components/ShareTargetHandler";
 import LiveChat from "@/components/LiveChat";
+import { MobilePerformanceMonitor } from "@/components/ui/MobilePerformanceMonitor";
+import { MobileKeyboardHandler } from "@/components/ui/MobileKeyboardHandler";
+import { MobileCacheManager } from "@/components/ui/MobileCacheManager";
+import { MobileImageOptimizer } from "@/components/ui/MobileImageOptimizer";
+import { MobileAccessibilityEnhancer } from "@/components/ui/MobileAccessibilityEnhancer";
+import { MobilePowerOptimizer } from "@/components/ui/MobilePowerOptimizer";
+import { MobilePushNotifier } from "@/components/ui/MobilePushNotifier";
+import { MobileLocalizationOptimizer } from "@/components/ui/MobileLocalizationOptimizer";
+import { MobileOfflineCapability } from "@/components/ui/MobileOfflineCapability";
+import { MobileFontOptimizer } from "@/components/ui/MobileFontOptimizer";
+import { handleOrientationChange } from "@/lib/mobileOptimization";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -66,7 +77,15 @@ export default function RootLayout({
             back to a client-side re-render of the whole tree, which is what
             was causing tab/button clicks to silently misfire right after
             first paint. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script 
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} 
+          onLoad={() => {
+            // 화면 회전 대응 초기화
+            if (typeof window !== 'undefined') {
+              handleOrientationChange();
+            }
+          }}
+        />
         <link rel="preload" href="/manifest.json" as="fetch" crossOrigin="anonymous" />
         <link rel="preload" href="/icons/icon-192.svg" as="image" />
       </head>
@@ -77,6 +96,16 @@ export default function RootLayout({
         <RuntimeInitializer />
         <PwaRegister />
         <PwaInstallPrompt />
+        <MobilePerformanceMonitor />
+        <MobileKeyboardHandler />
+        <MobileCacheManager />
+        <MobileImageOptimizer />
+        <MobileAccessibilityEnhancer />
+        <MobilePowerOptimizer />
+        <MobilePushNotifier />
+        <MobileLocalizationOptimizer />
+        <MobileOfflineCapability />
+        <MobileFontOptimizer />
         <ToastProvider>{children}</ToastProvider>
         <LiveChat />
       </body>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -28,6 +28,7 @@ import { useBatterySaver } from "@/hooks/useBatterySaver";
 import { useAutoNightMode } from "@/hooks/useAutoNightMode";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
+import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
   ssr: false,

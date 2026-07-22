@@ -196,10 +196,9 @@ export function AccountRegisterTab() {
         name: formData.name,
         status: "active",
         todaySent: 0,
-        plan: "free" as const,
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
-      } as Account,
+      } as unknown as Account,
       [], // 그룹 데이터 없음
       [], // 로그 데이터 없음
       formData.notes
@@ -775,12 +774,6 @@ export function AccountRegisterTab() {
                     </div>
                   </div>
                 </div>
-                
-                {acc.notes && (
-                  <p className="mt-2 text-xs text-app-text-subtle">
-                    {acc.notes}
-                  </p>
-                )}
               </div>
             ))}
           </div>

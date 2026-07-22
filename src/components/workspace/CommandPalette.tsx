@@ -416,9 +416,12 @@ export function CommandPalette() {
                       <div className="mb-0.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-subtle">
                         {CATEGORY_LABELS[category] ?? category}
                       </div>
-                      {items.map((item) => {
+                          {items.map((item) => {
                         const idx = flatItems.indexOf(item);
                         const selected = idx === safeIdx;
+                        const shortcutHint = item.id.startsWith("nav:")
+                          ? `Alt+${TABS.findIndex((t) => `nav:${t.id}` === item.id) + 1 || ""}`
+                          : null;
                         return (
                           <button
                             key={item.id}
@@ -442,6 +445,11 @@ export function CommandPalette() {
                                 <span className="block truncate text-[11px] text-app-text-muted">{item.description}</span>
                               )}
                             </div>
+                            {shortcutHint && (
+                              <kbd className="shrink-0 rounded-md border border-app-border bg-app-card-hover px-1.5 py-0.5 text-[9px] font-mono text-app-text-subtle">
+                                {shortcutHint}
+                              </kbd>
+                            )}
                           </button>
                         );
                       })}
@@ -451,6 +459,9 @@ export function CommandPalette() {
                 /* Flat list (recent or no query) */
                 flatItems.map((item, index) => {
                   const selected = index === safeIdx;
+                  const shortcutHint = item.id.startsWith("nav:")
+                    ? `Alt+${TABS.findIndex((t) => `nav:${t.id}` === item.id) + 1 || ""}`
+                    : null;
                   return (
                     <button
                       key={item.id}
@@ -469,6 +480,11 @@ export function CommandPalette() {
                         {item.icon}
                       </span>
                       <span className="flex-1 truncate font-medium">{item.label}</span>
+                      {shortcutHint && (
+                        <kbd className="shrink-0 rounded-md border border-app-border bg-app-card-hover px-1.5 py-0.5 text-[9px] font-mono text-app-text-subtle">
+                          {shortcutHint}
+                        </kbd>
+                      )}
                       {item.description && !selected && (
                         <span className="shrink-0 text-[10px] text-app-text-subtle">{item.description}</span>
                       )}

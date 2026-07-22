@@ -107,22 +107,26 @@ def _get_request(token: str) -> dict[str, Any] | None:
     return dict(row)
 
 
+ALLOWED_FREE_KEY_FIELDS = {"phone", "status", "reason", "api_key"}
+
+
 def _upsert_request(token: str, **kwargs: Any) -> None:
     conn = sqlite3.connect(DB_PATH)
     now = datetime.now(timezone.utc).isoformat()
     existing = conn.execute(
         "SELECT token FROM free_api_key_requests WHERE token = ?", (token,)
     ).fetchone()
+    sanitized = {k: v for k, v in kwargs.items() if k in ALLOWED_FREE_KEY_FIELDS}
     if existing:
-        sets = ", ".join(f"{k} = ?" for k in kwargs)
-        params = list(kwargs.values()) + [now, token]
+        sets = ", ".join(f"{k} = ?" for k in sanitized)
+        params = list(sanitized.values()) + [now, token]
         conn.execute(f"UPDATE free_api_key_requests SET {sets}, updated_at = ? WHERE token = ?", params)
     else:
-        placeholders = ", ".join("?" for _ in kwargs)
-        cols = ", ".join(kwargs.keys())
+        placeholders = ", ".join("?" for _ in sanitized)
+        cols = ", ".join(sanitized.keys())
         conn.execute(
             f"INSERT INTO free_api_key_requests (token, {cols}, created_at, updated_at) VALUES (?, {placeholders}, ?, ?)",
-            [token] + list(kwargs.values()) + [now, now],
+            [token] + list(sanitized.values()) + [now, now],
         )
     conn.commit()
     conn.close()

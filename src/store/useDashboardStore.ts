@@ -402,5 +402,9 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       const newActiveTabs = state.activeTabs.filter(id => id !== tabId);
       return { activeTabs: newActiveTabs };
     });
-  }
+  },
+
+  dashboardSwitchProfile: (profile: string) => {
+    try { localStorage.setItem("telemon-dashboard-profile", profile); } catch {}
+  },
 }));
