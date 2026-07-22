@@ -21,6 +21,14 @@ const MiniAppProfile = dynamic(() => import("./MiniAppProfile").then((m) => ({ d
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
+const MiniAppPixelOffice = dynamic(() => import("./MiniAppPixelOffice").then((m) => ({ default: m.MiniAppPixelOffice })), {
+  loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
+});
+
+const MiniAppReplyMacro = dynamic(() => import("./MiniAppReplyMacro").then((m) => ({ default: m.MiniAppReplyMacro })), {
+  loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
+});
+
 export default function MiniAppPage() {
   const [activeTab, setActiveTab] = useState<MiniAppTab>("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -87,6 +95,8 @@ export default function MiniAppPage() {
         {activeTab === "chat" && <MiniAppChat key={`chat-${refreshKey}`} />}
         {activeTab === "send" && <MiniAppSend key={`send-${refreshKey}`} user={user} />}
         {activeTab === "profile" && <MiniAppProfile key={`profile-${refreshKey}`} />}
+        {activeTab === "pixeloffice" && <MiniAppPixelOffice key={`pixeloffice-${refreshKey}`} />}
+        {activeTab === "replymacro" && <MiniAppReplyMacro key={`replymacro-${refreshKey}`} />}
       </div>
 
       <MiniAppNav activeTab={activeTab} onTabChange={setActiveTab} />

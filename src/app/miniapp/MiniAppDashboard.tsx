@@ -1,25 +1,18 @@
 "use client";
 
-import { useEffect, useState, memo, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, memo, useCallback, useRef } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
-import { Send, CheckCircle2, Coins, Clock, Users, Loader2, TrendingUp, Plug, Plus, RefreshCw, CircleAlert, WifiOff, Sparkles, Bot, ChevronRight, User as UserIcon, Zap } from "lucide-react";
+import { Send, Coins, Clock, Users, TrendingUp, RefreshCw, CircleAlert, WifiOff, ChevronRight } from "lucide-react";
 import * as api from "@/lib/api";
 import { fetchTokenBalance, fetchRecentBroadcasts } from "@/lib/api-miniapp";
 import type { BroadcastStatus } from "@/types";
 import { AccountStatusDot } from "@/components/ui/AccountStatusIndicator";
 import { useDataCache, withCache } from "@/store/useDataCache";
 import { WeeklySummaryCard } from "@/components/ui/WeeklySummaryCard";
-import { useToastStore } from "@/components/ui/GlobalToast";
 import { relativeTime } from "@/lib/relativeTime";
 
 interface AccountItem { id: string; phone: string; status: string; todaySent: number; healthScore: number; }
 interface BroadcastItem { id: string; message: string; status: BroadcastStatus; sentAt: string; recipients: number; }
-interface PixelOfficeStaff { id: string; name: string; emoji: string; status: "online" | "busy" | "idle"; role: string; }
-
-const DEFAULT_STAFF: PixelOfficeStaff[] = [
-  { id: "boss", name: "사장", emoji: "👨‍💼", status: "online", role: "나" },
-  { id: "telemon-ai", name: "AI 텔레몬", emoji: "🤖", status: "online", role: "자동 응답" },
-];
 
 const StatCard = memo(function StatCard({ type, value, refreshKey, onClick }: { type: string; value: string; refreshKey?: number; onClick?: () => void }) {
   const configs: Record<string, { icon: typeof Send; label: string; bg: string; iconBg: string }> = {
@@ -67,9 +60,6 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
   const [state, setState] = useState({ tokenBalance: 0, activeAccounts: 0, queueCount: 0, todayTotal: 0,
     accounts: [] as AccountItem[], recentBroadcasts: [] as BroadcastItem[], lastUpdated: null as Date | null, error: false, online: true });
   const [loading, setLoading] = useState(true);
-  const [staff, setStaff] = useState<PixelOfficeStaff[]>(DEFAULT_STAFF);
-  const [showCreateStaff, setShowCreateStaff] = useState(false);
-  const toast = useToastStore(s => s.add);
 
   const fetchData = useCallback(async () => {
     try {
@@ -94,19 +84,6 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
 
   const handleTabChange = useCallback((tab: string) => window.dispatchEvent(new CustomEvent("telemon-miniapp-tab-change", { detail: { tab } })), []);
 
-  function handleCreateStaff() {
-    const newStaff: PixelOfficeStaff = {
-      id: `staff-${Date.now()}`,
-      name: `AI 직원 ${staff.length - 1}호`,
-      emoji: ["🧑‍💻", "👩‍💼", "👨‍🔧", "👩‍🔬", "🧙‍♂️"][(staff.length - 2) % 5],
-      status: "idle",
-      role: "AI 어시스턴트",
-    };
-    setStaff(prev => [...prev, newStaff]);
-    setShowCreateStaff(false);
-    toast({ type: "success", title: "AI 직원 생성 완료!", message: `${newStaff.name}이(가) PixelOffice에 합류했습니다.` });
-  }
-
   if (loading) return <div className="p-4 space-y-4"><SkeletonGrid /></div>;
 
   return (
@@ -116,51 +93,6 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
           <WifiOff className="h-3.5 w-3.5 text-white" /><span className="text-white">오프라인 상태입니다</span>
         </div>
       )}
-
-      {/* ═══ PixelOffice 섹션 — 대시보드 최상단 ═══ */}
-      <div className="rounded-2xl p-4 border border-app-border/60" style={{ background: "linear-gradient(135deg, rgba(82, 136, 193, 0.15), rgba(168, 85, 247, 0.08))" }}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold flex items-center gap-1.5" style={{ fontFamily: "var(--font-heading)" }}>
-            <Sparkles className="h-4 w-4 text-amber-400" /> PixelOffice
-          </h2>
-          <button onClick={() => setShowCreateStaff(true)} className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-medium active:scale-95" style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-            <Plus className="h-3 w-3" /> AI 직원 생성
-          </button>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {staff.map(s => (
-            <div key={s.id} className="flex shrink-0 flex-col items-center gap-1.5 rounded-xl px-3 py-3 min-w-[80px]" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-              <div className={`relative flex h-10 w-10 items-center justify-center rounded-full text-xl ${s.status === "online" ? "ring-2 ring-emerald-500" : s.status === "busy" ? "ring-2 ring-amber-500" : ""}`}>
-                {s.emoji}
-                {s.status === "online" && <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-[var(--tg-theme-section-bg-color)]" />}
-              </div>
-              <span className="text-[11px] font-semibold text-app-text truncate max-w-[70px]">{s.name}</span>
-              <span className="text-[9px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{s.role}</span>
-            </div>
-          ))}
-        </div>
-
-        {staff.length <= 2 && (
-          <p className="text-[10px] text-center mt-2" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-            AI 직원을 생성하면 PixelOffice에 추가됩니다
-          </p>
-        )}
-
-        {/* AI 직원 생성 팝업 */}
-        {showCreateStaff && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateStaff(false)}>
-            <div className="mx-4 w-full max-w-sm rounded-2xl bg-app-card p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-              <h3 className="text-sm font-bold text-app-text mb-2">🤖 AI 직원 생성</h3>
-              <p className="text-xs text-app-text-muted mb-4">새 AI 직원이 PixelOffice에 합류합니다. 자동으로 발송/응답을 도와줍니다.</p>
-              <button onClick={handleCreateStaff} className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-3 text-sm font-semibold text-white active:scale-[0.98]">
-                <Zap className="h-4 w-4 inline mr-1" /> AI 직원 생성하기
-              </button>
-              <button onClick={() => setShowCreateStaff(false)} className="w-full mt-2 rounded-xl py-2.5 text-xs font-medium" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>취소</button>
-            </div>
-          </div>
-        )}
-      </div>
 
       <WeeklySummaryCard />
 
