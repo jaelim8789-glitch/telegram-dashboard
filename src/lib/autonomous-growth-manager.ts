@@ -151,6 +151,24 @@ class AutonomousGrowthManager {
     return true;
   }
 
+  private getBackoffDelay(retryCount: number, isRateLimit: boolean): number {
+    if (isRateLimit) {
+      return RATE_LIMIT_RETRY_DELAY_MS;
+    }
+    return Math.min(BASE_RETRY_DELAY_MS * Math.pow(2, retryCount), MAX_BACKOFF_DELAY_MS);
+  }
+
+  private isRateLimitError(error: unknown): boolean {
+    if (error instanceof Error && 'status' in error) {
+      return (error as any).status === 429;
+    }
+    return false;
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   /**
    * 자동 성장 루프를 실행합니다
    */
@@ -161,10 +179,12 @@ class AutonomousGrowthManager {
     }
 
     try {
-      // 루프 사이클 실행
       await this.executeCycle(loopId);
 
-      // 다음 사이클을 위한 타이머 설정 (예: 1시간마다 실행)
+      loop.retryCount = 0;
+      this.loops.set(loopId, loop);
+      saveLoops(this.loops);
+
       const nextRunDelay = this.calculateNextRunDelay(loop.strategy.timingStrategy);
       const timer = setTimeout(() => {
         this.executeLoop(loopId);
@@ -173,10 +193,31 @@ class AutonomousGrowthManager {
       this.activeTimers.set(loopId, timer);
     } catch (error) {
       console.error(`Error executing loop ${loopId}:`, error);
-      loop.status = 'failed';
-      loop.updatedAt = new Date();
-      this.loops.set(loopId, loop);
-      saveLoops(this.loops);
+
+      const isRateLimit = this.isRateLimitError(error);
+      loop.lastError = error instanceof Error ? error.message : String(error);
+
+      if (loop.retryCount < MAX_RETRY_COUNT) {
+        loop.retryCount++;
+        const delay = this.getBackoffDelay(loop.retryCount, isRateLimit);
+        console.log(
+          `Retrying loop ${loopId} in ${delay}ms (attempt ${loop.retryCount}/${MAX_RETRY_COUNT})`
+        );
+        loop.updatedAt = new Date();
+        this.loops.set(loopId, loop);
+        saveLoops(this.loops);
+
+        const timer = setTimeout(() => {
+          this.executeLoop(loopId);
+        }, delay);
+        this.activeTimers.set(loopId, timer);
+      } else {
+        console.error(`Loop ${loopId} failed after ${MAX_RETRY_COUNT} retries`);
+        loop.status = 'failed';
+        loop.updatedAt = new Date();
+        this.loops.set(loopId, loop);
+        saveLoops(this.loops);
+      }
     }
   }
 
