@@ -19,7 +19,7 @@ import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import PinnedKpiBar from "@/components/ui/PinnedKpiBar";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
 import { Loader2, WifiOff, RefreshCw } from "lucide-react";
 import { MobileSwipeContainer } from "@/components/workspace/MobileSwipeContainer";
@@ -54,9 +54,9 @@ function TabFallback() {
       <Skeleton className="h-6 w-1/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
-      <Skeleton className="h-20 w-full rounded-xl" />
+      <SkeletonCard />
       <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-20 w-full rounded-xl" />
+      <SkeletonCard />
     </div>
   );
 }

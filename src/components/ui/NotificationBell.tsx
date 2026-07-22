@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, BellRing, CheckCircle2, X, Send, AlertCircle, Info, Volume2, Trash2 } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, X, Send, AlertCircle, Info, Volume2, Trash2, Settings, BellOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatRelativeTime } from "@/lib/formatTime";
 
@@ -82,11 +82,27 @@ export function useNotifications() {
   return notifications;
 }
 
+import { useBrowserNotification } from "@/hooks/useBrowserNotification";
+
 export function NotificationBell() {
   const [notifState, setNotifState] = useState<Notification[]>(() => loadNotifications());
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const unread = notifState.filter((n) => !n.read).length;
   const prevUnread = useRef(unread);
+  const { permission, disabled, setEnabled, isSupported } = useBrowserNotification();
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [settingsOpen]);
 
   useEffect(() => {
     const handler = () => setNotifState(loadNotifications());
@@ -166,6 +182,45 @@ export function NotificationBell() {
                 <div className="flex items-center gap-1.5">
                   {unread > 0 && (
                     <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 읽음</button>
+                  )}
+                  {isSupported && (
+                    <div ref={settingsRef} className="relative">
+                      <button
+                        onClick={() => setSettingsOpen(!settingsOpen)}
+                        className="p-1 text-app-text-muted hover:text-app-text transition-colors"
+                        title="알림 설정"
+                      >
+                        <Settings className="h-3 w-3" />
+                      </button>
+                      <AnimatePresence>
+                        {settingsOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                            transition={{ duration: 0.12 }}
+                            className="absolute right-0 top-full mt-1 z-10 w-56 rounded-lg border border-app-border/60 bg-app-bg shadow-xl p-1.5"
+                          >
+                            <button
+                              onClick={() => { setEnabled(disabled); setSettingsOpen(false); }}
+                              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors"
+                            >
+                              {disabled || permission !== "granted" ? (
+                                <>
+                                  <BellOff className="h-3.5 w-3.5 text-app-text-muted" />
+                                  <span>브라우저 알림 켜기</span>
+                                </>
+                              ) : (
+                                <>
+                                  <BellRing className="h-3.5 w-3.5 text-app-primary" />
+                                  <span>브라우저 알림 끄기</span>
+                                </>
+                              )}
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   )}
                   {notifState.length > 0 && (
                     <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="전체 삭제">

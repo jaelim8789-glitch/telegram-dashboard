@@ -109,25 +109,7 @@ export function decodeJwt(token: string): Record<string, unknown> | null {
   }
 }
 
-export async function verifyJwtSignature(token: string): Promise<boolean> {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-    const header = JSON.parse(atob(parts[0].replace(/-/g, "+").replace(/_/g, "/")));
-    const alg = header.alg || "HS256";
-    if (!alg.startsWith("HS")) return false;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    const secretKey = payload._secret || "";
-    if (!secretKey) return true;
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secretKey);
-    const sig = Uint8Array.from(atob(parts[2].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-    const valid = await crypto.subtle.verify("HMAC", await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]), sig, encoder.encode(`${parts[0]}.${parts[1]}`));
-    return valid;
-  } catch {
-    return false;
-  }
-}
+// Client-side JWT verification removed — server is the authority.
 
 export function isTokenExpired(token: string): boolean {
   const payload = decodeJwt(token);

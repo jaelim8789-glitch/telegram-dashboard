@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Users, UserPlus, UserMinus, Shield, ShieldAlert, ShieldCheck, ChevronDown, Search, X, Copy, Check, Loader2 } from "lucide-react";
 import { fetchAuthMe, request } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
-// ─── Types ────────────────────────────────────────────────────────────
+// ───── Types ─────
 
 interface TeamMember {
   id: string;
@@ -33,7 +34,7 @@ interface TeamMemberListResponse {
 
 type RoleBadge = "owner" | "admin" | "member";
 
-// ─── Helpers ──────────────────────────────────────────────────────────
+// ───── Helpers ─────
 
 const ROLE_LABELS: Record<RoleBadge, string> = {
   owner: "Owner",
@@ -79,7 +80,7 @@ function getTenantId(): string | null {
   }
 }
 
-// ─── Main Component ───────────────────────────────────────────────────
+// ───── Main Component ─────
 
 export function TeamTab() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -181,7 +182,7 @@ export function TeamTab() {
       });
       await fetchMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "역할 변경에 실패했습니다.");
+      setError(err instanceof Error ? err.message : "권한 변경에 실패했습니다.");
     }
   };
 
@@ -210,7 +211,7 @@ export function TeamTab() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center text-app-text-muted">
           <Users className="mx-auto mb-3 h-12 w-12 opacity-40" />
-          <p className="text-sm">테넌트 정보를 불러오는 중...</p>
+          <p className="text-sm">테넌트 정보를 불러오는 중..</p>
         </div>
       </div>
     );
@@ -269,7 +270,7 @@ export function TeamTab() {
       {copiedToken && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
           <p className="mb-2 text-sm font-medium text-blue-700 dark:text-blue-400">
-            ✅ 초대가 생성되었습니다. 아래 링크를 새 멤버에게 공유해주세요.
+            초대 링크가 생성되었습니다! 아래 링크를 멤버에게 공유해주세요.
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white px-3 py-2 text-xs font-mono text-blue-800 dark:bg-blue-950 dark:text-blue-300">
@@ -315,7 +316,7 @@ export function TeamTab() {
                     <RoleBadge role={member.role as RoleBadge} />
                     {!member.is_active && (
                       <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400">
-                        초대 대기
+                        초대 대기중
                       </span>
                     )}
                   </div>
@@ -422,8 +423,8 @@ export function TeamTab() {
                   onChange={(e) => setInviteRole(e.target.value as "admin" | "member")}
                   className="focus-ring w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text"
                 >
-                  <option value="member">Member - 운영 기능 사용</option>
-                  <option value="admin">Admin - 팀 관리 + 운영</option>
+                  <option value="member">Member - 기본 기능 사용</option>
+                  <option value="admin">Admin - 팀 관리 + 기본</option>
                 </select>
               </div>
               <div className="flex items-center justify-end gap-3 pt-2">

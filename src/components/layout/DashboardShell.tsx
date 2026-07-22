@@ -52,7 +52,7 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
-import { useNotification } from "@/lib/useNotification";
+import { useBrowserNotification } from "@/hooks/useBrowserNotification";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -66,6 +66,7 @@ export function DashboardShell() {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+  const sidebarCollapsed = useDashboardStore((s) => s.sidebarCollapsed);
   const [isMobile, setIsMobile] = useState(false);
 
   const haptics = useHapticFeedback();
@@ -151,26 +152,22 @@ export function DashboardShell() {
   }, [fetchAccounts]);
 
   // ── Browser notifications ──
-  const { notify, isSupported } = useNotification();
+  const { notifyBroadcastComplete, isSupported } = useBrowserNotification();
 
   // Notify when broadcasts complete
   const accounts = useDashboardStore((s) => s.accounts);
-  const prevRef = useRef({ sent: accounts.reduce((s, a) => s + a.todaySent, 0) });
+  const prevRef = useRef<Map<string, number>>(new Map());
   useEffect(() => {
     if (!isSupported) return;
-    const totalNow = accounts.reduce((s, a) => s + a.todaySent, 0);
-    const prev = prevRef.current.sent;
-    if (totalNow > prev && prev > 0) {
-      notify({
-        title: "✅ 발송 완료",
-        body: `새로운 발송이 완료되었습니다 (${totalNow - prev}건)`,
-        tag: "broadcast-sent",
-      });
+    for (const account of accounts) {
+      const prevSent = prevRef.current.get(account.id) ?? 0;
+      const nowSent = account.todaySent;
+      if (nowSent > prevSent && prevSent > 0) {
+        notifyBroadcastComplete(account.name ?? account.phone, nowSent - prevSent, nowSent - prevSent, 0);
+      }
+      prevRef.current.set(account.id, nowSent);
     }
-    if (totalNow !== prev) {
-      prevRef.current = { sent: totalNow };
-    }
-  }, [accounts, notify, isSupported]);
+  }, [accounts, notifyBroadcastComplete, isSupported]);
 
   // ── First-visit auto-redirect to dashboard with 0 accounts ──
   useEffect(() => {
@@ -190,7 +187,7 @@ export function DashboardShell() {
       <NetworkStatus />
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
-      <Header />
+      <Header sidebarCollapsed={sidebarCollapsed} />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
         <button
@@ -232,13 +229,13 @@ export function DashboardShell() {
           id="dashboard-sidebar"
           role="complementary"
           aria-label="계정 목록"
-          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
+          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex sm:shrink-0`}
         >
           {sidebarOpen && (
             <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
           )}
           <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`} style={{ paddingLeft: "env(safe-area-inset-left, 0px)" }}>
-            <Sidebar />
+            <Sidebar collapsed={sidebarCollapsed} />
           </div>
         </div>
         <Workspace />

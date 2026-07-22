@@ -60,7 +60,6 @@ const eslintConfig = [
       "src/lib/resourcePreloading.tsx",
       "src/lib/ssrOptimization.tsx",
       "src/hooks/useSmartSync.tsx",
-      "src/hooks/useWebWorker.tsx",
       "src/components/workspace/TabContent.tsx",
     ],
   },

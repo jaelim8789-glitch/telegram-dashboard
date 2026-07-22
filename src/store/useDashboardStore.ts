@@ -47,7 +47,19 @@ type DashboardStateValue = {
   reuseNotice: string | null;
   tabBadges: Partial<Record<TabId, number>>;
   sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
+  sidebarCollapsed: boolean;
 };
+
+const SIDEBAR_COLLAPSED_KEY = "telemon-sidebar-collapsed";
+
+function loadSidebarCollapsed(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 export const INITIAL_STATE: DashboardStateValue = {
   activeTab: loadLastTab(),
@@ -72,6 +84,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   reuseNotice: null,
   tabBadges: {},
   sendProgress: null,
+  sidebarCollapsed: loadSidebarCollapsed(),
 };
 
 interface DashboardState extends DashboardStateValue {
@@ -105,6 +118,8 @@ interface DashboardState extends DashboardStateValue {
   sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
   setSendProgress: (progress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null) => void;
   clearSendProgress: () => void;
+  sidebarCollapsed: boolean;
+  toggleSidebarCollapsed: () => void;
   resetStore: () => void;
 }
 
@@ -322,6 +337,13 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
   sendProgress: null,
   setSendProgress: (progress) => set({ sendProgress: progress }),
   clearSendProgress: () => set({ sendProgress: null }),
+  sidebarCollapsed: loadSidebarCollapsed(),
+  toggleSidebarCollapsed: () =>
+    set((state) => {
+      const next = !state.sidebarCollapsed;
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next)); } catch {}
+      return { sidebarCollapsed: next };
+    }),
 
   reuseBroadcast: (broadcast) => {
     set({
