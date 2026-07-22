@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bot, Zap, Globe, Sparkles, Scale, PenLine, Loader2, MessageSquare, Plus, X, ChevronRight,
+  Bot, Zap, Globe, Sparkles, Scale, PenLine, X, ChevronRight,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
@@ -118,7 +118,7 @@ export function FloatingAiButton() {
   ];
 
   return (
-    <div className="fixed bottom-24 right-4 z-40 md:bottom-8">
+    <div className="fixed bottom-24 right-4 z-[60] md:bottom-8">
       <AnimatePresence>
         {open && (
           <motion.div

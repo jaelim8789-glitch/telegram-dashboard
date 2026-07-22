@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, Sparkles, MessageSquare, Send, BarChart3, TrendingUp, AlertTriangle, Clock, Calendar } from "lucide-react";
+import { Bot } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
