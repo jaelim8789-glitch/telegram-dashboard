@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
       "node_modules/caniuse-lite/data/**",
     ],
   },
-  serverExternalPackages: ["sharp", "canvas"],
+  serverExternalPackages: ["sharp", "canvas", "@tma.js/sdk-react"],
   experimental: {
     esmExternals: 'loose',
     optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
