@@ -1,10 +1,13 @@
 "use client";
 
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import type { NavView } from "@/types";
+import type { NavView, TabId } from "@/types";
+import { TABS } from "@/types";
+import { cn } from "@/lib/cn";
 import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
@@ -18,14 +21,17 @@ import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { PinnedKpiBar } from "@/components/ui/PinnedKpiBar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
-import type { TabId } from "@/types";
-import { Loader2, WifiOff } from "lucide-react";
+import { Loader2, WifiOff, RefreshCw } from "lucide-react";
+import { MobileSwipeContainer } from "@/components/workspace/MobileSwipeContainer";
+import { MobileFab } from "@/components/ui/MobileFab";
 import { updateBadgeFromStats } from "@/lib/appBadge";
 import { requestPushPermission, subscribeToPush } from "@/lib/pushManager";
 import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 import { usePwaUpdate } from "@/hooks/usePwaUpdate";
 import { useBatterySaver } from "@/hooks/useBatterySaver";
 import { useAutoNightMode } from "@/hooks/useAutoNightMode";
+import { useAdaptiveLoading } from "@/hooks/useAdaptiveLoading";
+import { computeDiff } from "@/lib/refreshDiff";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
 import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
@@ -164,8 +170,16 @@ function usePullToRefresh(
   const [pulling, setPulling] = useState(false);
   const [pullDist, setPullDist] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const touchStartY = useRef(0);
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const THRESHOLD = 60;
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }, []);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (!enabled || !scrollRef.current) return;
@@ -196,7 +210,7 @@ function usePullToRefresh(
     touchStartY.current = 0;
   }, [enabled, pullDist, refreshing, onRefresh]);
 
-  return { pulling, pullDist, refreshing, onTouchStart, onTouchMove, onTouchEnd };
+  return { pulling, pullDist, refreshing, toast, showToast, onTouchStart, onTouchMove, onTouchEnd };
 }
 
 function navDepth(view: NavView): number {
@@ -236,6 +250,9 @@ export function Workspace() {
   useWakeLock();
   const netQuality = useNetworkQuality();
   const dashboardSwitchProfile = useDashboardStore((s) => s.dashboardSwitchProfile);
+  const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const allTabIds = TABS.filter((t) => t.group !== "new").map((t) => t.id);
+  const { isLowBandwidth, loadPriority } = useAdaptiveLoading();
 
   // Init push notifications + app badge + native bridge
   useEffect(() => {
@@ -245,6 +262,7 @@ export function Workspace() {
   }, []);
 
   useEffect(() => {
+    if (isLowBandwidth) return;
     const timer = setTimeout(() => {
       PRELOAD_TABS.forEach((id) => {
         const loader = TAB_CONTENT[id] as any;
@@ -252,7 +270,7 @@ export function Workspace() {
       });
     }, 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLowBandwidth]);
 
   const online = useNetworkStatus();
   const reducedMotion = useReducedMotion();
@@ -416,26 +434,64 @@ export function Workspace() {
             </motion.div>
           )}
 
+          {/* ── Refresh success toast ── */}
+          <AnimatePresence>
+            {pull.toast && (
+              <motion.div
+                initial={{ opacity: 0, y: -12, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.95 }}
+                className="flex items-center justify-center gap-1.5 pb-2 text-xs font-medium text-app-success"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {pull.toast}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <ScrollToTop />
 
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={viewKey}
-              custom={direction}
-              variants={viewVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={springCfg}
+          {isMobile && navView === "feature" ? (
+            <MobileSwipeContainer
+              currentTabId={navFeature || activeTab}
+              allTabIds={allTabIds}
+              onTabChange={(tabId) => setActiveTab(tabId as TabId)}
             >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={viewKey}
+                  custom={direction}
+                  variants={viewVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={springCfg}
+                >
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
+            </MobileSwipeContainer>
+          ) : (
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={viewKey}
+                custom={direction}
+                variants={viewVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={springCfg}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </div>
         <GlobalSearch />
         <CommandPalette />
         <OnboardingTour />
         <div className="fixed bottom-20 right-2 z-30"><NetworkQualityIndicator /></div>
+        {isMobile && <MobileFab />}
       </main>
     </MotionConfig>
     </AppShell>

@@ -54,8 +54,8 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   pixeloffice: Building2,
 };
 
-// 모바일 하단 핵심 탭 — AI 대화 첫 화면 (v3: AI 중심)
-const MOBILE_MAIN_TAB_IDS = ["myai", "send", "group"];
+// 모바일 하단 핵심 탭 — 모든 5개 그룹 (더보기 시트 제거)
+const MOBILE_MAIN_TAB_IDS = ["dashboard", "send", "group", "myai", "profile"];
 
 function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; active: boolean; onSelect: () => void; badge?: number; mobile?: boolean }) {
   const Icon = TAB_ICONS[tab.id];
@@ -158,16 +158,8 @@ export function TabBar() {
   const newTabs = TABS.filter((t) => t.group === "new");
   const allTabs = [...dashboardTabs, ...sendTabs, ...opsTabs, ...aiTabs, ...settingsTabs, ...newTabs];
 
-  // 모바일
+  // 모바일 — 모든 5개 그룹 인라인 표시 (스크롤 가능)
   const mobileMainTabs = allTabs.filter((t) => MOBILE_MAIN_TAB_IDS.includes(t.id));
-  const hasMoreTab = MOBILE_MAIN_TAB_IDS.includes("more") || true;
-  const moreGroups: { label: string; tabs: TabDef[] }[] = [
-    { label: "대시보드", tabs: dashboardTabs },
-    { label: "발송", tabs: sendTabs.filter(t => !MOBILE_MAIN_TAB_IDS.includes(t.id)) },
-    { label: "운영", tabs: opsTabs },
-    { label: "AI", tabs: aiTabs.filter(t => t.id !== "myai") },
-    { label: "설정", tabs: settingsTabs },
-  ].filter((g) => g.tabs.length > 0);
 
   function updateFade() {
     const el = scrollRef.current;
@@ -232,7 +224,12 @@ export function TabBar() {
             role="navigation"
             aria-label="모바일 하단 내비게이션"
           >
-            <div className="flex items-center justify-around max-w-lg mx-auto px-1">
+            <div
+              ref={scrollRef}
+              onScroll={updateFade}
+              style={{ scrollbarWidth: "none" }}
+              className="flex items-center gap-0 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden"
+            >
               {mobileMainTabs.map((tab) => (
                 <TabButton
                   key={tab.id}
@@ -241,32 +238,11 @@ export function TabBar() {
                   onSelect={() => { 
                     haptics.light(); 
                     setActiveTab(tab.id); 
-                    setMoreOpen(false); 
                   }}
                   badge={tabBadges[tab.id]}
                   mobile
                 />
               ))}
-              {/* "더보기" 버튼 */}
-              {hasMoreTab && (
-                <button
-                  type="button"
-                  onClick={() => { 
-                    haptics.light(); 
-                    setMoreOpen(true); 
-                  }}
-                  className={`flex flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2 items-center justify-center transition-all duration-200 relative ${
-                    moreOpen ? "text-app-primary" : "text-app-text-muted hover:text-app-text-secondary"
-                  }`}
-                  aria-expanded={moreOpen}
-                  aria-controls="more-menu"
-                  aria-haspopup="true"
-                >
-                  <MoreHorizontal className="h-6 w-6" />
-                  <span className="text-[11px] leading-none">더보기</span>
-                  <span className="absolute inset-1.5 rounded-xl transition-all duration-200 hover:bg-app-card-hover/50" />
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => { 
@@ -284,67 +260,6 @@ export function TabBar() {
             </div>
           </nav>
         </div>
-
-        <AnimatePresence>
-          {moreOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-black/40"
-                onClick={() => setMoreOpen(false)}
-                aria-hidden="true"
-              />
-              <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                id="more-menu"
-                className="fixed bottom-16 left-0 right-0 z-50 max-h-[60vh] overflow-y-auto rounded-t-2xl bg-app-card border-t border-app-border/60 px-4 pb-6 pt-4"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="more-menu-title"
-              >
-                <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-app-border" />
-                <h2 id="more-menu-title" className="sr-only">추가 메뉴</h2>
-                {moreGroups.map((group) => (
-                  <div key={group.label} className="mb-3">
-                    <p className="text-[11px] font-semibold text-app-text-muted uppercase tracking-wider mb-1.5 px-1">
-                      {group.label}
-                    </p>
-                    <div className="grid grid-cols-4 gap-1">
-                      {group.tabs.map((tab) => {
-                        const Icon = TAB_ICONS[tab.id];
-                        const active = tab.id === activeTab;
-                        return (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => { 
-                              haptics.light(); 
-                              setActiveTab(tab.id); 
-                              setMoreOpen(false); 
-                            }}
-                            className={cn(
-                              "flex flex-col items-center gap-1 rounded-xl py-3 transition-colors min-h-[60px]", // 각 아이템의 최소 높이 증가
-                              active ? "bg-app-primary/10 text-app-primary" : "text-app-text-muted hover:bg-app-card-hover"
-                            )}
-                            aria-current={active ? "page" : undefined}
-                          >
-                            {Icon && <Icon className="h-5 w-5" />}
-                            <span className="text-[10px] leading-tight text-center">{tab.shortLabel ?? tab.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
 
         <AnimatePresence>
           {showAccountPicker && (

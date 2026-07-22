@@ -29,7 +29,7 @@ export function AiWelcomeCard() {
         failed: logs.filter((l) => l.status === "failed").length,
         pending: logs.filter((l) => l.status === "pending").length,
       });
-    }).catch(() => {});
+    }).catch((e) => console.warn("AiWelcomeCard: fetchAIAssistants 실패", e));
   }, [selectedAccountId]);
 
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);

@@ -15,22 +15,13 @@ import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
-import { getToken, getSessionToken } from "@/lib/auth";
+import * as api from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import * as agentApi from "@/lib/agent-api";
 import type { ToolConfirmation } from "@/lib/agent-api";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  const sessionToken = getSessionToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (sessionToken) headers["X-Session-Token"] = sessionToken;
-  return headers;
-}
 
 interface StreamMessage {
   role: "user" | "agent";
@@ -220,12 +211,12 @@ export function InlineAiChat() {
     setSummaryLoading(true);
 
     Promise.all([
-      fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers: authHeaders() })
+      fetchWithTimeout(`${BASE_URL}/api/ai/usage?days=1`, { headers: api.authHeaders() })
         .then((r) => r.json().catch(() => ({})))
         .then((data) => ({ kind: "usage" as const, data }))
         .catch(() => ({ kind: "usage" as const, data: {} })),
       selectedAccountId
-        ? fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: authHeaders() })
+        ? fetchWithTimeout(`${BASE_URL}/api/broadcasts?account_id=${selectedAccountId}&limit=100`, { headers: api.authHeaders() })
             .then((r) => r.json().catch(() => ({})))
             .then((data) => ({ kind: "broadcast" as const, data }))
             .catch(() => ({ kind: "broadcast" as const, data: {} }))
@@ -254,7 +245,7 @@ export function InlineAiChat() {
       if (failed > 0 || scheduled > 0) {
         useDashboardStore.getState().setTabBadge("send", failed + scheduled);
       }
-    }).catch(() => {}).finally(() => {
+    }).catch((e) => console.warn("InlineAiChat: fetch agents summary 실패", e)).finally(() => {
       if (!cancelled) setSummaryLoading(false);
     });
 
@@ -318,7 +309,7 @@ export function InlineAiChat() {
 
     fetchWithTimeout(`${BASE_URL}/api/ai/chats/${activeChatId}/message`, {
       method: "POST",
-      headers: authHeaders(),
+      headers: api.authHeaders(),
       body: JSON.stringify({ content: text }),
       signal: controller.signal,
     }).then(async (res) => {
@@ -333,7 +324,7 @@ export function InlineAiChat() {
           description: `${data.exp_gained || 0} EXP를 획득했습니다.`,
           duration: 5000,
         });
-        agentApi.fetchAgents().then(setAgents).catch(() => {});
+        agentApi.fetchAgents().then(setAgents).catch((e) => console.warn("InlineAiChat: fetchAgents 갱신 실패", e));
       }
       const msgs = await agentApi.fetchChatMessages(activeChatId!);
       setMessages(msgs);

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import * as api from "@/lib/api";
 import * as folderApi from "@/lib/folderApi";
 import type { GroupFolder, Group, SmartFolderType, FolderReorderInput } from "@/types";
 
@@ -223,10 +223,10 @@ export function FoldersTab() {
     try {
       const [folderData, groupData] = await Promise.all([
         folderApi.fetchFolders(accountId, true),
-        fetchWithTimeout(`/api/accounts/${accountId}/groups?page_size=200`).then(r => r.json()),
+        api.fetchGroups(accountId),
       ]);
       setFolders(folderData);
-      setGroups((groupData as { items: Group[] }).items ?? groupData);
+      setGroups(groupData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load folders");
     } finally {

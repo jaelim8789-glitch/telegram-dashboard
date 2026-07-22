@@ -6,19 +6,11 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { getToken } from "@/lib/auth";
 import { getAccountDisplayName } from "@/types";
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
+import * as api from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 export function ReplyMacroTab() {
   const accounts = useDashboardStore((s) => s.accounts);
@@ -36,7 +28,7 @@ export function ReplyMacroTab() {
     if (!selectedAccountId) return;
     setLoading(true);
     fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
-      headers: authHeaders(),
+      headers: api.authHeaders(),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -53,7 +45,7 @@ export function ReplyMacroTab() {
     try {
       const res = await fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, {
         method: "PUT",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({ is_active: nextActive, message_content: message }),
       });
       const data = await res.json();

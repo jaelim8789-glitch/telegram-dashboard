@@ -2,6 +2,21 @@ set -e
 
 echo "🔍 [pre-commit] 실행 중..."
 
+# 0. Diff 크기 제한 경고
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | wc -l)
+if [ "$STAGED_FILES" -gt 20 ]; then
+  echo "⚠️  [pre-commit] 경고: 한 커밋에 $STAGED_FILES개 파일이 포함됐습니다."
+  echo "   20개 초과 시 의도치 않은 변경이 섞였을 수 있습니다."
+  echo "   가능하면 git add -p 로 나눠서 커밋하세요."
+  echo ""
+fi
+CHANGED_LINES=$(git diff --cached --stat | tail -1 | grep -oE '[0-9]+' | tail -1 || echo "0")
+if [ "${CHANGED_LINES:-0}" -gt 500 ]; then
+  echo "⚠️  [pre-commit] 경고: 변경된 줄 수가 ${CHANGED_LINES}줄입니다."
+  echo "   500줄 초과는 리뷰 품질을 떨어뜨릴 수 있습니다."
+  echo ""
+fi
+
 # 1. TypeScript 타입 체크
 echo "📦 [tsc --noEmit] ..."
 npx tsc --noEmit 2>&1 || {
@@ -10,7 +25,7 @@ npx tsc --noEmit 2>&1 || {
 }
 echo "✅ [tsc --noEmit] 통과"
 
-# 2. Next.js lint (staged files)
+# 2. Lint-staged (ESLint --fix + Prettier)
 echo "🧹 [lint-staged] ..."
 npx lint-staged 2>&1 || {
   echo "❌ [lint-staged] 린트 오류가 있습니다. 커밋이 차단되었습니다."

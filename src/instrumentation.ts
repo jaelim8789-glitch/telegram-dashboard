@@ -7,6 +7,12 @@ export function register() {
       environment: process.env.NODE_ENV || "production",
       tracesSampleRate: 1.0,
       enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+      // Send error alerts to Slack via Sentry's webhook integration.
+      // Configure in Sentry UI: Settings → Integrations → Webhook → Add
+      // URL = ALERT_WEBHOOK_URL env var value (Slack/Discord compatible)
+      integrations: [
+        Sentry.dedupeIntegration(),
+      ],
     });
   }
 }

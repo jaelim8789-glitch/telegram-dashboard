@@ -5,19 +5,12 @@ import { LayoutDashboard, ArrowRight, CheckCircle2, AlertTriangle, Clock, Activi
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useToast } from "@/components/ui/Toast";
 import { TABS, type TabId, type DeliveryOverview } from "@/types";
-import { getToken } from "@/lib/auth";
+import * as api from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  return headers;
-}
 
 export function DashboardOverview() {
   const { toast } = useToast();
@@ -31,7 +24,7 @@ export function DashboardOverview() {
     try {
       const params = new URLSearchParams();
       params.set("period", "7d");
-      const res = await fetchWithTimeout(`${BASE_URL}/api/analytics/overview?${params}`, { headers: authHeaders() });
+      const res = await fetchWithTimeout(`${BASE_URL}/api/analytics/overview?${params}`, { headers: api.authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setOverview(data);

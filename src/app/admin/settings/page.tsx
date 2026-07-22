@@ -10,16 +10,9 @@ import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
+import * as api from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders() {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
@@ -30,7 +23,7 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/admin/settings/watermark`, { headers: authHeaders() })
+    fetch(`${API_BASE}/api/admin/settings/watermark`, { headers: api.authHeaders() })
       .then((r) => r.json())
       .then((data) => {
         setWatermarkValue(data.value || "");
@@ -46,7 +39,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings/watermark`, {
         method: "PUT",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({ value: watermarkValue }),
       });
       if (res.ok) {

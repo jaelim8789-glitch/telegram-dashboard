@@ -7,13 +7,7 @@ import {
   Wallet, ExternalLink, Star, ArrowLeft, TriangleAlert, PartyPopper,
 } from "lucide-react";
 
-// ── Auth helper ──
-function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("access_token") : null;
-  if (token) h["Authorization"] = `Bearer ${token}`;
-  return h;
-}
+import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 
@@ -163,7 +157,7 @@ export function PlanUpgradeModal({
       try {
         const res = await fetch(
           `/api/payments/nowpayments/status/${invoice.payment_id}`,
-          { headers: authHeaders() },
+          { headers: api.authHeaders() },
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -218,7 +212,7 @@ export function PlanUpgradeModal({
           "/api/payments/nowpayments/create-invoice",
           {
             method: "POST",
-            headers: authHeaders(),
+            headers: api.authHeaders(),
             body: JSON.stringify({
               plan: planId,
               amount: plan.price_usdt,
