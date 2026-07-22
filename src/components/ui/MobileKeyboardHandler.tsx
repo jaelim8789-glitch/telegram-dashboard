@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 export function MobileKeyboardHandler() {
   const { isKeyboardVisible } = useVisualViewport();
+  const focusHandlerRef = useRef<EventListener | null>(null);
 
   useEffect(() => {
-    // iOS Safari에서 가상 키보드로 인한 뷰포트 문제 해결
     const handleResize = () => {
       if (window.visualViewport) {
         const viewport = window.visualViewport;
         document.documentElement.style.setProperty('--visual-viewport-height', `${viewport.height}px`);
-        
-        // 키보드가 활성화되었을 때 body에 클래스 추가
+        document.documentElement.style.setProperty('--keyboard-offset', `${window.innerHeight - viewport.height}px`);
+
         if (isKeyboardVisible) {
           document.body.classList.add('keyboard-open');
         } else {
@@ -22,35 +22,29 @@ export function MobileKeyboardHandler() {
       }
     };
 
-    // 초기 설정
     handleResize();
 
-    // 이벤트 리스너 추가
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
     }
 
-    // 폼 요소에 포커스 이벤트 리스너 추가
-    const inputs = document.querySelectorAll('input, textarea, select');
-    inputs.forEach(input => {
-      input.addEventListener('focus', () => {
-        // 입력 필드가 뷰포트 상단에 있도록 스크롤
-        setTimeout(() => {
-          if (input.getBoundingClientRect().top < 100) {
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 300);
-      });
-    });
+    const focusHandler: EventListener = (e) => {
+      const input = e.target as HTMLElement;
+      if (!input || !input.matches('input, textarea, select')) return;
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    };
+    focusHandlerRef.current = focusHandler;
+    document.addEventListener('focusin', focusHandler, true);
 
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', handleResize);
       }
-      
-      inputs.forEach(input => {
-        input.removeEventListener('focus', () => {});
-      });
+      if (focusHandlerRef.current) {
+        document.removeEventListener('focusin', focusHandlerRef.current, true);
+      }
     };
   }, [isKeyboardVisible]);
 

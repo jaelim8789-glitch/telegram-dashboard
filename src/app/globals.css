@@ -339,7 +339,8 @@
   background: linear-gradient(90deg, transparent, var(--color-accent-border), transparent);
 }
 
-.gold-text {
+.gold-text,
+.text-accent {
   color: var(--color-accent);
 }
 
@@ -485,7 +486,8 @@
   50% { box-shadow: 0 0 16px var(--color-accent-glow), 0 0 24px var(--color-accent-glow); }
 }
 .accent-glow { animation: accent-pulse 3s ease-in-out infinite; }
-.gold-glow { animation: accent-pulse 3s ease-in-out infinite; }
+.gold-glow,
+.accent-glow-ring { animation: accent-pulse 3s ease-in-out infinite; }
 
 /* ── Count-up number styling ── */
 .stat-number {

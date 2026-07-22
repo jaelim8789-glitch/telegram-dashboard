@@ -56,7 +56,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
 
   return (
     <div className="flex flex-col h-full">
-      <NetworkStatusBar online={online} latency={latency}>
+      <NetworkStatusBar online={online} latency={latency} />
 
       <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-app-border/50 shrink-0" style={{ scrollbarWidth: "none" }}>
         <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">자주 사용</span>

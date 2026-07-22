@@ -860,7 +860,6 @@ export function Sidebar() {
         </button>
         <ThemeToggle className="min-h-8 min-w-8 rounded-lg" />
       </div>
-      </div>
 
       {/* Hint text at very bottom */}
       <AnimatePresence>

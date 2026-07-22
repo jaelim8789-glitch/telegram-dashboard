@@ -146,9 +146,9 @@ export function FloatingAiButton() {
         onClick={toggle}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="flex h-12 w-12 items-center justify-center rounded-full gold-glow"
+        className="flex h-12 w-12 items-center justify-center rounded-full accent-glow-ring"
         style={{
-          background: "linear-gradient(135deg, #D4AF37, #a08030)",
+          background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
         }}
       >
         {open ? <X className="h-5 w-5 text-white" /> : <Bot className="h-5 w-5 text-white" />}
