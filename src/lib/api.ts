@@ -51,6 +51,7 @@ let slowApiFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flushSlowApi() {
   if (slowApiBuffer.length === 0) return;
+  if (typeof window === "undefined") return;
   try {
     const stored = JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
     const merged = stored.concat(slowApiBuffer).slice(-200);
@@ -240,11 +241,6 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       );
     } finally {
       clearTimeout(timeoutId);
-      if (attempt === 0) {
-        responseStatus = undefined;
-        const elapsed = performance.now() - startTime;
-        recordSlowApi(path, elapsed, responseStatus);
-      }
     }
   }
 

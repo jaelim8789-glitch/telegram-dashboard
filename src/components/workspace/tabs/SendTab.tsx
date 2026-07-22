@@ -783,7 +783,7 @@ export function SendTab() {
   }, [cachedBroadcasts]);
 
   function handleAddTag(groupId: string) {
-    const tag = window.prompt("이 그룹에 붙일 태그를 입력하세요.");
+    const tag = prompt("이 그룹에 붙일 태그를 입력하세요.");
     if (tag) addTag(groupId, tag);
   }
 

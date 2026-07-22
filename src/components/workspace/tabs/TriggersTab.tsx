@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Workflow, Plus, ToggleLeft, ToggleRight, Trash2, Loader2, RefreshCw,
   Save, X, Zap, MessageCircle, UserPlus, Clock, Send, Bot, Bell, Globe,
-  Edit3,
+  Edit3, MoreHorizontal,
 } from "lucide-react";
 import * as triggerApi from "@/lib/trigger-api";
+import { BottomSheetWrapper } from "@/components/ui/BottomSheetWrapper";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
 // ── Trigger/Action Icons ────────────────────────────────────────────
 
@@ -353,6 +355,18 @@ export function TriggersTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const haptics = useHapticFeedback();
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [actionSheetRuleId, setActionSheetRuleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   async function handleToggle(id: string) {
     await triggerApi.toggleRule(id);
     load();
@@ -474,7 +488,28 @@ export function TriggersTab() {
                 className="group rounded-xl border border-app-border bg-app-card p-3.5 transition-all hover:border-app-primary/20 hover:shadow-sm"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "min-w-0 flex-1",
+                      isMobile && [
+                        "cursor-pointer -mx-1 px-1 py-1 -my-1 rounded-lg active:bg-app-card-hover/60 transition-colors",
+                      ]
+                    )}
+                    onClick={() => {
+                      if (isMobile) {
+                        setActionSheetRuleId(r.id);
+                        haptics.light();
+                      }
+                    }}
+                    role={isMobile ? "button" : undefined}
+                    tabIndex={isMobile ? 0 : undefined}
+                    onKeyDown={(e) => {
+                      if (isMobile && e.key === "Enter") {
+                        setActionSheetRuleId(r.id);
+                        haptics.light();
+                      }
+                    }}
+                  >
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -507,15 +542,11 @@ export function TriggersTab() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button
-                      onClick={() => handleEdit(r)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-subtle opacity-0 transition-all duration-150 hover:bg-app-card-hover group-hover:opacity-100"
-                      title="수정"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleToggle(r.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover"
+                      onClick={(e) => { e.stopPropagation(); handleToggle(r.id); }}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover",
+                        isMobile && "min-h-[36px] min-w-[36px]"
+                      )}
                       title={r.is_active ? "비활성화" : "활성화"}
                     >
                       {r.is_active
@@ -523,13 +554,27 @@ export function TriggersTab() {
                         : <ToggleLeft className="h-4 w-4" />
                       }
                     </button>
-                    <button
-                      onClick={() => handleDelete(r.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10"
-                      title="삭제"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className={cn("flex gap-1 shrink-0", isMobile && "hidden")}>
+                      <button
+                        onClick={() => handleEdit(r)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-subtle opacity-0 transition-all duration-150 hover:bg-app-card-hover group-hover:opacity-100"
+                        title="수정"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10"
+                        title="삭제"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {isMobile && (
+                      <div className="flex items-center justify-center">
+                        <MoreHorizontal className="h-4 w-4 text-app-text-subtle" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -550,6 +595,54 @@ export function TriggersTab() {
           />
         )}
       </AnimatePresence>
+
+      {(() => {
+        const rule = rules.find(r => r.id === actionSheetRuleId);
+        if (!rule) return null;
+        return (
+          <BottomSheetWrapper
+            open={!!actionSheetRuleId}
+            onClose={() => setActionSheetRuleId(null)}
+            title={rule.name}
+          >
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { handleEdit(rule); setActionSheetRuleId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Edit3 className="h-5 w-5 text-app-primary" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">수정</p>
+                  <p className="text-xs text-app-text-muted">규칙을 변경합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleToggle(rule.id); setActionSheetRuleId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <ToggleRight className="h-5 w-5 text-app-info" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">활성화 전환</p>
+                  <p className="text-xs text-app-text-muted">규칙의 활성 상태를 변경합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleDelete(rule.id); setActionSheetRuleId(null); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-danger-muted transition-colors text-left active:scale-[0.98]"
+              >
+                <Trash2 className="h-5 w-5 text-app-danger" />
+                <div>
+                  <p className="text-sm font-medium text-app-danger">삭제</p>
+                  <p className="text-xs text-app-text-muted">이 규칙을 영구 삭제합니다</p>
+                </div>
+              </button>
+            </div>
+          </BottomSheetWrapper>
+        );
+      })()}
     </div>
   );
 }

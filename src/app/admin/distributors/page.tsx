@@ -13,6 +13,16 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { getToken } from "@/lib/auth";
+import { getSessionToken } from "@/lib/auth";
+
+function useAdminToken() {
+  return getToken();
+}
+
+const fetchOptions = (token: string | null) => ({
+  headers: { "Authorization": `Bearer ${token ?? ""}`, "X-Session-Token": token ?? "" },
+});
 import * as api from "@/lib/api";
 import { formatDateTime } from "@/lib/formatTime";
 
@@ -31,7 +41,7 @@ interface Distributor {
 }
 
 async function fetchDistributors(): Promise<{ items: Distributor[]; total_count: number }> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("telemon-token") : null;
+  const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`/api/referral/admin/distributors`, { headers });
@@ -40,7 +50,7 @@ async function fetchDistributors(): Promise<{ items: Distributor[]; total_count:
 }
 
 async function setDistributorRate(tenantId: string, rate: number): Promise<void> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("telemon-token") : null;
+  const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`/api/referral/admin/distributors/${tenantId}/rate`, {
@@ -50,7 +60,7 @@ async function setDistributorRate(tenantId: string, rate: number): Promise<void>
 }
 
 async function suspendDistributor(tenantId: string, reason: string, suspended: boolean): Promise<void> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("telemon-token") : null;
+  const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`/api/referral/admin/distributors/${tenantId}/suspend`, {
