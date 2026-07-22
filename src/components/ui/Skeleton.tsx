@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 interface SkeletonProps {
   className?: string;
-  variant?: "default" | "gold-shimmer";
+  variant?: "default" | "gold-shimmer" | "accent-shimmer";
   width?: string | number;
   height?: string | number;
 }
@@ -16,7 +16,7 @@ export const Skeleton = memo(function Skeleton({ className, variant = "default",
   if (width != null) style.width = typeof width === "number" ? `${width}px` : width;
   if (height != null) style.height = typeof height === "number" ? `${height}px` : height;
 
-  if (variant === "gold-shimmer") {
+  if (variant === "gold-shimmer" || variant === "accent-shimmer") {
     return (
       <div
         aria-hidden="true"
@@ -25,7 +25,7 @@ export const Skeleton = memo(function Skeleton({ className, variant = "default",
           ...style,
           background: `linear-gradient(90deg, var(--color-card) 0%, var(--color-accent-light) 25%, var(--color-card) 50%)`,
           backgroundSize: "200% 100%",
-          animation: "gold-shimmer 3s ease-in-out infinite",
+          animation: "accent-shimmer 3s ease-in-out infinite",
         }}
       />
     );
