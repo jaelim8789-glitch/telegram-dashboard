@@ -21,9 +21,12 @@ export function MobileFab() {
   }, [open, close]);
 
   function handleScrollTop() {
-    const el = document.querySelector(".overflow-y-auto") as HTMLElement | null;
-    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
-    else window.scrollTo({ top: 0, behavior: "smooth" });
+    const el = document.querySelector("[data-content-scroll-container]") as HTMLElement | null;
+    if (el) {
+      try { el.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+    } else {
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+    }
   }
 
   const actions = [
