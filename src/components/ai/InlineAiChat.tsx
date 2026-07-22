@@ -649,7 +649,7 @@ export function InlineAiChat() {
                   {chats.map((chat) => (
                     <SwipeableRow
                       key={chat.id}
-                      rightActions={[{
+                      actions={[{
                         label: "삭제", color: "bg-app-danger",
                         icon: <Trash2 className="h-4 w-4" />,
                         onAction: () => handleDeleteChat(chat.id),
