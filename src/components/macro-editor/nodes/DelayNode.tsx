@@ -18,10 +18,10 @@ export function DelayNode({ data, selected }: NodeProps<Node<DelayNodeData>>) {
 
   return (
     <div
-      className={`min-w-[140px] rounded-2xl border-2 p-3 transition-shadow ${
+      className={`min-w-[160px] rounded-xl border bg-blue-500/10 p-3 text-app-text text-xs font-medium transition-shadow ${
         selected
-          ? "border-blue-400 bg-blue-500/30 shadow-lg shadow-blue-500/30"
-          : "border-blue-500 bg-blue-500/20"
+          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6]"
+          : "border-blue-500/30 hover:shadow-md"
       }`}
     >
       <Handle
@@ -31,7 +31,7 @@ export function DelayNode({ data, selected }: NodeProps<Node<DelayNodeData>>) {
       />
       <div className="flex items-center gap-2">
         <Clock className="h-4 w-4 text-blue-400" />
-        <span className="text-xs font-semibold text-blue-300">{label}</span>
+        <span className="font-medium">{label}</span>
       </div>
       <Handle
         type="source"
