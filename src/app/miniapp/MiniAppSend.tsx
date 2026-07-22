@@ -104,14 +104,10 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
 
   // Image preview cleanup
   useEffect(() => {
-    if (imageFile) {
-      const url = URL.createObjectURL(imageFile);
-      setImagePreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setImagePreviewUrl(null);
-    }
-  }, [imageFile]);
+    const urls = imageFiles.map(f => URL.createObjectURL(f));
+    setImagePreviewUrls(urls);
+    return () => urls.forEach(u => URL.revokeObjectURL(u));
+  }, [imageFiles]);
 
   const handlePickImage = useCallback((capture: boolean) => {
     const input = capture ? cameraInputRef.current : fileInputRef.current;
@@ -119,17 +115,17 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   }, []);
 
   const handleImageSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) setImageFile(f);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) setImageFiles(prev => [...prev, ...files].slice(0, 5));
     e.target.value = "";
   }, []);
 
-  const handleRemoveImage = useCallback(() => {
-    setImageFile(null);
+  const handleRemoveImage = useCallback((index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleSend = useCallback(async () => {
-    if ((!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0) return;
+    if ((!message.trim() && imageFiles.length === 0) || sending || selectedAccountIds.length === 0) return;
     setSending(true); setError("");
     let success = 0, failed = 0;
 
@@ -140,12 +136,11 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           form.append("account_id", accountId);
           form.append("message", message.trim() || "");
           form.append("recipients", JSON.stringify(selectedGroupIds));
-          if (imageFile) form.append("image", imageFile);
+          imageFiles.forEach(f => form.append("image", f));
           const { request } = await import("@/lib/api");
           await request("/api/broadcast", { method: "POST", body: form });
         } else {
-          if (imageFile) {
-            // With image, use manual per-group send
+          if (imageFiles.length > 0) {
             const { request } = await import("@/lib/api");
             const topGroups = await api.fetchGroups(accountId);
             const groupIds = topGroups.slice(0, 5).map((g: any) => g.id);
@@ -154,7 +149,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             form.append("account_id", accountId);
             form.append("message", message.trim() || "");
             form.append("recipients", JSON.stringify(groupIds));
-            if (imageFile) form.append("image", imageFile);
+            imageFiles.forEach(f => form.append("image", f));
             await request("/api/broadcast", { method: "POST", body: form });
           } else {
             const result = await quickSendToTopGroups(accountId, message.trim(), 5);
@@ -168,9 +163,8 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
     setSending(false);
     if (failed === 0) {
       setSent(true);
-      setImageFile(null);
+      setImageFiles([]);
       draft.clearDraft();
-      // Add to recent messages
       if (message.trim()) {
         setRecentMessages(prev => [message.trim(), ...prev.slice(0, 4)]);
       }
@@ -185,13 +179,6 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
 
   useKeyboardShortcut("Enter", handleSend, { ctrl: true });
   useAutosizeTextarea(textareaRef, [message]);
-
-  // Autosize textarea effect
-  useEffect(() => {
-    if (textareaRef.current) {
-      autosizeRef.current = useAutosizeTextarea(textareaRef);
-    }
-  }, [textareaRef]);
 
   const toggleAccount = useCallback((id: string) => setSelectedAccountIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]), []);
   const toggleGroup = useCallback((id: string) => setSelectedGroupIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]), []);
@@ -352,7 +339,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       )}
 
       {error && (
-        <div className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-xs min-h-[44px]")} style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs min-h-[44px]" style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
           <AlertCircle className="h-3.5 w-3.5 text-white" /><span className="text-white">{error}</span>
         </div>
       )}

@@ -25,11 +25,16 @@ export const MiniAppNav = memo(function MiniAppNav({ activeTab, onTabChange, unr
 
   function handleTab(id: MiniAppTab) {
     const now = Date.now();
-    if (id === "dashboard" && lastTap.current["dashboard"] && now - lastTap.current["dashboard"] < 300) {
+    // 더 짧은 더블탭 간격으로 리프레시 동작 개선
+    if (id === "dashboard" && lastTap.current["dashboard"] && now - lastTap.current["dashboard"] < 250) {
       refreshDashboard();
       return;
     }
     lastTap.current[id] = now;
+    // 탭 전환 시 즉시 반응성을 위해 haptic feedback 추가
+    try {
+      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+    } catch {}
     onTabChange(id);
   }
 
