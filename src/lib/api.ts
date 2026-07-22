@@ -260,61 +260,18 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       // Last attempt failed — surface the final network error
       if (err instanceof DOMException && err.name === "AbortError") {
         throw new ApiError(
-      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-      throw new ApiError(detail, res.status, false);
-    }
-
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
-  } catch (err) {
-    // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
-    if (err instanceof ApiError && !err.isNetworkError) {
+          "서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
+          undefined,
+          true
+        );
+      }
+      
       throw err;
     }
-
-    // First attempt failed — surface the error to the UI immediately
-    const firstError = err instanceof DOMException && err.name === "AbortError"
-      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
-      : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
-
-    // Fire-and-forget background retry with exponential backoff
-    (async () => {
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        try {
-          const bgController = new AbortController();
-          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
-          const hasJsonBody = typeof init?.body === "string";
-          const defaultHeaders: Record<string, string> = {
-            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-            ...authHeaders(),
-          };
-          const res = await fetch(`${API_BASE_URL}${path}`, {
-            ...init,
-            signal: bgController.signal,
-            headers: { ...defaultHeaders, ...init?.headers },
-          });
-          clearTimeout(bgTimeout);
-
-          if (!res.ok) {
-            const body = await readErrorBody(res);
-            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-            throw new ApiError(detail, res.status, false);
-          }
-
-          if (res.status === 204) return undefined as T;
-          return res.json() as Promise<T>;
-        } catch {
-          // Background retry failed — try again or give up silently
-        }
-      }
-    })();
-
-    throw firstError;
-  } finally {
-    clearTimeout(timeoutId);
   }
+  
+  // 이 라인에 도달할 수 없습니다 (for 루프 내에서 항상 return 또는 throw)
+  throw new Error("Unexpected error in request function");
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -341,10 +298,6 @@ export async function clearAccountError(id: string): Promise<Account> {
 export async function resumeAccount(id: string): Promise<Account> {
   return request<Account>(`/api/accounts/${id}/resume`, { method: "POST" });
 }
-
-/**
- * Update an account's status (active/inactive/banned).
- * PUT /api/accounts/{accountId}
  */
 export async function updateAccountStatus(
   accountId: string,
