@@ -65,7 +65,7 @@ export function MiniAppProfile() {
   useEffect(() => {
     fetchAuthMe()
       .then((me) => setPlanName(me.plan === "ai_premium" ? "AI Premium" : me.plan || "Free"))
-      .catch((e) => console.warn("MiniAppProfile: fetchAuthMe 실패", e));
+      .catch((e) => console.error("[MiniAppProfile] fetchAuthMe 실패", e));
   }, []);
 
   const handleLogout = () => {

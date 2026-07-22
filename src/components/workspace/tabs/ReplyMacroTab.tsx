@@ -27,8 +27,7 @@ export function ReplyMacroTab() {
   useEffect(() => {
     if (!selectedAccountId) return;
     setLoading(true);
-    api.authHeaders()
-      .then((headers) => fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers }))
+    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers: api.authHeaders() })
       .then((r) => r.json())
       .then((data) => {
         setIsActive(!!data.is_active);

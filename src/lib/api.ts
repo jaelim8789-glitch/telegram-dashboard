@@ -16,7 +16,7 @@
   ReplyMacro,
   ReplyMacroLog,
 } from "@/types";
-import { getToken, getSessionToken, setSessionToken, tokenManager } from "@/lib/auth";
+import { getToken, getSessionToken, setSessionToken } from "@/lib/auth";
 import type {
   AiReplyRequest, AiReplyResponse, AiStreamChunk,
   AiComparisonRequest, AiComparisonResponse,
@@ -27,7 +27,6 @@ import type {
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
@@ -76,8 +75,8 @@ const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 2_000;
 
-export async function authHeaders(): Promise<Record<string, string>> {
-  const token = await tokenManager.getValidToken();
+export function authHeaders(): Record<string, string> {
+  const token = getToken();
   const sessionToken = getSessionToken();
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -169,15 +168,10 @@ export class ApiError extends Error {
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const startTime = performance.now();
   let responseStatus: number | undefined;
-  
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    
     try {
-      // 토큰 갱신 로직 통합
-      const headers = await authHeaders();
-      
       // Only set Content-Type for JSON-string bodies — GET, HEAD, and bodyless DELETE
       // calls should not force application/json, which can confuse some backends and
       // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
@@ -185,49 +179,13 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       const hasJsonBody = typeof init?.body === "string";
       const defaultHeaders: Record<string, string> = {
         ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-        ...headers,
+        ...(await authHeaders()),
       };
-      
       const res = await fetch(`${API_BASE_URL}${path}`, {
         ...init,
         signal: controller.signal,
         headers: { ...defaultHeaders, ...init?.headers },
       });
-
-      // 401 Unauthorized인 경우 토큰 갱신 시도
-      if (res.status === 401) {
-        // 토큰 갱신 시도
-        const newToken = await tokenManager.getValidToken();
-        if (newToken && attempt < MAX_RETRIES) {
-          // 헤더를 갱신된 토큰으로 다시 설정
-          const newHeaders = await authHeaders();
-          const retryRes = await fetch(`${API_BASE_URL}${path}`, {
-            ...init,
-            signal: controller.signal,
-            headers: { ...newHeaders, ...init?.headers },
-          });
-          
-          if (!retryRes.ok) {
-            const elapsed = performance.now() - startTime;
-            recordSlowApi(path, elapsed, retryRes.status);
-            const body = await readErrorBody(retryRes);
-            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${retryRes.status})`;
-            throw new ApiError(detail, retryRes.status, false);
-          }
-          
-          const elapsed = performance.now() - startTime;
-          recordSlowApi(path, elapsed, retryRes.status);
-          
-          if (retryRes.status === 204) return undefined as T;
-          return retryRes.json() as Promise<T>;
-        } else {
-          // 토큰 갱신 실패 시 로그아웃 처리
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/auth/login';
-          throw new ApiError('인증 토큰이 만료되었습니다. 다시 로그인해주세요.', 401, false);
-        }
-      }
 
       if (!res.ok) {
         const elapsed = performance.now() - startTime;
@@ -261,16 +219,116 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         throw new ApiError(
           "서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
           undefined,
-          true
+          true,
         );
       }
-      
-      throw err;
+      throw new ApiError(
+        "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
+        undefined,
+        true,
+      );
+    } finally {
+      clearTimeout(timeoutId);
+      if (attempt === 0) {
+        responseStatus = undefined;
+        const elapsed = performance.now() - startTime;
+        recordSlowApi(path, elapsed, responseStatus);
+      }
     }
   }
-  
-  // 이 라인에 도달할 수 없습니다 (for 루프 내에서 항상 return 또는 throw)
-  throw new Error("Unexpected error in request function");
+
+  // Unreachable — the loop always throws on the last failed attempt
+  const elapsed = performance.now() - startTime;
+  recordSlowApi(path, elapsed, undefined);
+  throw new ApiError(
+    "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
+    undefined,
+    true,
+  );
+}
+
+/**
+ * Like request(), but fails fast on the first network error so the UI can
+ * show a fallback immediately.  Retries are performed silently in the
+ * background; if a retry eventually succeeds the resolved value is returned
+ * via the returned promise (the caller can ignore it since the UI already
+ * showed a fallback).  If all retries fail, the final error is thrown.
+ *
+ * Use this for non-critical or speculative fetches where the UI should
+ * never block for 60+ seconds.
+ */
+export async function requestFast<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const hasJsonBody = typeof init?.body === "string";
+    const defaultHeaders: Record<string, string> = {
+      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+    };
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: { ...defaultHeaders, ...init?.headers },
+    });
+
+    if (!res.ok) {
+      const body = await readErrorBody(res);
+      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      throw new ApiError(detail, res.status, false);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
+    if (err instanceof ApiError && !err.isNetworkError) {
+      throw err;
+    }
+
+    // First attempt failed — surface the error to the UI immediately
+    const firstError = err instanceof DOMException && err.name === "AbortError"
+      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+      : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+
+    // Fire-and-forget background retry with exponential backoff
+    (async () => {
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        try {
+          const bgController = new AbortController();
+          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+          const hasJsonBody = typeof init?.body === "string";
+          const defaultHeaders: Record<string, string> = {
+            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+            ...(await authHeaders()),
+          };
+          const res = await fetch(`${API_BASE_URL}${path}`, {
+            ...init,
+            signal: bgController.signal,
+            headers: { ...defaultHeaders, ...init?.headers },
+          });
+          clearTimeout(bgTimeout);
+
+          if (!res.ok) {
+            const body = await readErrorBody(res);
+            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+            throw new ApiError(detail, res.status, false);
+          }
+
+          if (res.status === 204) return undefined as T;
+          return res.json() as Promise<T>;
+        } catch {
+          // Background retry failed — try again or give up silently
+        }
+      }
+    })();
+
+    throw firstError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -298,6 +356,10 @@ export async function resumeAccount(id: string): Promise<Account> {
   return request<Account>(`/api/accounts/${id}/resume`, { method: "POST" });
 }
 
+/**
+ * Update an account's status (active/inactive/banned).
+ * PUT /api/accounts/{accountId}
+ */
 export async function updateAccountStatus(
   accountId: string,
   status: Account["status"]
@@ -586,7 +648,7 @@ export interface CreateBroadcastInput {
   image?: File;
   scheduledAt?: string;
   recurringIntervalMinutes?: number;
-  deliveryMode?: "normal" | "bulk" | "replyMacro";
+  deliveryMode?: "normal" | "bulk" | "replyMacro" | "cycle";
   delaySeconds?: number;
   replyToMessageId?: number;
   inlineButtons?: { label: string; url: string }[];
@@ -670,7 +732,7 @@ export async function sendToGroup(input: {
   message: string;
   groupIds: string[];
   scheduledAt?: string;
-  deliveryMode?: "normal" | "bulk" | "replyMacro";
+  deliveryMode?: "normal" | "bulk" | "replyMacro" | "cycle";
   delaySeconds?: number;
   inlineButtons?: { label: string; url: string }[];
   campaignId?: string;
@@ -804,7 +866,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
-    deliveryMode: api.delivery_mode,
+    deliveryMode: api.delivery_mode === "reply" ? "replyMacro" : api.delivery_mode,
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }

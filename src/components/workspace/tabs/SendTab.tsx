@@ -61,9 +61,9 @@ import { RecipientReviewPanel } from "@/components/workspace/tabs/send/Recipient
 import { ScheduleCalendar } from "@/components/workspace/ScheduleCalendar";
 import { STATUS_META } from "@/lib/statusMeta";
 import { Modal } from "@/components/ui/Modal";
+import { SendProgressBar } from "@/components/ui/SendProgressBar";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
-import { SendProgressBar } from "@/components/ui/SendProgressBar";
 import { useDebounce } from "@/hooks/useDebounce";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
@@ -1221,14 +1221,13 @@ export function SendTab() {
   useEffect(() => {
     if (!selectedAccountId) return;
     setReplyMacroLoading(true);
-    api.authHeaders()
-      .then((headers) => fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers }))
+    fetch(`${API_BASE}/api/accounts/${selectedAccountId}/reply-macros/toggle`, { headers: api.authHeaders() })
       .then((r) => r.json())
       .then((data) => {
         setReplyMacroActive(!!data.is_active);
         setReplyMacroMessage(data.message_content || "");
       })
-      .catch((e) => console.warn("SendTab: reply-macro 설정 fetch 실패", e))
+      .catch((e) => console.error("[SendTab] reply-macro 설정 fetch 실패", e))
       .finally(() => setReplyMacroLoading(false));
   }, [selectedAccountId]);
 
@@ -2352,6 +2351,6 @@ export function SendTab() {
         onCancel={() => setSendConfirmOpen(false)}
       />
       <SendProgressBar inFlightCount={inFlightCount} onTap={() => {}} />
-  </>
+    </>
   );
 }

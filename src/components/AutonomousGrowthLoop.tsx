@@ -46,16 +46,17 @@ const AutonomousGrowthLoop = ({ userId }: AutonomousGrowthLoopProps) => {
 
   const fetchLoops = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/autonomous-growth?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setLoops(data);
       } else {
-        console.error('Failed to fetch loops:', response.statusText);
+        setError('루프 목록을 불러오는데 실패했습니다.');
       }
-    } catch (error) {
-      console.error('Error fetching loops:', error);
+    } catch {
+      setError('루프 목록을 불러오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +79,10 @@ const AutonomousGrowthLoop = ({ userId }: AutonomousGrowthLoopProps) => {
         setNewGoal('');
         fetchLoops(); // 목록 갱신
       } else {
-        console.error('Failed to create loop:', response.statusText);
+        setError('루프 생성에 실패했습니다.');
       }
-    } catch (error) {
-      console.error('Error creating loop:', error);
+    } catch {
+      setError('루프 생성에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +100,10 @@ const AutonomousGrowthLoop = ({ userId }: AutonomousGrowthLoopProps) => {
       if (response.ok) {
         fetchLoops(); // 상태 갱신
       } else {
-        console.error(`Failed to ${action} loop:`, response.statusText);
+        setError(`루프 ${action} 작업에 실패했습니다.`);
       }
-    } catch (error) {
-      console.error(`Error ${action}ing loop:`, error);
+    } catch {
+      setError(`루프 ${action} 작업에 실패했습니다.`);
     } finally {
       setIsLoading(false);
     }
@@ -172,6 +173,12 @@ const AutonomousGrowthLoop = ({ userId }: AutonomousGrowthLoopProps) => {
       {isLoading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {error}
         </div>
       )}
 
