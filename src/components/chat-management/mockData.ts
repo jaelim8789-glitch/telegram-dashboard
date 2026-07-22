@@ -10,6 +10,7 @@ export interface ChatRoom {
   subscriberCount?: number;
   isOnline?: boolean;
   isFavorite?: boolean;
+  isPinned?: boolean;
 }
 
 export type MessageStatus = "sent" | "delivered" | "read";
@@ -22,6 +23,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   status?: MessageStatus;
+  reaction?: "heart";
 }
 
 export interface AiMacro {
@@ -45,6 +47,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     unreadCount: 2,
     isOnline: true,
     isFavorite: true,
+    isPinned: true,
   },
   {
     id: "personal-2",
@@ -80,6 +83,7 @@ export const CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "이번 캠페인 성과 리포트 공유드립니다",
     lastMessageTime: new Date(now - 8 * MIN),
     unreadCount: 12,
+    isPinned: true,
   },
   {
     id: "group-2",

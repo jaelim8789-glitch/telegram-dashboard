@@ -43,6 +43,12 @@ export default function ChatManagementPage() {
     );
   }, []);
 
+  const handleTogglePin = useCallback((id: string) => {
+    setRooms((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isPinned: !r.isPinned } : r))
+    );
+  }, []);
+
   const handleSendMessage = useCallback(
     (text: string) => {
       if (!activeRoomId) return;
@@ -109,6 +115,7 @@ export default function ChatManagementPage() {
           activeRoomId={activeRoomId}
           onSelectRoom={handleSelectRoom}
           onToggleFavorite={handleToggleFavorite}
+          onTogglePin={handleTogglePin}
         />
       </div>
 

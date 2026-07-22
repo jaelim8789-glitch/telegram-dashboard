@@ -13,6 +13,8 @@ import {
   CheckCheck,
   ChevronUp,
   ChevronDown,
+  ArrowDown,
+  Heart,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -74,6 +76,18 @@ function TimeGapLabel({ time }: { time: string }) {
   );
 }
 
+function UnreadDivider() {
+  return (
+    <div className="my-3 flex items-center gap-2">
+      <div className="h-px flex-1 bg-violet-500/30" />
+      <span className="shrink-0 rounded-full bg-violet-500/15 px-3 py-0.5 text-[10px] font-medium text-violet-400">
+        여기까지 읽음
+      </span>
+      <div className="h-px flex-1 bg-violet-500/30" />
+    </div>
+  );
+}
+
 function TypingIndicator() {
   return (
     <motion.div
@@ -113,11 +127,14 @@ export function ChatConversationPanel({
   const [convSearch, setConvSearch] = useState("");
   const [showConvSearch, setShowConvSearch] = useState(false);
   const [convSearchIdx, setConvSearchIdx] = useState(0);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [sendAnim, setSendAnim] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const convSearchRef = useRef<HTMLInputElement>(null);
   const scrollMemory = useRef<Map<string, number>>(new Map());
   const prevRoomIdRef = useRef<string | null>(null);
+  const unreadMarkerIdx = useRef<number>(-1);
 
   const saveScroll = useCallback(() => {
     if (prevRoomIdRef.current && scrollRef.current) {
@@ -126,6 +143,12 @@ export function ChatConversationPanel({
         scrollRef.current.scrollTop
       );
     }
+  }, []);
+
+  const checkAtBottom = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    setIsAtBottom(scrollHeight - scrollTop - clientHeight < 80);
   }, []);
 
   useEffect(() => {
@@ -141,11 +164,13 @@ export function ChatConversationPanel({
       saveScroll();
     }
 
+    const saved = scrollMemory.current.get(room.id);
+
     requestAnimationFrame(() => {
       if (!scrollRef.current) return;
-      const saved = scrollMemory.current.get(room.id);
       if (saved !== undefined) {
         scrollRef.current.scrollTop = saved;
+        checkAtBottom();
       } else {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
@@ -157,14 +182,26 @@ export function ChatConversationPanel({
 
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
-  }, [room, saveScroll]);
+  }, [room, saveScroll, checkAtBottom]);
 
   useEffect(() => {
     if (!scrollRef.current || !room) return;
     const saved = scrollMemory.current.get(room.id);
-    if (saved !== undefined) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, room]);
+    if (saved !== undefined) {
+      checkAtBottom();
+      return;
+    }
+    if (isAtBottom) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, room, isAtBottom, checkAtBottom]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkAtBottom, { passive: true });
+    return () => el.removeEventListener("scroll", checkAtBottom);
+  }, [checkAtBottom]);
 
   useEffect(() => {
     function handleClick() {
@@ -177,7 +214,7 @@ export function ChatConversationPanel({
   const matchedIds = useMemo(() => {
     if (!convSearch) return [];
     return messages
-      .map((m, i) => (m.content.includes(convSearch) ? m.id : null))
+      .map((m) => (m.content.includes(convSearch) ? m.id : null))
       .filter(Boolean) as string[];
   }, [messages, convSearch]);
 
@@ -189,8 +226,24 @@ export function ChatConversationPanel({
     onSend(trimmed);
     setInput("");
 
+    setSendAnim(true);
+    setTimeout(() => setSendAnim(false), 600);
+
     setIsTyping(true);
     setTimeout(() => setIsTyping(false), 2500);
+
+    scrollMemory.current.delete(room?.id ?? "");
+    setIsAtBottom(true);
+  }
+
+  function scrollToBottom() {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+    setIsAtBottom(true);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -200,10 +253,7 @@ export function ChatConversationPanel({
     }
   }
 
-  function handleContextMenu(
-    e: React.MouseEvent,
-    messageId: string
-  ) {
+  function handleContextMenu(e: React.MouseEvent, messageId: string) {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, messageId });
@@ -222,6 +272,11 @@ export function ChatConversationPanel({
 
   function handleDelete(msgId: string) {
     setContextMenu(null);
+  }
+
+  function handleDoubleClick(msg: ChatMessage) {
+    if (msg.sender === "me") return;
+    if (msg.reaction === "heart") return;
   }
 
   function handleToggleConvSearch() {
@@ -268,6 +323,7 @@ export function ChatConversationPanel({
     );
   }
 
+  const lastReadIdx = messages.length > 0 ? Math.max(0, messages.length - 1 - unreadMarkerIdx.current) : -1;
   const chatNodes: React.ReactNode[] = [];
   let lastDate: string | null = null;
   let lastSender: string | null = null;
@@ -303,11 +359,11 @@ export function ChatConversationPanel({
     prevTimestamp = msg.timestamp.getTime();
 
     const isMe = msg.sender === "me";
-    const prevConsecutive =
-      !isNewDate && !isNewSender && lastSenderIndex >= 0;
+    const prevConsecutive = !isNewDate && !isNewSender && lastSenderIndex >= 0;
     const spacingClass = prevConsecutive ? "mt-0.5" : "mt-3";
     const isMatch = matchedIds.includes(msg.id);
-    const isActiveMatch = isMatch && highlightedIdx >= 0 && msg.id === matchedIds[highlightedIdx];
+    const isActiveMatch =
+      isMatch && highlightedIdx >= 0 && msg.id === matchedIds[highlightedIdx];
 
     const renderContent = () => {
       if (!convSearch || !isMatch) return msg.content;
@@ -340,6 +396,7 @@ export function ChatConversationPanel({
         <div
           className={`max-w-[70%] ${isMe ? "items-end" : "items-start"}`}
           onContextMenu={(e) => handleContextMenu(e, msg.id)}
+          onDoubleClick={() => handleDoubleClick(msg)}
         >
           {!isMe && !prevConsecutive && (
             <div className="mb-1 ml-0.5 flex items-center gap-1.5">
@@ -352,13 +409,18 @@ export function ChatConversationPanel({
             </div>
           )}
           <div
-            className={`cursor-context-menu select-text px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+            className={`relative cursor-context-menu select-text px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
               isMe
                 ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white rounded-2xl rounded-br-sm ml-auto"
                 : "bg-[#1a1a24] text-app-text rounded-2xl rounded-bl-sm"
             }`}
           >
-            {renderContent()}
+            {msg.content}
+            {msg.reaction === "heart" && (
+              <span className="absolute -bottom-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-app-card text-[10px] shadow-sm">
+                ❤️
+              </span>
+            )}
           </div>
           <span
             className={`mt-0.5 flex items-center gap-1 px-1 text-[10px] text-app-text-subtle ${
@@ -480,11 +542,26 @@ export function ChatConversationPanel({
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3"
+        className="relative flex-1 overflow-y-auto scrollbar-thin px-4 py-3"
       >
         {chatNodes}
         <AnimatePresence>
           {isTyping && <TypingIndicator />}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!isAtBottom && (
+            <motion.button
+              initial={{ opacity: 0, y: 8, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.9 }}
+              onClick={scrollToBottom}
+              className="sticky bottom-2 mx-auto flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-violet-500/30 transition-transform hover:scale-105 active:scale-95"
+            >
+              <ArrowDown className="h-3 w-3" />
+              최신 메시지
+            </motion.button>
+          )}
         </AnimatePresence>
       </div>
 
@@ -505,13 +582,27 @@ export function ChatConversationPanel({
             onKeyDown={handleKeyDown}
             className="flex-1 rounded-full border border-violet-500/20 bg-app-card px-4 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15"
           />
-          <button
+          <motion.button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            animate={
+              sendAnim
+                ? { scale: [1, 0.85, 1.1, 1] }
+                : {}
+            }
+            transition={{ duration: 0.4 }}
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
-          </button>
+            {sendAnim && (
+              <motion.span
+                initial={{ opacity: 0.6, scale: 0.8 }}
+                animate={{ opacity: 0, scale: 1.5 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 rounded-full bg-violet-400"
+              />
+            )}
+          </motion.button>
         </div>
       </div>
 
