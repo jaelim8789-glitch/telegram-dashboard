@@ -215,21 +215,21 @@
 }
 
 [data-theme="dark-pure"] body {
-    background-image: none;
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 4px,
-        rgba(255, 255, 255, 0.005) 4px,
-        rgba(255, 255, 255, 0.005) 7px
-      ),
-      radial-gradient(
-        circle at 50% 50%,
-        rgba(191, 162, 96, 0.015) 0%,
-        transparent 70%
-      );
-    background-blend-mode: overlay, normal;
-  }
+  background-image: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      rgba(255, 255, 255, 0.005) 4px,
+      rgba(255, 255, 255, 0.005) 7px
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(191, 162, 96, 0.015) 0%,
+      transparent 70%
+    );
+  background-blend-mode: overlay, normal;
 }
 
 /* ── leather-bg class ── */

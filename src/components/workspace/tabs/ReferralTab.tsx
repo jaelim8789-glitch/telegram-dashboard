@@ -80,7 +80,7 @@ function ReferredUserRow({ user }: { user: api.ReferralReferredUser }) {
       <div className="flex shrink-0 items-center gap-2">
         {user.has_paid && <Badge tone="success">결제</Badge>}
         {!user.has_paid && user.plan !== "free" && <Badge tone="warning">구독중</Badge>}
-        {user.plan === "free" && <Badge tone="default">무료</Badge>}
+        {user.plan === "free" && <Badge tone="neutral">무료</Badge>}
       </div>
     </div>
   );
