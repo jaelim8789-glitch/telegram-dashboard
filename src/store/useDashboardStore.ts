@@ -48,6 +48,8 @@ type DashboardStateValue = {
   tabBadges: Partial<Record<TabId, number>>;
   sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
   sidebarCollapsed: boolean;
+  // OneClickBusiness modal state
+  showBusinessModal: boolean;
 };
 
 const SIDEBAR_COLLAPSED_KEY = "telemon-sidebar-collapsed";
@@ -85,6 +87,7 @@ export const INITIAL_STATE: DashboardStateValue = {
   tabBadges: {},
   sendProgress: null,
   sidebarCollapsed: loadSidebarCollapsed(),
+  showBusinessModal: false,
 };
 
 interface DashboardState extends DashboardStateValue {
@@ -115,12 +118,13 @@ interface DashboardState extends DashboardStateValue {
   reuseBroadcast: (broadcast: Broadcast) => void;
   setReuseNotice: (notice: string | null) => void;
   setTabBadge: (tabId: TabId, count: number) => void;
-  sendProgress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null;
   setSendProgress: (progress: { broadcastId: string; total: number; succeeded: number; failed: number; status: string } | null) => void;
   clearSendProgress: () => void;
   sidebarCollapsed: boolean;
   toggleSidebarCollapsed: () => void;
   resetStore: () => void;
+  // OneClickBusiness modal actions
+  setShowBusinessModal: (show: boolean) => void;
 }
 
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
@@ -414,4 +418,8 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       return { activeTabs: newActiveTabs };
     });
   },
+
+  // OneClickBusiness modal actions
+  showBusinessModal: false,
+  setShowBusinessModal: (show: boolean) => set({ showBusinessModal: show })
 }));

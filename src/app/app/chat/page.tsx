@@ -11,6 +11,8 @@ import { InlineError } from "@/components/ui/InlineError";
 import { useToast } from "@/components/ui/Toast";
 import * as api from "@/lib/api";
 import * as agentApi from "@/lib/agent-api";
+import { detectBusinessCreationRequest } from "@/lib/ai/business-generator";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,10 @@ export default function AgentChatPage() {
   const [newAgentPrompt, setNewAgentPrompt] = useState("");
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  // Get the showBusinessModal state and setter from the store
+  const showBusinessModal = useDashboardStore((state) => state.showBusinessModal);
+  const setShowBusinessModal = useDashboardStore((state) => state.setShowBusinessModal);
 
   // Agent purpose templates
   const PURPOSE_TEMPLATES = [
@@ -232,6 +238,14 @@ export default function AgentChatPage() {
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || !activeChatId || loading) return;
+    
+    // Check if the input is a business creation request
+    if (detectBusinessCreationRequest(text)) {
+      setInput("");
+      setShowBusinessModal(true);
+      return;
+    }
+
     setInput("");
 
     const userMsg: StreamMessage = { role: "user", content: text, tokensUsed: 0 };
@@ -278,7 +292,7 @@ export default function AgentChatPage() {
       setLoading(false);
       abortRef.current = null;
     }
-  }, [input, activeChatId, loading, toast]);
+  }, [input, activeChatId, loading, toast, setShowBusinessModal]);
 
   async function handleExecuteTool(messageId: string, toolName: string, payload: Record<string, unknown>) {
     await agentApi.executeToolAction(messageId, toolName, payload);
