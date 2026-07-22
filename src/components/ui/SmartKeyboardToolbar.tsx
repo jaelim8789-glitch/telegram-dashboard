@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Smile, Hash, Star, Clock, X } from 'lucide-react';
-import { Button } from './Button';
+import { Smile, Hash, Star, Clock, X, MessageSquare, Heart, ThumbsUp } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/cn';
 
 interface SmartKeyboardToolbarProps {
@@ -27,10 +26,10 @@ export function SmartKeyboardToolbar({
   const [activeTab, setActiveTab] = useState<'templates' | 'emojis' | 'special' | 'recent'>('templates');
 
   // 자주 사용하는 이모지 목록
-  const commonEmojis = ['😀', '😂', '😍', '👍', '❤️', '🔥', '😊', '🎉', '👏', '🙌'];
+  const commonEmojis = ['😀', '😂', '😍', '👍', '❤️', '🔥', '😊', '🎉', '👏', '🙌', '👌', '🙏', '💯', '✨', '💡'];
   
   // 특수문자 목록
-  const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '※', '○', '●'];
+  const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '※', '○', '●', '■', '▲', '▼'];
 
   if (!isVisible) return null;
 
@@ -46,48 +45,52 @@ export function SmartKeyboardToolbar({
             type="button"
             onClick={() => setActiveTab('templates')}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs",
+              "px-3 py-1.5 rounded-lg text-xs flex items-center gap-1",
               activeTab === 'templates' 
                 ? "bg-[var(--color-accent)] text-white" 
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
+            <MessageSquare className="h-3 w-3" />
             템플릿
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('emojis')}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs",
+              "px-3 py-1.5 rounded-lg text-xs flex items-center gap-1",
               activeTab === 'emojis' 
                 ? "bg-[var(--color-accent)] text-white" 
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
+            <Smile className="h-3 w-3" />
             이모지
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('special')}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs",
+              "px-3 py-1.5 rounded-lg text-xs flex items-center gap-1",
               activeTab === 'special' 
                 ? "bg-[var(--color-accent)] text-white" 
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
+            <Hash className="h-3 w-3" />
             특수문자
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('recent')}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs",
+              "px-3 py-1.5 rounded-lg text-xs flex items-center gap-1",
               activeTab === 'recent' 
                 ? "bg-[var(--color-accent)] text-white" 
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
+            <Clock className="h-3 w-3" />
             최근
           </button>
         </div>
@@ -109,9 +112,10 @@ export function SmartKeyboardToolbar({
                 key={template.id}
                 type="button"
                 onClick={() => onInsertTemplate(template.content)}
-                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20"
+                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20 flex items-center gap-1"
                 title={template.name}
               >
+                <Star className="h-3 w-3" />
                 {template.name}
               </button>
             ))}
@@ -119,13 +123,13 @@ export function SmartKeyboardToolbar({
         )}
 
         {activeTab === 'emojis' && (
-          <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-6 gap-1">
             {commonEmojis.map((emoji, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => onInsertEmoji(emoji)}
-                className="p-2 text-lg hover:bg-app-card-hover rounded-lg"
+                className="p-2 text-lg hover:bg-app-card-hover rounded-lg flex items-center justify-center"
               >
                 {emoji}
               </button>
@@ -140,7 +144,7 @@ export function SmartKeyboardToolbar({
                 key={index}
                 type="button"
                 onClick={() => onInsertSpecialChar(char)}
-                className="px-2 py-1.5 text-sm bg-app-card-hover rounded-lg text-app-text hover:bg-[var(--color-accent)]/20"
+                className="px-2 py-1.5 text-sm bg-app-card-hover rounded-lg text-app-text hover:bg-[var(--color-accent)]/20 flex items-center justify-center w-8 h-8"
               >
                 {char}
               </button>
@@ -155,8 +159,9 @@ export function SmartKeyboardToolbar({
                 key={index}
                 type="button"
                 onClick={() => onInsertRecentMessage(msg)}
-                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20"
+                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20 flex items-center gap-1"
               >
+                <Clock className="h-3 w-3" />
                 {msg.substring(0, 15)}...
               </button>
             ))}

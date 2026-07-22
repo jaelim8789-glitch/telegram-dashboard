@@ -1,103 +1,89 @@
-import { useState, useEffect } from 'react';
-import { Bot, Send, Search, Bell, X, Settings } from 'lucide-react';
-import { Button } from './Button';
-import { cn } from '@/lib/cn';
-import { useDashboardStore } from '@/store/useDashboardStore';
+"use client";
 
-interface QuickAction {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  action: () => void;
-  color: string;
-  enabled?: boolean;
+import { memo } from "react";
+import { Send, MessageCircle, Settings, Zap } from "lucide-react";
+import { hapticFeedback } from "@tma.js/sdk-react";
+import { cn } from "@/lib/cn";
+
+interface QuickActionBarProps {
+  onSendMessage?: () => void;
+  onQuickReply?: () => void;
+  onAutoReplyToggle?: () => void;
+  onSettings?: () => void;
+  className?: string;
 }
 
-export function QuickActionBar() {
-  const [isVisible, setIsVisible] = useState(true);
-  const { activeTab, setActiveTab, selectedAccountId } = useDashboardStore();
-  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
-
-  // 자동 응답 상태 가져오기
-  useEffect(() => {
-    // 실제 상태 가져오기 로직은 실제 API 호출로 대체해야 합니다
-    // 임시로 상태를 설정합니다
-    setAutoReplyEnabled(true);
-  }, [selectedAccountId]);
-
-  const quickActions: QuickAction[] = [
-    {
-      id: 'autoreply',
-      label: autoReplyEnabled ? '자동 응답 끄기' : '자동 응답 켜기',
-      icon: Bot,
-      action: () => {
-        // 실제 자동 응답 토글 로직은 여기에 구현
-        setAutoReplyEnabled(!autoReplyEnabled);
-      },
-      color: autoReplyEnabled ? 'text-red-500' : 'text-green-500',
-      enabled: autoReplyEnabled
-    },
-    {
-      id: 'send',
-      label: '새 메시지',
-      icon: Send,
-      action: () => setActiveTab('send'),
-      color: 'text-blue-500'
-    },
-    {
-      id: 'search',
-      label: '그룹 검색',
-      icon: Search,
-      action: () => setActiveTab('groupsearch'),
-      color: 'text-purple-500'
-    },
-    {
-      id: 'notifications',
-      label: '알림 확인',
-      icon: Bell,
-      action: () => setActiveTab('dashboard'),
-      color: 'text-yellow-500'
-    }
-  ];
-
-  // 퀵 액션 바를 숨기는 조건: 특정 탭에서는 표시하지 않음
-  const hideOnTabs = ['send', 'autoreply'];
-  if (hideOnTabs.includes(activeTab) || !isVisible) {
-    return null;
-  }
+const QuickActionBar = memo(function QuickActionBar({
+  onSendMessage,
+  onQuickReply,
+  onAutoReplyToggle,
+  onSettings,
+  className
+}: QuickActionBarProps) {
+  const handleAction = async (callback?: () => void) => {
+    try {
+      await hapticFeedback.impactOccurred("light");
+    } catch {}
+    
+    if (callback) callback();
+  };
 
   return (
     <div className={cn(
-      "fixed bottom-20 left-1/2 transform -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md",
-      "bg-app-card border border-app-border rounded-2xl shadow-xl",
-      "flex items-center justify-around p-2"
+      "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5",
+      "pb-[calc(env(safe-area-inset-bottom)+4px)]",
+      "bg-[var(--tg-theme-bg-color,#17212b)] border-[var(--tg-theme-section-separator-color,#3a4a5a)]",
+      className
     )}>
-      <div className="flex items-center justify-between w-full px-2">
-        {quickActions.map((action) => (
-          <button
-            key={action.id}
-            type="button"
-            onClick={action.action}
-            className={cn(
-              "flex flex-col items-center justify-center p-2 rounded-xl",
-              "hover:bg-app-card-hover transition-colors",
-              "min-w-[60px]"
-            )}
-            aria-label={action.label}
-          >
-            <action.icon className={cn("h-5 w-5", action.color)} />
-            <span className="text-[10px] mt-1 text-app-text truncate max-w-[60px]">{action.label}</span>
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => setIsVisible(false)}
-          className="p-2 rounded-full hover:bg-app-card-hover transition-colors ml-2"
-          aria-label="퀵 액션 바 숨기기"
-        >
-          <X className="h-4 w-4 text-app-text-muted" />
-        </button>
-      </div>
+      <button
+        onClick={() => handleAction(onSendMessage)}
+        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
+        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
+        aria-label="메시지 보내기"
+      >
+        <div className="flex items-center justify-center h-6 w-6">
+          <Send className="h-5 w-5" />
+        </div>
+        <span className="text-[10px] font-medium opacity-60">보내기</span>
+      </button>
+      
+      <button
+        onClick={() => handleAction(onQuickReply)}
+        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
+        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
+        aria-label="빠른 답장"
+      >
+        <div className="flex items-center justify-center h-6 w-6">
+          <MessageCircle className="h-5 w-5" />
+        </div>
+        <span className="text-[10px] font-medium opacity-60">답장</span>
+      </button>
+      
+      <button
+        onClick={() => handleAction(onAutoReplyToggle)}
+        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
+        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
+        aria-label="자동 응답 전환"
+      >
+        <div className="flex items-center justify-center h-6 w-6">
+          <Zap className="h-5 w-5" />
+        </div>
+        <span className="text-[10px] font-medium opacity-60">자동</span>
+      </button>
+      
+      <button
+        onClick={() => handleAction(onSettings)}
+        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
+        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
+        aria-label="설정"
+      >
+        <div className="flex items-center justify-center h-6 w-6">
+          <Settings className="h-5 w-5" />
+        </div>
+        <span className="text-[10px] font-medium opacity-60">설정</span>
+      </button>
     </div>
   );
-}
+});
+
+export { QuickActionBar };

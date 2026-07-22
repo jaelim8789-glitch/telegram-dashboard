@@ -11,6 +11,8 @@ import { useDataCache, withCache } from "@/store/useDataCache";
 import { WeeklySummaryCard } from "@/components/ui/WeeklySummaryCard";
 import { useToastStore } from "@/components/ui/GlobalToast";
 import { relativeTime } from "@/lib/relativeTime";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 interface AccountItem { id: string; phone: string; status: string; todaySent: number; healthScore: number; }
 interface BroadcastItem { id: string; message: string; status: BroadcastStatus; sentAt: string; recipients: number; }
@@ -64,8 +66,9 @@ function SkeletonGrid() {
 }
 
 export const MiniAppDashboard = memo(function MiniAppDashboard() {
+  const { isOnline: online } = useNetworkStatus();
   const [state, setState] = useState({ tokenBalance: 0, activeAccounts: 0, queueCount: 0, todayTotal: 0,
-    accounts: [] as AccountItem[], recentBroadcasts: [] as BroadcastItem[], lastUpdated: null as Date | null, error: false, online: true });
+    accounts: [] as AccountItem[], recentBroadcasts: [] as BroadcastItem[], lastUpdated: null as Date | null, error: false });
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<PixelOfficeStaff[]>(DEFAULT_STAFF);
   const [showCreateStaff, setShowCreateStaff] = useState(false);
@@ -84,7 +87,7 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
       setState({
         tokenBalance, activeAccounts: active.length, queueCount: scheduler?.due_broadcasts_count ?? 0, todayTotal,
         accounts: active.slice(0, 5).map((a: any) => ({ id: a.id, phone: a.phone, status: a.status, todaySent: a.todaySent || 0, healthScore: a.healthScore || 85 })),
-        recentBroadcasts: broadcasts, lastUpdated: new Date(), error: false, online: true,
+        recentBroadcasts: broadcasts, lastUpdated: new Date(), error: false,
       });
     } catch { setState(prev => ({ ...prev, error: true })); }
     finally { setLoading(false); }
@@ -110,8 +113,9 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
   if (loading) return <div className="p-4 space-y-4"><SkeletonGrid /></div>;
 
   return (
+    <PullToRefresh onRefresh={fetchData}>
     <div className="p-4 pb-8 space-y-4 max-w-2xl mx-auto">
-      {!state.online && (
+      {!online && (
         <div className="flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
           <WifiOff className="h-3.5 w-3.5 text-white" /><span className="text-white">오프라인 상태입니다</span>
         </div>
@@ -221,9 +225,10 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
       )}
 
       <div className="flex items-center justify-center gap-1.5 pt-2">
-        <RefreshCw className="h-3 w-3 opacity-40" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
+        <RefreshCw className={`h-3 w-3 opacity-40 ${online ? "" : "animate-pulse"}`} style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
         <p className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{state.lastUpdated ? relativeTime(state.lastUpdated.toISOString()) : ""} 갱신</p>
       </div>
     </div>
+    </PullToRefresh>
   );
 });
