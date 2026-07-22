@@ -66,9 +66,106 @@ import { SendProgressBar } from "@/components/ui/SendProgressBar";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useDebouncedValue } from "@/lib/eventOptimization";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
 import { computeViralScore, viralColor, viralBg, viralLabel, type ViralScoreResult } from "@/lib/viralScore";
+
+function InteractiveTemplatePreview({
+  message,
+  selectedRecipients,
+  account,
+}: {
+  message: string;
+  selectedRecipients: Group[];
+  account: { name?: string; phone?: string } | undefined;
+}) {
+  const debouncedMessage = useDebouncedValue(message, 300);
+
+  const hasVariables = useMemo(
+    () => TEMPLATE_VARIABLES.some((v) => debouncedMessage.includes(v.key)),
+    [debouncedMessage],
+  );
+
+  const resolved = useMemo(
+    () =>
+      previewTemplate(debouncedMessage, {
+        name: selectedRecipients[0]?.title ?? "샘플 그룹",
+        phone: account?.phone ?? "010-0000-0000",
+        count: selectedRecipients.length || 10,
+        date: new Date().toISOString().slice(0, 10),
+        time: new Date().toTimeString().slice(0, 5),
+        sender: account?.name || account?.phone || "[발신자]",
+        groupTitle: selectedRecipients[0]?.title ?? "샘플 그룹",
+      }),
+    [debouncedMessage, selectedRecipients, account],
+  );
+
+  if (!debouncedMessage.trim() || !hasVariables) return null;
+
+  const activeVars = TEMPLATE_VARIABLES.filter((v) => debouncedMessage.includes(v.key));
+  const noRecipients = selectedRecipients.length === 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="rounded-xl border border-app-info/20 bg-app-info-muted/[0.03] px-3.5 py-3"
+    >
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Eye className="h-3.5 w-3.5 text-app-info" />
+        <span className="text-xs font-semibold text-app-info">미리보기</span>
+        <span className="ml-auto text-[10px] text-app-text-subtle">실시간</span>
+      </div>
+
+      {noRecipients ? (
+        <p className="rounded-lg border border-app-border/50 bg-app-card/30 px-3 py-2.5 text-xs text-app-text-muted italic">
+          수신자를 선택하면 미리보기가 표시됩니다
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          <div>
+            <div className="mb-1 text-[10px] font-medium text-app-text-muted">원본 메시지</div>
+            <div className="whitespace-pre-wrap break-words rounded-lg border border-app-border/40 bg-app-card/40 px-3 py-2 text-sm leading-relaxed text-app-text">
+              {debouncedMessage}
+            </div>
+          </div>
+          <div className="flex items-center justify-center">
+            <div className="h-px flex-1 bg-app-border/30" />
+            <ArrowDown className="mx-2 h-3.5 w-3.5 shrink-0 text-app-text-subtle" />
+            <div className="h-px flex-1 bg-app-border/30" />
+          </div>
+          <div>
+            <div className="mb-1 text-[10px] font-medium text-app-text-muted">변수 치환 결과</div>
+            <div className="whitespace-pre-wrap break-words rounded-lg border border-app-info/15 bg-app-info-muted/[0.04] px-3 py-2 text-sm leading-relaxed text-app-text">
+              {resolved}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 pt-0.5">
+            {activeVars.map((v) => {
+              let sample = "";
+              if (v.key === "{{name}}") sample = selectedRecipients[0]?.title ?? "샘플 그룹";
+              else if (v.key === "{{phone}}") sample = account?.phone ?? "010-0000-0000";
+              else if (v.key === "{{count}}") sample = String(selectedRecipients.length || 10);
+              else if (v.key === "{{date}}") sample = new Date().toISOString().slice(0, 10);
+              else if (v.key === "{{time}}") sample = new Date().toTimeString().slice(0, 5);
+              else if (v.key === "{{sender}}") sample = account?.name || account?.phone || "[발신자]";
+              else if (v.key === "{{group_title}}") sample = selectedRecipients[0]?.title ?? "[그룹명]";
+              return (
+                <span key={v.key} className="inline-flex items-center gap-1 text-[10px]">
+                  <code className="rounded bg-app-info-muted/10 px-1.5 py-0.5 font-mono text-[10px] text-app-info">{v.key}</code>
+                  <span className="text-app-text-subtle">→</span>
+                  <span className="font-medium text-app-text">{sample}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
 
 export function SendTab() {
   const { hasApiKey, onKeySet } = useApiKeyGuard();
@@ -1722,6 +1819,13 @@ export function SendTab() {
                   message.length > 4096 ? "text-app-danger font-semibold" : message.length > 3500 ? "text-app-warning" : "text-app-text-muted"
                 )}>{message.length.toLocaleString()} / 4,096</span>
               </div>
+
+            {/* ── Variable Live Preview ── */}
+            <InteractiveTemplatePreview
+              message={message}
+              selectedRecipients={selectedRecipients}
+              account={account}
+            />
 
             {/* ── Message preview ( Telegram style ) ── */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

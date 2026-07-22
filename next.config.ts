@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   compress: true,
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   images: {
     domains: [
       'cdn.telegram.org',

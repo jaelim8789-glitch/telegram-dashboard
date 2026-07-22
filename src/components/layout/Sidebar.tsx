@@ -10,12 +10,14 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import { useAccountFavorites } from "@/lib/accountLabels";
 import { useAccountGroups } from "@/lib/accountGroups";
+import { useAccountSort } from "@/lib/accountPreferences";
 import { GroupManagementModal } from "@/components/sidebar/GroupManagementModal";
 import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
+import { getAccountDisplayName, getAccountInitials } from "@/types";
 
 const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: typeof Ban | null }[] = [
   { key: "all", label: "전체", icon: null },
@@ -29,7 +31,7 @@ const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: ty
 
 const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
-export function Sidebar() {
+export function Sidebar({ collapsed }: { collapsed: boolean }) {
   const accounts = useDashboardStore((s) => s.accounts);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
   const accountsError = useDashboardStore((s) => s.accountsError);
@@ -122,19 +124,18 @@ export function Sidebar() {
     return map;
   }, [healthItems]);
 
+  const filteredAndSorted = useAccountSort(accounts, healthByAccountId, selectedAccountId);
+
   const filteredAccounts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    // Apply health filter
-    let filtered = healthFilter === "all" ? [...accounts] : accounts.filter((a) => {
+    let filtered = healthFilter === "all" ? [...filteredAndSorted] : filteredAndSorted.filter((a) => {
       const health = healthByAccountId[a.id];
       return health?.status === healthFilter;
     });
-    // Apply group filter
     if (groupFilter) {
       const groupAccountIds = new Set(groups.find((g) => g.id === groupFilter)?.accountIds ?? []);
       filtered = filtered.filter((a) => groupAccountIds.has(a.id));
     }
-    // Apply search filter (by name or phone)
     if (query) {
       filtered = filtered.filter((a) => {
         const name = (a.name ?? "").toLowerCase();
@@ -142,14 +143,8 @@ export function Sidebar() {
         return name.includes(query) || phone.includes(query);
       });
     }
-    // Sort: favorites first
-    filtered.sort((a, b) => {
-      const aFav = isFavorite(a.id) ? 1 : 0;
-      const bFav = isFavorite(b.id) ? 1 : 0;
-      return bFav - aFav;
-    });
     return filtered;
-  }, [accounts, healthByAccountId, healthFilter, groupFilter, groups, searchQuery, isFavorite]);
+  }, [filteredAndSorted, healthByAccountId, healthFilter, groupFilter, groups, searchQuery]);
 
   const healthCounts = useMemo(() => {
     const counts: Record<string, number> = { all: accounts.length };
@@ -221,7 +216,61 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="dashboard-sidebar flex w-64 shrink-0 flex-col">
+    <aside className={cn(
+      "dashboard-sidebar flex shrink-0 flex-col transition-all duration-300 ease-in-out",
+      collapsed ? "w-[60px]" : "w-64"
+    )}>
+      {collapsed ? (
+        <>
+          <div className="flex items-center justify-center border-b border-app-border py-3.5">
+            <span className="text-xs font-bold text-app-primary">{accounts.length}</span>
+          </div>
+          <div className="flex-1 space-y-1 overflow-y-auto p-2">
+            {accountsLoading && accounts.length === 0 && (
+              [1,2,3].map(i => <Skeleton key={`sidebar-sk-${i}`} className="h-10 w-10 rounded-xl mx-auto" />)
+            )}
+            {!accountsLoading && !accountsError && accounts.length === 0 && (
+              <div className="flex justify-center py-4">
+                <Users className="h-5 w-5 text-app-text-subtle" />
+              </div>
+            )}
+            {filteredAccounts.map((account) => {
+              const health = healthByAccountId[account.id];
+              return (
+                <div key={account.id} className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => selectAccount(account.id)}
+                    title={getAccountDisplayName(account)}
+                    className={cn(
+                      "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-all",
+                      account.id === selectedAccountId
+                        ? "bg-gradient-to-br from-app-primary to-orange-600 text-white shadow-sm"
+                        : "bg-app-card-hover text-app-text-secondary hover:bg-app-card"
+                    )}
+                  >
+                    {getAccountInitials(account)}
+                    {health && health !== "healthy" && (
+                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-app-bg bg-app-warning" />
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-app-border px-1 py-3">
+            <button
+              type="button"
+              onClick={() => { fetchAccounts(); loadHealth(); }}
+              aria-label="계정 새로고침"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all w-full"
+            >
+              <RefreshCw className={`h-4 w-4 ${accountsLoading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
       <div className="flex items-center justify-between border-b border-app-border px-4 py-3.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-app-text-muted">
           계정 목록 (<span className="text-app-primary">{accounts.length}</span>)
@@ -537,6 +586,8 @@ export function Sidebar() {
         onConfirm={executeDelete}
         onCancel={() => setConfirmDeleteId(null)}
       />
+        </>
+      )}
     </aside>
   );
 }
