@@ -108,7 +108,7 @@ export function MiniAppDashboard() {
   }
 
   return (
-    <div className="p-4 pb-8 space-y-4">
+    <div className="p-4 pb-8 space-y-4 max-w-2xl mx-auto">
       {state.lastUpdated && (
         <p className="text-[10px] text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
           {state.lastUpdated.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 업데이트
@@ -130,16 +130,16 @@ export function MiniAppDashboard() {
         {state.accounts.length === 0 ? (
           <p className="text-xs opacity-60">연결된 계정이 없습니다</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-40 overflow-y-auto -mr-2 pr-2">
             {state.accounts.map((acc, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between py-2 border-b last:border-0"
+                className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-[var(--tg-theme-section-bg-color,#232e3c)] active:bg-[var(--tg-theme-section-separator-color,#3a4a5a)] transition-colors"
                 style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}
               >
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  <span className="text-sm font-mono">{acc.phone}</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-mono truncate max-w-[100px]">{acc.phone}</span>
                 </div>
                 <span className="text-xs opacity-60">{acc.todaySent}회</span>
               </div>
@@ -154,10 +154,10 @@ export function MiniAppDashboard() {
             <TrendingUp className="h-4 w-4" />
             최근 발송
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-40 overflow-y-auto -mr-2 pr-2">
             {state.recentBroadcasts.map((b) => (
-              <div key={b.id} className="flex items-center gap-2">
-                <span className={`inline-flex h-2 w-2 rounded-full ${b.status === "sent" ? "bg-green-500" : b.status === "pending" ? "bg-yellow-500" : "bg-red-500"}`} />
+              <div key={b.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[var(--tg-theme-section-bg-color,#232e3c)] active:bg-[var(--tg-theme-section-separator-color,#3a4a5a)] transition-colors">
+                <span className={`inline-flex h-2.5 w-2.5 rounded-full ${b.status === "sent" ? "bg-green-500" : b.status === "pending" ? "bg-yellow-500" : "bg-red-500"}`} />
                 <span className="text-xs truncate flex-1">{b.message}</span>
                 <span className="text-[10px] opacity-60 shrink-0">{b.recipients}개</span>
               </div>

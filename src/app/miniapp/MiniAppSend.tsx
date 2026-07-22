@@ -21,7 +21,11 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message.trim(), targets: ["all"], mode: "normal" }),
       });
-      if (res.ok) { setSent(true); setMessage(""); setTimeout(() => setSent(false), 3000); }
+      if (res.ok) { 
+        setSent(true); 
+        setMessage(""); 
+        setTimeout(() => setSent(false), 3000); 
+      }
     } catch {}
     finally { setSending(false); }
   }
@@ -35,12 +39,17 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="보낼 메시지를 입력하세요"
-        rows={4}
+        rows={6}
         style={{
           backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
           color: "var(--tg-theme-text-color, #f5f5f5)",
         }}
         className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
+        autoFocus
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="sentences"
+        spellCheck="false"
       />
       <button
         onClick={sendHandler}
@@ -49,11 +58,14 @@ export function MiniAppSend({ user }: MiniAppSendProps) {
           backgroundColor: "var(--tg-theme-button-color, #40a7e3)",
           color: "var(--tg-theme-button-text-color, #fff)",
         }}
-        className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50 transition-opacity"
+        className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 transition-opacity active:scale-98"
       >
-        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+        {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : sent ? <CheckCircle className="h-5 w-5" /> : <Send className="h-5 w-5" />}
         {sending ? "발송 중..." : sent ? "발송 완료!" : "발송하기"}
       </button>
+      <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
+        전체 계정에 동시에 발송됩니다
+      </p>
     </div>
   );
 }

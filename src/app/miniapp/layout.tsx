@@ -30,7 +30,7 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--tg-theme-bg-color,#17212b)]">
+      <div className="flex items-center justify-center min-h-screen bg-[var(--tg-theme-bg-color,#17212b)]" style={{ minHeight: "-webkit-fill-available" }}>
         <div className="animate-spin h-8 w-8 border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent rounded-full" />
       </div>
     );
@@ -43,6 +43,8 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
         backgroundColor: "var(--tg-theme-bg-color, #17212b)",
         color: "var(--tg-theme-text-color, #f5f5f5)",
         fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingTop: "env(safe-area-inset-top)",
       }}
     >
       {children}

@@ -392,7 +392,7 @@ export function SendTab() {
         const est = await api.fetchBroadcastEstimate({
           accountId: selectedAccountId,
           recipientCount: selectedRecipientIds.length,
-          deliveryMode: deliveryMode === "replyMacro" || deliveryMode === "cycle" ? "normal" : deliveryMode,
+          deliveryMode: deliveryMode === "replyMacro" ? "normal" : deliveryMode,
           delaySeconds: normalDelaySeconds,
         });
         setEstimatePreview(est);
@@ -1027,7 +1027,7 @@ export function SendTab() {
       // 답장 모드가 활성화되면 delivery_mode를 "replyMacro"로 설정
       const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim()
         ? "replyMacro"
-        : deliveryMode === "cycle" ? "normal" : deliveryMode;
+        : deliveryMode;
       // Use send-to-group API when sending to groups (no manual recipients)
       const created = await api.createBroadcast({
         accountId: selectedAccountId,

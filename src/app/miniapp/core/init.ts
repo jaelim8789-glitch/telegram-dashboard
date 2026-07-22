@@ -6,6 +6,7 @@ import {
   miniApp,
   viewport,
   themeParams,
+  HapticFeedback,
 } from "@tma.js/sdk-react";
 
 export async function init(options: {
@@ -31,5 +32,21 @@ export async function init(options: {
     viewport.bindCssVars();
   } catch {
     /* viewport unavailable outside Telegram */
+  }
+
+  // Initialize haptic feedback for better mobile UX
+  try {
+    const haptic = new HapticFeedback();
+    haptic.impactOccurred("light");
+  } catch {
+    /* haptic feedback unavailable in some environments */
+  }
+
+  // Enable mobile-friendly viewport settings
+  if (typeof document !== "undefined") {
+    const meta = document.createElement("meta");
+    meta.name = "viewport";
+    meta.content = "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no";
+    document.head.appendChild(meta);
   }
 }

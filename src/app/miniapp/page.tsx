@@ -6,6 +6,7 @@ import { MiniAppNav, type MiniAppTab } from "./MiniAppNav";
 import { MiniAppChat } from "./MiniAppChat";
 import { MiniAppProfile } from "./MiniAppProfile";
 import { MiniAppDashboard } from "./MiniAppDashboard";
+import { MiniAppSend } from "./MiniAppSend";
 
 export default function MiniAppPage() {
   const [activeTab, setActiveTab] = useState<MiniAppTab>("dashboard");
@@ -71,25 +72,21 @@ export default function MiniAppPage() {
     >
       {activeTab === "dashboard" && (
         <div
-          className="sticky top-0 z-10 flex items-center justify-center py-2"
+          className="sticky top-0 z-10 flex items-center justify-center py-3"
           style={{
             backgroundColor: "var(--tg-theme-bg-color, #17212b)",
             color: "var(--tg-theme-hint-color, #708499)",
+            borderBottom: "1px solid var(--tg-theme-section-separator-color, #3a4a5a)",
           }}
         >
-          <span className="text-[10px]">{greeting}</span>
+          <span className="text-sm font-medium">{greeting}</span>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pb-[72px]">
+      <div className="flex-1 overflow-y-auto pb-[72px] pt-1" style={{ WebkitOverflowScrolling: "touch" }}>
         {activeTab === "dashboard" && <MiniAppDashboard key={`dash-${refreshKey}`} />}
         {activeTab === "chat" && <MiniAppChat key={`chat-${refreshKey}`} />}
-        {activeTab === "send" && (
-          <div className="p-4 text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-            <p className="text-sm">빠른 발송 기능</p>
-            <p className="text-xs mt-2">웹 대시보드에서 전체 기능을 이용하세요</p>
-          </div>
-        )}
+        {activeTab === "send" && <MiniAppSend key={`send-${refreshKey}`} user={user} />}
         {activeTab === "profile" && <MiniAppProfile key={`profile-${refreshKey}`} />}
       </div>
 

@@ -46,19 +46,31 @@ export function getApiBaseUrl(): string {
 // ── Slow API detection ─────────────────────────────────────────
 const SLOW_THRESHOLD_MS = 3000;
 const SLOW_LOG_KEY = "telemon-slow-api-log";
+let slowApiBuffer: { path: string; durationMs: number; status: number | undefined; timestamp: string }[] = [];
+let slowApiFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushSlowApi() {
+  if (slowApiBuffer.length === 0) return;
+  try {
+    const stored = JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
+    const merged = stored.concat(slowApiBuffer).slice(-200);
+    localStorage.setItem(SLOW_LOG_KEY, JSON.stringify(merged));
+    slowApiBuffer = [];
+  } catch {}
+}
 
 function recordSlowApi(path: string, durationMs: number, status: number | undefined) {
   if (durationMs < SLOW_THRESHOLD_MS) return;
-  try {
-    const entry = { path, durationMs, status, timestamp: new Date().toISOString() };
-    const stored = JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
-    stored.push(entry);
-    // Keep last 200 entries
-    localStorage.setItem(SLOW_LOG_KEY, JSON.stringify(stored.slice(-200)));
-    if (durationMs > 10000) {
-      console.warn(`[Slow API] ${durationMs}ms — ${path}`, entry);
-    }
-  } catch { /* ignore */ }
+  slowApiBuffer.push({ path, durationMs, status, timestamp: new Date().toISOString() });
+  if (durationMs > 10000) {
+    console.warn(`[Slow API] ${durationMs}ms — ${path}`);
+  }
+  if (!slowApiFlushTimer) {
+    slowApiFlushTimer = setTimeout(() => {
+      slowApiFlushTimer = null;
+      flushSlowApi();
+    }, 5000);
+  }
 }
 
 export function getSlowApiLog(): { path: string; durationMs: number; status: number | undefined; timestamp: string }[] {
@@ -86,7 +98,6 @@ export function authHeaders(): Record<string, string> {
 
 function extractDetailMessage(body: unknown): string | null {
   if (typeof body === "string") return body.trim() || null;
-
   if (!body || typeof body !== "object" || !("detail" in body)) return null;
   const detail = (body as { detail: unknown }).detail;
   if (typeof detail === "string") return detail;
@@ -264,7 +275,7 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
     const hasJsonBody = typeof init?.body === "string";
     const defaultHeaders: Record<string, string> = {
       ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-      ...authHeaders(),
+      ...(await authHeaders()),
     };
     const res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
@@ -866,7 +877,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
-    deliveryMode: api.delivery_mode === "reply" ? "replyMacro" : api.delivery_mode,
+    deliveryMode: api.delivery_mode,
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }
