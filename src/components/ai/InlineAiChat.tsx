@@ -96,9 +96,12 @@ export function InlineAiChat() {
 
   // ── Auto-init: create default agent + chat on first visit ──────
   useEffect(() => {
-    if (agentsLoading || agentsError) return;
-    // Already have an active chat — nothing to do
+    if (agentsLoading) return;
     if (activeChatId) return;
+
+    // If there was a previous error, allow retry when agents become available
+    // (e.g. user created an agent manually)
+    if (agentsError && agents.length === 0) return;
 
     let cancelled = false;
 
@@ -572,8 +575,13 @@ export function InlineAiChat() {
               <Skeleton key={i} className="h-7 w-20 rounded-lg" />
             ))}
           </div>
-        ) : agentsError ? (
-          <span className="text-xs text-app-danger truncate">{agentsError}</span>
+        ) : agentsError && agents.length === 0 ? (
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="text-xs text-app-danger truncate">{agentsError}</span>
+            <button onClick={() => loadAgents()} className="shrink-0 flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors">
+              <RefreshCw className="h-3 w-3" /> 재시도
+            </button>
+          </div>
         ) : agents.length === 0 ? (
           <span className="text-xs text-app-text-muted truncate">Agent가 없습니다</span>
         ) : (

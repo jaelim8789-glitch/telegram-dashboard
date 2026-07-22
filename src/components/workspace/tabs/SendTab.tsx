@@ -331,7 +331,6 @@ export function SendTab() {
 
   const [batchRetrying, setBatchRetrying] = useState(false);
   const [historyEntry] = useState<string | null>(null);
-  const inFlightCount = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt)).length;
   const [batchRetryDelay, setBatchRetryDelay] = useState(5);
   const [dedupeNormalSend, setDedupeNormalSend] = useState(false);
   const reuseBroadcast = useDashboardStore((s) => s.reuseBroadcast);
@@ -352,6 +351,7 @@ export function SendTab() {
   }, [reuseBroadcast]);
 
   const [history, setHistory] = useState<Broadcast[]>([]);
+  const inFlightCount = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt)).length;
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyRefreshing, setHistoryRefreshing] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
