@@ -22,7 +22,7 @@ export interface TopChatRoom {
   name: string;
   messages: number;
   participants: number;
-  change: number;
+  responseRate: number;
 }
 
 export const STAT_CARDS: StatCardData[] = [
@@ -51,11 +51,11 @@ export const DONUT_DATA: DonutSegment[] = [
 export const DONUT_TOTAL = 342;
 
 export const TOP_CHAT_ROOMS: TopChatRoom[] = [
-  { rank: 1, name: "TeleMon VIP 마케팅", messages: 3847, participants: 1280, change: 18.2 },
-  { rank: 2, name: "스타트업 네트워크", messages: 2950, participants: 850, change: 12.7 },
-  { rank: 3, name: "크립토 시그널", messages: 2683, participants: 720, change: -3.4 },
-  { rank: 4, name: "주식 투자 인사이트", messages: 2401, participants: 640, change: 8.1 },
-  { rank: 5, name: "부동산 정보 공유", messages: 1984, participants: 510, change: 15.3 },
+  { rank: 1, name: "TeleMon VIP 마케팅", messages: 3847, participants: 1280, responseRate: 92.5 },
+  { rank: 2, name: "스타트업 네트워크", messages: 2950, participants: 850, responseRate: 88.3 },
+  { rank: 3, name: "크립토 시그널", messages: 2683, participants: 720, responseRate: 74.1 },
+  { rank: 4, name: "주식 투자 인사이트", messages: 2401, participants: 640, responseRate: 81.7 },
+  { rank: 5, name: "부동산 정보 공유", messages: 1984, participants: 510, responseRate: 67.2 },
 ];
 
 export type DateRangeKey = "today" | "7days" | "30days" | "thisMonth" | "custom";
