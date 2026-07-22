@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Send, Users, FileText, Bot, Search, ScanSearch,
   CalendarClock, UserPlus, Zap, BarChart3, Globe, Folder, Target,
   HeartPulse, UserCog, MessageCircle, Workflow, Star, MoreHorizontal,
-  Share2, TrendingUp, Sparkles, Building2, ArrowLeft,
+  Share2, TrendingUp, Sparkles, Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
@@ -15,9 +15,6 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { cn } from "@/lib/cn";
 import { getSafeAreaStyle } from "@/lib/safeArea";
 import { useTouchGesture } from "@/hooks/useTouchGesture"; // 터치 제스처 훅 추가
-import { useRouter } from "next/navigation"; // 라우터 추가
-import { QuickActionBar } from "./QuickActionBar"; // 퀵 액션 바 추가
-import { StateToggleButton } from "./StateToggleButton"; // 상태 토글 버튼 추가
 import AutonomousGrowthTab from './tabs/AutonomousGrowthTab';
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -278,22 +275,6 @@ export function TabBar() {
               style={{ scrollbarWidth: "none" }}
               className="flex items-center gap-0 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden"
             >
-              {/* 뒤로가기 버튼 추가 - 첫 번째 탭에만 표시 */}
-              {activeTab !== 'dashboard' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    haptics.light();
-                    router.back();
-                  }}
-                  className="flex shrink-0 flex-col items-center gap-0.5 py-2.5 px-1 min-w-0 min-h-[60px] text-app-text-muted hover:text-app-text-secondary transition-colors relative"
-                  aria-label="뒤로가기"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                  <span className="text-[11px] leading-none">뒤로</span>
-                </button>
-              )}
-              
               {mobileMainTabs.map((tab) => (
                 <TabButton
                   key={tab.id}
@@ -323,15 +304,6 @@ export function TabBar() {
               <QuickActionSheet />
             </div>
           </nav>
-        </div>
-
-        {/* 모바일에서 퀵 액션 바 표시 */}
-        <QuickActionBar />
-
-        {/* 상단 상태 토글 버튼들 */}
-        <div className="fixed top-4 right-4 z-50 flex gap-2">
-          <StateToggleButton type="autoReply" />
-          <StateToggleButton type="focusMode" />
         </div>
 
         <AnimatePresence>

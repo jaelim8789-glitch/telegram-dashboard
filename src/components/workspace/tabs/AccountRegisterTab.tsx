@@ -394,6 +394,7 @@ export function AccountRegisterTab() {
                 <Field label="계정 이름 *">
                   <input
                     type="text"
+                    autoFocus
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="내 텔레그램 계정"
@@ -434,6 +435,7 @@ export function AccountRegisterTab() {
               >
                 <Field label="Telegram 세션 *">
                   <Textarea
+                    autoFocus
                     value={formData.telegramSession}
                     onChange={(e) => handleInputChange('telegramSession', e.target.value)}
                     placeholder="session_string_here"
@@ -496,6 +498,7 @@ export function AccountRegisterTab() {
                   <Field label="SMTP 호스트">
                     <input
                       type="text"
+                      autoFocus
                       value={formData.smtpHost}
                       onChange={(e) => handleInputChange('smtpHost', e.target.value)}
                       placeholder="smtp.gmail.com"
@@ -593,6 +596,7 @@ export function AccountRegisterTab() {
                 <Field label="API 키">
                   <input
                     type="password"
+                    autoFocus
                     value={formData.apiKey}
                     onChange={(e) => handleInputChange('apiKey', e.target.value)}
                     placeholder="sk-...your-api-key..."
