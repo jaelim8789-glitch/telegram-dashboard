@@ -51,6 +51,7 @@ import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import { useBrowserNotification } from "@/hooks/useBrowserNotification";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
@@ -188,6 +189,7 @@ export function DashboardShell() {
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header sidebarCollapsed={sidebarCollapsed} />
+      <Breadcrumbs />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
         <button

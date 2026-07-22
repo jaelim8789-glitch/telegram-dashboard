@@ -54,11 +54,11 @@ export default function OfflinePage() {
 
         <div className="pt-4">
           <div className="flex items-center justify-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-gold-deep)] text-[var(--color-bg)] text-[8px] font-bold">
+            <div className="flex h-7 w-7 items-center justify-center bg-gradient-to-br from-violet-500 to-blue-500 text-white text-[8px] font-bold rounded-lg">
               TM
             </div>
             <span className="text-xs font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-              Tele<span className="text-[var(--color-accent)]">Mon</span>
+              Tele<span className="text-violet-400">Mon</span>
             </span>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "telemon-onboarding-dismissed";
-const ONBOARDING_VERSION = 1;
+const ONBOARDING_VERSION = 2;
 
 /**
  * Returns true if the onboarding tour should be shown for this session.
