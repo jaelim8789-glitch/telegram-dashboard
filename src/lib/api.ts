@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Account,
   AccountHealthItem,
   AccountHealthState,
@@ -32,7 +32,7 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-// ── Network resilience ─────────────────────────────────────────────
+// -- Network resilience ---------------------------------------------
 // Retry with exponential backoff so Render free-tier cold starts
 // (5-30 seconds) don't surface a "서버에 연결할 수 없습니다" error.
 // Only network errors (connection refused, DNS failure) are retried;
@@ -43,7 +43,7 @@ export function getApiBaseUrl(): string {
 // show a fallback immediately, while silently retrying in the
 // background.  Callers that want the fast-fail UX should use
 // requestFast() and catch the initial error.
-// ── Slow API detection ─────────────────────────────────────────
+// -- Slow API detection -----------------------------------------
 const SLOW_THRESHOLD_MS = 3000;
 const SLOW_LOG_KEY = "telemon-slow-api-log";
 let slowApiBuffer: { path: string; durationMs: number; status: number | undefined; timestamp: string }[] = [];
@@ -51,6 +51,7 @@ let slowApiFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flushSlowApi() {
   if (slowApiBuffer.length === 0) return;
+  if (typeof window === "undefined") return;
   try {
     const stored = JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
     const merged = stored.concat(slowApiBuffer).slice(-200);
@@ -63,7 +64,7 @@ function recordSlowApi(path: string, durationMs: number, status: number | undefi
   if (durationMs < SLOW_THRESHOLD_MS) return;
   slowApiBuffer.push({ path, durationMs, status, timestamp: new Date().toISOString() });
   if (durationMs > 10000) {
-    console.warn(`[Slow API] ${durationMs}ms — ${path}`);
+    console.warn(`[Slow API] ${durationMs}ms ? ${path}`);
   }
   if (!slowApiFlushTimer) {
     slowApiFlushTimer = setTimeout(() => {
@@ -219,7 +220,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      // Only set Content-Type for JSON-string bodies — GET, HEAD, and bodyless DELETE
+      // Only set Content-Type for JSON-string bodies ? GET, HEAD, and bodyless DELETE
       // calls should not force application/json, which can confuse some backends and
       // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
       // hardcoded Content-Type so the browser can set the correct multipart boundary.
@@ -234,7 +235,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         headers: { ...defaultHeaders, ...init?.headers },
       });
 
-      // Token expired — attempt refresh once, then retry
+      // Token expired ? attempt refresh once, then retry
       if (res.status === 401 && attempt === 0 && !path.includes("/auth/refresh") && !path.includes("/auth/login")) {
         clearTimeout(timeoutId);
         const refreshed = await tryRefreshToken();
@@ -248,7 +249,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         recordSlowApi(path, elapsed, res.status);
         const body = await readErrorBody(res);
         const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-        // HTTP error — surface immediately, do NOT retry
+        // HTTP error ? surface immediately, do NOT retry
         throw new ApiError(detail, res.status, false);
       }
 
@@ -258,19 +259,19 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       if (res.status === 204) return undefined as T;
       return res.json() as Promise<T>;
     } catch (err) {
-      // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
+      // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
       if (err instanceof ApiError && !err.isNetworkError) {
         throw err;
       }
 
-      // Network/Abort error — retry with exponential backoff up to MAX_RETRIES
+      // Network/Abort error ? retry with exponential backoff up to MAX_RETRIES
       if (attempt < MAX_RETRIES) {
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
 
-      // Last attempt failed — surface the final network error
+      // Last attempt failed ? surface the final network error
       if (err instanceof DOMException && err.name === "AbortError") {
         throw new ApiError(
           "서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
@@ -285,15 +286,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       );
     } finally {
       clearTimeout(timeoutId);
-      if (attempt === 0) {
-        responseStatus = undefined;
-        const elapsed = performance.now() - startTime;
-        recordSlowApi(path, elapsed, responseStatus);
-      }
     }
   }
 
-  // Unreachable — the loop always throws on the last failed attempt
+  // Unreachable ? the loop always throws on the last failed attempt
   const elapsed = performance.now() - startTime;
   recordSlowApi(path, elapsed, undefined);
   throw new ApiError(
@@ -337,29 +333,29 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
     if (res.status === 204) return undefined as T;
     return res.json() as Promise<T>;
   } catch (err) {
-    // HTTP errors (4xx/5xx) — surface immediately, do NOT retry
+    // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
     if (err instanceof ApiError && !err.isNetworkError) {
       throw err;
     }
 
-    // First attempt failed — surface the error to the UI immediately
+    // First attempt failed ? surface the error to the UI immediately
     const firstError = err instanceof DOMException && err.name === "AbortError"
       ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
       : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
 
-    // Fire-and-forget background retry with exponential backoff
-    (async () => {
+    // Retry with exponential backoff, returning the first success or final error
+    const lastError = await (async () => {
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
         await new Promise((resolve) => setTimeout(resolve, delay));
+        const bgController = new AbortController();
+        const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+        const hasJsonBody = typeof init?.body === "string";
+        const defaultHeaders: Record<string, string> = {
+          ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+          ...(await authHeaders()),
+        };
         try {
-          const bgController = new AbortController();
-          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
-          const hasJsonBody = typeof init?.body === "string";
-          const defaultHeaders: Record<string, string> = {
-            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-            ...(await authHeaders()),
-          };
           const res = await fetch(`${API_BASE_URL}${path}`, {
             ...init,
             signal: bgController.signal,
@@ -375,13 +371,16 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
 
           if (res.status === 204) return undefined as T;
           return res.json() as Promise<T>;
-        } catch {
-          // Background retry failed — try again or give up silently
+        } catch (bgErr) {
+          clearTimeout(bgTimeout);
+          if (attempt < MAX_RETRIES - 1) continue;
+          throw bgErr;
         }
       }
+      throw firstError;
     })();
 
-    throw firstError;
+    return lastError;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -464,7 +463,7 @@ export async function fetchAccountHealth(): Promise<AccountHealthItem[]> {
   return items.map(toAccountHealthItem);
 }
 
-// ── Runtime Inspector API ─────────────────────────────────────────────
+// -- Runtime Inspector API ---------------------------------------------
 
 export interface RuntimeInspectorSummary {
   total: number;
@@ -581,7 +580,7 @@ function toSelfResetResult(api: ApiSelfResetResult): SelfResetResult {
   return { reset: api.reset, requiresTwoFactor: api.requires_2fa, detail: api.detail };
 }
 
-// "이미 등록된 전화번호입니다" 셀프서비스 재등록 — 해당 번호의 Telegram 인증(+2FA)으로
+// "이미 등록된 전화번호입니다" 셀프서비스 재등록 ? 해당 번호의 Telegram 인증(+2FA)으로
 // 본인 확인 후 기존에 남아있던 계정 레코드를 정리한다.
 export async function selfResetSendCode(phone: string): Promise<SelfResetResult> {
   const result = await request<ApiSelfResetResult>("/api/accounts/self-reset/send-code", {
@@ -640,7 +639,7 @@ export interface GroupFolder {
   groupIds: string[];
 }
 
-/** Best-effort — the backend returns [] if Telegram folders can't be read, so
+/** Best-effort ? the backend returns [] if Telegram folders can't be read, so
  * callers should treat this as purely additive and never block on it. */
 export async function fetchGroupFolders(accountId: string): Promise<GroupFolder[]> {
   try {
@@ -959,7 +958,7 @@ export async function fetchAdminMe(): Promise<{ username: string }> {
   return request("/api/admin/auth/me");
 }
 
-// === API keys (admin only) — enhanced with plan schema ===
+// === API keys (admin only) ? enhanced with plan schema ===
 
 export interface ApiKeyCreated {
   id: string;
@@ -1721,7 +1720,7 @@ export async function manualIssueApiKey(
   return camelCaseKeys<ManualIssueResult>(result);
 }
 
-// ─── Channel Hub ────────────────────────────────────────────────────
+// --- Channel Hub ----------------------------------------------------
 
 export interface ChannelHubPublishInput {
   accountId: string;
@@ -1763,7 +1762,7 @@ export async function publishChannelPost(input: ChannelHubPublishInput): Promise
   return camelCaseKeys<ChannelHubPublishResult>(result);
 }
 
-// ─── Delivery Analytics ──────────────────────────────────────────────
+// --- Delivery Analytics ----------------------------------------------
 
 export async function fetchDeliveryOverview(
   accountId?: string,
@@ -1820,7 +1819,7 @@ export async function fetchDeliveryFailureIntelligence(
   return request<import("@/types").FailureIntelligenceItem[]>(`/api/delivery-analytics/failures/intelligence${qs ? `?${qs}` : ""}`);
 }
 
-// ─── Per-endpoint Delivery Analytics methods (DeliveryAnalyticsTab) ──────
+// --- Per-endpoint Delivery Analytics methods (DeliveryAnalyticsTab) ------
 
 export async function fetchAnalyticsSummary(params?: {
   account_id?: string; days?: number; source?: string; status?: string; start_time?: string; end_time?: string
@@ -1836,7 +1835,7 @@ export async function fetchAnalyticsAccounts(params?: {
 }): Promise<import("@/types").AnalyticsAccountPerformance[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsAccountPerformance[]>(`/api/delivery-analytics/accounts?${p.toString()}`);
+  return request<import("@/types").AnalyticsAccountPerformance[]>(`/api/delivery-analytics/accounts${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsTimeline(params?: {
@@ -1844,7 +1843,7 @@ export async function fetchAnalyticsTimeline(params?: {
 }): Promise<import("@/types").AnalyticsTimelinePoint[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsTimelinePoint[]>(`/api/delivery-analytics/timeline?${p.toString()}`);
+  return request<import("@/types").AnalyticsTimelinePoint[]>(`/api/delivery-analytics/timeline${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsRecent(params?: {
@@ -1852,7 +1851,7 @@ export async function fetchAnalyticsRecent(params?: {
 }): Promise<import("@/types").AnalyticsRecentActivity[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsRecentActivity[]>(`/api/delivery-analytics/recent?${p.toString()}`);
+  return request<import("@/types").AnalyticsRecentActivity[]>(`/api/delivery-analytics/recent${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsSource(params?: {
@@ -1860,7 +1859,7 @@ export async function fetchAnalyticsSource(params?: {
 }): Promise<import("@/types").AnalyticsSource[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsSource[]>(`/api/delivery-analytics/source?${p.toString()}`);
+  return request<import("@/types").AnalyticsSource[]>(`/api/delivery-analytics/source${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsBroadcasts(params?: {
@@ -1868,7 +1867,7 @@ export async function fetchAnalyticsBroadcasts(params?: {
 }): Promise<import("@/types").AnalyticsBroadcast[]> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsBroadcast[]>(`/api/delivery-analytics/broadcasts?${p.toString()}`);
+  return request<import("@/types").AnalyticsBroadcast[]>(`/api/delivery-analytics/broadcasts${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsFailureIntelligence(params?: {
@@ -1876,7 +1875,7 @@ export async function fetchAnalyticsFailureIntelligence(params?: {
 }): Promise<import("@/types").AnalyticsFailureIntelligence> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsFailureIntelligence>(`/api/delivery-analytics/failures/intelligence?${p.toString()}`);
+  return request<import("@/types").AnalyticsFailureIntelligence>(`/api/delivery-analytics/failures/intelligence${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsOverview(params?: {
@@ -1884,7 +1883,7 @@ export async function fetchAnalyticsOverview(params?: {
 }): Promise<import("@/types").AnalyticsOverview> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsOverview>(`/api/delivery-analytics/overview?${p.toString()}`);
+  return request<import("@/types").AnalyticsOverview>(`/api/delivery-analytics/overview${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
 export async function fetchAnalyticsLatency(params?: {
@@ -1892,10 +1891,10 @@ export async function fetchAnalyticsLatency(params?: {
 }): Promise<import("@/types").AnalyticsLatency> {
   const p = new URLSearchParams();
   if (params) { Object.entries(params).forEach(([k, v]) => { if (v !== undefined) p.set(k, String(v)); }); }
-  return request<import("@/types").AnalyticsLatency>(`/api/delivery-analytics/latency?${p.toString()}`);
+  return request<import("@/types").AnalyticsLatency>(`/api/delivery-analytics/latency${p.toString() ? `?${p.toString()}` : ""}`);
 }
 
-// ─── AI Assist ────────────────────────────────────────────────────
+// --- AI Assist ----------------------------------------------------
 
 export async function generateAiMessage(prompt: string): Promise<string> {
   const result = await request<{ content: string }>("/api/ai/generate-message", {
@@ -1984,7 +1983,7 @@ export async function fetchReplyMacros(accountId: string): Promise<ReplyMacro[]>
 
 export async function createReplyMacro(accountId: string, input: ReplyMacroInput): Promise<ReplyMacro> {
   // The backend endpoint takes UploadFile/File() for the optional attachment, which forces
-  // the whole request into multipart/form-data — FastAPI cannot deserialize a Pydantic body
+  // the whole request into multipart/form-data ? FastAPI cannot deserialize a Pydantic body
   // model from form fields, so every field is submitted as its own Form field instead of a
   // single JSON body. Do not switch this back to `body: JSON.stringify(...)`; see
   // telegram-dashboard-backend/app/api/reply_macro.py::create_macro and
@@ -2063,7 +2062,7 @@ export async function fetchReplyMacroLogs(accountId: string, macroId: string): P
   return logs.map(toReplyMacroLog);
 }
 
-// ─── Team Management ──────────────────────────────────────────────────
+// --- Team Management --------------------------------------------------
 
 export interface TeamMemberData {
   id: string;
@@ -2117,7 +2116,7 @@ export async function inviteTeamMember(tenantId: string, input: TeamInviteInput)
   });
 }
 
-// ─── AI Reply 2.0 ─────────────────────────────────────────────────
+// --- AI Reply 2.0 -------------------------------------------------
 
 
 
@@ -2212,7 +2211,7 @@ export async function getAiSessionHistory(sessionId: string): Promise<{ messages
   return request(`/api/ai/chat/history/${sessionId}`);
 }
 
-// ─── AI Reply 2.0 — Session Management ────────────────────────────
+// --- AI Reply 2.0 ? Session Management ----------------------------
 
 export async function fetchAiSessions(search?: string): Promise<AiSession[]> {
   const qs = search ? `?search=${encodeURIComponent(search)}` : "";
@@ -2226,11 +2225,11 @@ export async function deleteAiSession(sessionId: string): Promise<void> {
 export async function starAiSession(sessionId: string, starred: boolean): Promise<void> {
   await request<void>(`/api/ai/sessions/${sessionId}`, {
     method: "PATCH",
-    body: JSON.stringify({ isStarred: starred }),
+    body: JSON.stringify({ is_starred: starred }),
   });
 }
 
-// ─── AI Reply 2.0 — Prompt Templates ──────────────────────────────
+// --- AI Reply 2.0 ? Prompt Templates ------------------------------
 
 export async function fetchAiTemplates(category?: string): Promise<AiPromptTemplate[]> {
   const qs = category ? `?category=${encodeURIComponent(category)}` : "";
@@ -2255,7 +2254,7 @@ export async function deleteAiTemplate(id: string): Promise<void> {
   await request<void>(`/api/ai/templates/${id}`, { method: "DELETE" });
 }
 
-// ─── AI Reply 2.0 — Memory Viewer ─────────────────────────────────
+// --- AI Reply 2.0 ? Memory Viewer ---------------------------------
 
 export async function searchAiMemory(query: string): Promise<AiMemorySearchResult> {
   return request<AiMemorySearchResult>(`/api/ai/memory/search?q=${encodeURIComponent(query)}`);
@@ -2273,7 +2272,7 @@ export async function fetchTeleMonMemorySnapshot(): Promise<TeleMonMemorySnapsho
   return request("/api/ai/telemon-memory/snapshot");
 }
 
-// ─── AI Reply 2.0 — Usage / Analytics ─────────────────────────────
+// --- AI Reply 2.0 ? Usage / Analytics -----------------------------
 
 export async function fetchAiUsage(days: number = 30): Promise<AiUsageSummary> {
   return request<AiUsageSummary>(`/api/ai/usage?days=${days}`);
@@ -2283,7 +2282,7 @@ export async function fetchAiPlanLimits(): Promise<AiPlanLimits> {
   return request<AiPlanLimits>("/api/ai/plan-limits");
 }
 
-// ─── AI Reply 2.0 — Search ────────────────────────────────────────
+// --- AI Reply 2.0 ? Search ----------------------------------------
 
 export async function searchAiHistory(filters: AiSearchFilters): Promise<{ results: AiSession[]; total: number }> {
   return request<{ results: AiSession[]; total: number }>("/api/ai/history/search", {
@@ -2292,7 +2291,7 @@ export async function searchAiHistory(filters: AiSearchFilters): Promise<{ resul
   });
 }
 
-// ─── Team Invites ───────────────────────────────────────────────
+// --- Team Invites -----------------------------------------------
 
 export async function acceptTeamInvite(token: string): Promise<TeamMemberData> {
   return request<TeamMemberData>("/api/tenants/_/team/accept-invite", {
@@ -2316,7 +2315,7 @@ export async function removeTeamMember(tenantId: string, memberId: string): Prom
   await request<void>(`/api/tenants/${tenantId}/team/members/${memberId}`, { method: "DELETE" });
 }
 
-// ─── Phase 2: AI Platform APIs ─────────────────────────────────────
+// --- Phase 2: AI Platform APIs -------------------------------------
 
 export async function fetchLangGraphWorkflows(): Promise<import("@/types").LangGraphWorkflow[]> {
   return request<import("@/types").LangGraphWorkflow[]>("/api/ai/langgraph/workflows");
@@ -2476,4 +2475,10 @@ export async function fetchAIAnalyticsErrors(): Promise<import("@/types").AIAnal
 
 export async function fetchAIAnalyticsRealtime(): Promise<{ activeAgents: number; pendingTasks: number; runningWorkflows: number; recentErrors: number }> {
   return request("/api/ai/analytics/realtime");
+}
+
+export async function fetchPixelOffices(): Promise<{ id: string; name: string; status: string }[]> {
+  try {
+    return request("/api/miniapp/pixel-offices");
+  } catch { return []; }
 }

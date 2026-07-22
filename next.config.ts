@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   eslint: { ignoreDuringBuilds: true },
+  // TEMPORARY (user-approved): unblock deploy while a backlog of pre-existing
+  // type/lint errors is cleaned up separately — see TEAM_STATUS.md.
   typescript: { ignoreBuildErrors: true },
   images: {
     domains: [
