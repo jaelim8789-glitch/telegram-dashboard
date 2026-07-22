@@ -7,6 +7,7 @@ import {
   MiniMap,
   Background,
   BackgroundVariant,
+  SelectionMode,
   type Node,
   type Edge,
   type Connection,
@@ -16,7 +17,7 @@ import {
   applyEdgeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, X } from "lucide-react";
 
 import { StartNode } from "./nodes/StartNode";
 import { ConditionNode } from "./nodes/ConditionNode";
@@ -45,6 +46,7 @@ interface FlowCanvasProps {
   onNodeSelect: (node: Node | null) => void;
   onEdgeSelect: (edge: Edge | null) => void;
   onNodeDragStop: () => void;
+  onDeleteEdge: (id: string) => void;
   nodes: Node[];
   edges: Edge[];
   onNodesChange: (changes: Parameters<typeof applyNodeChanges>[0]) => void;
@@ -53,14 +55,15 @@ interface FlowCanvasProps {
   onDropNode: (type: string, position: { x: number; y: number }) => void;
   isValidConnection: (connection: Connection) => boolean;
   invalidNodeIds: Set<string>;
+  previewNodeId: string | null;
 }
 
 export function FlowCanvas({
-  selectedNode,
   selectedEdgeId,
   onNodeSelect,
   onEdgeSelect,
   onNodeDragStop,
+  onDeleteEdge,
   nodes,
   edges,
   onNodesChange,
@@ -69,57 +72,63 @@ export function FlowCanvas({
   onDropNode,
   isValidConnection,
   invalidNodeIds,
+  previewNodeId,
 }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [rfInstance, setRfInstance] = useState<any>(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
 
   const derivedNodes = useMemo(
     () =>
       nodes.map((n) => ({
         ...n,
-        data: { ...(n.data as object), __invalid: invalidNodeIds.has(n.id) },
+        data: { ...(n.data as object), __invalid: invalidNodeIds.has(n.id), __preview: n.id === previewNodeId },
       })),
-    [nodes, invalidNodeIds]
+    [nodes, invalidNodeIds, previewNodeId]
   );
 
   const derivedEdges = useMemo(
     () =>
-      edges.map((e) => ({
-        ...e,
-        selected: e.id === selectedEdgeId,
-        style: {
-          ...(e.style as Record<string, unknown>),
-          ...(e.id === selectedEdgeId
-            ? { strokeWidth: 3, filter: "drop-shadow(0 0 4px rgba(139,92,246,0.5))" }
-            : {}),
-        },
-      })),
-    [edges, selectedEdgeId]
+      edges.map((e) => {
+        const isSelected = e.id === selectedEdgeId;
+        const isHovered = e.id === hoveredEdgeId;
+        const isInPreview = previewNodeId && (nodes.find((n) => n.id === previewNodeId) as any)?.type !== "start" && e.target === previewNodeId;
+        return {
+          ...e,
+          selected: isSelected,
+          style: {
+            ...(e.style as Record<string, unknown>),
+            ...(isSelected || isHovered ? {
+              strokeWidth: 3,
+              strokeDasharray: isHovered && !isSelected ? "8,4" : undefined,
+              filter: "drop-shadow(0 0 4px rgba(139,92,246,0.6))",
+            } : {}),
+            ...(isInPreview && !isSelected && !isHovered ? {
+              strokeWidth: 3,
+              filter: "drop-shadow(0 0 6px rgba(34,197,94,0.7))",
+            } : {}),
+          },
+          animated: isHovered || isInPreview,
+        };
+      }),
+    [edges, selectedEdgeId, hoveredEdgeId, previewNodeId, nodes]
   );
 
-  const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+  const onDragOver = useCallback((e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }, []);
+  const onDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
+    const type = event.dataTransfer.getData("application/reactflow");
+    if (!type || !reactFlowWrapper.current || !rfInstance) return;
+    const bounds = reactFlowWrapper.current.getBoundingClientRect();
+    const position = rfInstance.screenToFlowPosition({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+    onDropNode(type, position);
+  }, [rfInstance, onDropNode]);
 
-  const onDrop = useCallback(
-    (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      const type = event.dataTransfer.getData("application/reactflow");
-      if (!type || !reactFlowWrapper.current || !rfInstance) return;
-      const bounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = rfInstance.screenToFlowPosition({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
-      });
-      onDropNode(type, position);
-    },
-    [rfInstance, onDropNode]
-  );
-
-  const handleEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => { onEdgeSelect(edge); }, [onEdgeSelect]);
+  const handleEdgeClick = useCallback((_e: React.MouseEvent, edge: Edge) => { onEdgeSelect(edge); }, [onEdgeSelect]);
   const handlePaneClick = useCallback(() => { onNodeSelect(null); onEdgeSelect(null); }, [onNodeSelect, onEdgeSelect]);
-  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => { onNodeSelect(node); onEdgeSelect(null); }, [onNodeSelect, onEdgeSelect]);
+  const handleNodeClick = useCallback((_e: React.MouseEvent, node: Node) => { onNodeSelect(node); onEdgeSelect(null); }, [onNodeSelect, onEdgeSelect]);
+  const handleEdgeMouseEnter = useCallback((_e: React.MouseEvent, edge: Edge) => { setHoveredEdgeId(edge.id); }, []);
+  const handleEdgeMouseLeave = useCallback(() => { setHoveredEdgeId(null); }, []);
 
   const hasNodes = nodes.length > 0;
 
@@ -133,12 +142,16 @@ export function FlowCanvas({
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
+        onEdgeMouseEnter={handleEdgeMouseEnter}
+        onEdgeMouseLeave={handleEdgeMouseLeave}
         onPaneClick={handlePaneClick}
         onNodeDragStop={onNodeDragStop}
         onInit={setRfInstance}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         isValidConnection={isValidConnection}
+        selectionMode={SelectionMode.Partial}
+        selectNodesOnDrag
         fitView
         className="bg-app-bg"
         proOptions={{ hideAttribution: true }}
@@ -150,6 +163,10 @@ export function FlowCanvas({
               <stop offset="0%" stopColor="#8b5cf6" />
               <stop offset="100%" stopColor="#3b82f6" />
             </linearGradient>
+            <filter id="previewGlow">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
           </defs>
         </svg>
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(139, 92, 246, 0.15)" />
@@ -159,6 +176,7 @@ export function FlowCanvas({
           position="bottom-right"
           nodeColor={(node) => {
             const d = (node.data ?? {}) as Record<string, unknown>;
+            if (d.__preview) return "#22c55e";
             if (d.__invalid) return "#ef4444";
             const colors: Record<string, string> = {
               start: "#22c55e", condition: "#f59e0b", message: "#8b5cf6",
