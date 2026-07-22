@@ -18,7 +18,7 @@ export function MobilePushNotifier() {
           await Notification.requestPermission();
         }
 
-        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        const publicKey = process.env.NEXT_PUBLIC_VAPID_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (publicKey) {
           await registration.pushManager.subscribe({
             userVisibleOnly: true,
