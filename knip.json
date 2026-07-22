@@ -1,0 +1,14 @@
+{
+  "tsconfig": "./tsconfig.json",
+  "entry": ["src/app/**/*.tsx", "src/app/**/*.ts"],
+  "project": ["src/**/*.ts", "src/**/*.tsx"],
+  "ignoreDependencies": [
+    "@capacitor/android",
+    "@capacitor/ios",
+    "@sentry/nextjs"
+  ],
+  "ignoreUnused": [
+    "src/lib/sentry.ts",
+    "src/instrumentation.ts"
+  ]
+}

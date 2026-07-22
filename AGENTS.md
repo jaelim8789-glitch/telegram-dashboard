@@ -103,3 +103,29 @@ Never guess at file contents, API shapes, DB state, or library behavior when an 
 5. Rebuild and restart only the affected container(s) — `docker compose build <service> && docker compose up -d --no-deps <service>` — not the whole stack.
 6. Verify: container health, startup logs, and an HTTP check against the real domain (Host header matters, e.g. `curl -H "Host: api.telemon.online" http://localhost/`).
 7. Confirm and report the deployed commit SHA.
+
+## Common mistakes seen in this repo (2026-07-21/22 incident review)
+
+These caused real production outages or hours of wasted rebuild cycles. Check for these specifically before committing:
+
+1. **JSX in a `.ts` file.** Any file with `<div>`, `<Component />`, etc. must be `.tsx`, not `.ts`. This alone broke 15+ files in one batch. If a `.ts` file needs a generic arrow function, `.tsx` requires a trailing comma to disambiguate from JSX: `<T,>(x: T) => ...`, not `<T>(x: T) => ...`.
+2. **A file saved as UTF-16 instead of UTF-8** silently breaks the build with no useful error at first glance (looks like garbage/mojibake). If a file you didn't expect to change shows spaced-out characters or mojibake, check encoding (`file <path>`) before assuming content corruption — it's usually an editor/tool encoding bug, and the fix is `iconv -f UTF-16LE -t UTF-8`, not a content rewrite.
+3. **`npx tsc --noEmit` passing does not mean `next build` will succeed.** ESLint-as-part-of-build and webpack's own parse can still fail. CI now runs `next build` for real (see `frontend-ci`) — don't rely on tsc alone before telling the user something is fixed.
+4. **camelCase vs snake_case mismatches** between frontend types and actual backend JSON responses (e.g. `amountCents` vs `amount_cents`). The backend is the source of truth for wire format; when adding a frontend type for an API response, match the backend schema's field names exactly, or generate the type from the OpenAPI spec (`npm run typegen`) instead of hand-writing it.
+5. **A root-level `app/` directory in the frontend repo shadows `src/app/` entirely** — Next.js prefers root `app/` over `src/app/` when both exist, silently producing an almost-empty build (just a 404 page) with no build error. If a `next build` produces suspiciously few routes, check for a stray root `app/` directory first.
+6. **Component prop mismatches**: `Badge` does not accept `onClick` (wrap it in a `<button>` instead); `Panel` does not accept `onTouchStart`/`onTouchMove`/`onTouchEnd` (wrap it in a `<div>` instead). Check the actual component's prop interface before passing an event handler — don't assume every UI primitive forwards arbitrary DOM props.
+7. **Alembic revision IDs must be generated, never hand-typed.** Two different migrations picking the same hand-typed hex string as their `revision` causes a silent collision that only surfaces at `alembic upgrade`/`alembic heads` time. Always use `alembic revision --autogenerate -m "..."` and let it generate the ID.
+8. **Multiple alembic heads must be merged before pushing**, not left diverged — run `alembic heads` and confirm exactly one line before committing a new migration. The pre-commit hook now checks this automatically.
+9. **CI env vars must match every required Pydantic Settings field**, not just the obviously-relevant one — `Settings` failing to construct (e.g. missing `encryption_key`) crashes `from app.main import app` before your actual code even runs, producing a confusing error that looks unrelated to what you changed.
+10. **Don't build a second implementation of something that already exists** (e.g. a duplicate inline-buttons UI when `InlineButtonBuilder` already exists and is already wired up) — check `codebase-memory-mcp`/`grep` for an existing component before adding a new one that does the same thing with different, disconnected state.
+
+## Do-not-do checklist
+
+- Don't hand-pick alembic revision IDs — always `--autogenerate`.
+- Don't commit a `.ts` file containing JSX — rename to `.tsx` first.
+- Don't pass `onClick`/`onTouch*` to `Badge` or `Panel` — wrap them instead.
+- Don't assume `npx tsc --noEmit` passing means the build is safe to deploy — CI also runs `next build`.
+- Don't bypass a pre-commit hook with `--no-verify` without the user's explicit request.
+- Don't push directly to `master` bundling unrelated/unapproved work — confirm scope first.
+- Don't hand-write a frontend type for a backend response — prefer `npm run typegen` from the OpenAPI spec.
+- Don't create a root-level `app/` directory in the frontend repo, ever — it will shadow `src/app/`.

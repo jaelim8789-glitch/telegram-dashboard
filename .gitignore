@@ -65,6 +65,9 @@ tmp_*
 test_screenshot.png
 logs/
 
+# generated reports
+/report/
+
 # ad-hoc local audit/debug scripts (hardcoded local temp paths, not reusable tooling)
 audit_*.cjs
 build_output.txt
