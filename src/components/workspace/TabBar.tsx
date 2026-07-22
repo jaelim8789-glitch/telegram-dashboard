@@ -63,7 +63,10 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
     <button
       type="button"
       onClick={onSelect}
+      role="tab"
+      aria-selected={active}
       aria-current={active ? "page" : undefined}
+      tabIndex={active ? 0 : -1}
       data-tour={`nav-${tab.id}`}
       className={cn(
         "focus-ring relative flex items-center justify-center transition-all duration-200",
@@ -71,7 +74,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
           ? "flex-col gap-0.5 flex-1 min-h-[60px] min-w-[60px] py-2" // 터치 타겟 크기 증가
           : "shrink-0 gap-1.5 whitespace-nowrap px-3 py-3 text-[13px] font-medium min-h-[44px]",
         active
-          ? (mobile ? "text-app-primary" : "text-app-text")
+          ? "text-[var(--color-accent)]"
           : "text-app-text-muted hover:text-app-text-secondary"
       )}
     >
@@ -79,7 +82,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
         <Icon className={cn(
           "transition-all duration-200",
           mobile ? "h-6 w-6" : "h-3.5 w-3.5", // 모바일 아이콘 크기 증가
-          active ? "text-app-primary" : "text-app-text-subtle"
+          active ? "text-[var(--color-accent)]" : "text-app-text-subtle"
         )} />
       )}
       <span className={mobile ? "text-[11px] leading-none" : "hidden sm:inline"}>{mobile ? (tab.shortLabel ?? tab.label) : tab.label}</span>
@@ -96,7 +99,8 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
         <motion.span
           layoutId="tab-underline"
           transition={{ type: "spring", stiffness: 500, damping: 40 }}
-          className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-app-primary"
+          className="absolute inset-x-3 bottom-0 h-[2px] rounded-full"
+          style={{ background: "var(--color-accent)" }}
         />
       )}
       {mobile && (
@@ -117,7 +121,7 @@ function TabButton({ tab, active, onSelect, badge, mobile }: { tab: TabDef; acti
           {/* Background highlight */}
           <span className={cn(
             "absolute inset-1.5 rounded-xl transition-all duration-200",
-            active ? "bg-app-primary/8 shadow-sm" : "hover:bg-app-card-hover/50"
+            active ? "bg-[var(--color-accent)]/8 shadow-sm" : "hover:bg-app-card-hover/50"
           )} />
         </>
       )}
@@ -419,6 +423,8 @@ export function TabBar() {
         ref={scrollRef}
         onScroll={updateFade}
         onKeyDown={handleKeyDown}
+        role="tablist"
+        aria-label="작업 영역 탭"
         style={{ scrollbarWidth: "none" }}
         className="flex items-stretch gap-0 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden"
       >

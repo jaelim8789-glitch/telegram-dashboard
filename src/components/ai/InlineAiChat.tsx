@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send, Loader2, MessageSquare, Plus, Sparkles, Menu, Bot,
   ChevronLeft, Trash2, Mic, MicOff, Clock, BarChart3, AlertTriangle, FileText, CheckCircle,
-  PenLine, ExternalLink,
+  PenLine, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatMessageBubble } from "@/components/ai/ChatMessageBubble";
@@ -205,6 +205,12 @@ export function InlineAiChat() {
     if (activeChatId && !loading) inputRef.current?.focus();
   }, [activeChatId, loading]);
 
+  useEffect(() => {
+    if (streamMsg?.content) {
+      try { navigator.vibrate?.(10); } catch {}
+    }
+  }, [streamMsg?.content]);
+
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
 
   // ── 발송현황 요약 카드 ──
@@ -302,6 +308,7 @@ export function InlineAiChat() {
   function sendMessageWithInput(text: string) {
     if (!text || !activeChatId || loading) return;
     setInput("");
+    try { navigator.vibrate?.(5); } catch {}
     const userMsg: StreamMessage = { role: "user", content: text, tokensUsed: 0 };
     setMessages((prev) => [...prev, userMsg as agentApi.AgentMessage]);
     setLoading(true);
@@ -331,6 +338,7 @@ export function InlineAiChat() {
       const msgs = await agentApi.fetchChatMessages(activeChatId!);
       setMessages(msgs);
       setStreamMsg(null);
+      try { navigator.vibrate?.(10); } catch {}
     }).catch((err) => {
       if ((err as DOMException)?.name === "AbortError") return;
       setStreamMsg({ role: "agent", content: "네트워크 오류가 발생했습니다.", tokensUsed: 0 });

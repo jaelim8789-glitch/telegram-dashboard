@@ -53,7 +53,8 @@ export const GroupSelectCard = memo(function GroupSelectCard({
     <div
       role="button"
       tabIndex={0}
-      title={undefined}
+      aria-selected={selected}
+      aria-label={`${group.title}${selected ? ', 선택됨' : ''}`}
       onClick={() => onToggleSelect(group.id)}
       onKeyDown={(e) => e.key === "Enter" && onToggleSelect(group.id)}
       onTouchStart={handleTouchStart}
@@ -142,7 +143,14 @@ export const GroupSelectCard = memo(function GroupSelectCard({
 (prevProps, nextProps) =>
   prevProps.group.id === nextProps.group.id &&
   prevProps.selected === nextProps.selected &&
-  prevProps.disabled === nextProps.disabled
+  prevProps.isFavorite === nextProps.isFavorite &&
+  prevProps.isRecent === nextProps.isRecent &&
+  prevProps.disabled === nextProps.disabled &&
+  prevProps.tags.length === nextProps.tags.length &&
+  prevProps.tags.every((t, i) => t === nextProps.tags[i]) &&
+  prevProps.onToggleSelect === nextProps.onToggleSelect &&
+  prevProps.onToggleFavorite === nextProps.onToggleFavorite &&
+  prevProps.onAddTag === nextProps.onAddTag
 );
 
 export function SkeletonGroupSelectCard() {

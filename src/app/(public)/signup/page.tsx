@@ -33,6 +33,7 @@ export default function SignupPage() {
   const [selectedPlan, setSelectedPlan] = useState("free");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [botDeepLink, setBotDeepLink] = useState<string | null>(null);
   const [channelUrl, setChannelUrl] = useState<string | null>(null);
@@ -47,6 +48,13 @@ export default function SignupPage() {
   const [tgLoggingIn, setTgLoggingIn] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tokenRef = useRef<string | null>(null);
+
+  // ── Extract referral code from URL query param ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setReferralCode(ref);
+  }, []);
 
   const tgDeepLink = useMemo(() => token ? `tg://resolve?domain=telemon_verify_bot&start=${token}` : null, [token]);
 
@@ -119,7 +127,7 @@ export default function SignupPage() {
     if (!tokenRef.current || !phone.trim() || issuing) return;
     setIssuing(true); setError(null);
     try {
-      const result = await freeApiKey.issueFreeApiKey(tokenRef.current, phone.trim());
+      const result = await freeApiKey.issueFreeApiKey(tokenRef.current, phone.trim(), referralCode ?? undefined);
       if (result.apiKey) {
         setApiKey(result.apiKey);
         try { sessionStorage.removeItem("ft_token"); sessionStorage.removeItem("ft_deeplink"); sessionStorage.removeItem("ft_channel"); sessionStorage.removeItem("ft_phone"); } catch {}
