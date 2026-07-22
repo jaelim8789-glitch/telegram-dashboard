@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Smile, Hash, Star, Clock, X } from 'lucide-react';
 import { Button } from './Button';
@@ -28,7 +29,7 @@ export function SmartKeyboardToolbar({
 
   // 자주 사용하는 이모지 목록
   const commonEmojis = ['😀', '😂', '😍', '👍', '❤️', '🔥', '😊', '🎉', '👏', '🙌'];
-  
+
   // 특수문자 목록
   const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '※', '○', '●'];
 
@@ -47,8 +48,8 @@ export function SmartKeyboardToolbar({
             onClick={() => setActiveTab('templates')}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs",
-              activeTab === 'templates' 
-                ? "bg-[var(--color-accent)] text-white" 
+              activeTab === 'templates'
+                ? "bg-[var(--color-accent)] text-white"
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
@@ -59,8 +60,8 @@ export function SmartKeyboardToolbar({
             onClick={() => setActiveTab('emojis')}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs",
-              activeTab === 'emojis' 
-                ? "bg-[var(--color-accent)] text-white" 
+              activeTab === 'emojis'
+                ? "bg-[var(--color-accent)] text-white"
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
@@ -71,8 +72,8 @@ export function SmartKeyboardToolbar({
             onClick={() => setActiveTab('special')}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs",
-              activeTab === 'special' 
-                ? "bg-[var(--color-accent)] text-white" 
+              activeTab === 'special'
+                ? "bg-[var(--color-accent)] text-white"
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >
@@ -83,8 +84,8 @@ export function SmartKeyboardToolbar({
             onClick={() => setActiveTab('recent')}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs",
-              activeTab === 'recent' 
-                ? "bg-[var(--color-accent)] text-white" 
+              activeTab === 'recent'
+                ? "bg-[var(--color-accent)] text-white"
                 : "bg-app-card-hover text-app-text-muted"
             )}
           >

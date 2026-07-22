@@ -1,222 +1,191 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, useRef, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, XCircle, AlertTriangle, Info, X, Loader2, Skull, Ban } from "lucide-react";
+import { createContext, useContext, useState, useRef, type ReactNode } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle2, AlertCircle, XCircle, Info, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-type ToastType = "success" | "error" | "warning" | "info" | "loading" | "critical";
+type ToastType = "success" | "error" | "info" | "warning";
 
 interface Toast {
-  id: number;
-  groupKey: string;
+  id: string;
   type: ToastType;
-  message: string;
+  title: string;
   description?: string;
-  action?: { label: string; onClick: () => void };
   duration?: number;
 }
 
+const TOAST_ICONS = {
+  success: CheckCircle2,
+  error: XCircle,
+  info: Info,
+  warning: AlertCircle,
+};
+
+const TOAST_STYLES = {
+  success: "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",
+  error: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
+  info: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  warning: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+};
+
 interface ToastContextValue {
-  toast: (type: ToastType, message: string, opts?: { description?: string; action?: { label: string; onClick: () => void }; duration?: number }) => void;
-  dismissToast: (id: number) => void;
+  toast: {
+    success: (title: string, description?: string, duration?: number) => string;
+    error: (title: string, description?: string, duration?: number) => string;
+    info: (title: string, description?: string, duration?: number) => string;
+    warning: (title: string, description?: string, duration?: number) => string;
+  };
+  dismiss: (id: string) => void;
   clearAll: () => void;
 }
 
-interface GroupMeta {
-  count: number;
-  timerId: ReturnType<typeof setTimeout> | null;
-  duration: number;
-}
-
-const ToastContext = createContext<ToastContextValue>({ toast: () => {}, dismissToast: () => {}, clearAll: () => {} });
+const ToastContext = createContext<ToastContextValue>({
+  toast: {
+    success: () => "",
+    error: () => "",
+    info: () => "",
+    warning: () => "",
+  },
+  dismiss: () => {},
+  clearAll: () => {},
+});
 
 export function useToast() {
   return useContext(ToastContext);
 }
 
-let nextId = 0;
+interface ToastProps {
+  toast: Toast;
+  onDismiss: (id: string) => void;
+}
 
-const TOAST_ICONS: Record<string, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  error: XCircle,
-  warning: AlertTriangle,
-  info: Info,
-  loading: Loader2,
-  critical: Ban,
-};
+function ToastComponent({ toast, onDismiss }: ToastProps) {
+  const Icon = TOAST_ICONS[toast.type];
+  const [isVisible, setIsVisible] = useState(false);
 
-const TOAST_STYLES: Record<string, string> = {
-  success: "border-app-success/30 bg-app-success-muted text-app-success",
-  error: "border-app-danger/30 bg-app-danger-muted text-app-danger",
-  warning: "border-app-warning/30 bg-app-warning-muted text-app-warning",
-  info: "border-app-info/30 bg-app-info-muted text-app-info",
-  loading: "border-app-primary/30 bg-app-primary-muted text-app-primary",
-  critical: "border-purple-500/30 bg-purple-950/90 text-purple-200 shadow-lg shadow-purple-500/20",
-};
+  // 토스트가 나타날 때 애니메이션 효과
+  useState(() => {
+    requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+  });
 
-const TOAST_VARIANTS = {
-  initial: { opacity: 0, x: 80, scale: 0.92 },
-  animate: {
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    transition: { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.8 },
-  },
-  exit: {
-    opacity: 0,
-    x: 60,
-    scale: 0.95,
-    transition: { duration: 0.2, ease: "easeIn" as const },
-  },
-};
+  // 토스트 자동 닫기
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => onDismiss(toast.id), 300); // 애니메이션 시간
+    }, toast.duration || 4000);
 
-const MAX_VISIBLE_TOASTS = 5;
+    return () => clearTimeout(timer);
+  }, [toast.id, toast.duration, onDismiss]);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className={cn(
+        "transform-gpu overflow-hidden rounded-xl border p-4 shadow-lg backdrop-blur-xl",
+        "pointer-events-auto w-full max-w-sm",
+        isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
+        TOAST_STYLES[toast.type]
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <Icon className="h-5 w-5 flex-shrink-0 pt-0.5" aria-hidden="true" />
+        <div className="flex-1">
+          <div className="font-medium">{toast.title}</div>
+          {toast.description && (
+            <div className="mt-1 text-sm opacity-90">{toast.description}</div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setIsVisible(false);
+            setTimeout(() => onDismiss(toast.id), 300);
+          }}
+          className="rounded-md opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+let toastCounter = 0;
+
+interface ToastProviderProps {
+  children: React.ReactNode;
+}
+
+export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [overflowCount, setOverflowCount] = useState(0);
-  const groupMapRef = useRef<Map<string, GroupMeta>>(new Map());
+  const mountedRef = useRef(false);
 
-  const scheduleDismiss = useCallback((groupKey: string, duration: number, toastId: number) => {
-    const existing = groupMapRef.current.get(groupKey);
-    if (existing?.timerId != null) {
-      clearTimeout(existing.timerId);
-    }
-    const timerId = setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== toastId));
-      groupMapRef.current.delete(groupKey);
-    }, duration);
-    groupMapRef.current.set(groupKey, { count: existing?.count ?? 1, timerId, duration });
+  // 토스트 ID 생성 함수
+  const generateId = useCallback(() => {
+    return `toast-${Date.now()}-${++toastCounter}`;
   }, []);
 
-  const addToast = useCallback((
-    type: ToastType,
-    message: string,
-    opts?: { description?: string; action?: { label: string; onClick: () => void }; duration?: number }
-  ) => {
-    const id = nextId++;
-    const duration = opts?.duration ?? (type === "loading" ? 0 : 4500);
-    const groupKey = `${message}|${type}`;
+  // 토스트 추가 함수
+  const addToast = useCallback((type: ToastType, title: string, description?: string, duration?: number) => {
+    const id = generateId();
+    const newToast: Toast = { id, type, title, description, duration };
+    
+    setToasts(prev => [...prev, newToast]);
+    return id;
+  }, [generateId]);
 
-    setToasts((prev) => {
-      if (prev.length >= MAX_VISIBLE_TOASTS) {
-        setOverflowCount((c) => c + 1);
-        return prev;
-      }
-      const existing = prev.find((t) => t.groupKey === groupKey && Date.now() - t.id < 2000);
-      if (existing) {
-        const meta = groupMapRef.current.get(groupKey);
-        const count = (meta?.count ?? 1) + 1;
-        const groupedToast: Toast = {
-          ...existing,
-          id: nextId++,
-          message: `${count}건의 알림 · ${message}`,
-        };
-        groupMapRef.current.set(groupKey, { count, timerId: meta?.timerId ?? null, duration });
-        scheduleDismiss(groupKey, duration, groupedToast.id);
-        return prev.map((t) => (t.id === existing.id ? groupedToast : t));
-      }
-      return [...prev, { id, groupKey, type, message, description: opts?.description, action: opts?.action, duration }];
-    });
-
-    if (duration > 0 && !(toasts.length >= MAX_VISIBLE_TOASTS)) {
-      scheduleDismiss(groupKey, duration, id);
-    }
-  }, [scheduleDismiss, toasts.length]);
-
-  const removeToast = useCallback((id: number) => {
-    setToasts((prev) => {
-      const target = prev.find((t) => t.id === id);
-      if (target) {
-        const meta = groupMapRef.current.get(target.groupKey);
-        if (meta?.timerId != null) {
-          clearTimeout(meta.timerId);
-        }
-        groupMapRef.current.delete(target.groupKey);
-      }
-      return prev.filter((t) => t.id !== id);
-    });
+  // 토스트 제거 함수
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
+  // 모든 토스트 제거 함수
   const clearAll = useCallback(() => {
-    for (const meta of groupMapRef.current.values()) {
-      if (meta.timerId != null) clearTimeout(meta.timerId);
-    }
-    groupMapRef.current.clear();
     setToasts([]);
   }, []);
 
+  // 타입별 토스트 함수
+  const toast = {
+    success: (title: string, description?: string, duration?: number) =>
+      addToast("success", title, description, duration),
+    error: (title: string, description?: string, duration?: number) =>
+      addToast("error", title, description, duration),
+    info: (title: string, description?: string, duration?: number) =>
+      addToast("info", title, description, duration),
+    warning: (title: string, description?: string, duration?: number) =>
+      addToast("warning", title, description, duration),
+  };
+
+  // 컴포넌트 마운트 상태 추적
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ toast: addToast, dismissToast: removeToast, clearAll }}>
+    <ToastContext.Provider value={{ toast, dismiss: removeToast, clearAll }}>
       {children}
-      <div
-        className="fixed bottom-20 right-4 z-[100] flex flex-col gap-2 w-[calc(100vw-2rem)] sm:bottom-4 sm:max-w-sm pointer-events-none"
+      <div 
+        className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"
+        role="alert"
         aria-live="polite"
-        aria-label="Notifications"
       >
-        <AnimatePresence mode="popLayout">
-          {[...toasts]
-            .sort((a, b) => (a.type === "critical" ? -1 : b.type === "critical" ? 1 : 0))
-            .map((t) => {
-              const Icon = TOAST_ICONS[t.type] || Info;
-              const isCritical = t.type === "critical";
-              return (
-                <motion.div
-                  key={t.id}
-                  role="alert"
-                  layout
-                  variants={TOAST_VARIANTS}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className={cn(
-                    "pointer-events-auto flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg relative overflow-hidden",
-                    TOAST_STYLES[t.type] || TOAST_STYLES.info,
-                    isCritical && "ring-2 ring-purple-400/50",
-                    !isCritical && t.type !== "loading" && "before:absolute before:inset-0 before:rounded-xl before:border before:border-[var(--color-accent-border)] before:opacity-15 before:pointer-events-none"
-                  )}
-                >
-                  <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", t.type === "loading" && "animate-spin", isCritical && "text-purple-300")} />
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("font-medium", isCritical && "text-purple-100")}>{t.message}</p>
-                    {t.description && (
-                      <p className={cn("mt-0.5 text-xs opacity-80", isCritical && "text-purple-200/80")}>{t.description}</p>
-                    )}
-                    {t.action && (
-                      <button
-                        type="button"
-                        onClick={t.action.onClick}
-                        className="mt-1.5 rounded-lg bg-white/20 px-2.5 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-                      >
-                        {t.action.label}
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => removeToast(t.id)}
-                    className={cn("shrink-0 rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity", isCritical && "text-purple-300")}
-                    aria-label="Dismiss"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </motion.div>
-              );
-            })}
-          {overflowCount > 0 && (
-            <motion.button
-              key="overflow"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              type="button"
-              onClick={() => setOverflowCount(0)}
-              className="pointer-events-auto flex items-center gap-2 rounded-xl border border-app-border/30 bg-app-card px-4 py-2.5 text-xs text-app-text-muted shadow-lg hover:text-app-text transition-colors"
-            >
-              +{overflowCount}개 알림 더보기
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {toasts.map((toast) => (
+          <ToastComponent
+            key={toast.id}
+            toast={toast}
+            onDismiss={removeToast}
+          />
+        ))}
       </div>
     </ToastContext.Provider>
   );

@@ -23,8 +23,8 @@ if [ -z "$NEW_IMAGE" ]; then
 fi
 
 # 3. Start new container on the same network (with a temp name)
-docker compose -f "$COMPOSE" up --no-deps -d --scale "${SERVICE}=2" --no-recreate "$SERVICE" 2>/dev/null || {
-  # Fallback: direct replace
+docker compose -f "$COMPOSE" up --no-deps -d --scale "${SERVICE}=2" --no-recreate --wait "$SERVICE" 2>/dev/null || {
+  # Fallback for older compose: direct replace
   docker compose -f "$COMPOSE" up -d --no-deps "$SERVICE"
 }
 
