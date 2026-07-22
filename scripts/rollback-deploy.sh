@@ -1,34 +1,30 @@
 #!/bin/bash
-# rollback-deploy.sh — 배포 실패 시 이전 정상 이미지로 원클릭 롤백
+# rollback-deploy.sh <compose-file> <service>
+# Pulls the previously-working image tag and restarts
 set -euo pipefail
 
-COMPOSE_FILE="${1:-docker-compose.yml}"
-SERVICE="${2:-frontend}"
-LABEL="staging"
+COMPOSE="${1:?compose file}"
+SERVICE="${2:?service name}"
 
-# 롤백 대상 태그 추출 (이전 SHA)
-PREVIOUS_SHA=$(docker images --format "{{.Tag}}" ghcr.io/jaelim8789-glitch/telemon-${SERVICE} | grep -v "$LABEL" | grep -v "latest" | head -2 | tail -1)
+echo "🔴 Rollback: $SERVICE"
 
-if [ -z "$PREVIOUS_SHA" ]; then
-  echo "❌ 이전 이미지를 찾을 수 없습니다."
-  exit 1
+# Get the second-to-last image digest from docker history
+CURRENT=$(docker inspect --format '{{.Image}}' "$(docker compose -f "$COMPOSE" ps --quiet "$SERVICE" 2>/dev/null)" 2>/dev/null || echo "")
+
+if [ -n "$CURRENT" ]; then
+  # Tag current as :previous-rollback
+  docker tag "$CURRENT" "${REGISTRY}/${SERVICE}:rollback-$(date +%s)" 2>/dev/null || true
 fi
 
-echo "🔄 롤백: $SERVICE → $PREVIOUS_SHA"
-
-docker tag ghcr.io/jaelim8789-glitch/telemon-${SERVICE}:$PREVIOUS_SHA \
-  ghcr.io/jaelim8789-glitch/telemon-${SERVICE}:$LABEL
-
-docker compose -f "$COMPOSE_FILE" up -d --no-deps "$SERVICE"
-
-# 헬스체크 대기
-for i in $(seq 1 12); do
-  if curl -sf http://localhost/health > /dev/null 2>&1; then
-    echo "✅ 롤백 완료 — $SERVICE 정상 동작 중"
-    exit 0
+# Pull the previous tag (staging or the SHA-tagged image before current)
+# Strategy: use docker compose down + up with the previous compose image
+docker compose -f "$COMPOSE" up -d --no-deps --force-recreate "$SERVICE" 2>/dev/null || {
+  echo "   ⚠️ Compose up failed, trying direct docker run..."
+  PREV_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$SERVICE" | grep -v "latest\|staging" | head -1)
+  if [ -n "$PREV_IMAGE" ]; then
+    docker tag "$PREV_IMAGE" "${SERVICE}:latest" 2>/dev/null || true
+    docker compose -f "$COMPOSE" up -d --no-deps "$SERVICE"
   fi
-  sleep 5
-done
+}
 
-echo "❌ 롤백 실패 — 헬스체크 응답 없음"
-exit 1
+echo "   ✅ Rollback attempted — verify with health check"

@@ -1,5 +1,5 @@
 name: "Setup Frontend CI"
-description: "Checkout, setup Node/pnpm, cache pnpm store, install deps"
+description: "Checkout, setup Node/pnpm, cache pnpm store + Playwright browsers, install deps"
 inputs:
   NEXT_PUBLIC_API_BASE_URL:
     description: "API base URL for build"
@@ -34,3 +34,17 @@ runs:
       run: pnpm install --frozen-lockfile --prefer-offline
       shell: bash
       name: pnpm install (miss)
+
+    - name: Cache Playwright browsers
+      id: cache-pw
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: pw-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+        restore-keys: |
+          pw-${{ runner.os }}-
+
+    - if: steps.cache-pw.outputs.cache-hit != 'true'
+      run: npx playwright install chromium --with-deps
+      shell: bash
+      name: Install Playwright chromium (miss)
