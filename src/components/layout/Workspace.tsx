@@ -26,7 +26,6 @@ import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 import { usePwaUpdate } from "@/hooks/usePwaUpdate";
 import { useBatterySaver } from "@/hooks/useBatterySaver";
 import { useAutoNightMode } from "@/hooks/useAutoNightMode";
-import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
 
