@@ -2435,3 +2435,9 @@ export async function fetchAIAnalyticsErrors(): Promise<import("@/types").AIAnal
 export async function fetchAIAnalyticsRealtime(): Promise<{ activeAgents: number; pendingTasks: number; runningWorkflows: number; recentErrors: number }> {
   return request("/api/ai/analytics/realtime");
 }
+
+export async function fetchPixelOffices(): Promise<{ id: string; name: string; status: string }[]> {
+  try {
+    return request("/api/miniapp/pixel-offices");
+  } catch { return []; }
+}
