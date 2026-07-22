@@ -15,6 +15,7 @@ import { StatCard } from "@/components/analytics/StatCard";
 import { LineChartCard } from "@/components/analytics/LineChartCard";
 import { DonutChartCard } from "@/components/analytics/DonutChartCard";
 import { Top5Table } from "@/components/analytics/Top5Table";
+import { ExportDropdown } from "@/components/analytics/ExportDropdown";
 
 const STAT_ICONS = [Send, MessageSquare, Users, UserPlus] as const;
 
@@ -29,6 +30,7 @@ export default function AnalyticsPage() {
           <p className="text-xs text-app-text-muted">2026.07.15 - 2026.07.22</p>
         </div>
         <DateRangeSelector active={dateRange} onChange={setDateRange} />
+        <ExportDropdown />
       </header>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
