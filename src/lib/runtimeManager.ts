@@ -399,6 +399,11 @@ export class RuntimeManager {
         }
       }
 
+      // Clear selected account if it was deleted
+      if (this._selectedAccountId && !activeIds.has(this._selectedAccountId)) {
+        this._selectedAccountId = activeIds.size > 0 ? accounts[0].id : null;
+      }
+
       try {
         this._healthItems = await api.fetchAccountHealth();
       } catch {

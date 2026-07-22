@@ -14,6 +14,7 @@ import { GroupManagementModal } from "@/components/sidebar/GroupManagementModal"
 import * as api from "@/lib/api";
 import { RuntimeManager } from "@/lib/runtimeManager";
 import { useToast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
 
 const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: typeof Ban | null }[] = [
@@ -196,10 +197,18 @@ export function Sidebar() {
   }, [selectedIds, fetchAccounts, exitBatchMode, toast]);
 
   async function handleDelete(id: string) {
-    setDeleteError(null);
-    try { await removeAccount(id); }
-    catch (err) { setDeleteError(err instanceof Error ? err.message : "삭제 실패"); }
+    setConfirmDeleteId(id);
   }
+
+  function executeDelete() {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setDeleteError(null);
+    removeAccount(id).catch((err) => setDeleteError(err instanceof Error ? err.message : "삭제 실패"));
+    setConfirmDeleteId(null);
+  }
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function handleClearError(id: string) {
     try { await api.clearAccountError(id); await fetchAccounts(); }
@@ -518,6 +527,16 @@ export function Sidebar() {
       </div>
 
       <GroupManagementModal open={groupMgmtOpen} onClose={() => setGroupMgmtOpen(false)} />
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="계정 삭제"
+        description="이 계정을 삭제하시겠습니까? 연결된 모든 그룹과 발송 이력이 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </aside>
   );
 }

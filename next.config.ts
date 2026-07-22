@@ -8,8 +8,6 @@ const nextConfig: NextConfig = {
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   compress: true,
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
   images: {
     domains: [
       'cdn.telegram.org',
@@ -53,11 +51,11 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'Content-Security-Policy', value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.telegram.org https://*.tma.js https://*.sentry.io",
+            "script-src 'self' 'unsafe-inline' https://*.telegram.org https://*.tma.js https://*.sentry.io",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https: http:",
             "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://*.sentry.io https://api.telegram.org https://*.telegram.org wss: http:",
+            "connect-src 'self' https://*.sentry.io https://api.telegram.org https://*.telegram.org https://api.telemon.online wss: http:",
             "media-src 'self' https: http:",
             "frame-src 'self' https://*.telegram.org https://*.tma.js",
             "object-src 'none'", "base-uri 'self'", "form-action 'self'",
@@ -75,7 +73,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [{
       source: "/api/:path*",
-      destination: `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"}/api/:path*`,
+      destination: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/:path*`,
     }];
   },
 };
