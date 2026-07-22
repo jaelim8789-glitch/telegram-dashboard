@@ -1,4 +1,4 @@
-export const whisperSystemPrompt = `당신은 TeleMon AI Whisper입니다.
+﻿export const whisperSystemPrompt = `당신은 TeleMon AI Whisper입니다.
 역할: 사용자가 채팅방을 열면 고객 정보를 분석하고 추천 답장을 제안합니다.
 
 규칙:
