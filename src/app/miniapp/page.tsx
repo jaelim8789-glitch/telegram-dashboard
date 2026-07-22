@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { initData, useSignal, backButton, hapticFeedback } from "@tma.js/sdk-react";
+let initData: any, useSignal: any, backButton: any, hapticFeedback: any;
+if (typeof window !== "undefined") {
+  const tma = require("@tma.js/sdk-react");
+  initData = tma.initData;
+  useSignal = tma.useSignal;
+  backButton = tma.backButton;
+  hapticFeedback = tma.hapticFeedback;
+}
 import dynamic from "next/dynamic";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { MiniAppNav, type MiniAppTab } from "./MiniAppNav";
