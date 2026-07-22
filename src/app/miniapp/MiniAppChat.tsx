@@ -2,13 +2,17 @@
 
 import { useState, memo, useRef, useEffect, useCallback, useMemo } from "react";
 import { Send, Sparkles, Loader2, Mic, MicOff, Bookmark, BookmarkCheck, ArrowRight, Copy, CheckCheck, Bot, Plus } from "lucide-react";
-import { hapticFeedback } from "@tma.js/sdk-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "@/components/ui/GlobalToast";
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { sendChatMessage, fetchChatMessages, fetchAgents, createChat } from "@/lib/agent-api";
 import type { Agent, AgentChat, AgentMessage } from "@/lib/agent-api";
+
+let hapticFeedback: any = null;
+if (typeof window !== "undefined") {
+  import("@tma.js/sdk-react").then(m => { hapticFeedback = m.hapticFeedback; }).catch(() => {});
+}
 
 interface Message { role: "user" | "agent"; content: string; id: string; bookmarked?: boolean; }
 
@@ -139,7 +143,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
-    try { hapticFeedback.notificationOccurred("success"); } catch {}
+    try { hapticFeedback?.notificationOccurred("success"); } catch {}
 
     try {
       // 1. 채팅이 없으면 생성
@@ -213,7 +217,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
 
   const handleBookmark = useCallback((id: string) => {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, bookmarked: !m.bookmarked } : m));
-    try { hapticFeedback.impactOccurred("light"); } catch {}
+    try { hapticFeedback?.impactOccurred("light"); } catch {}
   }, []);
 
   const handleVoiceToggle = useCallback(() => {
@@ -225,7 +229,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
       r.onresult = (e: any) => { const t = e.results[0][0].transcript; setInput(t); handleSend(t); };
       r.onend = () => { recognitionRef.current = null; };
       r.start(); recognitionRef.current = r;
-      try { hapticFeedback.impactOccurred("medium"); } catch {}
+      try { hapticFeedback?.impactOccurred("medium"); } catch {}
     } catch {}
   }, [handleSend]);
 

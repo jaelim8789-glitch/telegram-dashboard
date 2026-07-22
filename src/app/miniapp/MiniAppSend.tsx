@@ -2,8 +2,7 @@
 
 import { useState, memo, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info, MessageSquare, Star, Clock } from "lucide-react";
-import { hapticFeedback } from "@tma.js/sdk-react";
+import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info } from "lucide-react";
 import * as api from "@/lib/api";
 import { quickSendToTopGroups } from "@/lib/api-miniapp";
 import { useToastStore } from "@/components/ui/GlobalToast";
@@ -11,12 +10,11 @@ import { useAutoDraft } from "@/hooks/useAutoDraft";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { ConfirmAction, useConfirmAction } from "@/components/ui/ConfirmAction";
 import { SuccessPredictorBadge } from "@/hooks/useSuccessPredictor";
-import { useSwipeTemplate } from "@/hooks/useSwipeTemplate";
-import { SmartKeyboardToolbar } from "@/components/ui/SmartKeyboardToolbar";
-import { cn } from "@/lib/cn";
-import { useAccountStateStore } from "@/store/useAccountStateStore";
-import { QuickTemplateSelector } from "@/components/ui/QuickTemplateSelector";
-import { SmartGroupFilter } from "@/components/ui/SmartGroupFilter";
+
+let hapticFeedback: any = null;
+if (typeof window !== "undefined") {
+  import("@tma.js/sdk-react").then(m => { hapticFeedback = m.hapticFeedback; }).catch(() => {});
+}
 
 interface MiniAppSendProps { user?: { id: number; first_name?: string; last_name?: string; username?: string }; }
 
@@ -31,32 +29,13 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   const [sent, setSent] = useState(false);
   const [accounts, setAccounts] = useState<{ id: string; phone: string }[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [groups, setGroups] = useState<{
-    id: string; 
-    title: string; 
-    memberCount: number; 
-    lastActivity?: Date; 
-    avgResponseTime?: number; 
-    engagementRate?: number; 
-    favorite?: boolean; 
-    isActive?: boolean;
-  }[]>([]);
+  const [groups, setGroups] = useState<{ id: string; title: string }[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [loadingAccts, setLoadingAccts] = useState(true);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [error, setError] = useState("");
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
-  const [undoTimer, setUndoTimer] = useState<number | null>(null);
-  const lastBroadcastIds = useRef<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draft = useAutoDraft("miniapp-send-message");
-  
-  // 계정 상태 관리
-  const { 
-    getCurrentAccountState, 
-    updateAccountState,
-    switchAccount 
-  } = useAccountStateStore();
 
   // Image attachment
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -68,126 +47,22 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   const [replyMacroActive, setReplyMacroActive] = useState(false);
   const [replyMacroMessage, setReplyMacroMessage] = useState("");
   const [replyMacroLoading, setReplyMacroLoading] = useState(false);
-  
-  // Smart keyboard toolbar
-  const [toolbarVisible, setToolbarVisible] = useState(false);
-  const [templates, setTemplates] = useState([
-    { 
-      id: '1', 
-      name: '기본 인사', 
-      content: '안녕하세요, 잘 부탁드립니다.',
-      favorite: true,
-      usageCount: 12,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    { 
-      id: '2', 
-      name: '업무 안내', 
-      content: '업무시간은 평일 09:00~18:00입니다.',
-      favorite: false,
-      usageCount: 5,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    { 
-      id: '3', 
-      name: '감사 인사', 
-      content: '항상 감사합니다.',
-      favorite: true,
-      usageCount: 8,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-  ]);
-  const [recentMessages, setRecentMessages] = useState<string[]>([]);
-  const [scheduled, setScheduled] = useState(false);
-  const [scheduledDate, setScheduledDate] = useState("");
-
-  // Swipe template functionality
-  const swipeAreaRef = useRef<HTMLDivElement>(null);
-  const { attachSwipeListeners } = useSwipeTemplate({
-    templates: templates.map(t => t.content),
-    recentMessages,
-    onTemplateSelect: (template: string) => setMessage(prev => prev + template),
-    onRecentMessageSelect: (recentMsg: string) => setMessage(prev => prev + recentMsg)
-  });
 
   useEffect(() => {
-    const cleanup = attachSwipeListeners(swipeAreaRef.current);
-    return () => { if (typeof cleanup === "function") cleanup(); };
-  }, [attachSwipeListeners]);
-
-  // 계정 상태 동기화
-  useEffect(() => {
-    // 계정 목록 로드 후 상태 초기화
+    const saved = draft.restore();
+    if (saved) setMessage(saved);
     api.fetchAccounts().then(list => {
       const active = list.filter((a: any) => a.status === "active").map((a: any) => ({ id: a.id, phone: a.phone }));
       setAccounts(active);
-      
-      // 상태 저장소에 계정 정보 등록
-      active.forEach(account => {
-        useAccountStateStore.getState().initializeAccountState(account.id);
-      });
-      
-      if (active.length > 0) {
-        // 이전에 선택한 계정이 있다면 복원, 없으면 첫 번째 계정 선택
-        const firstAccountId = active[0].id;
-        const currentState = useAccountStateStore.getState();
-        const storedState = currentState.getAccountState(firstAccountId);
-        
-        setSelectedAccountIds([firstAccountId]);
-        currentState.switchAccount(firstAccountId);
-        
-        // 저장된 메시지 상태 복원
-        if (storedState?.lastMessage) {
-          setMessage(storedState.lastMessage);
-        }
-        
-        // 저장된 그룹 상태 복원
-        if (storedState?.selectedGroups) {
-          setSelectedGroupIds(storedState.selectedGroups);
-        }
-      }
+      if (active.length > 0) setSelectedAccountIds([active[0].id]);
       setLoadingAccts(false);
     }).catch(() => setLoadingAccts(false));
   }, []);
 
-  // 선택된 계정이 변경될 때 상태 업데이트
-  useEffect(() => {
-    if (selectedAccountIds.length > 0) {
-      const accountId = selectedAccountIds[0];
-      // 계정 전환
-      switchAccount(accountId);
-      
-      // 현재 계정 상태 가져오기
-      const currentAccountState = getCurrentAccountState();
-      if (currentAccountState) {
-        setMessage(currentAccountState.lastMessage);
-        setSelectedGroupIds(currentAccountState.selectedGroups);
-        setReplyMacroActive(currentAccountState.autoReplyEnabled);
-        setReplyMacroMessage(currentAccountState.autoReplyMessage);
-      }
-    }
-  }, [selectedAccountIds, switchAccount, getCurrentAccountState]);
-
   useEffect(() => {
     const aid = selectedAccountIds[0];
     if (!aid) return;
-    api.fetchGroups(aid).then((list: any[]) => {
-      // 그룹 데이터를 확장된 타입으로 매핑
-      const extendedGroups = list.map((g: any) => ({
-        id: g.id,
-        title: g.title,
-        memberCount: g.member_count || g.members || 0,
-        lastActivity: g.last_activity ? new Date(g.last_activity) : undefined,
-        avgResponseTime: g.avg_response_time,
-        engagementRate: g.engagement_rate,
-        favorite: g.is_favorite,
-        isActive: g.is_active !== false
-      }));
-      setGroups(extendedGroups);
-    }).catch(() => setGroups([]));
+    api.fetchGroups(aid).then((list: any[]) => setGroups(list || [])).catch(() => setGroups([]));
   }, [selectedAccountIds]);
 
   // Fetch reply macro state for selected account
@@ -216,19 +91,6 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
     }
   }, [imageFile]);
 
-  // 메시지 변경 시 계정 상태 업데이트
-  useEffect(() => {
-    if (selectedAccountIds.length > 0) {
-      const accountId = selectedAccountIds[0];
-      updateAccountState(accountId, {
-        lastMessage: message,
-        selectedGroups: selectedGroupIds,
-        autoReplyEnabled: replyMacroActive,
-        autoReplyMessage: replyMacroMessage
-      });
-    }
-  }, [message, selectedGroupIds, replyMacroActive, replyMacroMessage, selectedAccountIds, updateAccountState]);
-
   const handlePickImage = useCallback((capture: boolean) => {
     const input = capture ? cameraInputRef.current : fileInputRef.current;
     if (input) input.click();
@@ -247,13 +109,9 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   const handleSend = useCallback(async () => {
     if ((!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0) return;
     setSending(true); setError("");
-    setProgress({ current: 0, total: selectedAccountIds.length });
-    const ids: string[] = [];
     let success = 0, failed = 0;
 
-    for (let i = 0; i < selectedAccountIds.length; i++) {
-      const accountId = selectedAccountIds[i];
-      setProgress({ current: i + 1, total: selectedAccountIds.length });
+    for (const accountId of selectedAccountIds) {
       try {
         if (selectedGroupIds.length > 0) {
           const form = new FormData();
@@ -261,12 +119,11 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           form.append("message", message.trim() || "");
           form.append("recipients", JSON.stringify(selectedGroupIds));
           if (imageFile) form.append("image", imageFile);
-          if (scheduled && scheduledDate) form.append("scheduled_at", new Date(scheduledDate).toISOString());
           const { request } = await import("@/lib/api");
-          const res = await request<any>("/api/broadcast", { method: "POST", body: form });
-          if (res?.id) ids.push(res.id);
+          await request("/api/broadcast", { method: "POST", body: form });
         } else {
           if (imageFile) {
+            // With image, use manual per-group send
             const { request } = await import("@/lib/api");
             const topGroups = await api.fetchGroups(accountId);
             const groupIds = topGroups.slice(0, 5).map((g: any) => g.id);
@@ -276,9 +133,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             form.append("message", message.trim() || "");
             form.append("recipients", JSON.stringify(groupIds));
             if (imageFile) form.append("image", imageFile);
-            if (scheduled && scheduledDate) form.append("scheduled_at", new Date(scheduledDate).toISOString());
-            const res = await request<any>("/api/broadcast", { method: "POST", body: form });
-            if (res?.id) ids.push(res.id);
+            await request("/api/broadcast", { method: "POST", body: form });
           } else {
             const result = await quickSendToTopGroups(accountId, message.trim(), 5);
             if (!result.success) throw new Error(result.message);
@@ -289,97 +144,29 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
     }
 
     setSending(false);
-    setProgress(null);
-    lastBroadcastIds.current = ids;
-
     if (failed === 0) {
       setSent(true);
       setImageFile(null);
       draft.clearDraft();
-      if (message.trim()) {
-        setRecentMessages(prev => [message.trim(), ...prev.slice(0, 4)]);
-      }
-      try { hapticFeedback.notificationOccurred("success"); } catch {}
+      try { hapticFeedback?.notificationOccurred("success"); } catch {}
       toast({ type: "success", title: "발송 완료", message: `${success}개 계정 발송 성공` });
-      const timer = window.setTimeout(() => { setSent(false); setUndoTimer(null); }, 10000);
-      setUndoTimer(timer);
+      setTimeout(() => setSent(false), 3000);
     } else {
       setError(`${success}건 성공, ${failed}건 실패`);
-      try { hapticFeedback.notificationOccurred("error"); } catch {}
+      try { hapticFeedback?.notificationOccurred("error"); } catch {}
     }
-  }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, scheduled, scheduledDate, toast, draft]);
-
-  const handleUndo = useCallback(async () => {
-    if (undoTimer) clearTimeout(undoTimer);
-    if (lastBroadcastIds.current.length > 0) {
-      try { await api.cancelBroadcasts(lastBroadcastIds.current); } catch {}
-    }
-    setSent(false);
-    setUndoTimer(null);
-    lastBroadcastIds.current = [];
-    try { hapticFeedback.notificationOccurred("success"); } catch {}
-    toast({ type: "info", title: "발송 취소", message: "발송이 취소되었습니다" });
-  }, [undoTimer, toast]);
+  }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, toast, draft]);
 
   useKeyboardShortcut("Enter", handleSend, { ctrl: true });
 
-  // 템플릿 관련 함수
-  const handleTemplateSelect = useCallback((template: any) => {
-    setMessage(prev => prev + template.content);
-    // 템플릿 사용 횟수 업데이트
-    setTemplates(prev => 
-      prev.map(t => 
-        t.id === template.id 
-          ? { ...t, usageCount: (t.usageCount || 0) + 1, updatedAt: new Date() } 
-          : t
-      )
-    );
-  }, []);
-
-  const handleTemplateAdd = useCallback((template: any) => {
-    const newTemplate = {
-      ...template,
-      id: `tmpl_${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      usageCount: 0
-    };
-    setTemplates(prev => [newTemplate, ...prev]);
-  }, []);
-
-  const handleTemplateDelete = useCallback((id: string) => {
-    setTemplates(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  const toggleAccount = useCallback((id: string) => {
-    haptic("light");
-    setSelectedAccountIds(prev => {
-      const newSelection = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      // 계정 전환 시 상태 업데이트
-      if (newSelection.length > 0) {
-        switchAccount(newSelection[0]);
-      }
-      return newSelection;
-    });
-  }, [switchAccount]);
-
-  const toggleGroup = useCallback((id: string) => {
-    haptic("light");
-    setSelectedGroupIds(prev => {
-      const newSelection = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      // 그룹 선택 변경 시 계정 상태 업데이트
-      if (selectedAccountIds.length > 0) {
-        updateAccountState(selectedAccountIds[0], { selectedGroups: newSelection });
-      }
-      return newSelection;
-    });
-  }, [selectedAccountIds, updateAccountState]);
+  const toggleAccount = useCallback((id: string) => setSelectedAccountIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]), []);
+  const toggleGroup = useCallback((id: string) => setSelectedGroupIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]), []);
 
   const remaining = MAX_CHARS - message.length;
   const remainingColor = remaining > 500 ? "var(--tg-theme-hint-color)" : remaining > 100 ? "#f59e0b" : "#ef4444";
 
   return (
-    <div className="p-4 pb-8 space-y-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 280px)" }}>
+    <div className="p-4 pb-8 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: "var(--tg-theme-text-color)" }}>발송</p>
         <SuccessPredictorBadge text={message} />
@@ -392,7 +179,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           <div className="flex flex-wrap gap-1.5">
             {accounts.map(a => (
               <button key={a.id} onClick={() => toggleAccount(a.id)}
-                className={cn("rounded-full px-3 py-2 text-[11px] font-medium active:scale-95 min-h-[44px] min-w-[44px]")}
+                className="rounded-full px-3 py-2 text-[11px] font-medium active:scale-95"
                 style={{ backgroundColor: selectedAccountIds.includes(a.id) ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-secondary-bg-color, #232e3c)", color: selectedAccountIds.includes(a.id) ? "#fff" : "var(--tg-theme-text-color)" }}>
                 {a.phone}
               </button>
@@ -400,7 +187,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           </div>
         )}
         {accounts.length === 0 && !loadingAccts && (
-          <div className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-xs min-h-[44px]")} style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-hint-color)" }}>
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-hint-color)" }}>
             <Info className="h-3.5 w-3.5" /> 활성 계정이 없습니다. 프로필 탭에서 계정을 연결하세요.
           </div>
         )}
@@ -408,20 +195,20 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
 
       {/* Group selection */}
       <div>
-        <button onClick={() => setShowGroupPicker(!showGroupPicker)} className={cn("flex items-center justify-between w-full rounded-xl px-4 py-3 text-sm active:scale-[0.98] min-h-[44px]")}
+        <button onClick={() => setShowGroupPicker(!showGroupPicker)} className="flex items-center justify-between w-full rounded-xl px-4 py-3 text-sm active:scale-[0.98]"
           style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
           <span>{selectedGroupIds.length > 0 ? `${selectedGroupIds.length}개 그룹 선택됨` : "그룹 선택 (선택사항)"}</span>
-          <ChevronDown className={cn(`h-4 w-4 transition-transform ${showGroupPicker ? "rotate-180" : ""}`)} style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
+          <ChevronDown className={`h-4 w-4 transition-transform ${showGroupPicker ? "rotate-180" : ""}`} style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
         </button>
         {showGroupPicker && (
-          <div className={cn("mt-1 max-h-40 overflow-y-auto rounded-xl p-2")} style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
+          <div className="mt-1 max-h-40 overflow-y-auto rounded-xl p-2" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
             {groups.length === 0 ? (
               <p className="text-xs py-3 text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹이 없습니다</p>
             ) : groups.map(g => (
               <button key={g.id} onClick={() => toggleGroup(g.id)}
-                className={cn(`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs min-h-[44px] ${selectedGroupIds.includes(g.id) ? "font-semibold" : ""}`)}
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs ${selectedGroupIds.includes(g.id) ? "font-semibold" : ""}`}
                 style={{ backgroundColor: selectedGroupIds.includes(g.id) ? "var(--tg-theme-button-color, #5288c1)" : "transparent", color: selectedGroupIds.includes(g.id) ? "#fff" : "var(--tg-theme-text-color)" }}>
-                <span className={cn(`flex h-2 w-2 rounded-full ${selectedGroupIds.includes(g.id) ? "bg-white" : "bg-gray-500"}`)} />
+                <span className={`flex h-2 w-2 rounded-full ${selectedGroupIds.includes(g.id) ? "bg-white" : "bg-gray-500"}`} />
                 {g.title}
               </button>
             ))}
@@ -435,13 +222,13 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           <Image className="h-3 w-3" /> 이미지 첨부 (선택사항)
         </label>
         <div className="flex gap-2">
-          <button onClick={() => { haptic("light"); handlePickImage(true); }}
-            className={cn("flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95 min-h-[44px] min-w-[44px]")}
+          <button onClick={() => handlePickImage(true)}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95"
             style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
             <Camera className="h-4 w-4" /> 촬영
           </button>
-          <button onClick={() => { haptic("light"); handlePickImage(false); }}
-            className={cn("flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95 min-h-[44px] min-w-[44px]")}
+          <button onClick={() => handlePickImage(false)}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95"
             style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
             <Image className="h-4 w-4" /> 앨범
           </button>
@@ -451,19 +238,19 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
 
         {/* Image preview */}
         {imagePreviewUrl && (
-          <div className={cn("relative mt-2 rounded-xl overflow-hidden")} style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
+          <div className="relative mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
             <img src={imagePreviewUrl} alt="첨부 이미지" className="w-full max-h-48 object-contain" />
             <button onClick={handleRemoveImage}
-              className={cn("absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full active:scale-90 min-h-[44px] min-w-[44px]")}
+              className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full active:scale-90"
               style={{ backgroundColor: "rgba(0,0,0,0.6)" }} aria-label="이미지 제거">
               <X className="h-4 w-4 text-white" />
             </button>
-            <span className={cn("absolute bottom-2 left-2 rounded px-2 py-0.5 text-[10px] min-h-[44px]")}
+            <span className="absolute bottom-2 left-2 rounded px-2 py-0.5 text-[10px]"
               style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "#ccc" }}>
               {imageFile!.name} ({(imageFile!.size / 1024).toFixed(0)}KB)
             </span>
             {imageFile && imageFile.size > 5 * 1024 * 1024 && (
-              <div className={cn("absolute bottom-8 left-2 flex items-center gap-1 rounded px-2 py-0.5 text-[10px] min-h-[44px]")}
+              <div className="absolute bottom-8 left-2 flex items-center gap-1 rounded px-2 py-0.5 text-[10px]"
                 style={{ backgroundColor: "rgba(239,68,68,0.8)", color: "#fff" }}>
                 <AlertCircle className="h-3 w-3" /> 5MB 초과 — 전송에 실패할 수 있습니다
               </div>
@@ -473,26 +260,20 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       </div>
 
       {/* Message textarea */}
-      <div className="relative" ref={swipeAreaRef}>
-        <textarea ref={textareaRef} value={message} onChange={e => { 
-          setMessage(e.target.value); 
-          draft.onChange(e.target.value); 
-        }}
+      <div className="relative">
+        <textarea ref={textareaRef} value={message} onChange={e => { setMessage(e.target.value); draft.onChange(e.target.value); }}
           placeholder="보낼 메시지를 입력하세요..." rows={5} maxLength={MAX_CHARS}
           style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
-          className={cn("w-full rounded-xl px-4 py-3 text-sm outline-none resize-none min-h-[44px]")}
-          aria-label="발송 메시지" 
-          onFocus={() => setToolbarVisible(true)}
-          onBlur={() => setTimeout(() => setToolbarVisible(false), 200)} />
+          className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" aria-label="발송 메시지" />
         <div className="absolute bottom-2 right-3 text-[10px] font-medium" style={{ color: remainingColor }}>{remaining}</div>
       </div>
 
       {/* Reply macro toggle */}
       {selectedAccountIds.length > 0 && !replyMacroLoading && (
-        <div className={cn("flex items-center justify-between rounded-xl px-4 py-3 min-h-[44px]")}
+        <div className="flex items-center justify-between rounded-xl px-4 py-3"
           style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
           <div className="flex items-center gap-2">
-            <div className={cn(`h-2.5 w-2.5 rounded-full ${replyMacroActive ? "bg-emerald-500" : "bg-gray-500"}`)} />
+            <div className={`h-2.5 w-2.5 rounded-full ${replyMacroActive ? "bg-emerald-500" : "bg-gray-500"}`} />
             <span className="text-xs" style={{ color: "var(--tg-theme-text-color)" }}>
               랜덤 답장 {replyMacroActive ? "켜짐" : "꺼짐"}
             </span>
@@ -502,7 +283,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
               </span>
             )}
           </div>
-          <label className={cn("relative inline-flex h-6 w-11 cursor-pointer items-center min-h-[44px]")}>
+          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
             <input type="checkbox" className="peer sr-only" checked={replyMacroActive}
               onChange={async () => {
                 const currentAcct = selectedAccountIds[0];
@@ -516,12 +297,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
                   });
                   const data = await res.json();
                   setReplyMacroActive(!!data.is_active);
-                  // 계정 상태 업데이트
-                  updateAccountState(currentAcct, { 
-                    autoReplyEnabled: !replyMacroActive,
-                    autoReplyMessage: replyMacroMessage
-                  });
-                  hapticFeedback.impactOccurred("light");
+                  hapticFeedback?.impactOccurred("light");
                 } catch {
                   setReplyMacroActive(replyMacroActive);
                 }
@@ -533,66 +309,25 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       )}
 
       {error && (
-        <div className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-xs min-h-[44px]")} style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
           <AlertCircle className="h-3.5 w-3.5 text-white" /><span className="text-white">{error}</span>
         </div>
       )}
 
-      {/* Scheduled send toggle */}
-      <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" style={{ color: scheduled ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-hint-color, #708499)" }} />
-          <span className="text-xs" style={{ color: "var(--tg-theme-text-color)" }}>예약 발송</span>
-        </div>
-        <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-          <input type="checkbox" className="peer sr-only" checked={scheduled}
-            onChange={() => { haptic("light"); setScheduled(!scheduled); if (!scheduled) setScheduledDate(""); }} />
-          <span className="absolute inset-0 rounded-full transition-colors peer-checked:bg-emerald-500 bg-gray-600" />
-          <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
-        </label>
-      </div>
-      {scheduled && (
-        <div className="space-y-2">
-          <input type="datetime-local" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)}
-            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
-            style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
-            min={new Date().toISOString().slice(0, 16)} />
-          <div className="flex gap-2 overflow-x-auto scrollbar-none">
-            {[30, 60, 120, 360].map(m => (
-              <button key={m} onClick={() => { haptic("light"); const d = new Date(Date.now() + m * 60000); setScheduledDate(d.toISOString().slice(0, 16)); }}
-                className="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium active:scale-90"
-                style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
-                {m >= 60 ? `${m / 60}시간 후` : `${m}분 후`}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <motion.button
-        onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}${scheduled && scheduledDate ? ` · 예약: ${new Date(scheduledDate).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""} 으로 발송합니다`)}
+        onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}으로 발송합니다`)}
         disabled={(!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0}
         animate={sent ? { backgroundColor: "var(--tg-theme-button-color, #5288c1)", transition: { duration: 0.3 } } : {}}
         style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}
-        className={cn("flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 active:scale-[0.98] min-h-[44px]")}
+        className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 active:scale-[0.98]"
         aria-label={sending ? "발송 중" : sent ? "발송 완료" : "발송하기"}>
         <AnimatePresence mode="wait">
           {sending ? (
-            <motion.div key="progress" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 w-full justify-center">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative h-5 w-5">
-                  <motion.div className="absolute inset-0 rounded-full border-2 border-t-transparent" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }}
-                    animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} />
-                </div>
-                <span className="text-sm">발송 중 {progress ? `${progress.current}/${progress.total}` : ""}</span>
-              </div>
-              {progress && (
-                <div className="w-16 h-1.5 rounded-full overflow-hidden bg-white/20">
-                  <motion.div className="h-full rounded-full bg-white"
-                    initial={{ width: 0 }} animate={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    transition={{ duration: 0.3 }} />
-                </div>
-              )}
+            <motion.div key="spinner" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="flex items-center gap-2">
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                <Loader2 className="h-5 w-5" />
+              </motion.div>
+              발송 중...
             </motion.div>
           ) : sent ? (
             <motion.div key="check" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 15 }} className="flex items-center gap-2">
@@ -608,52 +343,10 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         </AnimatePresence>
       </motion.button>
 
-
-      {/* Group selection with SmartGroupFilter */}
-      <div>
-        <button onClick={() => setShowGroupPicker(!showGroupPicker)} className={cn("flex items-center justify-between w-full rounded-xl px-4 py-3 text-sm active:scale-[0.98] min-h-[44px]")}
-          style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
-          <span>{selectedGroupIds.length > 0 ? `${selectedGroupIds.length}개 그룹 선택됨` : "그룹 선택 (선택사항)"}</span>
-          <ChevronDown className={cn(`h-4 w-4 transition-transform ${showGroupPicker ? "rotate-180" : ""}`)} style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
-        </button>
-        {showGroupPicker && (
-          <div className={cn("mt-1 rounded-xl p-2")} style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
-            <SmartGroupFilter
-              groups={groups}
-              selectedGroupIds={selectedGroupIds}
-              onGroupToggle={toggleGroup}
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Quick Template Selector */}
-      <div className="max-h-40 overflow-y-auto">
-        <QuickTemplateSelector
-          templates={templates}
-          onTemplateSelect={handleTemplateSelect}
-          onTemplateAdd={handleTemplateAdd}
-          onTemplateDelete={handleTemplateDelete}
-          maxVisible={3}
-        />
-      </div>
-      
       {selectedGroupIds.length === 0 && (
         <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹을 선택하지 않으면 상위 5개 그룹에 자동 발송됩니다</p>
       )}
       {ConfirmDialog}
-      
-      {/* Smart keyboard toolbar */}
-      <SmartKeyboardToolbar
-        onInsertTemplate={(template) => setMessage(prev => prev + template)}
-        onInsertEmoji={(emoji) => setMessage(prev => prev + emoji)}
-        onInsertSpecialChar={(char) => setMessage(prev => prev + char)}
-        onInsertRecentMessage={(recentMsg) => setMessage(prev => prev + recentMsg)}
-        templates={templates.map(t => ({ id: t.id, name: t.name, content: t.content }))}
-        recentMessages={recentMessages}
-        isVisible={toolbarVisible}
-        onClose={() => setToolbarVisible(false)}
-      />
     </div>
   );
 });

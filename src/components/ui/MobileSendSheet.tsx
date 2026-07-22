@@ -5,7 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, CheckCircle2, Loader2, Users, Paperclip, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { hapticFeedback } from "@tma.js/sdk-react";
+
+let hapticFeedback: any = null;
+if (typeof window !== "undefined") {
+  import("@tma.js/sdk-react").then(m => { hapticFeedback = m.hapticFeedback; }).catch(() => {});
+}
 
 type Step = "account" | "message" | "confirm";
 
@@ -32,14 +36,20 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
   const handleSend = useCallback(async () => {
     if (!message.trim() || sending) return;
     setSending(true);
-    try { hapticFeedback.impactOccurred("medium"); } catch {}
+    try { hapticFeedback?.impactOccurred("medium"); } catch {}
     await new Promise(r => setTimeout(r, 1000));
     setSent(true); setSending(false);
-    try { hapticFeedback.notificationOccurred("success"); } catch {}
+    try { hapticFeedback?.notificationOccurred("success"); } catch {}
     setTimeout(() => { onSent?.(); onClose(); setSent(false); setStep("account"); setMessage(""); setScheduled(false); setScheduledTime(""); setImageFile(null); }, 1500);
   }, [message, sending, onClose, onSent]);
 
-  function handleClose() { if (!sending) { onClose(); setTimeout(() => { setStep("account"); setMessage(""); setSelectedAccount(""); setScheduled(false); setScheduledTime(""); setImageFile(null); }, 200); } }
+  function handleClose() {
+    if (sending) return;
+    onClose();
+    setTimeout(() => {
+      setStep("account"); setMessage(""); setSelectedAccount(""); setScheduled(false); setScheduledTime(""); setImageFile(null); setSent(false);
+    }, 200);
+  }
 
   const charCount = message.length;
 

@@ -34,7 +34,7 @@ export function MobileFab() {
   ];
 
   return (
-    <div ref={fabRef} className="fixed bottom-24 right-4 z-40 flex flex-col items-end" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <div ref={fabRef} className="fixed bottom-24 right-4 z-40 flex flex-col items-end relative" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <AnimatePresence>
         {open && actions.map((item, i) => {
           const Icon = item.icon;
