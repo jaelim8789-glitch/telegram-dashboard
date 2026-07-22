@@ -5,6 +5,13 @@ import { Send, CheckCircle2, Coins, Clock, Users, Loader2, TrendingUp, Plug, Plu
 import * as api from "@/lib/api";
 import { fetchTokenBalance, fetchRecentBroadcasts } from "@/lib/api-miniapp";
 import type { BroadcastStatus } from "@/types";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { AccountStatusDot } from "@/components/ui/AccountStatusIndicator";
+import { useDataCache, withCache } from "@/store/useDataCache";
+import { WeeklySummaryCard } from "@/components/ui/WeeklySummaryCard";
+import { ThemeQuickToggle } from "@/components/ui/ThemeQuickToggle";
+import { GlobalToast } from "@/components/ui/GlobalToast";
+import { useOnlineStatus } from "@/lib/offlineDetector";
 
 interface AccountItem { id: string; phone: string; status: string; todaySent: number; healthScore: number; }
 interface BroadcastItem { id: string; message: string; status: BroadcastStatus; sentAt: string; recipients: number; }
@@ -24,7 +31,7 @@ const StatCard = memo(function StatCard({ type, value, onClick }: { type: string
         <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.iconBg}`}><Icon className="h-4 w-4 text-white" /></div>
         <span className="text-[11px] font-medium opacity-70" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{s.label}</span>
       </div>
-      <span className="text-2xl font-bold tabular-nums">{value}</span>
+      <span className="text-2xl font-bold tabular-nums"><AnimatedCounter value={parseInt(value.replace(/[^0-9]/g, "")) || 0} />{value.includes("개") ? "개" : value.includes("건") ? "건" : ""}</span>
     </button>
   );
 });
@@ -73,13 +80,13 @@ export const MiniAppDashboard = memo(function MiniAppDashboard({ onRefreshKey }:
     if (isRefresh) setRefreshing(true);
     try {
       const [accountsList, scheduler, tokenBalance, broadcasts, pixelData] = await Promise.all([
-        api.fetchAccounts().catch(() => [] as any[]),
+        withCache("miniapp-accounts", () => api.fetchAccounts().catch(() => []), 60000),
         api.fetchSchedulerStatus().catch(() => null),
         fetchTokenBalance(),
         fetchRecentBroadcasts(),
         api.fetchPixelOffices ? api.fetchPixelOffices().catch(() => []) : Promise.resolve([]),
       ]);
-      const active = accountsList.filter((a: any) => a.status === "active");
+      const active = (accountsList as any[]).filter((a: any) => a.status === "active");
       const todayTotal = active.reduce((s: number, a: any) => s + (a.todaySent || 0), 0);
       setState({
         tokenBalance, activeAccounts: active.length, queueCount: scheduler?.due_broadcasts_count ?? 0, todayTotal, stale: false,
@@ -137,6 +144,7 @@ export const MiniAppDashboard = memo(function MiniAppDashboard({ onRefreshKey }:
 
   return (
     <div className="p-4 pb-8 space-y-4 max-w-2xl mx-auto" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+      <GlobalToast />
       {refreshing && <div className="flex justify-center"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--tg-theme-button-color, #5288c1)" }} /></div>}
       {!state.online && (
         <div className="flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
@@ -150,11 +158,13 @@ export const MiniAppDashboard = memo(function MiniAppDashboard({ onRefreshKey }:
         </div>
       )}
 
+      <WeeklySummaryCard />
+
       <div className="grid grid-cols-2 gap-3">
-        <StatCard type="activeAccounts" value={`${state.activeAccounts}개`} onClick={() => handleTabChange("profile")} />
-        <StatCard type="queueCount" value={`${state.queueCount}건`} />
+        <StatCard type="activeAccounts" value={`${state.activeAccounts}`} onClick={() => handleTabChange("profile")} />
+        <StatCard type="queueCount" value={`${state.queueCount}`} />
         <StatCard type="tokenBalance" value={String(state.tokenBalance)} />
-        <StatCard type="recentBroadcasts" value={`${state.recentBroadcasts.length}건`} />
+        <StatCard type="recentBroadcasts" value={`${state.recentBroadcasts.length}`} />
       </div>
 
       {state.todayTotal > 0 && (
@@ -163,7 +173,6 @@ export const MiniAppDashboard = memo(function MiniAppDashboard({ onRefreshKey }:
         </div>
       )}
 
-      {/* PixelOffice 섹션 */}
       {state.pixelOffices.length > 0 && (
         <div className="rounded-2xl p-4" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
           <div className="flex items-center justify-between mb-2">
@@ -201,8 +210,10 @@ export const MiniAppDashboard = memo(function MiniAppDashboard({ onRefreshKey }:
             {state.accounts.map((acc, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-[var(--tg-theme-section-separator-color,#3a4a5a)] active:scale-[0.98] transition-all cursor-pointer">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20"><CheckCircle2 className="h-4 w-4 text-emerald-400" /></div>
-                  <div><span className="text-sm font-mono truncate max-w-[120px] block">{acc.phone}</span><span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>오늘 {acc.todaySent}회 발송</span></div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20">
+                    <AccountStatusDot status={acc.status} size="md" />
+                  </div>
+                  <div><span className="text-sm font-mono truncate max-w-[120px] block">{acc.phone}</span><span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>오늘 {acc.todaySent}회 발송 · <AccountStatusDot status={acc.status} /> {acc.status}</span></div>
                 </div>
               </div>
             ))}
