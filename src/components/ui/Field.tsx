@@ -1,87 +1,96 @@
-import { type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type LabelHTMLAttributes } from "react";
-import { Info } from "lucide-react";
+import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-interface FieldProps extends LabelHTMLAttributes<HTMLLabelElement> {
-  label?: string;
-  description?: string;
+interface FieldProps {
+  label: string;
+  hint?: string;
+  /** Validation error message. Takes visual priority over `hint` when both are
+   * present, and is announced to screen readers via role="alert". Pair with
+   * `invalid` on the paired Input/Textarea/Select for the matching border
+   * treatment and aria-invalid. */
   error?: string;
-  htmlFor?: string;
-  children: React.ReactNode;
-  required?: boolean;
-  className?: string;
-  tooltip?: string;
+  children: ReactNode;
+  // 모바일 터치를 위한 여백 조정
+  touchOptimized?: boolean;
 }
 
-export function Field({ label, description, error, htmlFor, children, required, className, tooltip, ...props }: FieldProps) {
+export function Field({ label, hint, error, children, touchOptimized = false }: FieldProps) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      {(label || tooltip) && (
-        <div className="flex items-center gap-1.5">
-          {label && (
-            <label htmlFor={htmlFor} className="block text-sm font-medium text-app-text">
-              {label}
-              {required && <span className="ml-0.5 text-app-danger">*</span>}
-            </label>
-          )}
-          {tooltip && (
-            <div className="group relative">
-              <Info className="h-3.5 w-3.5 text-app-text-subtle" />
-              <div className="absolute left-0 top-full z-10 mt-1 hidden w-64 rounded-lg bg-app-surface/90 backdrop-blur-xl p-2 text-xs text-app-text shadow-lg group-hover:block border border-app-border">
-                {tooltip}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+    <label className={cn("block", touchOptimized && "py-1.5")}>
+      <span className={cn("mb-1.5 block text-xs font-medium text-app-text-muted", touchOptimized && "text-sm")}>{label}</span>
       {children}
-      {description && !error && (
-        <p className="text-xs text-app-text-muted">{description}</p>
+      {error ? (
+        <span role="alert" className={cn("mt-1 block text-xs text-app-danger", touchOptimized && "text-sm mt-2")}>
+          {error}
+        </span>
+      ) : (
+        hint && <span className={cn("mt-1 block text-xs text-app-text-subtle", touchOptimized && "text-sm mt-2")}>{hint}</span>
       )}
-      {error && (
-        <p className="text-xs text-app-danger">{error}</p>
-      )}
-    </div>
+    </label>
   );
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  const { className, ...rest } = props;
+function inputStyle(invalid?: boolean, touchTargetSize?: 'default' | 'large') {
+  return cn(
+    "w-full rounded-xl border bg-app-card px-3 py-2 text-sm text-app-text",
+    "placeholder:text-app-text-subtle outline-none transition-colors duration-150",
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-app-card-hover",
+    // 터치 타겟 크기 옵션에 따라 높이 조정
+    touchTargetSize === 'large' ? 'min-h-[48px] py-3 text-base' : 'min-h-[44px]',
+    invalid
+      ? "border-app-danger/60 focus:border-app-danger focus:ring-2 focus:ring-app-danger/15"
+      : "border-app-border focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
+  );
+}
+
+interface InputExtraProps {
+  /** Marks the field as failing validation: swaps to the danger border/ring
+   * and sets aria-invalid. Purely visual/a11y — validation logic stays with
+   * the caller. Defaults to false, so existing call sites are unaffected. */
+  invalid?: boolean;
+  // 모바일 터치를 위한 추가 속성
+  touchTargetSize?: 'default' | 'large';
+}
+
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputExtraProps>(
+  function Input({ invalid, className, touchTargetSize, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        {...props}
+        aria-invalid={invalid || undefined}
+        className={cn(inputStyle(invalid, touchTargetSize), className)}
+      />
+    );
+  }
+);
+
+export function Textarea({
+  invalid,
+  className,
+  touchTargetSize,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & InputExtraProps) {
   return (
-    <input
-      className={cn(
-        "w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 min-h-[44px]", // 최소 터치 타겟 크기
-        className
-      )}
-      {...rest}
+    <textarea
+      {...props}
+      aria-invalid={invalid || undefined}
+      className={cn(inputStyle(invalid, touchTargetSize), "resize-none", className)}
     />
   );
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  const { className, children, ...rest } = props;
+export function Select({
+  invalid,
+  className,
+  touchTargetSize,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & InputExtraProps) {
   return (
     <select
-      className={cn(
-        "w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 appearance-none min-h-[44px]", // 최소 터치 타겟 크기
-        className
-      )}
-      {...rest}
-    >
-      {children}
-    </select>
-  );
-}
-
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const { className, ...rest } = props;
-  return (
-    <textarea
-      className={cn(
-        "w-full rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 min-h-[100px] resize-none", // 높이 증가 및 리사이즈 방지
-        className
-      )}
-      {...rest}
+      {...props}
+      aria-invalid={invalid || undefined}
+      className={cn(inputStyle(invalid, touchTargetSize), className)}
     />
   );
 }

@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { cn } from "@/lib/cn";
 import { NotificationCenter } from "./NotificationCenter";
 import { OneTouchStateToggle } from "@/components/ui/OneTouchStateToggle"; // 상태 토글 컴포넌트 추가
-import { GlobalSearchPanel } from "@/components/ui/GlobalSearchPanel"; // 글로벌 검색 패널 추가
 
 export function MobileHeaderActions() {
   const [open, setOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   // 상태 토글을 위한 상태들
@@ -56,16 +54,6 @@ export function MobileHeaderActions() {
         {/* 상태 토글 추가 */}
         <OneTouchStateToggle states={stateItems} />
         
-        {/* 검색 버튼 추가 */}
-        <button 
-          type="button" 
-          onClick={() => setSearchOpen(true)} 
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors" 
-          aria-label="검색"
-        >
-          <Search className="h-5 w-5" />
-        </button>
-        
         <button 
           type="button" 
           onClick={() => setNotificationOpen(true)} 
@@ -84,7 +72,6 @@ export function MobileHeaderActions() {
         </button>
       </div>
       
-      <GlobalSearchPanel isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <NotificationCenter open={notificationOpen} onClose={() => setNotificationOpen(false)} />
     </>
   );

@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
-import { Button } from './Button'; // 버튼 컴포넌트 추가
-import { Eye } from 'lucide-react'; // 아이콘 추가
 
 interface TabPeekProps {
   children: React.ReactNode;
@@ -54,11 +52,6 @@ export function TabPeek({ children, previewContent, tabName, className }: TabPee
     }, 500);
   };
 
-  // 클릭 기반 미리보기 토글
-  const handleClick = () => {
-    setIsPeeking(!isPeeking);
-  };
-
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -78,19 +71,6 @@ export function TabPeek({ children, previewContent, tabName, className }: TabPee
         className="cursor-pointer"
       >
         {children}
-      </div>
-
-      {/* 제스처 대체: 버튼 기반 미리보기 토글 */}
-      <div className="mt-1 flex justify-center">
-        <Button 
-          size="touch" 
-          variant="ghost" 
-          onClick={handleClick}
-          className="p-2"
-          aria-label={isPeeking ? `${tabName} 미리보기 닫기` : `${tabName} 미리보기 열기`}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
       </div>
 
       <AnimatePresence>
