@@ -1,7 +1,7 @@
 "use client";
 
-import { Search, Star } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Search, Star, X } from "lucide-react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ChatRoom, ChatType } from "./mockData";
 
@@ -44,6 +44,9 @@ export function ChatListPanel({
 }: ChatListPanelProps) {
   const [tab, setTab] = useState<ChatType | "all">("all");
   const [search, setSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const filtered = useMemo(() => {
     return rooms.filter((r) => {
@@ -54,25 +57,74 @@ export function ChatListPanel({
     });
   }, [rooms, tab, search]);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setIsSearching(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setIsSearching(false), 200);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearch("");
+    setIsSearching(false);
+    searchInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+        handleClearSearch();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleClearSearch]);
+
   return (
-    <div className="flex h-full w-[280px] shrink-0 flex-col border-r border-violet-500/20 bg-app-surface">
+    <div
+      className="flex h-full w-[280px] shrink-0 flex-col border-r border-violet-500/20 bg-app-surface max-sm:w-full max-sm:border-r-0"
+      role="region"
+      aria-label="채팅 목록"
+    >
       <div className="border-b border-violet-500/20 p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="대화 검색..."
+            placeholder="대화 검색... (Ctrl+K)"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-app-border bg-app-card py-2 pl-8 pr-3 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15"
+            onChange={(e) => handleSearchChange(e.target.value)}
+            aria-label="대화 검색"
+            className="w-full rounded-xl border border-app-border bg-app-card py-2 pl-8 pr-8 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15"
           />
+          {search && (
+            <button
+              onClick={handleClearSearch}
+              aria-label="검색 초기화"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {isSearching && search && (
+            <span className="absolute right-8 top-1/2 -translate-y-1/2">
+              <span className="block h-3 w-3 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-500" />
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="flex border-b border-violet-500/20">
+      <div className="flex border-b border-violet-500/20" role="tablist" aria-label="채팅 필터">
         {TABS.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={`relative flex-1 py-2.5 text-xs font-medium transition-colors ${
               tab === t.key
@@ -92,7 +144,7 @@ export function ChatListPanel({
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin" role="listbox" aria-label="채팅방 목록">
         {filtered.length === 0 ? (
           <div className="flex h-full items-center justify-center p-4">
             <p className="text-sm text-app-text-muted">검색 결과가 없습니다</p>
@@ -110,6 +162,8 @@ export function ChatListPanel({
                 className="group relative"
               >
                 <button
+                  role="option"
+                  aria-selected={activeRoomId === room.id}
                   onClick={() => onSelectRoom(room.id)}
                   className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                     activeRoomId === room.id
@@ -151,7 +205,6 @@ export function ChatListPanel({
                   }}
                   className="absolute right-2 top-3 p-0.5"
                   aria-label={room.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
-                  title={room.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
                 >
                   <Star
                     className={`h-3.5 w-3.5 transition-all ${
