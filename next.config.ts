@@ -1,16 +1,19 @@
-import { withSentryConfig } from "@sentry/nextjs";
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
-  output: process.env.CAPACITOR ? "export" : process.env.CI ? "standalone" : undefined,
+  output: process.env.CI ? "standalone" : process.env.CAPACITOR ? "export" : undefined,
   poweredByHeader: false,
   generateEtags: true,
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   compress: true,
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  eslint: { 
+    ignoreDuringBuilds: !process.env.CI,
+  },
+  typescript: { 
+    ignoreBuildErrors: false,
+  },
   images: {
     domains: [
       'localhost', 
@@ -23,7 +26,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self' https:; connect-src 'self' https:; frame-src 'self' https:;",
-    minimumCacheTTL: 60 * 60 * 24, // 1 day
+    minimumCacheTTL: 60 * 60 * 24,
   },
   outputFileTracingExcludes: {
     "/*": [
@@ -42,11 +45,7 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     staleTimes: { dynamic: 30, static: 180 },
-    // Performance optimization settings
     typedRoutes: true,
-    instrumentationHook: true,
-    workerThreads: false, // Disable worker threads for performance
-    cpus: 1, // Limit CPU usage during bundling
   },
   async headers() {
     return [
@@ -66,9 +65,9 @@ const nextConfig: NextConfig = {
             "frame-ancestors 'none'", "upgrade-insecure-requests"
           ].join('; ') },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' }, // Changed from DENY to SAMEORIGIN
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' }, // Changed from strict-origin-when-cross-origin
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -76,7 +75,7 @@ const nextConfig: NextConfig = {
       }
     ];
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -87,10 +86,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-const sentryWebpackPluginOptions = { silent: true };
+// Sentry: only enabled in CI to avoid dev build slowdown from source map uploads
+if (process.env.CI) {
+  const { withSentryConfig } = await import("@sentry/nextjs");
+  const sentryWebpackPluginOptions = { silent: true };
+  nextConfig = withSentryConfig(
+    typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
+    sentryWebpackPluginOptions
+  );
+}
 
-const finalConfig = process.env.CI
-  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-  : nextConfig;
-
-export default finalConfig;
+export default nextConfig;
