@@ -32,7 +32,7 @@
     "quality:full": "npm run typecheck && npm run lint && pnpm jscpd && pnpm knip",
     "verify": "npm run typecheck && pnpm lint && pnpm build",
     "check-i18n": "node scripts/check_i18n_keys.js",
-    "dev:with-backend": "concurrently \"npm run dev\" \"cd ../telegram-dashboard-backend && python -m uvicorn main:app --reload --port 8000\"",
+    "dev:with-backend": "concurrently \"npm run dev\" \"cd telegram-dashboard-backend && python -m uvicorn app.main:app --reload --port 8000\"",
     "test:unit": "jest",
     "test:unit:watch": "jest --watch",
     "test:unit:coverage": "jest --coverage",
@@ -58,7 +58,12 @@
     "pushsafe": "bash scripts/git-push-safe.sh",
     "merge:master": "bash scripts/git-merge-to-master.sh",
     "analyze": "cross-env ANALYZE=true npm run build",
-    "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js"
+    "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js",
+    "nuke": "rm -rf node_modules .next && pnpm install && npm run build",
+    "qa": "npm run typecheck && pnpm lint && npm run build",
+    "fresh": "bash scripts/git-cleanup.sh",
+    "fresh-remote": "bash scripts/git-cleanup-remote.sh",
+    "branch-status": "bash scripts/git-branch-status.sh"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
