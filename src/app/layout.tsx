@@ -1,55 +1,33 @@
-import type { Metadata, Viewport } from "next";
-import { Playfair_Display } from "next/font/google";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-heading",
-  display: "optional",
-});
-import { ToastProvider } from "@/components/ui/Toast";
-import { THEME_INIT_SCRIPT } from "@/lib/useTheme";
-import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
-import { PwaRegister } from "@/components/PwaRegister";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import type { Metadata } from "next";
+import "./globals.css";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
-import ShareTargetHandler from "@/components/ShareTargetHandler";
-import LiveChat from "@/components/LiveChat";
+import { ShareTargetHandler } from "@/components/ui/ShareTargetHandler";
+import { RuntimeInitializer } from "@/components/ui/RuntimeInitializer";
+import { PwaRegister } from "@/components/ui/PwaRegister";
+import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
+import { ToastProvider } from "@/components/ui/Toast";
+import { LiveChat } from "@/components/ui/LiveChat";
 import { MobileOptimizations } from "@/components/MobileOptimizations";
-import "./globals.css";
+import { PerformanceProvider } from "@/contexts/PerformanceContext";
+import { PerformanceOverlay } from "@/lib/performanceMonitor";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online"),
-  manifest: "/manifest.json",
-  title: {
-    default: "TeleMon | 텔레그램 자동화 매크로 플랫폼",
-    template: "%s | TeleMon",
-  },
-  description:
-    "Telegram 계정 관리, 자동 응답, 예약 발송, 그룹 검색, 계정 건강 모니터링, 전달 분석까지. 코딩 없이 하나의 대시보드에서 텔레그램을 완전 자동화하세요.",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icons/icon-192.svg", type: "image/svg+xml", sizes: "192x192" },
-      { url: "/icons/icon-512.svg", type: "image/svg+xml", sizes: "512x512" },
-    ],
-    apple: [{ url: "/icons/icon-192.svg" }],
-  },
-  appleWebApp: {
-    capable: true,
-    title: "TeleMon",
-    statusBarStyle: "black-translucent",
-    startupImage: ["/icons/icon-512.svg"],
-  },
+  title: "TeleMon",
+  description: "Telegram Auto Reply Management Dashboard",
 };
 
-export const viewport: Viewport = {
-  themeColor: "#8B5CF6",
-  viewportFit: "cover",
-  maximumScale: 1,
-  userScalable: false,
-};
+// 테마 초기화 스크립트
+const THEME_INIT_SCRIPT = `
+  try {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch (e) { }
+`;
 
 export default function RootLayout({
   children,
@@ -57,18 +35,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`h-full antialiased ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Sets data-theme on <html> synchronously before first paint, so the
-            correct light/dark palette is already applied by the time CSS
-            renders — no flash of the wrong theme while React hydrates.
-            suppressHydrationWarning above is required because this script
-            adds a data-theme attribute and a light/dark class to <html>
-            before React hydrates; without it React treats every page as a
-            root-level hydration mismatch (console error #418) and falls
-            back to a client-side re-render of the whole tree, which is what
-            was causing tab/button clicks to silently misfire right after
-            first paint. */}
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="theme-color" content="#7c3aed" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        {/* Preload critical resources */}
+        <link rel="preload" href="/fonts/main-font.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        {/* Hydration 오류 방지를 위해 스크립트를 dangerouslySetInnerHTML로 삽입
+            hydration이 발생하면 클라이언트와 서버의 렌더링 상태가 달라서 발생하는
+            FOUC(Flash of Unstyled Content)를 방지하고자 하는 의도지만
+            실제로는 브라우저가 첫 렌더링을 하기 전에 테마를 적용해야 하므로
+            JS로 테마를 조절하는 것이 더 효과적이다. 
+            이 스크립트는 Next.js hydration 이전에 실행되어 테마를 미리 설정한다.
+            만약 hydration 이후에 테마가 변경되면 깜빡임 현상이 발생할 수 있으므로
+            SSR 시에도 동일한 테마가 적용되도록 한다. */}
         <script
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
@@ -85,7 +69,10 @@ export default function RootLayout({
         <PwaRegister />
         <PwaInstallPrompt />
         <MobileOptimizations />
-        <ToastProvider>{children}</ToastProvider>
+        <PerformanceProvider>
+          <ToastProvider>{children}</ToastProvider>
+          <PerformanceOverlay />
+        </PerformanceProvider>
         <LiveChat />
       </body>
     </html>

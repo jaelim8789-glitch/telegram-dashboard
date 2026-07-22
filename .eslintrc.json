@@ -1,0 +1,45 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint",
+    "react-hooks"
+  ],
+  "rules": {
+    // 성능 최적화 관련 규칙
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
+    // 성능 관련 권장 사항
+    "prefer-const": "error",
+    "no-var": "error",
+    "@typescript-eslint/prefer-const": "error",
+    "@typescript-eslint/no-use-before-define": "error",
+    "prefer-template": "error",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-parameter-properties": "off",
+    "@typescript-eslint/no-useless-constructor": "error",
+    "prefer-arrow-callback": "error",
+    "func-style": ["error", "expression", { "allowArrowFunctions": true }],
+    // 성능 모니터링 관련
+    "react/jsx-key": "error",
+    "react/no-array-index-key": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true,
+    "serviceworker": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}

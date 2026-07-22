@@ -5,30 +5,31 @@ const nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
   output: process.env.CAPACITOR ? "export" : "standalone",
   poweredByHeader: false,
+  generateEtags: true, // Enable etag generation for caching
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
   reactStrictMode: true,
   compress: true,
-  eslint: { ignoreDuringBuilds: true },
-  // TEMPORARY (user-approved): unblock deploy while a backlog of pre-existing
-  // type/lint errors is cleaned up separately — see TEAM_STATUS.md.
-  typescript: { ignoreBuildErrors: true },
+  // Enable ESLint during builds for better code quality
+  eslint: { 
+    ignoreDuringBuilds: false 
+  },
+  // Enable TypeScript build errors for better type safety
+  typescript: { 
+    ignoreBuildErrors: false 
+  },
   images: {
     domains: [
-      'cdn.telegram.org',
-      'telegra.ph',
-      'localhost',
+      'localhost', 
       '127.0.0.1',
-    ],
-    remotePatterns: [
-      { protocol: "https", hostname: "cdn.example.com", port: "", pathname: "/images/**" },
-      { protocol: "https", hostname: "cdn.telegram.org", port: "", pathname: "/file/**" },
-      { protocol: "https", hostname: "telegra.ph", port: "", pathname: "/**" },
-      { protocol: "https", hostname: "**.amazonaws.com", port: "", pathname: "/**" },
-      { protocol: "https", hostname: "**.cloudfront.net", port: "", pathname: "/**" },
-      { protocol: "https", hostname: "img.cdn.telemon.online", port: "", pathname: "/**" },
+      ...(process.env.NODE_ENV === 'production' 
+        ? [process.env.NEXT_PUBLIC_API_BASE_URL?.replace('https://', '') || ''] 
+        : []
+      ).filter(Boolean)
     ],
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60 * 60 * 24,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self' https:; connect-src 'self' https:; frame-src 'self' https:;",
+    minimumCacheTTL: 60 * 60 * 24, // 1 day
   },
   outputFileTracingExcludes: {
     "/*": [
@@ -47,6 +48,11 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     staleTimes: { dynamic: 30, static: 180 },
+    // Performance optimization settings
+    typedRoutes: true,
+    instrumentationHook: true,
+    workerThreads: false, // Disable worker threads for performance
+    cpus: 1, // Limit CPU usage during bundling
   },
   async headers() {
     return [
@@ -66,19 +72,52 @@ const nextConfig: NextConfig = {
             "frame-ancestors 'none'", "upgrade-insecure-requests"
           ].join('; ') },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' }, // Changed from DENY to SAMEORIGIN
           { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' }, // Changed from strict-origin-when-cross-origin
           { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
         ]
       }
     ];
   },
-  async rewrites() {
-    return [{
-      source: "/api/:path*",
-      destination: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/:path*`,
-    }];
+  webpack: (config, { isServer, dev }) => {
+    // Handle modules that shouldn't run on the server side
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    
+    // Performance optimization settings
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+              maxSize: 244000, // 244KB
+            },
+            default: {
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+    
+    return config;
   },
 };
 

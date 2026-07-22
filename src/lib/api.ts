@@ -17,6 +17,17 @@ import type {
   ReplyMacroLog,
 } from "@/types";
 import { getToken, getSessionToken, setSessionToken, clearAll } from "@/lib/auth";
+
+import {
+  telemonSystemPrompt,
+  aiChat as telemonAiChatCore,
+} from "@/lib/ai";
+import type {
+  AiChatMessage,
+  AiChatRequest as AiChatRequestNew,
+  AiChatResponse as AiChatResponseNew,
+  AiChatSession as AiChatSessionNew,
+} from "@/lib/ai";
 import type {
   AiReplyRequest, AiReplyResponse, AiStreamChunk,
   AiComparisonRequest, AiComparisonResponse,
@@ -2481,4 +2492,19 @@ export async function fetchPixelOffices(): Promise<{ id: string; name: string; s
   try {
     return request("/api/miniapp/pixel-offices");
   } catch { return []; }
+}
+
+// --- TeleMon AI Chat Wrapper (system prompt auto-injected) ----
+
+/**
+ * TeleMon AI chat — @/lib/ai system prompt is injected via augmented message.
+ * Uses the backend /api/ai/chat endpoint.
+ */
+export async function telemonAiChat(
+  message: string,
+  sessionId?: string | null,
+): Promise<{ reply: string; session_id: string }> {
+  // Augment the message with the TeleMon brand system prompt
+  const augmented = `[System: ${telemonSystemPrompt}]\n\n[User Message]\n${message}`;
+  return requestAiChat(augmented, sessionId);
 }

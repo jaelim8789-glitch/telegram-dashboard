@@ -104,157 +104,109 @@ export class PerformanceMonitor {
       return {
         used: mem.usedJSHeapSize,
         total: mem.totalJSHeapSize,
-        percentage: (mem.usedJSHeapSize / mem.totalJSHeapSize) * 100
+        percentage: Math.round((mem.usedJSHeapSize / mem.totalJSHeapSize) * 100),
       };
     }
     return null;
   }
+
+  /**
+   * 모바일 성능 저하 감지
+   */
+  detectPerformanceIssues(): { lowFPS: boolean; highMemory: boolean; issues: string[] } {
+    const fps = this.getCurrentFPS();
+    const memory = this.getMemoryUsage();
+    
+    const issues: string[] = [];
+    
+    // FPS가 30 이하일 경우 성능 저하로 간주
+    const lowFPS = fps < 30;
+    if (lowFPS) {
+      issues.push(`FPS가 ${fps}로 낮습니다. 애니메이션 또는 렌더링 최적화 필요`);
+    }
+    
+    // 메모리 사용량이 80% 이상일 경우 성능 저하로 간주
+    const highMemory = memory ? memory.percentage > 80 : false;
+    if (highMemory) {
+      issues.push(`메모리 사용량이 ${memory?.percentage}%로 높습니다. 메모리 누수 가능성 있음`);
+    }
+    
+    return { lowFPS, highMemory, issues };
+  }
   
   /**
-   * 배터리 상태 모니터링
+   * 현재 FPS 가져오기 (근사치)
    */
-  async getBatteryStatus(): Promise<{ level: number; charging: boolean } | null> {
-    if ('getBattery' in navigator) {
-      try {
-        const battery = await (navigator as any).getBattery();
-        return {
-          level: battery.level * 100,
-          charging: battery.charging
-        };
-      } catch (error) {
-        console.warn('배터리 정보를 가져올 수 없습니다:', error);
-        return null;
+  private getCurrentFPS(): number {
+    // 간단한 FPS 측정 로직
+    let lastTime: number | null = null;
+    let frameCount = 0;
+    let currentFPS = 60;
+    
+    const measureFPS = (timestamp: number) => {
+      if (!lastTime) lastTime = timestamp;
+      
+      frameCount++;
+      const delta = timestamp - lastTime;
+      
+      if (delta >= 1000) {
+        currentFPS = Math.round((frameCount * 1000) / delta);
+        frameCount = 0;
+        lastTime = timestamp;
+      }
+      
+      requestAnimationFrame(measureFPS);
+    };
+    
+    requestAnimationFrame(measureFPS);
+    return currentFPS;
+  }
+}
+
+/**
+ * 모바일 최적화 헬퍼 함수들
+ */
+export const MobileOptimizationHelpers = {
+  /**
+   * 애니메이션 프레임 감지 (모바일 성능 최적화용)
+   */
+  optimizeForMobileAnimations: () => {
+    if (MOBILE_NAVIGATION_UTILS.isMobile()) {
+      // 모바일에서 애니메이션 감소 설정 감지
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('reduce-motion');
       }
     }
-    return null;
-  }
-}
-
-/**
- * 캐시 전략 최적화 유틸리티
- */
-export class CacheManager {
-  private static instance: CacheManager;
-  private cacheSizeLimit = 50 * 1024 * 1024; // 50MB
-  private currentSize = 0;
-  
-  static getInstance(): CacheManager {
-    if (!CacheManager.instance) {
-      CacheManager.instance = new CacheManager();
-    }
-    return CacheManager.instance;
-  }
+  },
   
   /**
-   * 캐시 크기 제한 초과 여부 확인
+   * 모바일에서의 스크롤 성능 최적화
    */
-  isOverLimit(size: number): boolean {
-    return (this.currentSize + size) > this.cacheSizeLimit;
-  }
-  
-  /**
-   * 캐시 정리 (LRU 알고리즘 기반)
-   */
-  cleanup(): void {
-  }
-  
-  /**
-   * 캐시 공간 확보
-   */
-  async reclaimSpace(requiredBytes: number): Promise<boolean> {
-    if (this.isOverLimit(requiredBytes)) {
-      this.cleanup();
-      return !this.isOverLimit(requiredBytes);
-    }
-    return true;
-  }
-}
-
-/**
- * 이미지 lazy loading 최적화
- */
-export const optimizeImageLoading = () => {
-  // Intersection Observer를 사용한 이미지 lazy loading 최적화
-  if ('IntersectionObserver' in window) {
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target as HTMLImageElement;
-          if (img.dataset.src) {
-            img.src = img.dataset.src;
-            img.removeAttribute('data-src');
-          }
-          if (img.dataset.srcset) {
-            img.srcset = img.dataset.srcset;
-            img.removeAttribute('data-srcset');
-          }
-          observer.unobserve(img);
-        }
-      });
-    }, {
-      rootMargin: '50px 0px', // 미리 50px 전에 로드
-      threshold: 0.01
-    });
-
-    // 모바일에서는 더 일찍 로드하도록 조정
+  optimizeScrollForMobile: () => {
     if (MOBILE_NAVIGATION_UTILS.isMobile()) {
-      imageObserver.disconnect();
-      const mobileImageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target as HTMLImageElement;
-            if (img.dataset.src) {
-              img.src = img.dataset.src;
-              img.removeAttribute('data-src');
-            }
-            if (img.dataset.srcset) {
-              img.srcset = img.dataset.srcset;
-              img.removeAttribute('data-srcset');
-            }
-            observer.unobserve(img);
-          }
-        });
-      }, {
-        rootMargin: '100px 0px', // 모바일에서는 더 일찍 로드
-        threshold: 0.01
-      });
-
-      document.querySelectorAll('img[data-src]').forEach(img => {
-        mobileImageObserver.observe(img);
-      });
-    } else {
-      document.querySelectorAll('img[data-src]').forEach(img => {
-        imageObserver.observe(img);
+      // 모바일에서의 스크롤 성능 최적화
+      document.addEventListener('touchstart', (e) => {
+        // 터치 이벤트에 대해 기본 동작 방지 없이 이벤트 처리
+        if (e.touches.length > 1) {
+          // 멀티 터치 제스처는 기본 동작 허용
+          return;
+        }
+      }, { passive: true });
+      
+      // 스크롤 성능 향상을 위해 transform 사용
+      document.querySelectorAll('.scroll-container').forEach(el => {
+        (el as HTMLElement).style.willChange = 'transform';
       });
     }
+  },
+  
+  /**
+   * 터치 이벤트 최적화
+   */
+  optimizeTouchEvents: () => {
+    if (MOBILE_NAVIGATION_UTILS.isMobile()) {
+      // 터치 이벤트에 대한 최적화
+      document.documentElement.style.touchAction = 'manipulation';
+    }
   }
-};
-
-/**
- * 화면 회전 대응 유틸리티
- */
-export const handleOrientationChange = () => {
-  // 화면 회전 시 UI 조정
-  const adjustUIForOrientation = () => {
-    const orientation = screen.orientation?.angle || window.orientation;
-    const isPortrait = orientation === 0 || orientation === 180;
-    
-    document.body.classList.toggle('orientation-portrait', isPortrait);
-    document.body.classList.toggle('orientation-landscape', !isPortrait);
-    
-    // 필요한 경우 UI 요소 재조정
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 300); // 회전 애니메이션 후 UI 조정
-  };
-
-  // iOS Safari에서는 window.orientation 이벤트 사용
-  if ('orientation' in window) {
-    window.addEventListener('orientationchange', adjustUIForOrientation);
-  } else {
-    screen.orientation?.addEventListener('change', adjustUIForOrientation);
-  }
-
-  // 초기 호출
-  adjustUIForOrientation();
 };

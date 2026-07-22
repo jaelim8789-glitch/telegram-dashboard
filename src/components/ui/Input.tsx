@@ -43,6 +43,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           error && "border-app-danger focus:border-app-danger focus:ring-app-danger/30",
           className
         )}
+        // iOS 가상 키보드 관련 속성 추가
+        {...(type === 'text' || type === 'email' || type === 'url' || type === 'tel' || type === 'search' ? { 
+          "data-mobile-keyboard": "true" 
+        } : {})}
         {...props}
       />
     );

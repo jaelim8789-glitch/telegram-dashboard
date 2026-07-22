@@ -13,6 +13,8 @@ import * as api from "@/lib/api";
 import * as agentApi from "@/lib/agent-api";
 import { detectBusinessCreationRequest } from "@/lib/ai/business-generator";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useAiWhisper } from "@/hooks/useAiWhisper";
+import { WhisperPanel } from "@/components/ai/WhisperPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -311,6 +313,33 @@ export default function AgentChatPage() {
 
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
+  const {
+    whisper,
+    loading: whisperLoading,
+    dismissed: whisperDismissed,
+    send: whisperSend,
+    dismiss: whisperDismiss,
+    editAndSend: whisperEditAndSend,
+    show: whisperShow,
+  } = useAiWhisper(activeChatId, {
+    customerName: activeAgent?.name || "고객",
+    recentMessages: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+  });
+
+  const handleWhisperSend = () => {
+    if (whisper) {
+      setInput(whisper.suggestedReply);
+      whisperSend();
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
+
+  const handleWhisperEdit = (newMessage: string) => {
+    setInput(newMessage);
+    whisperEditAndSend(newMessage);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
   const quickTools = [
     { label: "@send", action: () => setInput((p) => p + "@send ") },
     { label: "@search", action: () => setInput((p) => p + "@search ") },
@@ -438,6 +467,17 @@ export default function AgentChatPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <div className="mx-auto max-w-3xl space-y-4">
+                {activeChatId && (
+                  <WhisperPanel
+                    whisper={whisper}
+                    loading={whisperLoading}
+                    dismissed={whisperDismissed}
+                    onShow={whisperShow}
+                    onSend={handleWhisperSend}
+                    onEdit={handleWhisperEdit}
+                    onDismiss={whisperDismiss}
+                  />
+                )}
                 {messagesLoading ? (
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
