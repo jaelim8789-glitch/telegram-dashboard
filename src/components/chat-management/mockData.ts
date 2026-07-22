@@ -12,6 +12,8 @@ export interface ChatRoom {
   isFavorite?: boolean;
 }
 
+export type MessageStatus = "sent" | "delivered" | "read";
+
 export interface ChatMessage {
   id: string;
   chatRoomId: string;
@@ -19,6 +21,7 @@ export interface ChatMessage {
   senderName: string;
   content: string;
   timestamp: Date;
+  status?: MessageStatus;
 }
 
 export interface AiMacro {
@@ -194,6 +197,7 @@ function buildMessages(chatRoomId: string, count: number): ChatMessage[] {
       senderName,
       content,
       timestamp,
+      ...(sender === "me" ? { status: "read" as const } : {}),
     });
   }
 

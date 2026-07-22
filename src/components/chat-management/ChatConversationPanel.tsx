@@ -6,8 +6,15 @@ import {
   Copy,
   Reply,
   Trash2,
+  Paperclip,
+  Search,
+  X,
+  Check,
+  CheckCheck,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ChatMessage, ChatRoom } from "./mockData";
 
@@ -84,6 +91,17 @@ function TypingIndicator() {
   );
 }
 
+function StatusIcon({ status }: { status?: "sent" | "delivered" | "read" }) {
+  if (!status) return null;
+  if (status === "sent") {
+    return <Check className="h-3 w-3 text-white/60" />;
+  }
+  if (status === "delivered") {
+    return <CheckCheck className="h-3 w-3 text-white/60" />;
+  }
+  return <CheckCheck className="h-3 w-3 text-violet-300" />;
+}
+
 export function ChatConversationPanel({
   room,
   messages,
@@ -92,8 +110,12 @@ export function ChatConversationPanel({
   const [input, setInput] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [convSearch, setConvSearch] = useState("");
+  const [showConvSearch, setShowConvSearch] = useState(false);
+  const [convSearchIdx, setConvSearchIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const convSearchRef = useRef<HTMLInputElement>(null);
   const scrollMemory = useRef<Map<string, number>>(new Map());
   const prevRoomIdRef = useRef<string | null>(null);
 
@@ -130,6 +152,8 @@ export function ChatConversationPanel({
     });
 
     prevRoomIdRef.current = room.id;
+    setShowConvSearch(false);
+    setConvSearch("");
 
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
@@ -149,6 +173,15 @@ export function ChatConversationPanel({
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
   }, []);
+
+  const matchedIds = useMemo(() => {
+    if (!convSearch) return [];
+    return messages
+      .map((m, i) => (m.content.includes(convSearch) ? m.id : null))
+      .filter(Boolean) as string[];
+  }, [messages, convSearch]);
+
+  const highlightedIdx = matchedIds.length > 0 ? convSearchIdx % matchedIds.length : -1;
 
   function handleSend() {
     const trimmed = input.trim();
@@ -189,6 +222,37 @@ export function ChatConversationPanel({
 
   function handleDelete(msgId: string) {
     setContextMenu(null);
+  }
+
+  function handleToggleConvSearch() {
+    const next = !showConvSearch;
+    setShowConvSearch(next);
+    setConvSearch("");
+    setConvSearchIdx(0);
+    if (next) {
+      setTimeout(() => convSearchRef.current?.focus(), 50);
+    }
+  }
+
+  function handleConvSearchKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (matchedIds.length > 0) {
+        setConvSearchIdx((p) => (p + 1) % matchedIds.length);
+      }
+    }
+    if (e.key === "Escape") {
+      setShowConvSearch(false);
+      setConvSearch("");
+    }
+  }
+
+  function handleConvSearchUp() {
+    setConvSearchIdx((p) => (matchedIds.length + p - 1) % matchedIds.length || 0);
+  }
+
+  function handleConvSearchDown() {
+    setConvSearchIdx((p) => (p + 1) % matchedIds.length);
   }
 
   if (!room) {
@@ -242,11 +306,36 @@ export function ChatConversationPanel({
     const prevConsecutive =
       !isNewDate && !isNewSender && lastSenderIndex >= 0;
     const spacingClass = prevConsecutive ? "mt-0.5" : "mt-3";
+    const isMatch = matchedIds.includes(msg.id);
+    const isActiveMatch = isMatch && highlightedIdx >= 0 && msg.id === matchedIds[highlightedIdx];
+
+    const renderContent = () => {
+      if (!convSearch || !isMatch) return msg.content;
+      const idx = msg.content.indexOf(convSearch);
+      if (idx === -1) return msg.content;
+      return (
+        <>
+          {msg.content.slice(0, idx)}
+          <mark
+            className={`rounded-sm px-0.5 ${
+              isActiveMatch
+                ? "bg-orange-400/40 text-white"
+                : "bg-violet-500/30 text-white"
+            }`}
+          >
+            {msg.content.slice(idx, idx + convSearch.length)}
+          </mark>
+          {msg.content.slice(idx + convSearch.length)}
+        </>
+      );
+    };
 
     chatNodes.push(
       <div
         key={msg.id}
-        className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in ${spacingClass}`}
+        className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in ${spacingClass} ${
+          isActiveMatch ? "rounded-lg ring-2 ring-violet-400/50" : ""
+        }`}
       >
         <div
           className={`max-w-[70%] ${isMe ? "items-end" : "items-start"}`}
@@ -269,14 +358,15 @@ export function ChatConversationPanel({
                 : "bg-[#1a1a24] text-app-text rounded-2xl rounded-bl-sm"
             }`}
           >
-            {msg.content}
+            {renderContent()}
           </div>
           <span
-            className={`mt-0.5 block px-1 text-[10px] text-app-text-subtle ${
-              isMe ? "text-right" : "text-left"
+            className={`mt-0.5 flex items-center gap-1 px-1 text-[10px] text-app-text-subtle ${
+              isMe ? "justify-end" : "justify-start"
             }`}
           >
             {formatTimeOnly(msg.timestamp)}
+            {isMe && <StatusIcon status={msg.status} />}
           </span>
         </div>
       </div>
@@ -293,13 +383,13 @@ export function ChatConversationPanel({
   return (
     <div className="relative flex flex-1 flex-col bg-app-bg">
       <div className="flex shrink-0 items-center justify-between border-b border-violet-500/20 px-4 py-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-xs font-bold text-white">
             {room.name.slice(0, 2)}
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-app-text">
+              <span className="truncate text-sm font-semibold text-app-text">
                 {room.name}
               </span>
               {room.isOnline !== undefined && (
@@ -312,7 +402,7 @@ export function ChatConversationPanel({
                 />
               )}
               {isTyping && (
-                <span className="text-[10px] text-green-400 animate-pulse">
+                <span className="shrink-0 text-[10px] text-green-400 animate-pulse">
                   입력 중...
                 </span>
               )}
@@ -324,7 +414,69 @@ export function ChatConversationPanel({
             )}
           </div>
         </div>
+
+        <button
+          onClick={handleToggleConvSearch}
+          aria-label="대화 내 검색"
+          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+            showConvSearch
+              ? "bg-violet-500/20 text-violet-400"
+              : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+          }`}
+        >
+          <Search className="h-4 w-4" />
+        </button>
       </div>
+
+      {showConvSearch && (
+        <div className="flex items-center gap-1.5 border-b border-violet-500/20 px-4 py-2">
+          <Search className="h-3.5 w-3.5 shrink-0 text-app-text-muted" />
+          <input
+            ref={convSearchRef}
+            type="text"
+            placeholder="대화 내용 검색..."
+            value={convSearch}
+            onChange={(e) => {
+              setConvSearch(e.target.value);
+              setConvSearchIdx(0);
+            }}
+            onKeyDown={handleConvSearchKeyDown}
+            className="flex-1 bg-transparent text-xs text-app-text outline-none placeholder:text-app-text-subtle"
+          />
+          {convSearch && (
+            <>
+              <span className="text-[10px] text-app-text-subtle">
+                {matchedIds.length > 0
+                  ? `${highlightedIdx + 1}/${matchedIds.length}`
+                  : "0/0"}
+              </span>
+              <button
+                onClick={handleConvSearchUp}
+                disabled={matchedIds.length === 0}
+                className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text disabled:opacity-30"
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={handleConvSearchDown}
+                disabled={matchedIds.length === 0}
+                className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text disabled:opacity-30"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => {
+              setShowConvSearch(false);
+              setConvSearch("");
+            }}
+            className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       <div
         ref={scrollRef}
@@ -338,6 +490,12 @@ export function ChatConversationPanel({
 
       <div className="border-t border-violet-500/20 p-3">
         <div className="flex items-center gap-2">
+          <button
+            aria-label="파일 첨부"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
           <input
             ref={inputRef}
             type="text"

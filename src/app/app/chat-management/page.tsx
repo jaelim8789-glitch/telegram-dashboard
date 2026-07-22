@@ -53,6 +53,7 @@ export default function ChatManagementPage() {
         senderName: "나",
         content: text,
         timestamp: new Date(),
+        status: "sent",
       };
       setMessagesByRoom((prev) => ({
         ...prev,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Star, X } from "lucide-react";
+import { Search, Star, X, CheckCheck, VolumeX, Archive, MessageSquareCheck } from "lucide-react";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ChatRoom, ChatType } from "./mockData";
@@ -10,6 +10,12 @@ interface ChatListPanelProps {
   activeRoomId: string | null;
   onSelectRoom: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+}
+
+interface RoomContextMenuState {
+  x: number;
+  y: number;
+  roomId: string;
 }
 
 const TABS: { key: ChatType | "all"; label: string }[] = [
@@ -45,6 +51,7 @@ export function ChatListPanel({
   const [tab, setTab] = useState<ChatType | "all">("all");
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [roomMenu, setRoomMenu] = useState<RoomContextMenuState | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -80,9 +87,34 @@ export function ChatListPanel({
         handleClearSearch();
       }
     }
+    function handleClick() {
+      setRoomMenu(null);
+    }
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("click", handleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleClick);
+    };
   }, [handleClearSearch]);
+
+  function handleRoomContextMenu(e: React.MouseEvent, roomId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    setRoomMenu({ x: e.clientX, y: e.clientY, roomId });
+  }
+
+  function handleMarkRead(roomId: string) {
+    setRoomMenu(null);
+  }
+
+  function handleMute(roomId: string) {
+    setRoomMenu(null);
+  }
+
+  function handleArchive(roomId: string) {
+    setRoomMenu(null);
+  }
 
   return (
     <div
@@ -160,6 +192,7 @@ export function ChatListPanel({
                 exit={{ opacity: 0, x: -16 }}
                 transition={{ duration: 0.2 }}
                 className="group relative"
+                onContextMenu={(e) => handleRoomContextMenu(e, room.id)}
               >
                 <button
                   role="option"
@@ -219,6 +252,35 @@ export function ChatListPanel({
           </AnimatePresence>
         )}
       </div>
+
+      {roomMenu && (
+        <div
+          className="fixed z-50 min-w-[150px] rounded-xl border border-violet-500/30 bg-app-card shadow-xl shadow-black/40 backdrop-blur-xl"
+          style={{ left: roomMenu.x + 4, top: roomMenu.y + 4 }}
+        >
+          <button
+            onClick={() => handleMarkRead(roomMenu.roomId)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10 rounded-t-xl"
+          >
+            <MessageSquareCheck className="h-3.5 w-3.5 text-app-text-muted" />
+            읽음으로 표시
+          </button>
+          <button
+            onClick={() => handleMute(roomMenu.roomId)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+          >
+            <VolumeX className="h-3.5 w-3.5 text-app-text-muted" />
+            음소거
+          </button>
+          <button
+            onClick={() => handleArchive(roomMenu.roomId)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text-muted transition-colors hover:bg-violet-500/10 rounded-b-xl"
+          >
+            <Archive className="h-3.5 w-3.5" />
+            보관
+          </button>
+        </div>
+      )}
     </div>
   );
 }
