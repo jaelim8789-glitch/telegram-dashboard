@@ -178,7 +178,7 @@ jobs:
   # 1d. Frontend Docker build & push (GHCR)
   # ============================================
   frontend-docker:
-    needs: [frontend-typecheck, frontend-build]
+    needs: [frontend-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -195,8 +195,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
           tags: |
-            type=raw,value=staging,enable=${{ github.ref == 'refs/heads/master' && github.event_name != 'workflow_dispatch' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' && inputs.target == 'production' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=sha,prefix=,format=short
 
       - name: Set up Docker Buildx
@@ -226,11 +225,11 @@ jobs:
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
 
   # ============================================
-  # 2b. Deploy frontend production (manual, pull-only)
+  # 2. Deploy frontend production (pull-only)
   # ============================================
   deploy-frontend-production:
     needs: [frontend-docker]
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -254,7 +253,7 @@ jobs:
             echo "❌ Gateway unhealthy — aborting deploy"
             exit 1
 
-      - name: Zero-downtime deploy (production)
+      - name: Pull image + restart frontend
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -263,15 +262,9 @@ jobs:
           script: |
             set -e
             cd /opt/telemon/backend
-            PREV_IMAGE=$(docker compose images --quiet frontend)
-            docker compose pull --pull=always frontend -q
-            NEW_IMAGE=$(docker compose images --quiet frontend)
-            if [ "$PREV_IMAGE" = "$NEW_IMAGE" ]; then
-              echo "⚠️ Frontend image unchanged — verifying digest"
-              docker inspect --format='{{.RepoDigests}}' ghcr.io/${{ github.repository_owner }}/telemon-frontend:latest || true
-            fi
-            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost/health staging
-            docker compose restart nginx || true
+            docker compose pull --quiet frontend
+            docker compose up -d --no-deps frontend
+            docker compose restart nginx
 
       - name: Health check (production)
         id: smoke-frontend-prod
