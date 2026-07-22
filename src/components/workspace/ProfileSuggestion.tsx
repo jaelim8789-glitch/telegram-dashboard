@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAutoProfile } from "@/hooks/useAutoProfile";
 
 interface ProfileSuggestionProps {
-  onApply?: () => void;
+  onApply?: (profileName: string) => void;
 }
 
 export default function ProfileSuggestion({ onApply }: ProfileSuggestionProps) {
@@ -31,7 +31,7 @@ export default function ProfileSuggestion({ onApply }: ProfileSuggestionProps) {
       </div>
       <button
         onClick={() => {
-          onApply?.();
+          onApply?.(timeContext);
           setDismissed(true);
         }}
         className="rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-500"

@@ -24,7 +24,7 @@ export function DashboardOverview() {
     try {
       const params = new URLSearchParams();
       params.set("period", "7d");
-      const res = await fetchWithTimeout(`${BASE_URL}/api/analytics/overview?${params}`, { headers: api.authHeaders() });
+      const res = await fetchWithTimeout(`${BASE_URL}/api/analytics/overview?${params}`, { headers: await api.authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setOverview(data);

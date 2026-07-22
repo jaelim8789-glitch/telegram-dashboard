@@ -9,7 +9,7 @@ import {
 import { clearAll } from "@/lib/auth";
 import { SITE } from "@/lib/site";
 import { fetchAuthMe } from "@/lib/api";
-import { Image } from '@/components/ui/Image';
+import Image from "next/image";
 
 function MenuItem({
   icon,

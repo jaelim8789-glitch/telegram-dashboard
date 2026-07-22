@@ -44,7 +44,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
-import { MobileInspectorSheet } from "@/components/ui/MobileInspectorSheet";
+import MobileInspectorSheet from "@/components/ui/MobileInspectorSheet";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
@@ -262,7 +262,10 @@ export function DashboardShell() {
           <MobileInspectorSheet
             open={mobileInspectorOpen}
             onClose={() => setMobileInspectorOpen(false)}
-          />
+            title="인스펙터"
+          >
+            <Inspector />
+          </MobileInspectorSheet>
         )}
       </div>
       <ScrollToTop />

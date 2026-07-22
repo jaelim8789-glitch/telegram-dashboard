@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, Share2, TrendingUp, Users, Wallet, CheckCircle2, AlertCircle,

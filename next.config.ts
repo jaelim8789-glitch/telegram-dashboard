@@ -60,6 +60,15 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'], // Modern image formats
     minimumCacheTTL: 60 * 60 * 24, // 24 hours caching
   },
+  outputFileTracingExcludes: {
+    "/*": [
+      "node_modules/@swc/core-linux-x64-gnu/**",
+      "node_modules/@swc/core-linux-x64-musl/**",
+      "node_modules/@esbuild/linux-x64/**",
+      "node_modules/caniuse-lite/data/**",
+    ],
+  },
+  serverExternalPackages: ["sharp", "canvas"],
   experimental: {
     esmExternals: 'loose',
     optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
@@ -67,16 +76,7 @@ const nextConfig: NextConfig = {
     optimisticClientCache: true,
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
-    outputFileTracingExcludes: {
-      "/*": [
-        "node_modules/@swc/core-linux-x64-gnu/**",
-        "node_modules/@swc/core-linux-x64-musl/**",
-        "node_modules/@esbuild/linux-x64/**",
-        "node_modules/caniuse-lite/data/**",
-      ],
-    },
     staleTimes: { dynamic: 30, static: 180 },
-    serverComponentsExternalPackages: ["sharp", "canvas"],
   },
   async rewrites() {
     return [{

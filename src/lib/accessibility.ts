@@ -1,4 +1,7 @@
 // 키보드 내비게이션 및 접근성 향상 유틸리티
+import { useState, useEffect } from "react";
+import type React from "react";
+
 export interface AccessibilityOptions {
   enableKeyboardNavigation?: boolean;
   enableScreenReaderSupport?: boolean;

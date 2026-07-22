@@ -18,7 +18,7 @@ import { useNetworkQuality } from "@/hooks/useNetworkQuality";
 import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
-import { PinnedKpiBar } from "@/components/ui/PinnedKpiBar";
+import PinnedKpiBar from "@/components/ui/PinnedKpiBar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
 import { Loader2, WifiOff, RefreshCw } from "lucide-react";
@@ -33,7 +33,7 @@ import { useAutoNightMode } from "@/hooks/useAutoNightMode";
 import { useAdaptiveLoading } from "@/hooks/useAdaptiveLoading";
 import { computeDiff } from "@/lib/refreshDiff";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
-import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
+import ProfileSuggestion from "@/components/workspace/ProfileSuggestion";
 import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
@@ -455,7 +455,7 @@ export function Workspace() {
             <MobileSwipeContainer
               currentTabId={navFeature || activeTab}
               allTabIds={allTabIds}
-              onTabChange={setActiveTab}
+              onTabChange={(tabId) => setActiveTab(tabId as TabId)}
             >
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div

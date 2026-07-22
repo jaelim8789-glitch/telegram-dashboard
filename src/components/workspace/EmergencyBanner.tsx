@@ -12,11 +12,11 @@ export function EmergencyBanner() {
 
   const failureRate = useMemo(() => {
     if (!accounts.length) return 0;
-    return accounts.filter(a => a.status === "error" || a.status === "disconnected").length / accounts.length;
+    return accounts.filter(a => a.status === "banned" || a.status === "suspended").length / accounts.length;
   }, [accounts]);
 
   const isCritical = failureRate > 0.2 || !!accountsError;
-  const errorCount = accounts.filter(a => a.status === "error" || a.status === "disconnected").length;
+  const errorCount = accounts.filter(a => a.status === "banned" || a.status === "suspended").length;
 
   return (
     <AnimatePresence>

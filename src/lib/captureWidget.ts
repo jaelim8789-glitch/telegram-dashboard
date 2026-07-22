@@ -1,8 +1,8 @@
 "use client";
 
-let toBlobFn: ((element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob>) | null = null;
+let toBlobFn: ((element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob | null>) | null = null;
 
-async function ensureToBlob(): Promise<(element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob>> {
+async function ensureToBlob(): Promise<(element: HTMLElement, options?: Record<string, unknown>) => Promise<Blob | null>> {
   if (!toBlobFn) { const mod = await import("html-to-image"); toBlobFn = mod.toBlob; }
   return toBlobFn!;
 }
@@ -11,7 +11,9 @@ export async function captureElement(elementRef: React.RefObject<HTMLElement>): 
   const el = elementRef.current;
   if (!el) throw new Error("Element ref is not attached");
   const toBlob = await ensureToBlob();
-  return toBlob(el, { quality: 0.92, pixelRatio: 2, backgroundColor: getComputedStyle(el).backgroundColor || "#ffffff" });
+  const blob = await toBlob(el, { quality: 0.92, pixelRatio: 2, backgroundColor: getComputedStyle(el).backgroundColor || "#ffffff" });
+  if (!blob) throw new Error("캡처에 실패했습니다.");
+  return blob;
 }
 
 export async function shareImage(blob: Blob, title?: string): Promise<void> {

@@ -41,7 +41,7 @@ export async function subscribeToPush(registration?: ServiceWorkerRegistration):
       const applicationServerKey = getApplicationServerKey();
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey as BufferSource | undefined,
       });
     }
     return subscription;

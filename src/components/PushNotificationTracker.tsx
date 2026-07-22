@@ -24,7 +24,7 @@ export function PushNotificationTracker() {
     <Panel className="fixed bottom-4 right-4 z-50 w-80 bg-black/80 backdrop-blur-sm border-app-border">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-app-text">푸시 알림 통계</h3>
-        <Badge variant="outline" className="text-xs">
+        <Badge tone="neutral" className="text-xs">
           개발용
         </Badge>
       </div>

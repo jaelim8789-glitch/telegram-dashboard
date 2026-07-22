@@ -86,6 +86,7 @@ export function authHeaders(): Record<string, string> {
 
 function extractDetailMessage(body: unknown): string | null {
   if (typeof body === "string") return body.trim() || null;
+
   if (!body || typeof body !== "object" || !("detail" in body)) return null;
   const detail = (body as { detail: unknown }).detail;
   if (typeof detail === "string") return detail;
@@ -865,7 +866,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
-    deliveryMode: api.delivery_mode,
+    deliveryMode: api.delivery_mode === "reply" ? "replyMacro" : api.delivery_mode,
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }
