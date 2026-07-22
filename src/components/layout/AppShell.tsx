@@ -43,7 +43,7 @@ export function AppShell({ children }: AppShellProps) {
           <button
             type="button"
             onClick={() => { navigateToChat(); }}
-            className="mb-4 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl"
+            className="mb-4 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]"
             style={{ background: "linear-gradient(135deg, #8B5CF6, #3B82F6)" }}
             title="홈으로"
             aria-label="홈으로"
@@ -54,11 +54,11 @@ export function AppShell({ children }: AppShellProps) {
           {/* Nav */}
           <nav className="flex flex-col gap-1">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => navigateToChat()}
               className={cn(
-                "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-all",
+                "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-transform duration-150",
                 isChatActive
                   ? "text-white"
                   : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"
@@ -83,11 +83,11 @@ export function AppShell({ children }: AppShellProps) {
               return (
                 <motion.button
                   key={item.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveTab(item.id)}
                   className={cn(
-                    "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-all",
+                    "relative flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-transform duration-150",
                     isActive
                       ? "text-white"
                       : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"

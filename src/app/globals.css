@@ -92,8 +92,26 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.02em;
+  }
+
+  button, [role="button"], a.btn, .clickable {
+    transition: transform 150ms ease;
+  }
+
+  button:hover:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:hover:not(:disabled):not([aria-disabled="true"]),
+  a.btn:hover:not(:disabled),
+  .clickable:hover {
+    transform: scale(1.02);
+  }
+
+  button:active:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:active:not(:disabled):not([aria-disabled="true"]),
+  a.btn:active:not(:disabled),
+  .clickable:active {
+    transform: scale(0.98);
   }
 
   code, pre, kbd, .font-mono {
@@ -281,7 +299,7 @@
   padding: 0.5rem 1.25rem;
   background: linear-gradient(135deg, #8B5CF6, #3B82F6);
   color: var(--color-accent-contrast);
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   border: none;
   cursor: pointer;
   box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
@@ -289,11 +307,11 @@
 .btn-heritage:hover,
 .btn-gradient:hover {
   box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 .btn-heritage:active,
 .btn-gradient:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .btn-heritage-secondary {
@@ -308,13 +326,17 @@
   background: transparent;
   color: var(--color-text);
   border: 1px solid var(--color-accent-border);
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   cursor: pointer;
 }
 .btn-heritage-secondary:hover {
   background: var(--color-accent-light);
   border-color: var(--color-accent);
   color: var(--color-accent);
+  transform: scale(1.02);
+}
+.btn-heritage-secondary:active {
+  transform: scale(0.98);
 }
 
 .gold-beam,
@@ -355,7 +377,7 @@
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   text-decoration: none;
 }
 .btn-luxury-primary {
@@ -366,7 +388,10 @@
 }
 .btn-luxury-primary:hover {
   box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
-  transform: translateY(-1px);
+  transform: scale(1.02);
+}
+.btn-luxury-primary:active {
+  transform: scale(0.98);
 }
 .btn-luxury-secondary {
   background: transparent;
@@ -377,6 +402,10 @@
   background: var(--color-accent-light);
   border-color: var(--color-accent);
   color: var(--color-accent);
+  transform: scale(1.02);
+}
+.btn-luxury-secondary:active {
+  transform: scale(0.98);
 }
 
 .badge-premium {
@@ -455,11 +484,11 @@
   border-radius: 1rem;
   backdrop-filter: blur(12px);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(139, 92, 246, 0.04);
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 .card-premium:hover {
   border-color: rgba(139, 92, 246, 0.40);
-  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.12);
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.10), 0 4px 24px rgba(139, 92, 246, 0.12);
 }
 
 .glass-card {
@@ -468,11 +497,12 @@
   -webkit-backdrop-filter: blur(20px) saturate(1.2);
   border: 1px solid var(--color-accent-border);
   border-radius: 0.75rem;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 .glass-card:hover {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-glass-bg), var(--color-accent) 5%);
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.10);
 }
 
 /* ── Cyan accent utilities ── */
@@ -586,6 +616,8 @@
 @utility animate-reveal { animation: reveal-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 @utility focus-ring { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+@utility tabular-nums { font-variant-numeric: tabular-nums; }
 
 /* Indeterminate progress bar animation */
 @keyframes progress-indeterminate {
@@ -965,15 +997,15 @@ body.modal-open {
   border: none;
   font-weight: 600;
   cursor: pointer;
-  transition: box-shadow 0.25s ease, transform 0.15s ease, opacity 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
   box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
 }
 .btn-primary:hover:not(:disabled) {
   box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 .btn-primary:disabled {
   opacity: 0.5;
@@ -989,11 +1021,15 @@ body.modal-open {
   border: 1px solid var(--color-app-border);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--color-app-card-hover);
   border-color: var(--color-app-border-strong);
+  transform: scale(1.02);
+}
+.btn-secondary:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .btn-secondary:disabled {
   opacity: 0.5;
@@ -1278,4 +1314,9 @@ html { font-size: 100%; }
   border-radius: 1rem;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: all 0.15s ease;
+}
+.card:hover {
+  border-color: rgba(139, 92, 246, 0.40);
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.10);
 }

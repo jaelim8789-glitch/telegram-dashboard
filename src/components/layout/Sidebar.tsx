@@ -66,7 +66,7 @@ function AnimatedCounter({ to, duration = 500 }: { to: number; duration?: number
     return () => cancelAnimationFrame(raf);
   }, [to, duration]);
 
-  return <span ref={ref}>{count.toLocaleString()}</span>;
+  return <span ref={ref} className="tabular-nums">{count.toLocaleString()}</span>;
 }
 
 export function Sidebar() {
@@ -347,7 +347,7 @@ export function Sidebar() {
             transition={{ duration: 0.2 }}
             className="relative border-b border-app-border px-3 py-2.5 overflow-hidden"
           >
-            <Search aria-hidden="true" className="pointer-events-none absolute left-[22px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+            <Search aria-hidden="true" className="pointer-events-none absolute left-[22px] top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-subtle" />
             <div className="relative">
               <input
                 type="text"
@@ -377,7 +377,7 @@ export function Sidebar() {
                   className="absolute right-10 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
                   title="검색 지우기"
                   aria-label="검색 초기화">
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
               {showRecent && recentSearches.length > 0 && !searchQuery && (
@@ -469,7 +469,7 @@ export function Sidebar() {
               aria-label="배치 모드 전환"
               title={batchMode ? "일괄 선택 종료" : "일괄 선택 모드"}
             >
-              <CheckSquare className="h-3.5 w-3.5" />
+              <CheckSquare className="h-4 w-4" />
             </button>
             {groups.length > 0 && (
               <button
@@ -479,11 +479,11 @@ export function Sidebar() {
                 title="그룹 관리"
                 aria-label="그룹 관리"
               >
-                <Layers className="h-3.5 w-3.5" />
+                <Layers className="h-4 w-4" />
               </button>
             )}
             <span className="flex-1 text-center text-[10px] text-app-text-subtle">
-              계정 <span className="text-app-primary font-medium">{accounts.length}</span>개
+              계정 <span className="text-app-primary font-medium tabular-nums">{accounts.length}</span>개
             </span>
             <button
               type="button"
@@ -491,7 +491,7 @@ export function Sidebar() {
               aria-label="계정 새로고침"
               className="flex min-h-8 min-w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${accountsLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${accountsLoading ? "animate-spin" : ""}`} />
             </button>
           </motion.div>
         )}
@@ -521,7 +521,7 @@ export function Sidebar() {
             >
               해제
             </button>
-            <span className="ml-auto text-[10px] font-medium text-app-text-muted">
+            <span className="ml-auto text-[10px] font-medium text-app-text-muted tabular-nums">
               {selectedIds.size}개
             </span>
             <button
@@ -547,7 +547,7 @@ export function Sidebar() {
               title="일괄 모드 종료"
               aria-label="배치 모드 종료"
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </button>
           </motion.div>
         )}
@@ -579,9 +579,9 @@ export function Sidebar() {
                       : "bg-app-card-hover text-app-text-muted hover:text-app-text"
                   )}
                 >
-                  {Icon && <Icon className="h-3 w-3" />}
+                  {Icon && <Icon className="h-4 w-4" />}
                   {f.label}
-                  <span className="opacity-70">{count}</span>
+                  <span className="opacity-70 tabular-nums">{count}</span>
                 </button>
               );
             })}
@@ -605,7 +605,7 @@ export function Sidebar() {
                 onClick={() => setGroupFilter(null)}
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
               >
-                <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
                 전체 그룹
               </button>
             )}
@@ -626,7 +626,7 @@ export function Sidebar() {
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: g.color }} />
                   {g.name}
-                  <span className="opacity-70">{count}</span>
+                  <span className="opacity-70 tabular-nums">{count}</span>
                 </button>
               );
             })}
@@ -636,7 +636,7 @@ export function Sidebar() {
                 onClick={() => setGroupMgmtOpen(true)}
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
               >
-                <Settings className="h-3 w-3" />
+                <Settings className="h-4 w-4" />
                 관리
               </button>
             )}
@@ -657,13 +657,13 @@ export function Sidebar() {
             {showDormantBanner && dormantAccounts.length > 0 && (
               <div className="mx-0 mb-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-amber-700">비활성 계정 {dormantAccounts.length}개</p>
+            <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-amber-700">비활성 계정 <span className="tabular-nums">{dormantAccounts.length}</span>개</p>
                     <p className="text-[10px] text-amber-600/70 mt-0.5">사이드바에서 확인하고 정리하세요</p>
                   </div>
                   <button onClick={() => { setShowDormantBanner(false); try { localStorage.setItem("telemon-dormant-banner-dismissed", "true"); } catch {} }}
                     className="shrink-0 h-5 w-5 rounded flex items-center justify-center text-amber-500 hover:bg-amber-500/10">
-                    ✕
+                  <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -687,7 +687,16 @@ export function Sidebar() {
               />
             )}
             {filteredAccounts.length === 0 && accounts.length > 0 && (
-              <p className="py-6 text-center text-xs text-app-text-subtle">조건에 맞는 계정이 없습니다.</p>
+              <EmptyState
+                icon={Search}
+                title="검색 결과 없음"
+                description="다른 검색어나 필터를 시도해보세요."
+                action={{
+                  label: "필터 초기화",
+                  onClick: () => { setSearchQuery(""); setHealthFilter("all"); setGroupFilter(null); },
+                }}
+                compact
+              />
             )}
             {filteredAccounts.map((account) => {
               const health = healthByAccountId[account.id];
@@ -746,7 +755,7 @@ export function Sidebar() {
               onClick={() => setGroupMgmtOpen(true)}
               className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#8B5CF6]/30 py-2 text-[11px] font-medium text-[#8B5CF6]/70 hover:border-[#8B5CF6]/50 hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/5 transition-colors"
             >
-              <Layers className="h-3.5 w-3.5" />
+              <Layers className="h-4 w-4" />
               계정 그룹 만들기
             </button>
           </motion.div>
@@ -771,7 +780,7 @@ export function Sidebar() {
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] bg-gradient-to-r from-violet-500 to-blue-500"
             >
-              <Zap className="h-3.5 w-3.5" />
+              <Zap className="h-5 w-5" />
               업그레이드
             </button>
           </motion.div>
@@ -823,7 +832,7 @@ export function Sidebar() {
                 <p className="text-xs font-medium text-app-text truncate">Admin</p>
                 <p className="text-[10px] text-app-text-muted">Pro</p>
               </div>
-              <ChevronDown className="h-3.5 w-3.5 text-app-text-muted" />
+              <ChevronDown className="h-4 w-4 text-app-text-muted" />
             </button>
             <AnimatePresence>
               {avatarDropdownOpen && (
