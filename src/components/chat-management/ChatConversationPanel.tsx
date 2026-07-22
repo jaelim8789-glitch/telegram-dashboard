@@ -7,6 +7,7 @@ import type { ChatMessage, ChatRoom } from "./mockData";
 interface ChatConversationPanelProps {
   room: ChatRoom | null;
   messages: ChatMessage[];
+  onSend: (text: string) => void;
 }
 
 function formatTimeOnly(date: Date): string {
@@ -46,6 +47,7 @@ function DateDivider({ date }: { date: Date }) {
 export function ChatConversationPanel({
   room,
   messages,
+  onSend,
 }: ChatConversationPanelProps) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,9 @@ export function ChatConversationPanel({
   }, [messages, room]);
 
   function handleSend() {
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    onSend(trimmed);
     setInput("");
   }
 

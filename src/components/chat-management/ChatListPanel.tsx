@@ -2,12 +2,14 @@
 
 import { Search, Star } from "lucide-react";
 import { useState, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ChatRoom, ChatType } from "./mockData";
 
 interface ChatListPanelProps {
   rooms: ChatRoom[];
   activeRoomId: string | null;
   onSelectRoom: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
 }
 
 const TABS: { key: ChatType | "all"; label: string }[] = [
@@ -34,14 +36,20 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-export function ChatListPanel({ rooms, activeRoomId, onSelectRoom }: ChatListPanelProps) {
+export function ChatListPanel({
+  rooms,
+  activeRoomId,
+  onSelectRoom,
+  onToggleFavorite,
+}: ChatListPanelProps) {
   const [tab, setTab] = useState<ChatType | "all">("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return rooms.filter((r) => {
       if (tab !== "all" && r.type !== tab) return false;
-      if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search && !r.name.toLowerCase().includes(search.toLowerCase()))
+        return false;
       return true;
     });
   }, [rooms, tab, search]);
@@ -74,7 +82,11 @@ export function ChatListPanel({ rooms, activeRoomId, onSelectRoom }: ChatListPan
           >
             {t.label}
             {tab === t.key && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-violet-500 to-blue-500" />
+              <motion.span
+                layoutId="tab-underline"
+                className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
             )}
           </button>
         ))}
@@ -86,43 +98,72 @@ export function ChatListPanel({ rooms, activeRoomId, onSelectRoom }: ChatListPan
             <p className="text-sm text-app-text-muted">검색 결과가 없습니다</p>
           </div>
         ) : (
-          filtered.map((room) => (
-            <div key={room.id} className="group relative">
-              <button
-                onClick={() => onSelectRoom(room.id)}
-                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                  activeRoomId === room.id
-                    ? "border-l-2 border-violet-500 bg-violet-500/10"
-                    : "border-l-2 border-transparent hover:bg-white/[0.02]"
-                }`}
+          <AnimatePresence mode="popLayout">
+            {filtered.map((room) => (
+              <motion.div
+                key={room.id}
+                layout
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.2 }}
+                className="group relative"
               >
-                <Avatar name={room.name} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="truncate text-sm font-medium text-app-text">
-                      {room.name}
-                    </span>
-                    <span className="shrink-0 text-[10px] text-app-text-subtle">
-                      {formatRelativeTime(room.lastMessageTime)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="truncate text-xs text-app-text-muted">
-                      {room.lastMessage}
-                    </span>
-                    {room.unreadCount > 0 && (
-                      <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white">
-                        {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                <button
+                  onClick={() => onSelectRoom(room.id)}
+                  className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                    activeRoomId === room.id
+                      ? "border-l-2 border-violet-500 bg-violet-500/10"
+                      : "border-l-2 border-transparent hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <Avatar name={room.name} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="truncate text-sm font-medium text-app-text">
+                        {room.name}
                       </span>
-                    )}
+                      <span className="shrink-0 text-[10px] text-app-text-subtle">
+                        {formatRelativeTime(room.lastMessageTime)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="truncate text-xs text-app-text-muted">
+                        {room.lastMessage}
+                      </span>
+                      {room.unreadCount > 0 && (
+                        <motion.span
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white"
+                        >
+                          {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                        </motion.span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </button>
-              {room.isFavorite && (
-                <Star className="absolute right-2 top-3 h-3.5 w-3.5 fill-yellow-400 text-yellow-400 opacity-0 transition-opacity group-hover:opacity-100" />
-              )}
-            </div>
-          ))
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(room.id);
+                  }}
+                  className="absolute right-2 top-3 p-0.5"
+                  aria-label={room.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+                  title={room.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+                >
+                  <Star
+                    className={`h-3.5 w-3.5 transition-all ${
+                      room.isFavorite
+                        ? "fill-yellow-400 text-yellow-400 opacity-100"
+                        : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:!opacity-100"
+                    }`}
+                  />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
     </div>
