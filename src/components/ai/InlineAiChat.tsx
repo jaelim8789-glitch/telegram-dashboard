@@ -553,8 +553,8 @@ export function InlineAiChat() {
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
   return (
-    <div className="relative h-full min-h-[400px]">
-    <div className="flex flex-col h-full min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden">
+    <div className="relative h-full min-h-0 sm:min-h-[400px]">
+    <div className="flex flex-col h-full min-h-0 sm:min-h-[400px] rounded-xl border border-app-border bg-app-card overflow-hidden">
       {/* Agent selector bar */}
       <div className="flex items-center gap-1.5 border-b border-app-border px-3 py-2 overflow-x-auto scrollbar-thin shrink-0">
         {/* 채팅 목록 버튼 */}
