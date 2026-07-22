@@ -1,0 +1,53 @@
+set -e
+
+echo "🔍 [pre-push] 실행 중..."
+
+# ═══════════════════════════════════════════════
+# 0. 되돌리기 감지 경고
+#    "이 커밋이 최근 N시간 내 변경된 파일을 되돌리는지" 간단 diff 히스토리 비교
+# ═══════════════════════════════════════════════
+echo "🕵️  [pre-push] 되돌리기 감지..."
+
+# Get the range of commits being pushed
+REMOTE_REF="$2"
+LOCAL_REF="$1"
+if [ -z "$REMOTE_REF" ] || [ "$REMOTE_REF" = "" ]; then
+  # New branch — compare against master
+  RANGE="origin/master..HEAD"
+else
+  RANGE="$REMOTE_REF..$LOCAL_REF"
+fi
+
+RECENT_HOURS=48
+RECENT_CUTOFF=$(date -d "-${RECENT_HOURS} hours" +%s 2>/dev/null || echo "")
+
+# Files changed in the commits being pushed
+PUSHED_FILES=$(git diff --name-only "$RANGE" 2>/dev/null || echo "")
+
+if [ -n "$PUSHED_FILES" ]; then
+  # For each pushed file, check if there's a recent revert pattern
+  for f in $PUSHED_FILES; do
+    # Check if the last 5 commits on this file include a revert pattern
+    RECENT_LOG=$(git log --oneline -5 -- "$f" 2>/dev/null)
+    if echo "$RECENT_LOG" | grep -qiE "revert|rollback|되돌|복구"; then
+      echo "⚠️  [pre-push] 되돌리기 의심: $f"
+      echo "   최근 커밋에 revert/rollback 키워드가 있습니다."
+      echo "   해당 파일의 최근 변경 내역을 확인하세요."
+    fi
+  done
+fi
+
+# ═══════════════════════════════════════════════
+# 1. npm run verify (typecheck + lint + build)
+# ═══════════════════════════════════════════════
+echo ""
+echo "📦 [pre-push] npm run verify — tsc + eslint + next build..."
+cd "$(git rev-parse --show-toplevel)"
+npm run verify 2>&1 || {
+  echo "❌ [pre-push] verify 실패. push가 차단되었습니다."
+  echo "   수정 후 다시 push하세요."
+  exit 1
+}
+echo "✅ [pre-push] verify 통과"
+
+echo "🎉 [pre-push] 모든 검사 통과 — push 진행합니다."

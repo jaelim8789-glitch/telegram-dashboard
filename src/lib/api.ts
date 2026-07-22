@@ -43,11 +43,39 @@ export function getApiBaseUrl(): string {
 // show a fallback immediately, while silently retrying in the
 // background.  Callers that want the fast-fail UX should use
 // requestFast() and catch the initial error.
+// ── Slow API detection ─────────────────────────────────────────
+const SLOW_THRESHOLD_MS = 3000;
+const SLOW_LOG_KEY = "telemon-slow-api-log";
+
+function recordSlowApi(path: string, durationMs: number, status: number | undefined) {
+  if (durationMs < SLOW_THRESHOLD_MS) return;
+  try {
+    const entry = { path, durationMs, status, timestamp: new Date().toISOString() };
+    const stored = JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
+    stored.push(entry);
+    // Keep last 200 entries
+    localStorage.setItem(SLOW_LOG_KEY, JSON.stringify(stored.slice(-200)));
+    if (durationMs > 10000) {
+      console.warn(`[Slow API] ${durationMs}ms — ${path}`, entry);
+    }
+  } catch { /* ignore */ }
+}
+
+export function getSlowApiLog(): { path: string; durationMs: number; status: number | undefined; timestamp: string }[] {
+  try {
+    return JSON.parse(localStorage.getItem(SLOW_LOG_KEY) || "[]");
+  } catch { return []; }
+}
+
+export function clearSlowApiLog(): void {
+  try { localStorage.removeItem(SLOW_LOG_KEY); } catch {}
+}
+
 const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 2_000;
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   const token = getToken();
   const sessionToken = getSessionToken();
   const headers: Record<string, string> = {};
@@ -137,6 +165,8 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const startTime = performance.now();
+  let responseStatus: number | undefined;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -157,11 +187,16 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       });
 
       if (!res.ok) {
+        const elapsed = performance.now() - startTime;
+        recordSlowApi(path, elapsed, res.status);
         const body = await readErrorBody(res);
         const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
         // HTTP error — surface immediately, do NOT retry
         throw new ApiError(detail, res.status, false);
       }
+
+      const elapsed = performance.now() - startTime;
+      recordSlowApi(path, elapsed, res.status);
 
       if (res.status === 204) return undefined as T;
       return res.json() as Promise<T>;
@@ -193,10 +228,17 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       );
     } finally {
       clearTimeout(timeoutId);
+      if (attempt === 0) {
+        responseStatus = undefined;
+        const elapsed = performance.now() - startTime;
+        recordSlowApi(path, elapsed, responseStatus);
+      }
     }
   }
 
   // Unreachable — the loop always throws on the last failed attempt
+  const elapsed = performance.now() - startTime;
+  recordSlowApi(path, elapsed, undefined);
   throw new ApiError(
     "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
     undefined,
@@ -662,6 +704,8 @@ export interface LogFilters {
   date?: string;
   /** Number of recent days to fetch. When set, overrides backend default (all). */
   days?: number;
+  /** Max items to return. */
+  limit?: number;
 }
 
 export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> {
@@ -670,8 +714,10 @@ export async function fetchLogs(filters: LogFilters = {}): Promise<Broadcast[]> 
   if (filters.status) params.set("status", filters.status);
   if (filters.date) params.set("date", filters.date);
   if (filters.days != null) params.set("days", String(filters.days));
+  if (filters.limit != null) params.set("limit", String(filters.limit));
   const qs = params.toString();
-  const logs = await request<ApiBroadcast[]>(`/api/logs${qs ? `?${qs}` : ""}`);
+  const raw = await request<ApiBroadcast[] | { items: ApiBroadcast[] }>(`/api/logs${qs ? `?${qs}` : ""}`);
+  const logs = Array.isArray(raw) ? raw : raw.items;
   return logs.map(toBroadcast);
 }
 
@@ -755,15 +801,15 @@ export async function fetchBroadcastEstimate(input: {
   });
 }
 
-let _idempotencyKey: string | null = null;
-
 export function createIdempotencyKey(): string {
-  if (!_idempotencyKey) _idempotencyKey = crypto.randomUUID();
-  return _idempotencyKey;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 export function clearIdempotencyKey(): void {
-  _idempotencyKey = null;
+  // Idempotency key is now per-call; no-op kept for backward compat.
 }
 
 export async function retryBroadcast(broadcastId: string): Promise<Broadcast> {

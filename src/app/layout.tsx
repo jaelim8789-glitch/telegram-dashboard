@@ -97,8 +97,6 @@ export default function RootLayout({
         <MobilePowerOptimizer />
         <MobilePushNotifier />
         <MobileLocalizationOptimizer />
-        <MobileOfflineCapability />
-        <MobileFontOptimizer />
         <ToastProvider>{children}</ToastProvider>
         <LiveChat />
       </body>

@@ -50,7 +50,7 @@ export function QuickActionSheet() {
       try {
         const [overviewData, logs] = await Promise.all([
           api.fetchDeliveryOverview(undefined, 1),
-          api.fetchLogs({ status: "failed", limit: 8 } as never),
+          api.fetchLogs({ status: "failed", limit: 8 }),
         ]);
         if (cancelled) return;
         setOverview(overviewData);

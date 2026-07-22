@@ -12,6 +12,7 @@ import { useAccountFavorites } from "@/lib/accountLabels";
 import { useAccountGroups } from "@/lib/accountGroups";
 import { GroupManagementModal } from "@/components/sidebar/GroupManagementModal";
 import * as api from "@/lib/api";
+import { RuntimeManager } from "@/lib/runtimeManager";
 import { useToast } from "@/components/ui/Toast";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
 
@@ -82,7 +83,13 @@ export function Sidebar() {
 
   async function loadHealth() {
     try {
-      setHealthItems(await api.fetchAccountHealth());
+      const manager = RuntimeManager.getInstance();
+      const cached = manager.getAllHealth();
+      if (cached.length > 0) {
+        setHealthItems(cached);
+      } else {
+        setHealthItems(await api.fetchAccountHealth());
+      }
     } catch {
       // Health poll failures are non-fatal — keep showing the last known state
     }

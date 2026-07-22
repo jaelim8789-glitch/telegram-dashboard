@@ -70,6 +70,9 @@ export class RuntimeManager {
   private _revision = 0;
 
   static getInstance(): RuntimeManager {
+    if (typeof window === 'undefined') {
+      return new RuntimeManager();
+    }
     if (!RuntimeManager._instance) {
       RuntimeManager._instance = new RuntimeManager();
     }
@@ -79,9 +82,11 @@ export class RuntimeManager {
   // ── 초기화 ────────────────────────────────────────────────────
 
   async initialize(): Promise<void> {
+    if (typeof window === 'undefined') return;
     if (this._initPromise) return this._initPromise;
     if (this._initialized) return;
 
+    this._initialized = true;
     this._initPromise = this._doInit();
     return this._initPromise;
   }
@@ -203,21 +208,8 @@ export class RuntimeManager {
   /** 스냅샷 키 — useSyncExternalStore가 실제 변경된 경우에만 notify하도록.
    *  문자열 비교로 불필요한 리렌더링을 방지합니다.
    */
-  getSnapshotKey(accountId?: string | null): string {
-    const targetId = accountId ?? this._selectedAccountId;
-    const cache = targetId ? this._caches.get(targetId) : null;
-    const cacheVersion = cache
-      ? [
-          cache.loading ? 1 : 0,
-          cache.groupsUpdatedAt,
-          cache.autoReplyUpdatedAt,
-          cache.replyMacrosUpdatedAt,
-          cache.broadcastsUpdatedAt,
-          cache.healthUpdatedAt,
-          cache.lastRefreshAt,
-        ].join(":")
-      : "0";
-    return `${targetId ?? ""}|${this._revision}|${cacheVersion}|${this._accounts.length}|${this._healthItems.length}`;
+  getSnapshotKey(accountId?: string | null): number {
+    return this._revision;
   }
 
   // ── 구독 (React 동기화) ───────────────────────────────────────
@@ -305,12 +297,12 @@ export class RuntimeManager {
       if (acct) cache.account = acct;
 
       await Promise.allSettled([
-        this._fetchAndCacheGroups(accountId).catch(() => {}),
-        this._fetchAndCacheBroadcasts(accountId).catch(() => {}),
-        this._fetchAndCacheAutoReply(accountId).catch(() => {}),
-        this._fetchAndCacheAutoReplyLogs(accountId).catch(() => {}),
-        this._fetchAndCacheReplyMacros(accountId).catch(() => {}),
-        this._fetchAndCacheHealth(accountId).catch(() => {}),
+        this._fetchAndCacheGroups(accountId),
+        this._fetchAndCacheBroadcasts(accountId),
+        this._fetchAndCacheAutoReply(accountId),
+        this._fetchAndCacheAutoReplyLogs(accountId),
+        this._fetchAndCacheReplyMacros(accountId),
+        this._fetchAndCacheHealth(accountId),
       ]);
     } finally {
       cache.loading = false;

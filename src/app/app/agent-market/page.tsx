@@ -197,7 +197,7 @@ export default function AgentMarketPage() {
   useEffect(() => {
     fetchAuthMe()
       .then((me) => setStarsBalance(me.stars_balance ?? 0))
-      .catch(() => {});
+      .catch((e) => console.warn("agent-market: fetchAuthMe stars_balance 실패", e));
   }, []);
 
   // Publish flow (my agents)
@@ -292,7 +292,7 @@ export default function AgentMarketPage() {
     if (!publishAgentId || publishing) return;
     setPublishing(true);
     try {
-      await agentApi.publishAgentTemplate(publishAgentId, publishPrice).catch(() => {});
+      await agentApi.publishAgentTemplate(publishAgentId, publishPrice).catch((e) => console.warn("agent-market: publishAgentTemplate 실패", e));
       toast("success", "템플릿이 등록되었습니다!", {
         description: `${publishPrice}⭐에 마켓에 공개됩니다.`,
         duration: 4000,

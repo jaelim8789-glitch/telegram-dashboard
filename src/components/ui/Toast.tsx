@@ -71,8 +71,11 @@ const TOAST_VARIANTS = {
   },
 };
 
+const MAX_VISIBLE_TOASTS = 5;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [overflowCount, setOverflowCount] = useState(0);
   const groupMapRef = useRef<Map<string, GroupMeta>>(new Map());
 
   const scheduleDismiss = useCallback((groupKey: string, duration: number, toastId: number) => {
@@ -97,6 +100,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const groupKey = `${message}|${type}`;
 
     setToasts((prev) => {
+      if (prev.length >= MAX_VISIBLE_TOASTS) {
+        setOverflowCount((c) => c + 1);
+        return prev;
+      }
       const existing = prev.find((t) => t.groupKey === groupKey && Date.now() - t.id < 2000);
       if (existing) {
         const meta = groupMapRef.current.get(groupKey);
@@ -113,10 +120,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       return [...prev, { id, groupKey, type, message, description: opts?.description, action: opts?.action, duration }];
     });
 
-    if (duration > 0) {
+    if (duration > 0 && !(toasts.length >= MAX_VISIBLE_TOASTS)) {
       scheduleDismiss(groupKey, duration, id);
     }
-  }, [scheduleDismiss]);
+  }, [scheduleDismiss, toasts.length]);
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => {
@@ -196,6 +203,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 </motion.div>
               );
             })}
+          {overflowCount > 0 && (
+            <motion.button
+              key="overflow"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              type="button"
+              onClick={() => setOverflowCount(0)}
+              className="pointer-events-auto flex items-center gap-2 rounded-xl border border-app-border/30 bg-app-card px-4 py-2.5 text-xs text-app-text-muted shadow-lg hover:text-app-text transition-colors"
+            >
+              +{overflowCount}개 알림 더보기
+            </motion.button>
+          )}
         </AnimatePresence>
       </div>
     </ToastContext.Provider>

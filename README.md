@@ -1,3 +1,11 @@
+<!-- FRONTEND REPO NOTICE -->
+> [!NOTE]
+> 🌐 **이 저장소는 프론트엔드 전용입니다**  
+> 백엔드: `telegram-dashboard-backend` 저장소  
+> 혼동 방지를 위해 각각의 기능이 분리되어 있습니다.
+
+<!-- END FRONTEND REPO NOTICE -->
+
 # Telegram Management Dashboard — Frontend
 
 Next.js 15 + TypeScript + Tailwind + Zustand 대시보드입니다. 전체 프로젝트 개요, 설치·실행·배포 방법은

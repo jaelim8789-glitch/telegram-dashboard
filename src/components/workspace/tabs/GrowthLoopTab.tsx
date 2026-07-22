@@ -9,14 +9,9 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { getToken } from "@/lib/auth";
+import * as api from "@/lib/api";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-function authHeaders() {
-  const token = getToken();
-  return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-}
 
 interface CycleData {
   cycle_number: number;
@@ -69,7 +64,7 @@ export function GrowthLoopTab() {
 
   async function loadLoops() {
     try {
-      const res = await fetch(`${BASE}/api/growth-loop/status`, { headers: authHeaders() });
+      const res = await fetch(`${BASE}/api/growth-loop/status`, { headers: api.authHeaders() });
       if (res.ok) setLoops(await res.json());
     } catch {}
     finally { setLoading(false); }
@@ -82,7 +77,7 @@ export function GrowthLoopTab() {
     try {
       const res = await fetch(`${BASE}/api/growth-loop/start`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: api.authHeaders(),
         body: JSON.stringify({ goal: goal.trim(), channel_count: channels, cycle_interval_hours: intervalHours }),
       });
       if (res.ok) {
@@ -101,11 +96,11 @@ export function GrowthLoopTab() {
     setActioning(id);
     try {
       if (act === "delete") {
-        await fetch(`${BASE}/api/growth-loop/${id}`, { method: "DELETE", headers: authHeaders() });
+        await fetch(`${BASE}/api/growth-loop/${id}`, { method: "DELETE", headers: api.authHeaders() });
         setLoops((prev) => prev.filter((l) => l.id !== id));
       } else {
         const res = await fetch(`${BASE}/api/growth-loop/${id}/${act}`, {
-          method: "POST", headers: authHeaders(),
+          method: "POST", headers: api.authHeaders(),
           body: JSON.stringify({ cycle_interval_hours: intervalHours }),
         });
         if (res.ok) {
