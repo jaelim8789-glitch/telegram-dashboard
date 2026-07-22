@@ -344,26 +344,6 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export function useThrottledValue<T>(value: T, delay: number): T {
-  const [throttledValue, setThrottledValue] = useState<T>(value);
-  const lastExecuted = useRef<number>(Date.now());
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (Date.now() - lastExecuted.current >= delay) {
-        setThrottledValue(value);
-        lastExecuted.current = Date.now();
-      }
-    }, delay - (Date.now() - lastExecuted.current));
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return throttledValue;
-}
-
 export function useEventListener<T extends HTMLElement = HTMLElement>(
   element: T | Window | Document | null,
   event: string,
