@@ -9,6 +9,7 @@ import { GestureGuide } from "@/components/ui/GestureGuide";
 import { MobileSendSheet } from "@/components/ui/MobileSendSheet";
 import { QuickActionBar } from "@/components/ui/QuickActionBar";
 import { cn } from "@/lib/cn";
+import type { TabId } from "@/types";
 
 const QUICK_ACTIONS = [
   { id: "send", label: "발송", icon: "✉️" },
@@ -52,12 +53,14 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const measure = async () => {
+      if (cancelled) return;
       const t = Date.now();
       try { await fetch("/api/health", { method: "HEAD" }); setLatency(Date.now() - t); } catch {}
     };
     measure(); const i = setInterval(measure, 30000);
-    return () => clearInterval(i);
+    return () => { cancelled = true; clearInterval(i); };
   }, []);
 
   const topWidgets = getTopWidgets(4);
@@ -73,7 +76,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
       <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-app-border/50 shrink-0" style={{ scrollbarWidth: "none" }}>
         <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">자주 사용</span>
         {QUICK_ACTIONS.map(qa => (
-          <button key={qa.id} onClick={() => { recordWidgetClick(qa.id); setActiveTab(qa.id as any); }}
+          <button key={qa.id} onClick={() => { recordWidgetClick(qa.id); setActiveTab(qa.id as TabId); }}
             className="flex shrink-0 items-center gap-1 rounded-full border border-app-border bg-app-card-hover px-3 py-1.5 text-[11px] text-app-text hover:border-app-primary/30 active:scale-95 transition-all">
             <span>{qa.icon}</span> {qa.label}
           </button>

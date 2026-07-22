@@ -3,7 +3,6 @@
 import { useState, memo, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info } from "lucide-react";
-import { hapticFeedback } from "@tma.js/sdk-react";
 import * as api from "@/lib/api";
 import { quickSendToTopGroups } from "@/lib/api-miniapp";
 import { useToastStore } from "@/components/ui/GlobalToast";
@@ -11,6 +10,11 @@ import { useAutoDraft } from "@/hooks/useAutoDraft";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { ConfirmAction, useConfirmAction } from "@/components/ui/ConfirmAction";
 import { SuccessPredictorBadge } from "@/hooks/useSuccessPredictor";
+
+let hapticFeedback: any = null;
+if (typeof window !== "undefined") {
+  import("@tma.js/sdk-react").then(m => { hapticFeedback = m.hapticFeedback; }).catch(() => {});
+}
 
 interface MiniAppSendProps { user?: { id: number; first_name?: string; last_name?: string; username?: string }; }
 
@@ -144,12 +148,12 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       setSent(true);
       setImageFile(null);
       draft.clearDraft();
-      try { hapticFeedback.notificationOccurred("success"); } catch {}
+      try { hapticFeedback?.notificationOccurred("success"); } catch {}
       toast({ type: "success", title: "발송 완료", message: `${success}개 계정 발송 성공` });
       setTimeout(() => setSent(false), 3000);
     } else {
       setError(`${success}건 성공, ${failed}건 실패`);
-      try { hapticFeedback.notificationOccurred("error"); } catch {}
+      try { hapticFeedback?.notificationOccurred("error"); } catch {}
     }
   }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, toast, draft]);
 
@@ -293,7 +297,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
                   });
                   const data = await res.json();
                   setReplyMacroActive(!!data.is_active);
-                  hapticFeedback.impactOccurred("light");
+                  hapticFeedback?.impactOccurred("light");
                 } catch {
                   setReplyMacroActive(replyMacroActive);
                 }

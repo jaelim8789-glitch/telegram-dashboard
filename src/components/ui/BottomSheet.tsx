@@ -71,12 +71,8 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
             className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-app-bg shadow-xl"
             style={{ paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-app-border bg-app-bg/95 backdrop-blur-sm px-4 py-3">
+            <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-app-border bg-app-bg/95 backdrop-blur-sm px-4 py-3">
               <div className="mx-auto h-1 w-10 rounded-full bg-app-border" />
-              {title && <span className="text-sm font-semibold text-app-text">{title}</span>}
-              <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-app-card-hover transition-colors" aria-label="닫기">
-                <X className="h-4 w-4 text-app-text-muted" />
-              </button>
             </div>
             <div className="p-4">{children}</div>
           </motion.div>

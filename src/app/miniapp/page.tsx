@@ -45,7 +45,15 @@ export default function MiniAppPage() {
 
   useEffect(() => {
     let off: (() => void) | undefined; let cancelled = false;
-    (async () => { try { const { mainButton } = await import("@tma.js/sdk-react"); if (cancelled) return; mainButton.mount(); mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false }); off = mainButton.onClick(handleRefresh); } catch {} })();
+    (async () => {
+      try {
+        const { mainButton } = await import("@tma.js/sdk-react");
+        if (cancelled) return;
+        mainButton.mount();
+        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false });
+        off = mainButton.onClick(handleRefresh);
+      } catch {}
+    })();
     return () => { cancelled = true; if (off) off(); };
   }, [handleRefresh]);
 
