@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Node } from "@xyflow/react";
 import {
-  Play, GitBranch, MessageSquare, Clock, Sparkles, Type, Trash2, X, ChevronDown, Minus,
+  Play, GitBranch, MessageSquare, Clock, Sparkles, Type, Trash2, X, ChevronDown, Minus, PanelRightClose,
 } from "lucide-react";
 
 type MacroNode = Node;
@@ -17,6 +17,8 @@ interface PropertiesPanelProps {
   onDeleteNode: (id: string) => void;
   onDeleteEdge: (id: string) => void;
   onDeselect: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
 const nodeMeta: Record<string, { icon: typeof Play; label: string; color: string }> = {
@@ -29,38 +31,28 @@ const nodeMeta: Record<string, { icon: typeof Play; label: string; color: string
 };
 
 export function PropertiesPanel({
-  selectedNode,
-  selectedEdgeId,
-  onUpdateNode,
-  onUpdateNodeDone,
-  onDeleteNode,
-  onDeleteEdge,
-  onDeselect,
+  selectedNode, selectedEdgeId, onUpdateNode, onUpdateNodeDone, onDeleteNode, onDeleteEdge, onDeselect, collapsed, onToggle,
 }: PropertiesPanelProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const meta = selectedNode?.type ? nodeMeta[selectedNode.type] : null;
   const Icon = meta?.icon;
 
-  const handleChange = useCallback(
-    (field: string, value: unknown) => {
-      if (!selectedNode) return;
-      onUpdateNode(selectedNode.id, { [field]: value });
-    },
-    [selectedNode, onUpdateNode]
-  );
+  const handleChange = useCallback((field: string, value: unknown) => {
+    if (!selectedNode) return;
+    onUpdateNode(selectedNode.id, { [field]: value });
+  }, [selectedNode, onUpdateNode]);
 
-  const handleDone = useCallback(
-    (field: string, value: unknown) => {
-      if (!selectedNode) return;
-      onUpdateNodeDone(selectedNode.id, { [field]: value });
-    },
-    [selectedNode, onUpdateNodeDone]
-  );
+  const handleDone = useCallback((field: string, value: unknown) => {
+    if (!selectedNode) return;
+    onUpdateNodeDone(selectedNode.id, { [field]: value });
+  }, [selectedNode, onUpdateNodeDone]);
 
   const data = useMemo(() => (selectedNode?.data ?? {}) as Record<string, unknown>, [selectedNode?.data]);
 
   const hasSelection = !!selectedNode || !!selectedEdgeId;
+
+  if (collapsed) return null;
 
   return (
     <div className="flex h-full flex-col border-l border-violet-500/20 bg-app-surface">
@@ -74,23 +66,18 @@ export function PropertiesPanel({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="flex flex-1 flex-col"
           >
+            <div className="flex items-center justify-end border-b border-violet-500/20 px-4 py-3">
+              <button onClick={onToggle} className="rounded p-0.5 text-app-text-muted hover:text-app-text" title="패널 닫기">
+                <PanelRightClose className="h-4 w-4" />
+              </button>
+            </div>
             <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
-              <p className="text-center text-sm text-app-text-muted">
-                노드를 선택하면<br />속성을 편집할 수 있습니다
-              </p>
+              <p className="text-center text-sm text-app-text-muted">노드를 선택하면<br />속성을 편집할 수 있습니다</p>
               <div className="space-y-1 text-center">
-                <p className="text-[10px] text-app-text-muted/60">
-                  <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">Delete</kbd> 선택 삭제
-                </p>
-                <p className="text-[10px] text-app-text-muted/60">
-                  <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘D</kbd> 노드 복제
-                </p>
-                <p className="text-[10px] text-app-text-muted/60">
-                  <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘Z</kbd> 실행 취소
-                </p>
-                <p className="text-[10px] text-app-text-muted/60">
-                  <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘⇧Z</kbd> 다시 실행
-                </p>
+                <p className="text-[10px] text-app-text-muted/60"><kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">Delete</kbd> 선택 삭제</p>
+                <p className="text-[10px] text-app-text-muted/60"><kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘D</kbd> 노드 복제</p>
+                <p className="text-[10px] text-app-text-muted/60"><kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘Z</kbd> 실행 취소</p>
+                <p className="text-[10px] text-app-text-muted/60"><kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘⇧Z</kbd> 다시 실행</p>
               </div>
             </div>
           </motion.div>
@@ -108,28 +95,24 @@ export function PropertiesPanel({
                 <Minus className="h-4 w-4 text-violet-400" />
                 <span className="text-sm font-semibold text-app-text">연결선</span>
               </div>
-              <button
-                onClick={onDeselect}
-                className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={onDeselect} className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text">
+                  <X className="h-4 w-4" />
+                </button>
+                <button onClick={onToggle} className="rounded-lg p-1 text-app-text-muted hover:text-app-text" title="패널 닫기">
+                  <PanelRightClose className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 p-4">
-              <p className="text-xs text-app-text-muted">
-                선택한 연결선을 삭제하려면 <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[10px]">Delete</kbd> 키를 누르세요.
-              </p>
+              <p className="text-xs text-app-text-muted">선택한 연결선을 삭제하려면 <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[10px]">Delete</kbd> 키를 누르세요.</p>
             </div>
             <div className="border-t border-violet-500/20 px-4 py-3">
               <button
-                onClick={() => {
-                  onDeleteEdge(selectedEdgeId);
-                  onDeselect();
-                }}
+                onClick={() => { onDeleteEdge(selectedEdgeId); onDeselect(); }}
                 className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/20"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                연결선 삭제
+                <Trash2 className="h-3.5 w-3.5" />연결선 삭제
               </button>
             </div>
           </motion.div>
@@ -146,20 +129,23 @@ export function PropertiesPanel({
               <div className="flex items-center gap-2">
                 {Icon && <Icon className="h-4 w-4 text-app-text-secondary" />}
                 <span className="text-sm font-semibold text-app-text">{meta.label}</span>
+                {(data as any).__invalid && <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-400">필수 입력</span>}
               </div>
-              <button
-                onClick={onDeselect}
-                className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={onDeselect} className="rounded-lg p-1 text-app-text-muted hover:bg-app-card-hover hover:text-app-text">
+                  <X className="h-4 w-4" />
+                </button>
+                <button onClick={onToggle} className="rounded-lg p-1 text-app-text-muted hover:text-app-text" title="패널 닫기">
+                  <PanelRightClose className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {selectedNode.type === "message" && (
                 <>
                   <label className="block">
-                    <span className="text-xs font-medium text-app-text-secondary">메시지 내용</span>
+                    <span className="text-xs font-medium text-app-text-secondary">메시지 내용 <span className="text-red-400">*</span></span>
                     <textarea
                       value={(data.content as string) ?? ""}
                       onChange={(e) => handleChange("content", e.target.value)}
@@ -168,6 +154,7 @@ export function PropertiesPanel({
                       rows={4}
                       className="mt-1 w-full resize-none rounded-xl border border-violet-500/20 bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:border-violet-500/50 focus:outline-none"
                     />
+                    <p className="mt-1 text-[10px] text-app-text-muted/60">템플릿 변수 사용 가능: {"{{name}} {{date}}"}</p>
                   </label>
                   <label className="block">
                     <span className="text-xs font-medium text-app-text-secondary">수신 대상</span>
@@ -188,15 +175,15 @@ export function PropertiesPanel({
               {selectedNode.type === "delay" && (
                 <>
                   <label className="block">
-                    <span className="text-xs font-medium text-app-text-secondary">시간</span>
+                    <span className="text-xs font-medium text-app-text-secondary">시간 <span className="text-red-400">*</span></span>
                     <input
-                      type="number"
-                      min={0}
+                      type="number" min={0}
                       value={(data.delayValue as number) ?? 0}
                       onChange={(e) => handleChange("delayValue", parseInt(e.target.value, 10) || 0)}
                       onBlur={(e) => handleDone("delayValue", parseInt(e.target.value, 10) || 0)}
                       className="mt-1 w-full rounded-xl border border-violet-500/20 bg-app-bg px-3 py-2 text-xs text-app-text focus:border-violet-500/50 focus:outline-none"
                     />
+                    <p className="mt-1 text-[10px] text-app-text-muted/60">1 이상의 값을 입력하세요</p>
                   </label>
                   <label className="block">
                     <span className="text-xs font-medium text-app-text-secondary">단위</span>
@@ -215,7 +202,7 @@ export function PropertiesPanel({
               {selectedNode.type === "condition" && (
                 <>
                   <label className="block">
-                    <span className="text-xs font-medium text-app-text-secondary">조건 유형</span>
+                    <span className="text-xs font-medium text-app-text-secondary">조건 유형 <span className="text-red-400">*</span></span>
                     <select
                       value={(data.conditionType as string) ?? ""}
                       onChange={(e) => { handleChange("conditionType", e.target.value); handleDone("conditionType", e.target.value); }}
@@ -229,7 +216,7 @@ export function PropertiesPanel({
                     </select>
                   </label>
                   <label className="block">
-                    <span className="text-xs font-medium text-app-text-secondary">조건 값</span>
+                    <span className="text-xs font-medium text-app-text-secondary">조건 값 <span className="text-red-400">*</span></span>
                     <input
                       type="text"
                       value={(data.conditionValue as string) ?? ""}
@@ -238,6 +225,7 @@ export function PropertiesPanel({
                       placeholder="조건 값을 입력하세요"
                       className="mt-1 w-full rounded-xl border border-violet-500/20 bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:border-violet-500/50 focus:outline-none"
                     />
+                    <p className="mt-1 text-[10px] text-app-text-muted/60">예) 안녕, 주문, /start</p>
                   </label>
                 </>
               )}
@@ -245,7 +233,7 @@ export function PropertiesPanel({
               {selectedNode.type === "ai-response" && (
                 <>
                   <label className="block">
-                    <span className="text-xs font-medium text-app-text-secondary">프롬프트</span>
+                    <span className="text-xs font-medium text-app-text-secondary">프롬프트 <span className="text-red-400">*</span></span>
                     <textarea
                       value={(data.prompt as string) ?? ""}
                       onChange={(e) => handleChange("prompt", e.target.value)}
@@ -254,6 +242,7 @@ export function PropertiesPanel({
                       rows={4}
                       className="mt-1 w-full resize-none rounded-xl border border-violet-500/20 bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:border-violet-500/50 focus:outline-none"
                     />
+                    <p className="mt-1 text-[10px] text-app-text-muted/60">예) 사용자 메시지에 친절하게 답변해줘</p>
                   </label>
                   <label className="block">
                     <span className="text-xs font-medium text-app-text-secondary">모델</span>
@@ -274,7 +263,7 @@ export function PropertiesPanel({
 
               {selectedNode.type === "text" && (
                 <label className="block">
-                  <span className="text-xs font-medium text-app-text-secondary">텍스트 내용</span>
+                  <span className="text-xs font-medium text-app-text-secondary">텍스트 내용 <span className="text-red-400">*</span></span>
                   <textarea
                     value={(data.content as string) ?? ""}
                     onChange={(e) => handleChange("content", e.target.value)}
@@ -283,6 +272,7 @@ export function PropertiesPanel({
                     rows={4}
                     className="mt-1 w-full resize-none rounded-xl border border-violet-500/20 bg-app-bg px-3 py-2 text-xs text-app-text placeholder:text-app-text-muted focus:border-violet-500/50 focus:outline-none"
                   />
+                  <p className="mt-1 text-[10px] text-app-text-muted/60">템플릿 변수 사용 가능: {"{{name}} {{date}}"}</p>
                 </label>
               )}
 
@@ -296,17 +286,13 @@ export function PropertiesPanel({
                   className="flex w-full items-center justify-between text-xs font-medium text-app-text-secondary"
                 >
                   고급 설정
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${advancedOpen ? "rotate-180" : ""}`}
-                  />
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
                 </button>
                 {advancedOpen && (
                   <div className="mt-3 space-y-3">
                     <label className="block">
                       <span className="text-[10px] text-app-text-muted">레이블</span>
-                      <input
-                        type="text"
-                        value={(data.label as string) ?? ""}
+                      <input type="text" value={(data.label as string) ?? ""}
                         onChange={(e) => handleChange("label", e.target.value)}
                         onBlur={(e) => handleDone("label", e.target.value)}
                         placeholder="노드 레이블"
@@ -315,9 +301,7 @@ export function PropertiesPanel({
                     </label>
                     <label className="block">
                       <span className="text-[10px] text-app-text-muted">설명</span>
-                      <input
-                        type="text"
-                        value={(data.description as string) ?? ""}
+                      <input type="text" value={(data.description as string) ?? ""}
                         onChange={(e) => handleChange("description", e.target.value)}
                         onBlur={(e) => handleDone("description", e.target.value)}
                         placeholder="노드 설명"
@@ -331,16 +315,13 @@ export function PropertiesPanel({
 
             <div className="border-t border-violet-500/20 px-4 py-3 space-y-2">
               <p className="text-center text-[10px] text-app-text-muted/60">
-                <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘D</kbd> 복제
-                &nbsp;·&nbsp;
-                <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">Delete</kbd> 삭제
+                <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">⌘D</kbd> 복제 · <kbd className="rounded bg-app-border px-1 py-0.5 font-mono text-[9px]">Delete</kbd> 삭제
               </p>
               <button
                 onClick={() => onDeleteNode(selectedNode.id)}
                 className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/20"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                노드 삭제
+                <Trash2 className="h-3.5 w-3.5" />노드 삭제
               </button>
             </div>
           </motion.div>

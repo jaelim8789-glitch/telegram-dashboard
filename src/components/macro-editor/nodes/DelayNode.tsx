@@ -9,6 +9,7 @@ export type DelayNodeData = {
 };
 
 export function DelayNode({ data, selected }: NodeProps<Node<DelayNodeData>>) {
+  const invalid = (data as Record<string, unknown>).__invalid;
   const totalMinutes = (data.delayHours ?? 0) * 60 + (data.delayMinutes ?? 0);
   const label = totalMinutes > 0
     ? totalMinutes >= 60
@@ -18,10 +19,12 @@ export function DelayNode({ data, selected }: NodeProps<Node<DelayNodeData>>) {
 
   return (
     <div
-      className={`min-w-[160px] rounded-xl border bg-blue-500/10 p-3 text-app-text text-xs font-medium transition-shadow ${
-        selected
-          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6]"
-          : "border-blue-500/30 hover:shadow-md"
+      className={`min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-shadow ${
+        invalid
+          ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
+          : selected
+            ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] border-blue-500/30 bg-blue-500/10"
+            : "border-blue-500/30 bg-blue-500/10 hover:shadow-md"
       }`}
     >
       <Handle

@@ -9,14 +9,18 @@ export type ConditionNodeData = {
 };
 
 export function ConditionNode({ data, selected }: NodeProps<Node<ConditionNodeData>>) {
+  const invalid = (data as Record<string, unknown>).__invalid;
+
   return (
     <div className="relative flex items-center justify-center">
       <div
         className={`flex h-[90px] w-[90px] rotate-45 items-center justify-center border transition-shadow ${
-          selected
-            ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] outline-offset-[3px]"
-            : "border-amber-500/30"
-        } bg-amber-500/10`}
+          invalid
+            ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
+            : selected
+              ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] outline-offset-[3px] border-amber-500/30 bg-amber-500/10"
+              : "border-amber-500/30 bg-amber-500/10"
+        }`}
       >
         <div className="-rotate-45 flex flex-col items-center gap-0.5">
           <GitBranch className="h-5 w-5 text-amber-400" />

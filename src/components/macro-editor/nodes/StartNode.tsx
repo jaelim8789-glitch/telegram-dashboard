@@ -5,13 +5,17 @@ import { Play } from "lucide-react";
 
 export type StartNodeData = Record<string, never>;
 
-export function StartNode({ selected }: NodeProps) {
+export function StartNode({ data, selected }: NodeProps) {
+  const invalid = (data as Record<string, unknown>).__invalid;
+
   return (
     <div
-      className={`min-w-[160px] rounded-full border bg-green-500/10 p-3 text-app-text text-xs font-medium ${
-        selected
-          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#22c55e]"
-          : "border-green-500/30"
+      className={`min-w-[160px] rounded-full border p-3 text-app-text text-xs font-medium ${
+        invalid
+          ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
+          : selected
+            ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#22c55e] border-green-500/30"
+            : "border-green-500/30 bg-green-500/10"
       }`}
     >
       <div className="flex items-center justify-center gap-2">

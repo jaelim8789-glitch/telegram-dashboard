@@ -35,14 +35,8 @@ const nodeTypes: NodeTypes = {
 };
 
 const defaultEdgeOptions = {
-  style: {
-    stroke: "url(#edgeGradient)",
-    strokeWidth: 2,
-  },
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: "#8b5cf6",
-  },
+  style: { stroke: "url(#edgeGradient)", strokeWidth: 2 },
+  markerEnd: { type: MarkerType.ArrowClosed, color: "#8b5cf6" },
 };
 
 interface FlowCanvasProps {
@@ -58,6 +52,7 @@ interface FlowCanvasProps {
   onConnect: (connection: Connection) => void;
   onDropNode: (type: string, position: { x: number; y: number }) => void;
   isValidConnection: (connection: Connection) => boolean;
+  invalidNodeIds: Set<string>;
 }
 
 export function FlowCanvas({
@@ -73,9 +68,19 @@ export function FlowCanvas({
   onConnect,
   onDropNode,
   isValidConnection,
+  invalidNodeIds,
 }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [rfInstance, setRfInstance] = useState<any>(null);
+
+  const derivedNodes = useMemo(
+    () =>
+      nodes.map((n) => ({
+        ...n,
+        data: { ...(n.data as object), __invalid: invalidNodeIds.has(n.id) },
+      })),
+    [nodes, invalidNodeIds]
+  );
 
   const derivedEdges = useMemo(
     () =>
@@ -100,47 +105,28 @@ export function FlowCanvas({
   const onDrop = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-
       const type = event.dataTransfer.getData("application/reactflow");
       if (!type || !reactFlowWrapper.current || !rfInstance) return;
-
       const bounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = rfInstance.screenToFlowPosition({
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top,
       });
-
       onDropNode(type, position);
     },
     [rfInstance, onDropNode]
   );
 
-  const handleEdgeClick = useCallback(
-    (_event: React.MouseEvent, edge: Edge) => {
-      onEdgeSelect(edge);
-    },
-    [onEdgeSelect]
-  );
-
-  const handlePaneClick = useCallback(() => {
-    onNodeSelect(null);
-    onEdgeSelect(null);
-  }, [onNodeSelect, onEdgeSelect]);
-
-  const handleNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      onNodeSelect(node);
-      onEdgeSelect(null);
-    },
-    [onNodeSelect, onEdgeSelect]
-  );
+  const handleEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => { onEdgeSelect(edge); }, [onEdgeSelect]);
+  const handlePaneClick = useCallback(() => { onNodeSelect(null); onEdgeSelect(null); }, [onNodeSelect, onEdgeSelect]);
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => { onNodeSelect(node); onEdgeSelect(null); }, [onNodeSelect, onEdgeSelect]);
 
   const hasNodes = nodes.length > 0;
 
   return (
     <div ref={reactFlowWrapper} className="h-full w-full relative" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
-        nodes={nodes}
+        nodes={derivedNodes}
         edges={derivedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -166,27 +152,17 @@ export function FlowCanvas({
             </linearGradient>
           </defs>
         </svg>
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="rgba(139, 92, 246, 0.15)"
-        />
-        <Controls
-          className="!rounded-xl !border !border-violet-500/20 !bg-app-surface !shadow-lg"
-          position="bottom-left"
-        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(139, 92, 246, 0.15)" />
+        <Controls className="!rounded-xl !border !border-violet-500/20 !bg-app-surface !shadow-lg" position="bottom-left" />
         <MiniMap
           className="!rounded-xl !border !border-violet-500/20 !bg-app-surface"
           position="bottom-right"
           nodeColor={(node) => {
+            const d = (node.data ?? {}) as Record<string, unknown>;
+            if (d.__invalid) return "#ef4444";
             const colors: Record<string, string> = {
-              start: "#22c55e",
-              condition: "#f59e0b",
-              message: "#8b5cf6",
-              delay: "#3b82f6",
-              "ai-response": "#a855f7",
-              text: "#6b7280",
+              start: "#22c55e", condition: "#f59e0b", message: "#8b5cf6",
+              delay: "#3b82f6", "ai-response": "#a855f7", text: "#6b7280",
             };
             return colors[node.type ?? ""] ?? "#6b7280";
           }}
@@ -197,9 +173,7 @@ export function FlowCanvas({
       {!hasNodes && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
           <ArrowDown className="mb-3 h-10 w-10 text-violet-400/30 blur-[1px]" />
-          <p className="text-sm text-app-text-muted/70">
-            여기에 노드를 드래그해서 시작하세요
-          </p>
+          <p className="text-sm text-app-text-muted/70">여기에 노드를 드래그해서 시작하세요</p>
         </div>
       )}
     </div>

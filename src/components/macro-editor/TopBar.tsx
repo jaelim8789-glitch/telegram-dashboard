@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface TopBarProps {
@@ -9,9 +9,10 @@ interface TopBarProps {
   onSave: () => Promise<void>;
   saving: boolean;
   saved: boolean;
+  errorCount: number;
 }
 
-export function TopBar({ onTest, onSave, saving, saved }: TopBarProps) {
+export function TopBar({ onTest, onSave, saving, saved, errorCount }: TopBarProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("새 매크로");
@@ -24,9 +25,7 @@ export function TopBar({ onTest, onSave, saving, saved }: TopBarProps) {
     }
   }, [editing]);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
+  const handleBack = useCallback(() => { router.back(); }, [router]);
 
   return (
     <div className="flex items-center justify-between border-b border-violet-500/20 bg-app-surface px-6 py-3">
@@ -47,10 +46,7 @@ export function TopBar({ onTest, onSave, saving, saved }: TopBarProps) {
             onBlur={() => setEditing(false)}
             onKeyDown={(e) => {
               if (e.key === "Enter") setEditing(false);
-              if (e.key === "Escape") {
-                setName("새 매크로");
-                setEditing(false);
-              }
+              if (e.key === "Escape") { setName("새 매크로"); setEditing(false); }
             }}
             className="rounded-lg border border-violet-500/30 bg-app-bg px-2 py-1 text-sm font-medium text-app-text outline-none focus:border-violet-500/60"
           />
@@ -77,15 +73,23 @@ export function TopBar({ onTest, onSave, saving, saved }: TopBarProps) {
               <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
               <span className="text-[11px] text-green-400">저장됨</span>
             </>
+          ) : errorCount > 0 ? (
+            <>
+              <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+              <span className="text-[11px] text-red-400">{errorCount}개 노드 미완성</span>
+            </>
           ) : (
-            <span className="text-[11px] text-app-text-muted">
-              클릭하여 편집
-            </span>
+            <span className="text-[11px] text-app-text-muted">클릭하여 편집</span>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-3">
+        {errorCount > 0 && (
+          <span className="text-[11px] text-red-400/80">
+            <AlertTriangle className="inline h-3 w-3" /> {errorCount}개 오류
+          </span>
+        )}
         <button
           onClick={onTest}
           className="rounded-xl border border-violet-500 px-4 py-1.5 text-xs font-medium text-violet-400 transition-colors hover:bg-violet-500/10"

@@ -9,12 +9,16 @@ export type MessageNodeData = {
 };
 
 export function MessageNode({ data, selected }: NodeProps<Node<MessageNodeData>>) {
+  const invalid = (data as Record<string, unknown>).__invalid;
+
   return (
     <div
-      className={`relative min-w-[160px] rounded-xl border bg-violet-500/10 p-3 text-app-text text-xs font-medium transition-shadow ${
-        selected
-          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6]"
-          : "border-violet-500/30 hover:shadow-md"
+      className={`relative min-w-[160px] rounded-xl border p-3 text-app-text text-xs font-medium transition-shadow ${
+        invalid
+          ? "border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20"
+          : selected
+            ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6] border-violet-500/30 bg-violet-500/10"
+            : "border-violet-500/30 bg-violet-500/10 hover:shadow-md"
       }`}
     >
       <Handle
