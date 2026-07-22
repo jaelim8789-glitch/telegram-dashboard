@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { XCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +13,7 @@ interface InlineErrorProps {
 /** Standard danger-toned error presentation for forms, panels, and data
  * loading failures. Formalizes the ad hoc "icon + danger box" pattern already
  * used ad hoc across several tabs so it renders identically everywhere. */
-export function InlineError({ title, children, action, className }: InlineErrorProps) {
+export const InlineError = memo(function InlineError({ title, children, action, className }: InlineErrorProps) {
   return (
     <div
       role="alert"
@@ -30,4 +30,4 @@ export function InlineError({ title, children, action, className }: InlineErrorP
       {action && <div className="shrink-0">{action}</div>}
     </div>
   );
-}
+});

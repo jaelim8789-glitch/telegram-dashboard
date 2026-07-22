@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Theme = "light" | "dark" | "dark-pure" | "system";
 
@@ -40,7 +40,8 @@ function applyTheme(theme: Theme, animate = false) {
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === "undefined") return "system";
-    return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "system";
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    return stored ?? "system";
   });
 
   const setTheme = useCallback((t: Theme) => {
@@ -64,7 +65,7 @@ export function useTheme() {
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)");
     const handler = () => {
-      if (getTheme() === "system") applyTheme("system");
+      if (theme === "system") applyTheme("system");
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);

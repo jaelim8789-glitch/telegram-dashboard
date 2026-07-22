@@ -8,7 +8,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Sparkles, MessageSquare, Send, BarChart3, Users, Settings } from "lucide-react";
+import { Sparkles, MessageSquare, Send, BarChart3, Users, Settings, Gamepad2 } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { TabId } from "@/types";
 import { cn } from "@/lib/cn";
@@ -18,9 +18,11 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+// "채팅" 항목만 별도 처리 — 탭이 아니라 navView를 "chat"으로 되돌리는 홈 화면이라
+// TabId가 없다. 나머지는 기존 TABS와 동일한 TabId로 라우팅한다.
 const NAV_ITEMS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "myai", label: "AI", icon: Bot },
   { id: "dashboard", label: "대시보드", icon: BarChart3 },
+  { id: "pixeloffice", label: "픽셀오피스", icon: Gamepad2 },
   { id: "send", label: "발송", icon: Send },
   { id: "group", label: "그룹", icon: Users },
   { id: "profile", label: "설정", icon: Settings },
@@ -29,15 +31,9 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ComponentType<{ classNa
 export function AppShell({ children }: AppShellProps) {
   const activeTab = useDashboardStore((s) => s.activeTab);
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+  const navView = useDashboardStore((s) => s.navView);
+  const navigateToChat = useDashboardStore((s) => s.navigateToChat);
   const [splash, setSplash] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   // Splash: show until data loads, minimum 500ms to prevent flash
   useEffect(() => {
@@ -65,25 +61,56 @@ export function AppShell({ children }: AppShellProps) {
     return () => { clearTimeout(minTimer); unsub(); };
   }, []);
 
-  if (isMobile) return <>{children}</>;
+  const isChatActive = navView === "chat";
 
   return (
     <>
       <GoldSplash show={splash} onDone={() => {}} />
 
-      <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-bg)" }}>
-        {/* Sidebar */}
-        <aside className="flex w-14 flex-col items-center gap-2 border-r border-[var(--color-border)] py-4" style={{ backgroundColor: "var(--color-bg-surface)" }}>
-          {/* Logo */}
-          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, #D4AF37, #a08030)" }}>
+      <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "var(--color-bg)" }}>
+        {/* Sidebar — icon rail, hidden on mobile (< sm), shown on tablet+ */}
+        <aside className="hidden sm:flex w-14 shrink-0 flex-col items-center gap-2 border-r border-[var(--color-border)] py-4" style={{ backgroundColor: "var(--color-bg-surface)" }}>
+          {/* Logo — click always goes home (AI 채팅 화면) */}
+          <button
+            type="button"
+            onClick={() => { navigateToChat(); }}
+            className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ background: "linear-gradient(135deg, #D4AF37, #a08030)" }}
+            title="홈으로"
+            aria-label="홈으로"
+          >
             <Sparkles className="h-5 w-5 text-white" />
-          </div>
+          </button>
 
           {/* Nav */}
           <nav className="flex flex-col gap-1">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigateToChat()}
+              className={cn(
+                "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                isChatActive
+                  ? "text-white"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-card-hover)]"
+              )}
+              style={isChatActive ? { background: "linear-gradient(135deg, #D4AF37, #a08030)" } : {}}
+              title="채팅하기"
+            >
+              <MessageSquare className="h-5 w-5" />
+              {isChatActive && (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="absolute -left-[1px] h-5 w-0.5 rounded-full"
+                  style={{ backgroundColor: "#D4AF37" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </motion.button>
+
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = !isChatActive && activeTab === item.id;
               return (
                 <motion.button
                   key={item.id}

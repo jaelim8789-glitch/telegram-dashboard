@@ -142,6 +142,26 @@ export function TabBar() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const handler = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const isKeyboard = vv.height < window.innerHeight * 0.85;
+      setIsKeyboardVisible(isKeyboard);
+    };
+    window.visualViewport?.addEventListener("resize", handler);
+    return () => window.visualViewport?.removeEventListener("resize", handler);
+  }, [isMobile]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -211,7 +231,7 @@ export function TabBar() {
     return (
       <>
         {/* Top gold accent line on the bottom nav */}
-        <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className={cn("fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300", isKeyboardVisible && "translate-y-full")}>
           <div className="h-px bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-30" />
           <nav
             className="border-t-0 bg-app-surface/95 backdrop-blur-xl"

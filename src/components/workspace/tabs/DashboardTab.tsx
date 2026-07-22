@@ -18,12 +18,14 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary, TeleMonMemorySnapshot } from "@/types";
 import { isRecurringActive, getRecurringState } from "@/types";
-import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
-import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { DailyDigest } from "@/components/workspace/tabs/dashboard/DailyDigest";
 import { UsageChartWidget } from "@/components/workspace/tabs/dashboard/UsageChartWidget";
 import { UsageProgressWidget } from "@/components/workspace/tabs/dashboard/UsageProgressWidget";
 import { DashboardSkeleton } from "@/components/workspace/tabs/dashboard/DashboardSkeleton";
+import { RecurringCard as RecurringCardComp } from "@/components/workspace/tabs/dashboard/RecurringCard";
+import { HealthScoreSection } from "@/components/workspace/tabs/dashboard/HealthScoreSection";
+import { DeliveryOverviewSection } from "@/components/workspace/tabs/dashboard/DeliveryOverviewSection";
+import { BroadcastListSection } from "@/components/workspace/tabs/dashboard/BroadcastListSection";
 import { exportCSV, exportJSON } from "@/lib/exportUtils";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
@@ -46,46 +48,6 @@ function failureInfoSummary(info: Broadcast["failureInfo"] | null | undefined): 
   if (recovery === "reauthenticate_account" || recovery === "account_is_banned" || recovery === "check_configuration") action = "register";
   if (recovery === "wait_and_retry" || recovery === "check_recipient" || recovery === "check_media" || recovery === "retry_broadcast" || recovery === "contact_support") action = "log";
   return { summary, action, retryable: info.retryable ?? null };
-}
-
-function RecurringCard({ b, accounts }: { b: Broadcast; accounts: { id: string; name: string | null; phone: string }[] }) {
-  const countdown = useCountdown(b.nextScheduledAt);
-  const account = accounts.find((a) => a.id === b.accountId);
-  const accLabel = account
-    ? account.name?.trim() || account.phone
-    : b.accountId.slice(0, 8);
-  const state = getRecurringState(b);
-  return (
-    <div className={cn(
-      "flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all hover:shadow-sm",
-      state === "error" ? "border-app-danger/20 bg-app-danger-muted/10" :
-      state === "paused" ? "border-app-warning/20 bg-app-warning-muted/10" :
-      "border-app-border bg-gradient-to-r from-app-bg to-app-card hover:border-app-border-strong",
-    )}>
-      <div className="min-w-0 flex-1 pr-2">
-        <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
-        <p className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-app-text-subtle">
-          <span className="inline-flex items-center gap-1">
-            <RefreshCw className="h-3 w-3 text-app-info" />
-            {intervalLabel(b.recurringIntervalMinutes)}
-          </span>
-          <span>·</span>
-          <span>{accLabel}</span>
-          <span>·</span>
-          <span>{b.recipients.length}명</span>
-          {countdown && (
-            <span className="font-mono text-app-info flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {countdown}
-            </span>
-          )}
-        </p>
-      </div>
-      <Badge tone={state === "error" ? "danger" : state === "paused" ? "warning" : state === "cancelled" ? "neutral" : "info"} className="shrink-0">
-        {state === "active" ? "반복 중" : state === "paused" ? "일시 정지" : state === "cancelled" ? "취소됨" : "오류"}
-      </Badge>
-    </div>
-  );
 }
 
 function AttentionItem({
@@ -870,44 +832,7 @@ export function DashboardTab() {
       {/* ── Account Health Score ──────────────── */}
       <div key="healthScore" style={{ order: widgetIdx("healthScore") }}>
       {widgetVisibility.healthScore && (
-        <div className="rounded-xl border border-app-border bg-app-card p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-app-text">
-              <HeartPulse className="h-4 w-4 text-app-danger" aria-hidden="true" />
-              계정 건강 점수
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-app-text-muted">
-              <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
-              종합 <span className={cn("font-bold tabular-nums", healthScoreColor(overallHealthScore.level))}>{overallHealthScore.score}</span>
-              <span className="text-[10px]">/100</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-            {healthScores.map((hs) => (
-              <div key={hs.accountId}
-                className="rounded-lg border border-app-border bg-gradient-to-br from-app-card to-app-bg p-2.5">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="truncate text-[11px] font-medium text-app-text">{hs.label}</span>
-                  <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold", healthScoreBg(hs.level), healthScoreColor(hs.level))}>
-                    {hs.level === "excellent" ? "우수" : hs.level === "healthy" ? "양호" : hs.level === "warning" ? "주의" : "위험"}
-                  </span>
-                </div>
-                <div className={cn("mt-1 text-xl font-bold tabular-nums leading-none", healthScoreColor(hs.level))}>
-                  {hs.score}
-                  <span className="text-xs font-normal text-app-text-muted">/100</span>
-                </div>
-                <div className="mt-1.5 space-y-0.5">
-                  {hs.factors.map((f) => (
-                    <div key={f.label} className="flex items-center justify-between text-[10px]">
-                      <span className="text-app-text-muted">{f.label}</span>
-                      <span className="font-medium tabular-nums text-app-text">{f.value}/{f.max}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <HealthScoreSection healthScores={healthScores} />
       )}
       </div>
 
@@ -1359,110 +1284,22 @@ export function DashboardTab() {
             )}
           </Panel>
 
-          <Panel
+          <BroadcastListSection
             title={<div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-app-primary" aria-hidden="true" /> 반복 발송</div>}
-            className="lg:col-span-1"
-          >
-            {dataLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-14 w-full rounded-xl" />
-                <Skeleton className="h-14 w-full rounded-xl" />
-              </div>
-            ) : recurring.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-                <p className="text-xs text-app-text-muted">반복 발송 일정이 없습니다</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {recurring.slice(0, 5).map((b) => (
-                  <RecurringCard key={b.id} b={b} accounts={accounts} />
-                ))}
-                {recurring.length > 5 && (
-                  <button onClick={() => setTab("scheduler")}
-                    className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-                    전체 {recurring.length}개 보기
-                  </button>
-                )}
-              </div>
-            )}
-          </Panel>
+            items={recurring}
+            accounts={accounts}
+            dataLoading={dataLoading}
+            emptyIcon={<RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />}
+            emptyMessage="반복 발송 일정이 없습니다"
+            onViewAll={setTab}
+            viewAllTab="scheduler"
+          />
 
-          <Panel
-            title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-success" aria-hidden="true" /> 전달 건강</div>}
-            className="lg:col-span-1"
-          >
-            {dataLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full rounded-xl" />
-                <Skeleton className="h-8 w-full rounded-xl" />
-                <Skeleton className="h-8 w-full rounded-xl" />
-              </div>
-            ) : !summary ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Activity className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-                <p className="text-xs text-app-text-muted">전달 데이터가 아직 없습니다</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-16 w-16 shrink-0">
-                    <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90" role="img" aria-label={`성공률 ${summary.success_rate.toFixed(0)}%`}>
-                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" className="text-app-border" />
-                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3"
-                        strokeDasharray={`${summary.success_rate * 0.97} 100`}
-                        className={cn("transition-all duration-1000",
-                          summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}
-                        strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className={cn("text-sm font-bold",
-                        summary.success_rate >= 90 ? "text-app-success" : summary.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>
-                        {summary.success_rate.toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-app-text-muted">총 시도</span>
-                      <span className="font-medium tabular-nums text-app-text">{summary.total_attempted}</span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs">
-                      <span className="text-app-success">성공</span>
-                      <span className="font-medium tabular-nums text-app-success">{summary.successful}</span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs">
-                      <span className="text-app-danger">실패</span>
-                      <span className="font-medium tabular-nums text-app-danger">{summary.failed}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {(overview?.by_source?.length ?? 0) > 0 && (
-                  <div className="border-t border-app-border pt-2.5">
-                    <p className="mb-1.5 text-[11px] font-medium text-app-text-muted">소스별</p>
-                    <div className="space-y-1">
-                      {(overview?.by_source ?? []).map((s) => (
-                        <div key={s.source} className="flex items-center justify-between text-xs">
-                          <span className="text-app-text capitalize">{s.source === "broadcast" ? "발송" : s.source}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="tabular-nums text-app-text-muted">{s.total}건</span>
-                            <span className={cn("tabular-nums font-medium",
-                              s.success_rate >= 90 ? "text-app-success" : s.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>{s.success_rate.toFixed(0)}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <button onClick={() => setTab("deliveryanalytics")}
-                  className="w-full rounded-xl border border-app-border py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-                  전체 분석 보기 <ArrowRight className="inline h-3 w-3" />
-                </button>
-              </div>
-            )}
-          </Panel>
+          <DeliveryOverviewSection
+            overview={overview}
+            dataLoading={dataLoading}
+            onNavigate={setTab}
+          />
         </div>
       )}
       </div>
@@ -1476,7 +1313,7 @@ export function DashboardTab() {
         >
           {dataLoading && recentLogs.length === 0 ? (
             <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={`dash-sk-${i}`} className="h-10 w-full rounded-lg" />)}
             </div>
           ) : accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">

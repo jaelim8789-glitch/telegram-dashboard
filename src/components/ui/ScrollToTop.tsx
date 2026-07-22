@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import { memo, useEffect, useState, useRef, type ReactNode } from "react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
  * Floating "back to top" button that appears when the user scrolls down
  * past a threshold. Smooth-scrolls to the top on click.
  */
-export function ScrollToTop({ threshold = 300, containerRef }: { threshold?: number; containerRef?: React.RefObject<HTMLDivElement | null> }) {
+export const ScrollToTop = memo(function ScrollToTop({ threshold = 300, containerRef }: { threshold?: number; containerRef?: React.RefObject<HTMLDivElement | null> }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -46,4 +46,4 @@ export function ScrollToTop({ threshold = 300, containerRef }: { threshold?: num
       <ArrowUp className="h-4 w-4" />
     </button>
   );
-}
+});

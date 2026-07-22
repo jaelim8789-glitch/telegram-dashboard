@@ -98,7 +98,7 @@ export function ActivityAuditTab() {
 
       {loading && (
         <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={`audit-sk-${i}`} className="h-14 w-full rounded-xl" />)}
         </div>
       )}
 

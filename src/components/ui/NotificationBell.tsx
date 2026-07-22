@@ -165,7 +165,7 @@ export function NotificationBell() {
                 <h3 className="text-sm font-semibold text-app-text">알림</h3>
                 <div className="flex items-center gap-1.5">
                   {unread > 0 && (
-                    <button onClick={markAllRead} className="text-[11px] text-app-primary hover:underline">모두 읽음</button>
+                    <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 읽음</button>
                   )}
                   {notifState.length > 0 && (
                     <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="전체 삭제">
@@ -202,9 +202,9 @@ export function NotificationBell() {
                           <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", TYPE_COLORS[n.type])} />
                           <div className="min-w-0 flex-1">
                             <p className={cn("text-xs", n.read ? "text-app-text" : "text-app-text font-medium")}>{n.title}</p>
-                            <p className="text-[11px] text-app-text-muted mt-0.5 line-clamp-2">{n.body}</p>
+                             <p className="text-xs text-app-text-muted mt-0.5 line-clamp-2">{n.body}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-[10px] text-app-text-subtle">{formatRelativeTime(new Date(n.time).toISOString())}</p>
+                              <p className="text-xs text-app-text-subtle">{formatRelativeTime(new Date(n.time).toISOString())}</p>
                               {n.category && <span className="text-[9px] text-app-text-subtle">· {CATEGORY_LABELS[n.category]}</span>}
                             </div>
                           </div>

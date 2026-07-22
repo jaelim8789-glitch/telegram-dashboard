@@ -42,7 +42,7 @@ export function GreetingHeader({ name, className = "" }: GreetingHeaderProps) {
         <h2 className="text-base font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
           {greeting.text}{name ? `, ${name}` : ""}
         </h2>
-        <p className="text-[11px] text-app-text-muted">
+        <p className="text-xs text-app-text-muted">
           TeleMon 대시보드
         </p>
       </div>

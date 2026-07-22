@@ -20,11 +20,11 @@ export function Field({ label, hint, error, children, touchOptimized = false }: 
       <span className={cn("mb-1.5 block text-xs font-medium text-app-text-muted", touchOptimized && "text-sm")}>{label}</span>
       {children}
       {error ? (
-        <span role="alert" className={cn("mt-1 block text-[11px] text-app-danger", touchOptimized && "text-sm mt-2")}>
+        <span role="alert" className={cn("mt-1 block text-xs text-app-danger", touchOptimized && "text-sm mt-2")}>
           {error}
         </span>
       ) : (
-        hint && <span className={cn("mt-1 block text-[11px] text-app-text-subtle", touchOptimized && "text-sm mt-2")}>{hint}</span>
+        hint && <span className={cn("mt-1 block text-xs text-app-text-subtle", touchOptimized && "text-sm mt-2")}>{hint}</span>
       )}
     </label>
   );

@@ -50,7 +50,6 @@
     "post-merge": "node scripts/post-merge.mjs",
     "dashboard:worktree": "node scripts/worktree-dashboard.mjs",
     "mock:webhook": "node scripts/mock-telegram-webhook.mjs",
-    "port:check": "node scripts/port_handler.js",
     "status": "python scripts/telemon-status.py",
     "rollback": "bash scripts/rollback_deploy.sh",
     "revert": "bash scripts/revert_to_last_good.sh",
@@ -62,9 +61,16 @@
     "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,yaml,yml,md}": ["prettier --write"],
-    "*.py": ["autopep8 --in-place"]
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,yml,md}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "autopep8 --in-place"
+    ]
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -79,10 +85,11 @@
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
+    "@sentry/nextjs": "^9",
     "@telegram-apps/telegram-ui": "^2.1.13",
     "@tma.js/sdk-react": "^3.0.23",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "framer-motion": "^12.42.2",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.23.0",
@@ -91,12 +98,12 @@
     "react-dom": "^18.3.1",
     "recharts": "^3.9.2",
     "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.14",
-    "@sentry/nextjs": "^9"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "jwt-decode": "^4.0.0",
     "@chromatic-com/storybook": "^3",
+    "@emotion/jest": "^11.11.0",
+    "@next/bundle-analyzer": "^15.5.20",
     "@playwright/test": "^1.61.1",
     "@storybook/addon-essentials": "^8",
     "@storybook/addon-interactions": "^8",
@@ -105,33 +112,35 @@
     "@storybook/react": "^8",
     "@storybook/test": "^8",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "concurrently": "^8.2.2",
     "conventional-changelog-cli": "^5",
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "^15.5.20",
+    "eslint-plugin-import": "^2.31.0",
+    "glob": "^10.3.10",
+    "jest": "^29.7.0",
     "jscpd": "^4",
+    "jwt-decode": "^4.0.0",
     "knip": "^5",
     "openapi-typescript": "^7",
     "prettier": "^3",
     "storybook": "^8",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "jest": "^29.7.0",
-    "@types/jest": "^29.5.12",
     "ts-jest": "^29.1.2",
-    "@testing-library/jest-dom": "^6.4.2",
-    "@testing-library/react": "^14.2.1",
-    "@emotion/jest": "^11.11.0",
-    "concurrently": "^8.2.2",
-    "@next/bundle-analyzer": "^15.5.20",
-    "webpack-bundle-analyzer": "^4.10.1",
-    "glob": "^10.3.10",
-    "eslint-plugin-import": "^2.31.0"
+    "typescript": "^5",
+    "webpack-bundle-analyzer": "^4.10.1"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }

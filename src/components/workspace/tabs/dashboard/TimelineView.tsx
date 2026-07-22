@@ -50,7 +50,7 @@ export function TimelineView({ autonomous = true, events: propEvents, loading: p
   if (loading && displayed.length === 0) {
     return (
       <Panel title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" /> 타임라인</div>} className="w-full">
-        <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonLine key={i} />)}</div>
+        <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonLine key={`tl-sk-${i}`} />)}</div>
       </Panel>
     );
   }

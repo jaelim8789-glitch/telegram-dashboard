@@ -41,7 +41,7 @@ export function KeyboardShortcutHints({
       <div className={cn("flex items-center gap-3", className)}>
         <Keyboard className="h-3.5 w-3.5 text-app-text-subtle" />
         {shortcuts.slice(0, 2).map((s, i) => (
-          <span key={s.label} className="flex items-center gap-1 text-[10px] text-app-text-muted">
+          <span key={s.label} className="flex items-center gap-1 text-xs text-app-text-muted">
             {s.keys.map((key, ki) => (
               <Kbd key={`${ki}-${key}`}>{key}</Kbd>
             ))}

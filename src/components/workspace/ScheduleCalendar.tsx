@@ -134,7 +134,7 @@ export function ScheduleCalendar({ broadcasts, onCancel }: ScheduleCalendarProps
 
           return (
             <button
-              key={i}
+              key={`cal-day-${i}`}
               onClick={() => setSelectedDate(isSelected ? null : dateKey)}
               className={cn(
                 "relative flex flex-col items-center px-0.5 py-1 text-xs transition-colors min-h-[40px]",

@@ -22,7 +22,7 @@ export function MiniStatGrid({ items, className }: MiniStatGridProps) {
           className={cn("flex flex-col items-center justify-center gap-1 rounded-xl border border-app-border bg-app-card p-3 text-center transition-colors hover:border-app-border-strong active:scale-[0.97]", item.onClick ? "cursor-pointer" : "cursor-default")}>
           <div className={cn("text-lg", { "text-indigo-500": item.color === "indigo", "text-emerald-500": item.color === "emerald", "text-rose-500": item.color === "rose", "text-amber-500": item.color === "amber", "text-cyan-500": item.color === "cyan", "text-violet-500": item.color === "violet", "text-orange-500": item.color === "orange" })}>{item.icon}</div>
           <span className="text-base font-bold tracking-tight text-app-text">{item.value}</span>
-          <span className="flex items-center gap-1 text-[11px] text-app-text-muted">{item.label}</span>
+          <span className="flex items-center gap-1 text-xs text-app-text-muted">{item.label}</span>
         </button>
       ))}
     </div>

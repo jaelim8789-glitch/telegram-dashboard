@@ -196,7 +196,7 @@ export function ActivityTimeline({
       >
         <div className="space-y-3" aria-busy="true">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex gap-3 animate-pulse">
+            <div key={`atl-sk-${i}`} className="flex gap-3 animate-pulse">
               <div className="flex flex-col items-center gap-1">
                 <div className="h-3 w-3 rounded-full bg-app-card-hover" />
                 <div className="flex-1 w-0.5 rounded-full bg-app-card-hover" />

@@ -73,7 +73,7 @@ export function SplashScreen() {
             <p className="text-base font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
               Tele<span style={{ color: "var(--color-accent)" }}>Mon</span>
             </p>
-            <p className="mt-2 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            <p className="mt-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
               앱 환경 준비 중
             </p>
           </motion.div>
@@ -93,7 +93,7 @@ export function SplashScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.4 }}
-            className="absolute bottom-8 text-[10px]"
+            className="absolute bottom-8 text-xs"
             style={{ color: "var(--color-text-subtle)" }}
           >
             Loading...
