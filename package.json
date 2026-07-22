@@ -1,115 +1,87 @@
-{
-  "name": "telegram-dashboard",
-  "version": "0.1.0",
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=10.0.0"
-  },
-  "packageManager": "pnpm@10.8.1",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbo",
-    "dev:legacy": "next dev",
-    "build": "next build && node scripts/stamp-sw-buildhash.js",
-    "start": "next start",
-    "lint": "eslint --fix",
-    "typecheck": "tsc --noEmit",
-    "prepare": "husky || true",
-    "cap:build": "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build && npx cap copy",
-    "cap:sync": "cross-env CAPACITOR=1 next build && npx cap sync",
-    "cap:android": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open android",
-    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap open ios",
-    "seed": "cd telegram-dashboard-backend && python scripts/seed_local.py",
-    "openapi": "cd telegram-dashboard-backend && python -c \"from app.main import app; import json; open('../openapi.json','w').write(json.dumps(app.openapi(), indent=2))\"",
-    "typegen": "npx openapi-typescript openapi.json -o src/lib/api.types.ts",
-    "ts-strict-report": "node scripts/ts-strict-report.js",
-    "verify": "npm run typecheck && pnpm lint && pnpm build",
-    "check-i18n": "node scripts/check_i18n_keys.js",
-    "port:check": "node scripts/port_handler.js",
-    "features:list": "node -e \"const ff=require('./src/lib/featureFlags'); console.log(JSON.stringify(ff.FeatureFlags.getAll(), null, 2));\"",
-    "i18n:report": "node scripts/check_i18n_keys.js",
-    "cap:build:ios": "node scripts/build-capacitor-apps.js ios",
-    "cap:build:android": "node scripts/build-capacitor-apps.js android",
-    "cap:build:all": "node scripts/build-capacitor-apps.js",
-    "sw:update": "echo 'Service Worker updated'",
-    "tsc:watch": "node scripts/tsc-watch-daemon.mjs",
-    "precommit:jsxcheck": "node scripts/jsx-in-ts-check.mjs",
-    "precommit:all": "node scripts/jsx-in-ts-check.mjs && npm run typecheck && pnpm lint",
-    "verify:deploy": "node scripts/deploy-checklist.mjs",
-    "post-merge": "node scripts/post-merge.mjs",
-    "dashboard:worktree": "node scripts/worktree-dashboard.mjs",
-    "mock:webhook": "node scripts/mock-telegram-webhook.mjs",
-    "status": "python scripts/telemon-status.py",
-    "rollback": "bash scripts/rollback_deploy.sh",
-    "revert": "bash scripts/revert_to_last_good.sh",
-    "smoke-test": "bash scripts/smoke_test_deploy.sh",
-    "props:docs": "node scripts/generate-props-cheatsheet.js",
-    "pushsafe": "bash scripts/git-push-safe.sh",
-    "merge:master": "bash scripts/git-merge-to-master.sh",
-    "nuke": "rm -rf node_modules .next && pnpm install && npm run build",
-    "qa": "npm run typecheck && pnpm lint && npm run build",
-    "fresh": "bash scripts/git-cleanup.sh",
-    "fresh-remote": "bash scripts/git-cleanup-remote.sh",
-    "branch-status": "bash scripts/git-branch-status.sh"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,yaml,yml,md}": [
-      "prettier --write"
-    ],
-    "*.py": [
-      "autopep8 --in-place"
-    ]
-  },
-  "dependencies": {
-    "@capacitor/android": "^8.4.2",
-    "@capacitor/app": "^8.1.1",
-    "@capacitor/browser": "^8.0.4",
-    "@capacitor/cli": "^8.4.2",
-    "@capacitor/core": "^8.4.2",
-    "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/haptics": "^8.0.2",
-    "@capacitor/ios": "^8.4.2",
-    "@capacitor/push-notifications": "^8.1.2",
-    "@capacitor/share": "^8.0.1",
-    "@capacitor/splash-screen": "^8.0.2",
-    "@capacitor/status-bar": "^8.0.3",
-    "@sentry/nextjs": "^10",
-    "@telegram-apps/telegram-ui": "^2.1.13",
-    "@tma.js/sdk-react": "^3.0.23",
-    "@xyflow/react": "^12.11.2",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.4.0",
-    "framer-motion": "^12.42.2",
-    "html-to-image": "^1.11.13",
-    "lucide-react": "^1.23.0",
-    "next": "^15.5.20",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^3.9.2",
-    "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.14"
-  },
-  "devDependencies": {
-    "@types/node": "^26",
-    "@types/react": "^18.3.31",
-    "eslint": "^9",
-    "eslint-config-next": "^15.5.20",
-    "eslint-plugin-import": "^2.31.0",
-    "glob": "^10.3.10",
-    "jwt-decode": "^4.0.0",
-    "openapi-typescript": "^7",
-    "prettier": "^3",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp"
-    ]
-  }
+﻿{
+    "name":  "telegram-dashboard",
+    "version":  "0.1.0",
+    "engines":  {
+                    "node":  "\u003e=20.0.0",
+                    "pnpm":  "\u003e=10.0.0"
+                },
+    "packageManager":  "pnpm@10.8.1",
+    "private":  true,
+    "scripts":  {
+                    "start":  "next start",
+                    "lint":  "eslint --fix",
+                    "cap:android":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap copy \u0026\u0026 npx cap open android",
+                    "verify":  "pnpm typecheck \u0026\u0026 pnpm lint",
+                    "cap:ios":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap open ios",
+                    "typegen":  "npx openapi-typescript openapi.json -o src/lib/api.types.ts",
+                    "cap:build":  "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build \u0026\u0026 npx cap copy",
+                    "build":  "next build \u0026\u0026 node scripts/stamp-sw-buildhash.js",
+                    "prepare":  "husky || true",
+                    "dev":  "next dev --turbo",
+                    "seed":  "cd telegram-dashboard-backend \u0026\u0026 python scripts/seed_local.py",
+                    "typecheck":  "tsc --noEmit",
+                    "cap:sync":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap sync"
+                },
+    "lint-staged":  {
+                        "*.{ts,tsx,js,jsx}":  [
+                                                  "eslint --fix",
+                                                  "prettier --write"
+                                              ],
+                        "*.{json,yaml,yml,md}":  [
+                                                     "prettier --write"
+                                                 ],
+                        "*.py":  [
+                                     "autopep8 --in-place"
+                                 ]
+                    },
+    "dependencies":  {
+                         "@capacitor/android":  "^8.4.2",
+                         "@capacitor/app":  "^8.1.1",
+                         "@capacitor/browser":  "^8.0.4",
+                         "@capacitor/cli":  "^8.4.2",
+                         "@capacitor/core":  "^8.4.2",
+                         "@capacitor/filesystem":  "^8.1.2",
+                         "@capacitor/haptics":  "^8.0.2",
+                         "@capacitor/ios":  "^8.4.2",
+                         "@capacitor/push-notifications":  "^8.1.2",
+                         "@capacitor/share":  "^8.0.1",
+                         "@capacitor/splash-screen":  "^8.0.2",
+                         "@capacitor/status-bar":  "^8.0.3",
+                         "@sentry/nextjs":  "^10",
+                         "@telegram-apps/telegram-ui":  "^2.1.13",
+                         "@tma.js/sdk-react":  "^3.0.23",
+                         "@xyflow/react":  "^12.11.2",
+                         "clsx":  "^2.1.1",
+                         "date-fns":  "^4.4.0",
+                         "framer-motion":  "^12.42.2",
+                         "html-to-image":  "^1.11.13",
+                         "lucide-react":  "^1.23.0",
+                         "next":  "^15.5.20",
+                         "react":  "^18.3.1",
+                         "react-dom":  "^18.3.1",
+                         "recharts":  "^3.9.2",
+                         "tailwind-merge":  "^3.6.0",
+                         "zustand":  "^5.0.14"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^26",
+                            "@types/react":  "^18.3.31",
+                            "eslint":  "^9",
+                            "eslint-config-next":  "^15.5.20",
+                            "eslint-plugin-import":  "^2.31.0",
+                            "glob":  "^10.3.10",
+                            "jwt-decode":  "^4.0.0",
+                            "openapi-typescript":  "^7",
+                            "prettier":  "^3",
+                            "tailwindcss":  "^4",
+                            "typescript":  "^5",
+                            "lint-staged":  "^15",
+                            "cross-env":  "^10.1.0"
+                        },
+    "pnpm":  {
+                 "onlyBuiltDependencies":  [
+                                               "esbuild",
+                                               "sharp"
+                                           ]
+             }
 }

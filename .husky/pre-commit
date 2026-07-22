@@ -1,43 +1,55 @@
-set -e
+﻿set -e
 
-echo "🔍 [pre-commit] 실행 중..."
+echo "==> [pre-commit] running..."
 
-# 0. Diff 크기 제한 경고
+# 0. Warn if too many staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | wc -l)
 if [ "$STAGED_FILES" -gt 20 ]; then
-  echo "⚠️  [pre-commit] 경고: $STAGED_FILES개 파일 — 리뷰 품질을 위해 git add -p 로 나누세요."
+  echo "  WARNING: $STAGED_FILES files staged. Consider git add -p for granular commits."
   echo ""
 fi
 
-# 1. JSX-in-.ts 파일 금지 검사 (0.3초)
-echo "🔬 [check-jsx-in-ts] .ts 파일에 JSX 있는지 검사..."
+# 0.5 Validate package.json format (0.1s)
+echo "==> [check-package-json] ..."
+if git diff --cached --name-only --diff-filter=ACMR | grep -q "package.json"; then
+  node -e "JSON.parse(require('fs').readFileSync('package.json'))" 2>&1 || {
+    echo "  FAIL: package.json is not valid JSON"
+    exit 1
+  }
+  echo "  OK"
+else
+  echo "  SKIP (unchanged)"
+fi
+
+# 1. Check .ts files don't contain JSX
+echo "==> [check-jsx-in-ts] ..."
 VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.ts$' | xargs grep -lP '</[A-Z][a-zA-Z]*>|<[A-Z][a-zA-Z]*\s*/>' 2>/dev/null || true)
 if [ -n "$VIOLATIONS" ]; then
-  echo "❌ .ts → .tsx로 확장자 변경 필요:"
-  echo "$VIOLATIONS" | sed 's/^/   - /'
+  echo "  FAIL: .ts files with JSX detected. Rename to .tsx:"
+  echo "$VIOLATIONS" | sed 's/^/  - /'
   exit 1
 fi
-echo "✅ [check-jsx-in-ts] 통과"
+echo "  OK"
 
-# 2. tsc — 변경 파일만 (incremental 모드, 1-3초)
-echo "📦 [tsc --noEmit] (changed-files-only) ..."
+# 2. TypeScript check (incremental, 1-3s)
+echo "==> [tsc --noEmit] ..."
 CHANGED_TSC_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.tsx?$' || true)
 if [ -n "$CHANGED_TSC_FILES" ]; then
   npx tsc --noEmit --incremental 2>&1 || {
-    echo "❌ [tsc --noEmit] 타입 오류 — 커밋 차단"
+    echo "  FAIL: TypeScript errors detected"
     exit 1
   }
-  echo "✅ [tsc --noEmit] 통과"
+  echo "  OK"
 else
-  echo "✅ [tsc --noEmit] 스킵"
+  echo "  SKIP (no .ts/.tsx files changed)"
 fi
 
-# 3. lint-staged — 변경 파일만 (1-2초)
-echo "🧹 [lint-staged] ..."
+# 3. lint-staged (1-2s)
+echo "==> [lint-staged] ..."
 npx lint-staged 2>&1 || {
-  echo "❌ [lint-staged] 린트 오류 — 커밋 차단"
+  echo "  FAIL: lint-staged failed"
   exit 1
 }
-echo "✅ [lint-staged] 통과"
+echo "  OK"
 
-echo "🎉 [pre-commit] 완료"
+echo "==> [pre-commit] complete"
