@@ -18,6 +18,22 @@ function RankIcon({ rank }: { rank: number }) {
   );
 }
 
+function ResponseBar({ rate }: { rate: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 flex-1 rounded-full bg-violet-500/10 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-500"
+          style={{ width: `${rate}%` }}
+        />
+      </div>
+      <span className="text-xs tabular-nums text-app-text-muted w-10 text-right">
+        {rate}%
+      </span>
+    </div>
+  );
+}
+
 export function Top5Table({ data }: Top5TableProps) {
   return (
     <div className="rounded-2xl border border-violet-500/20 bg-app-card overflow-hidden">
@@ -29,19 +45,17 @@ export function Top5Table({ data }: Top5TableProps) {
           <thead>
             <tr className="border-b border-app-border text-left">
               <th className="px-5 py-3 text-xs font-medium text-app-text-muted w-16">순위</th>
-              <th className="px-5 py-3 text-xs font-medium text-app-text-muted">채팅방 이름</th>
+              <th className="px-5 py-3 text-xs font-medium text-app-text-muted">채팅방</th>
               <th className="px-5 py-3 text-xs font-medium text-app-text-muted text-right">메시지 수</th>
               <th className="px-5 py-3 text-xs font-medium text-app-text-muted text-right">참여자</th>
-              <th className="px-5 py-3 text-xs font-medium text-app-text-muted text-right">증감률</th>
+              <th className="px-5 py-3 text-xs font-medium text-app-text-muted text-right min-w-[160px]">응답률</th>
             </tr>
           </thead>
           <tbody>
-            {data.map((room, index) => (
+            {data.map((room) => (
               <tr
                 key={room.rank}
-                className={`border-b border-app-border/50 last:border-b-0 ${
-                  index % 2 === 1 ? "bg-app-card-hover/50" : ""
-                }`}
+                className="border-b border-app-border/50 last:border-b-0 hover:bg-app-card-hover transition-colors"
               >
                 <td className="px-5 py-3.5">
                   <RankIcon rank={room.rank} />
@@ -53,11 +67,8 @@ export function Top5Table({ data }: Top5TableProps) {
                 <td className="px-5 py-3.5 text-sm text-app-text text-right tabular-nums">
                   {room.participants.toLocaleString()}
                 </td>
-                <td className={`px-5 py-3.5 text-sm text-right tabular-nums font-medium ${
-                  room.change >= 0 ? "text-green-400" : "text-red-400"
-                }`}>
-                  {room.change >= 0 ? "+" : "-"}
-                  {Math.abs(room.change)}%
+                <td className="px-5 py-3.5 text-sm text-right tabular-nums">
+                  <ResponseBar rate={room.responseRate} />
                 </td>
               </tr>
             ))}
