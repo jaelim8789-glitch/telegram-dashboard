@@ -1,10 +1,10 @@
 "use client";
 
 import { memo, useRef } from "react";
-import { LayoutDashboard, MessageSquare, Send, User } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Send, User, Building2, Zap } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
-export type MiniAppTab = "dashboard" | "chat" | "send" | "profile";
+export type MiniAppTab = "dashboard" | "chat" | "send" | "profile" | "pixeloffice" | "replymacro";
 
 interface MiniAppNavProps {
   activeTab: MiniAppTab;
@@ -16,6 +16,8 @@ const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = 
   { id: "dashboard", label: "대시보드", icon: LayoutDashboard },
   { id: "chat", label: "AI 채팅", icon: MessageSquare },
   { id: "send", label: "발송", icon: Send },
+  { id: "pixeloffice", label: "PixelOffice", icon: Building2 },
+  { id: "replymacro", label: "답장매크로", icon: Zap },
   { id: "profile", label: "프로필", icon: User },
 ];
 
