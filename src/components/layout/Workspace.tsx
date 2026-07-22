@@ -17,6 +17,7 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { PinnedKpiBar } from "@/components/ui/PinnedKpiBar";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
 import type { TabId } from "@/types";
 import { Loader2, WifiOff } from "lucide-react";
 import { updateBadgeFromStats } from "@/lib/appBadge";
@@ -25,7 +26,7 @@ import { registerNativePush, setNativeBadge } from "@/lib/native-bridge";
 import { usePwaUpdate } from "@/hooks/usePwaUpdate";
 import { useBatterySaver } from "@/hooks/useBatterySaver";
 import { useAutoNightMode } from "@/hooks/useAutoNightMode";
-import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
+import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 import { ProfileSuggestion } from "@/components/workspace/ProfileSuggestion";
 
@@ -310,7 +311,11 @@ export function Workspace() {
     if (navView === "feature" && navFeature) {
       const FeatureContent = TAB_CONTENT[navFeature];
       if (FeatureContent) {
-        return <FeatureContent key={`${navFeature}-${refreshKey.current}`} />;
+        return (
+          <TabErrorBoundary tabName={navFeature}>
+            <FeatureContent key={`${navFeature}-${refreshKey.current}`} />
+          </TabErrorBoundary>
+        );
       }
     }
 
@@ -392,16 +397,19 @@ export function Workspace() {
               >
                 {pull.refreshing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin text-app-primary" />
-                    새로고침 중...
+                    <div className="relative h-4 w-4 overflow-hidden rounded-full">
+                      <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(var(--color-accent), var(--color-gold-deep), var(--color-accent))", animation: "spin 0.8s linear infinite" }} />
+                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
+                    </div>
+                    <span className="text-xs font-medium" style={{ background: "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>새로고침 중...</span>
                   </>
                 ) : (
                   <>
-                    <Loader2
-                      className="h-4 w-4 text-app-text-muted"
-                      style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}
-                    />
-                    {pull.pullDist > 50 ? "놓으면 새로고침" : "아래로 당겨서 새로고침"}
+                    <div className="relative h-4 w-4 overflow-hidden rounded-full" style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}>
+                      <div className="absolute inset-0 rounded-full opacity-60" style={{ background: "conic-gradient(var(--color-accent), transparent 60%, var(--color-accent))" }} />
+                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
+                    </div>
+                    <span className="text-xs text-app-text-muted">{pull.pullDist > 50 ? "놓으면 새로고침" : "아래로 당겨서 새로고침"}</span>
                   </>
                 )}
               </motion.div>

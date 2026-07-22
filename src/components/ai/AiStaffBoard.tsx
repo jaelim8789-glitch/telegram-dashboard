@@ -67,7 +67,7 @@ export function AiStaffBoard() {
   const staffWithStatus = AI_STAFF.map((s) => ({ ...s, status: statuses[s.id] || s.status }));
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-4">
+    <div className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory scrollbar-thin [-webkit-overflow-scrolling:touch] pb-1" style={{ scrollbarWidth: "thin" }}>
       {staffWithStatus.map((staff) => {
         const Icon = staff.icon;
         const isHovered = hovered === staff.id;
@@ -79,7 +79,7 @@ export function AiStaffBoard() {
             onClick={() => handleStaffClick(staff)}
             whileHover={{ scale: 1.03, y: -3 }}
             whileTap={{ scale: 0.97 }}
-            className={`relative rounded-2xl border ${staff.border} bg-gradient-to-br ${staff.color} p-3.5 text-left transition-all overflow-hidden backdrop-blur-sm gradient-border`}
+            className={`relative rounded-2xl border ${staff.border} bg-gradient-to-br ${staff.color} p-3.5 text-left transition-all overflow-hidden backdrop-blur-sm gradient-border snap-start shrink-0 w-[160px] md:w-auto`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
             <div className="relative z-0">
@@ -118,7 +118,7 @@ export function FloatingAiButton() {
   ];
 
   return (
-    <div className="fixed bottom-24 right-4 z-[60] md:bottom-8">
+    <div className="fixed bottom-28 right-4 z-[55] md:bottom-20">
       <AnimatePresence>
         {open && (
           <motion.div

@@ -407,10 +407,19 @@ export function useAccessibility() {
       setStatus(accessibilityManager.getStatus());
     };
 
-    // 상태 변경 감지를 위한 폴링 (또는 이벤트 기반으로 개선 가능)
-    const interval = setInterval(updateStatus, 1000);
+    const mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqContrast = window.matchMedia("(prefers-contrast: more)");
+    mqReduced.addEventListener("change", updateStatus);
+    mqContrast.addEventListener("change", updateStatus);
+    document.addEventListener("keydown", updateStatus);
+    document.addEventListener("mousedown", updateStatus);
 
-    return () => clearInterval(interval);
+    return () => {
+      mqReduced.removeEventListener("change", updateStatus);
+      mqContrast.removeEventListener("change", updateStatus);
+      document.removeEventListener("keydown", updateStatus);
+      document.removeEventListener("mousedown", updateStatus);
+    };
   }, []);
 
   return { ...status, manager: accessibilityManager };

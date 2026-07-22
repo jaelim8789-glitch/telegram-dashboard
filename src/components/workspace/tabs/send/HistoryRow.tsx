@@ -212,14 +212,7 @@ export const HistoryRow = memo(function HistoryRow({
             {isSending ? (
               <div className="relative h-full w-full overflow-hidden rounded-full">
                 <div className="absolute inset-0 bg-app-info/30" />
-                <div
-                  className="h-full rounded-full bg-app-info transition-all duration-1000"
-                  style={{
-                    width: `${Math.min(95, 20 + (Date.now() % 30000) / 30000 * 60)}%`,
-                    animation: "none",
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                <div className="h-full w-1/2 animate-pulse rounded-full bg-app-info" />
               </div>
             ) : isSent ? (
               <div className="h-full w-full rounded-full bg-app-success" />

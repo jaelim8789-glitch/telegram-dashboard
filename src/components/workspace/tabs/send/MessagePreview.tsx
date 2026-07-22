@@ -12,6 +12,7 @@ interface MessagePreviewProps {
   groupName?: string;
   imagePreviewUrl?: string | null;
   plan?: string | null;
+  referralCode?: string | null;
 }
 
 export const MessagePreview = memo(function MessagePreview({
@@ -21,11 +22,13 @@ export const MessagePreview = memo(function MessagePreview({
   groupName,
   imagePreviewUrl,
   plan,
+  referralCode,
 }: MessagePreviewProps) {
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
 
-  const WATERMARK_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online";
-  const WATERMARK = `\n\n━━━━━━━━━━━━━━━━━━\n🤖 TeleMon AI\n\n🚀 Telegram 운영, 아직도 직접 하시나요?\n\nAI 비서가\n✅ 자동 홍보\n✅ 자동 답장\n✅ 채널 운영\n✅ 그룹 관리\n\n🌐 ${WATERMARK_URL}`;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online";
+  const refParam = referralCode ? `?ref=${referralCode}` : "";
+  const WATERMARK = `\n\n━━━━━━━━━━━━━━━━━━\n🤖 AI가 자동으로 답변했습니다. 무료 AI 직원 받기\n\n🌐 ${SITE_URL}/signup${refParam}`;
 
   const preview = useMemo(
     () =>
