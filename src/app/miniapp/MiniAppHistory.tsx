@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useEffect, useCallback } from "react";
+import { useState, memo, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Clock, CheckCircle, XCircle, AlertCircle, RotateCcw, Send, RefreshCw, Loader2, ChevronRight, Filter } from "lucide-react";
 import { hapticFeedback } from "@tma.js/sdk-react";
@@ -41,12 +41,13 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
   const [statusFilter, setStatusFilter] = useState<"all" | BroadcastStatus>("all");
   const [retrying, setRetrying] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const PAGE_SIZE = 20;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 15;
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const logs = await api.fetchLogs({ limit: 50, ...(statusFilter !== "all" ? { status: statusFilter } : {}) });
+      const logs = await api.fetchLogs({ limit: 100, ...(statusFilter !== "all" ? { status: statusFilter } : {}) });
       setEntries(logs.map((l: any) => ({
         id: l.id,
         message: l.message || "(내용 없음)",
@@ -62,6 +63,17 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
   }, [statusFilter]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  // IntersectionObserver infinite scroll
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) setPage(p => p + 1);
+    }, { rootMargin: "200px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loading]);
 
   const handleRetry = useCallback(async (id: string) => {
     setRetrying(id);
@@ -144,12 +156,11 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
               </motion.div>
             );
           })}
-          {hasMore && (
-            <button onClick={() => setPage(p => p + 1)}
-              className="w-full rounded-xl py-3 text-xs font-medium active:scale-[0.98]"
-              style={{ color: "var(--tg-theme-button-color, #5288c1)" }}>
-              더보기 ({entries.length - displayEntries.length}개)
-            </button>
+          {hasMore && <div ref={sentinelRef} className="h-8" />}
+          {loading && entries.length > 0 && (
+            <div className="flex justify-center py-3">
+              <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--tg-theme-button-color, #5288c1)" }} />
+            </div>
           )}
         </div>
       )}
