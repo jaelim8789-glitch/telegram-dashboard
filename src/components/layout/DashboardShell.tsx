@@ -52,9 +52,10 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
-import { useBrowserNotification } from "@/hooks/useBrowserNotification";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useOrientation } from "@/hooks/useOrientation";
+import { useBrowserNotification } from "@/hooks/useBrowserNotification";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function DashboardShell() {
@@ -66,9 +67,10 @@ export function DashboardShell() {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
-  const sidebarCollapsed = useDashboardStore((s) => s.sidebarCollapsed);
   const [isMobile, setIsMobile] = useState(false);
 
+  const sidebarCollapsed = useDashboardStore((s) => s.sidebarCollapsed);
+  const toggleSidebarCollapsed = useDashboardStore((s) => s.toggleSidebarCollapsed);
   const haptics = useHapticFeedback();
 
   const toggleSidebar = useCallback(() => {
@@ -152,22 +154,21 @@ export function DashboardShell() {
   }, [fetchAccounts]);
 
   // ── Browser notifications ──
-  const { notifyBroadcastComplete, isSupported } = useBrowserNotification();
+  const { notifyBroadcastComplete } = useBrowserNotification();
 
-  // Notify when broadcasts complete
+  // Notify when broadcasts complete per-account
   const accounts = useDashboardStore((s) => s.accounts);
-  const prevRef = useRef<Map<string, number>>(new Map());
+  const prevSentRef = useRef<Record<string, number>>({});
   useEffect(() => {
-    if (!isSupported) return;
-    for (const account of accounts) {
-      const prevSent = prevRef.current.get(account.id) ?? 0;
-      const nowSent = account.todaySent;
-      if (nowSent > prevSent && prevSent > 0) {
-        notifyBroadcastComplete(account.name ?? account.phone, nowSent - prevSent, nowSent - prevSent, 0);
+    for (const acc of accounts) {
+      const prev = prevSentRef.current[acc.id] ?? 0;
+      if (acc.todaySent > prev && prev > 0) {
+        const delta = acc.todaySent - prev;
+        notifyBroadcastComplete(acc.name ?? acc.phone, delta, delta, 0);
       }
-      prevRef.current.set(account.id, nowSent);
+      prevSentRef.current[acc.id] = acc.todaySent;
     }
-  }, [accounts, notifyBroadcastComplete, isSupported]);
+  }, [accounts, notifyBroadcastComplete]);
 
   // ── First-visit auto-redirect to dashboard with 0 accounts ──
   useEffect(() => {
@@ -187,7 +188,7 @@ export function DashboardShell() {
       <NetworkStatus />
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
-      <Header sidebarCollapsed={sidebarCollapsed} />
+      <Header />
       {/* Mobile nav toggle */}
       <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
         <button
@@ -229,7 +230,7 @@ export function DashboardShell() {
           id="dashboard-sidebar"
           role="complementary"
           aria-label="계정 목록"
-          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex sm:shrink-0`}
+          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
         >
           {sidebarOpen && (
             <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />

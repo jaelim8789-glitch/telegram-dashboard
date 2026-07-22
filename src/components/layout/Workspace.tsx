@@ -18,6 +18,7 @@ import { useNetworkQuality } from "@/hooks/useNetworkQuality";
 import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { OnboardingTour } from "@/components/ui/OnboardingTour";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import PinnedKpiBar from "@/components/ui/PinnedKpiBar";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { TabErrorBoundary } from "@/components/ui/TabErrorBoundary";
@@ -384,6 +385,10 @@ export function Workspace() {
         <CategoryStrip />
 
         <ProfileSuggestion onApply={dashboardSwitchProfile} />
+
+        <div className="px-4 pt-4 max-w-2xl">
+          <OnboardingChecklist />
+        </div>
 
         {isMobile && <PinnedKpiBar />}
 

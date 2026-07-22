@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, LogOut, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
+import { ExternalLink, LogOut, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken, clearSessionToken } from "@/lib/auth";
@@ -22,13 +22,14 @@ function formatTrialRemaining(expiresAt: string | null): string | null {
   return `${hours}시간 ${minutes}분`;
 }
 
-export function Header({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
+export function Header() {
   const router = useRouter();
   const role = useDashboardStore((s) => s.role);
   const navigateToChat = useDashboardStore((s) => s.navigateToChat);
   const subscriptionStatus = useDashboardStore((s) => s.subscriptionStatus);
   const plan = useDashboardStore((s) => s.plan);
   const trialExpiresAt = useDashboardStore((s) => s.trialExpiresAt);
+  const sidebarCollapsed = useDashboardStore((s) => s.sidebarCollapsed);
   const toggleSidebarCollapsed = useDashboardStore((s) => s.toggleSidebarCollapsed);
 
   const isTrialActive = plan === "free" && subscriptionStatus === "active" && trialExpiresAt;
@@ -76,16 +77,6 @@ export function Header({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
       </Link>
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={toggleSidebarCollapsed}
-          className="hidden sm:flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all sm:min-h-8 sm:min-w-8"
-          title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
-          aria-label={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
-        >
-          {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
-
         {/* Pixel Office Widget — 모든 화면에서 보임 */}
         <div className="flex items-center rounded-xl border border-app-border bg-app-card px-2 py-1 max-sm:hidden sm:flex">
           <PixelOfficeWidget compact />
@@ -104,6 +95,15 @@ export function Header({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
           <ExternalLink className="h-3 w-3" />
           변경사항
         </Link>
+
+        <button
+          type="button"
+          onClick={toggleSidebarCollapsed}
+          className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
+          title={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
 
         <FullscreenToggle />
 

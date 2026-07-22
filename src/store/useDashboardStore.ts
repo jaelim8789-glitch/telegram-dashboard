@@ -345,6 +345,16 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       return { sidebarCollapsed: next };
     }),
 
+  sidebarCollapsed: (() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("telemon-sidebar-collapsed") === "true"; } catch { return false; }
+  })(),
+  toggleSidebarCollapsed: () => {
+    const next = !get().sidebarCollapsed;
+    set({ sidebarCollapsed: next });
+    try { localStorage.setItem("telemon-sidebar-collapsed", String(next)); } catch {}
+  },
+
   reuseBroadcast: (broadcast) => {
     set({
       sendMessage: broadcast.message,
