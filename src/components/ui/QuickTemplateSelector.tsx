@@ -1,146 +1,243 @@
-import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Plus, X } from 'lucide-react';
-import { Button } from './Button';
-import { cn } from '@/lib/cn';
+import { useState, useEffect, useCallback } from "react";
+import { MessageSquare, Star, Clock, Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 interface Template {
   id: string;
   name: string;
   content: string;
-  createdAt: string;
+  category?: string;
+  favorite?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  usageCount?: number;
 }
 
 interface QuickTemplateSelectorProps {
   templates: Template[];
   onTemplateSelect: (template: Template) => void;
-  onAddTemplate: (name: string, content: string) => void;
+  onTemplateAdd?: (template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onTemplateDelete?: (id: string) => void;
   className?: string;
+  maxVisible?: number;
 }
 
-export function QuickTemplateSelector({
-  templates,
-  onTemplateSelect,
-  onAddTemplate,
-  className
+export function QuickTemplateSelector({ 
+  templates, 
+  onTemplateSelect, 
+  onTemplateAdd,
+  onTemplateDelete,
+  className,
+  maxVisible = 5
 }: QuickTemplateSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFavorites, setShowFavorites] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newTemplateName, setNewTemplateName] = useState('');
-  const [newTemplateContent, setNewTemplateContent] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateContent, setNewTemplateContent] = useState("");
 
-  const handleClickOutside = (event: MouseEvent) => {
-    if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
-      setShowAddForm(false);
-    }
-  };
+  // 필터링된 템플릿
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          template.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFavorite = !showFavorites || template.favorite;
+    return matchesSearch && matchesFavorite;
+  });
 
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // 사용 빈도 순으로 정렬
+  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
+    return (b.usageCount || 0) - (a.usageCount || 0);
+  });
 
-  const handleAddTemplate = () => {
-    if (newTemplateName.trim() && newTemplateContent.trim()) {
-      onAddTemplate(newTemplateName.trim(), newTemplateContent.trim());
-      setNewTemplateName('');
-      setNewTemplateContent('');
-      setShowAddForm(false);
-    }
-  };
+  // 최근 사용한 템플릿 순으로 정렬 (최근 5개)
+  const recentTemplates = [...templates]
+    .filter(t => t.updatedAt)
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    .slice(0, maxVisible);
+
+  const handleAddTemplate = useCallback(() => {
+    if (!newTemplateName.trim() || !newTemplateContent.trim() || !onTemplateAdd) return;
+    
+    onTemplateAdd({
+      name: newTemplateName.trim(),
+      content: newTemplateContent.trim(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      usageCount: 0
+    });
+    
+    setNewTemplateName("");
+    setNewTemplateContent("");
+    setShowAddForm(false);
+  }, [newTemplateName, newTemplateContent, onTemplateAdd]);
+
+  const handleTemplateClick = useCallback((template: Template) => {
+    onTemplateSelect({
+      ...template,
+      usageCount: (template.usageCount || 0) + 1,
+      updatedAt: new Date()
+    });
+  }, [onTemplateSelect]);
 
   return (
-    <div ref={containerRef} className={cn('relative', className)}>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2"
-      >
-        <MessageSquare className="h-4 w-4" />
-        <span>템플릿</span>
-      </Button>
+    <div className={cn("rounded-xl border bg-app-card p-4", className)}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>
+          <MessageSquare className="h-5 w-5" />
+          <h3 className="font-semibold">템플릿</h3>
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setShowFavorites(!showFavorites)}
+            className={`p-1.5 rounded ${showFavorites ? 'text-yellow-400' : 'text-app-text-muted'}`}
+          >
+            <Star className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="p-1.5 rounded text-app-text-muted hover:text-app-text"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-      {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 z-50 w-80 max-h-96 overflow-hidden rounded-xl border border-app-border bg-app-card shadow-xl">
-          <div className="p-3 border-b border-app-border">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium text-app-text">빠른 템플릿</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="p-1"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {showAddForm && (
-              <div className="mt-3 p-2 border border-app-border rounded-lg">
-                <input
-                  type="text"
-                  value={newTemplateName}
-                  onChange={(e) => setNewTemplateName(e.target.value)}
-                  placeholder="템플릿 이름"
-                  className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-1.5 text-sm text-app-text mb-2"
-                />
-                <textarea
-                  value={newTemplateContent}
-                  onChange={(e) => setNewTemplateContent(e.target.value)}
-                  placeholder="템플릿 내용"
-                  rows={3}
-                  className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-1.5 text-sm text-app-text mb-2"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddForm(false)}
-                    className="flex-1"
-                  >
-                    취소
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleAddTemplate}
-                    className="flex-1"
-                  >
-                    저장
-                  </Button>
-                </div>
-              </div>
-            )}
+      {/* 검색 */}
+      <div className="mb-3">
+        <input
+          type="text"
+          placeholder="템플릿 검색..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full rounded-lg border bg-app-bg px-3 py-2 text-sm outline-none"
+          style={{ 
+            borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
+            backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
+            color: "var(--tg-theme-text-color, #f5f5f5)"
+          }}
+        />
+      </div>
+
+      {/* 템플릿 추가 폼 */}
+      {showAddForm && (
+        <div className="mb-4 p-3 rounded-lg bg-app-card-hover">
+          <div className="mb-2">
+            <input
+              type="text"
+              placeholder="템플릿 이름"
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+              className="w-full rounded border bg-app-bg px-2 py-1.5 text-sm outline-none mb-2"
+              style={{ 
+                borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
+                backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
+                color: "var(--tg-theme-text-color, #f5f5f5)"
+              }}
+            />
+            <textarea
+              placeholder="템플릿 내용"
+              value={newTemplateContent}
+              onChange={(e) => setNewTemplateContent(e.target.value)}
+              rows={2}
+              className="w-full rounded border bg-app-bg px-2 py-1.5 text-sm outline-none"
+              style={{ 
+                borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
+                backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
+                color: "var(--tg-theme-text-color, #f5f5f5)"
+              }}
+            />
           </div>
-          
-          <div className="max-h-64 overflow-y-auto">
-            {templates.length === 0 ? (
-              <div className="p-4 text-center text-app-text-muted text-sm">
-                저장된 템플릿이 없습니다
-              </div>
-            ) : (
-              templates.map((template) => (
-                <button
-                  key={template.id}
-                  type="button"
-                  onClick={() => {
-                    onTemplateSelect(template);
-                    setIsOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left border-b border-app-border/50 last:border-b-0 hover:bg-app-card-hover transition-colors"
-                >
-                  <div className="font-medium text-app-text truncate">{template.name}</div>
-                  <div className="text-xs text-app-text-muted mt-1 line-clamp-2">
-                    {template.content}
-                  </div>
-                </button>
-              ))
-            )}
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-1.5 text-sm rounded bg-app-card text-app-text-muted"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleAddTemplate}
+              className="px-3 py-1.5 text-sm rounded bg-[var(--tg-theme-button-color,#5288c1)] text-white"
+            >
+              추가
+            </button>
           </div>
         </div>
       )}
+
+      {/* 최근 사용한 템플릿 */}
+      {recentTemplates.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2 text-sm text-app-text-muted">
+            <Clock className="h-3.5 w-3.5" />
+            <span>최근 사용</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recentTemplates.slice(0, 3).map(template => (
+              <button
+                key={`recent-${template.id}`}
+                onClick={() => handleTemplateClick(template)}
+                className="flex-1 min-w-[120px] px-3 py-2 text-xs rounded-lg bg-app-card-hover text-left hover:bg-app-card-active transition-colors truncate"
+                style={{ 
+                  backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
+                  color: "var(--tg-theme-text-color, #f5f5f5)"
+                }}
+                title={template.content}
+              >
+                <div className="font-medium truncate">{template.name}</div>
+                <div className="truncate opacity-70">{template.content.substring(0, 20)}{template.content.length > 20 ? '...' : ''}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 템플릿 목록 */}
+      <div className="max-h-60 overflow-y-auto">
+        {sortedTemplates.length === 0 ? (
+          <div className="py-4 text-center text-sm text-app-text-muted">
+            {searchQuery ? '검색 결과가 없습니다' : '템플릿이 없습니다'}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sortedTemplates.slice(0, maxVisible).map(template => (
+              <div 
+                key={template.id} 
+                className="flex items-start justify-between p-3 rounded-lg bg-app-card-hover hover:bg-app-card-active transition-colors"
+                style={{ 
+                  backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
+                  color: "var(--tg-theme-text-color, #f5f5f5)"
+                }}
+              >
+                <button
+                  onClick={() => handleTemplateClick(template)}
+                  className="flex-1 text-left"
+                >
+                  <div className="font-medium text-sm">{template.name}</div>
+                  <div className="text-xs opacity-70 mt-1 line-clamp-2">{template.content}</div>
+                  {template.usageCount && template.usageCount > 0 && (
+                    <div className="text-xs opacity-50 mt-1">사용 {template.usageCount}회</div>
+                  )}
+                </button>
+                
+                <div className="flex items-center gap-1 ml-2">
+                  {template.favorite && (
+                    <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
+                  )}
+                  
+                  {onTemplateDelete && (
+                    <button
+                      onClick={() => onTemplateDelete(template.id)}
+                      className="p-1 text-app-text-muted hover:text-app-danger rounded"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

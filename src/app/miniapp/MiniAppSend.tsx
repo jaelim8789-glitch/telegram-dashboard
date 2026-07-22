@@ -2,7 +2,7 @@
 
 import { useState, memo, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info } from "lucide-react";
+import { Send, Loader2, CheckCircle, Users, ChevronDown, AlertCircle, Image, Camera, X, Info, Calendar } from "lucide-react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 import * as api from "@/lib/api";
 import { quickSendToTopGroups } from "@/lib/api-miniapp";
@@ -34,6 +34,9 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   const [loadingAccts, setLoadingAccts] = useState(true);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [undoTimer, setUndoTimer] = useState<number | null>(null);
+  const lastBroadcastIds = useRef<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draft = useAutoDraft("miniapp-send-message");
   
@@ -63,14 +66,22 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
     { id: '3', name: '감사 인사', content: '항상 감사합니다.' },
   ]);
   const [recentMessages, setRecentMessages] = useState<string[]>([]);
+  const [scheduled, setScheduled] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
 
   // Swipe template functionality
+  const swipeAreaRef = useRef<HTMLDivElement>(null);
   const { attachSwipeListeners } = useSwipeTemplate({
     templates: templates.map(t => t.content),
     recentMessages,
     onTemplateSelect: (template: string) => setMessage(prev => prev + template),
     onRecentMessageSelect: (recentMsg: string) => setMessage(prev => prev + recentMsg)
   });
+
+  useEffect(() => {
+    const cleanup = attachSwipeListeners(swipeAreaRef.current);
+    return () => { if (typeof cleanup === "function") cleanup(); };
+  }, [attachSwipeListeners]);
 
   // 계정 상태 동기화
   useEffect(() => {
@@ -188,9 +199,13 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   const handleSend = useCallback(async () => {
     if ((!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0) return;
     setSending(true); setError("");
+    setProgress({ current: 0, total: selectedAccountIds.length });
+    const ids: string[] = [];
     let success = 0, failed = 0;
 
-    for (const accountId of selectedAccountIds) {
+    for (let i = 0; i < selectedAccountIds.length; i++) {
+      const accountId = selectedAccountIds[i];
+      setProgress({ current: i + 1, total: selectedAccountIds.length });
       try {
         if (selectedGroupIds.length > 0) {
           const form = new FormData();
@@ -198,11 +213,12 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           form.append("message", message.trim() || "");
           form.append("recipients", JSON.stringify(selectedGroupIds));
           if (imageFile) form.append("image", imageFile);
+          if (scheduled && scheduledDate) form.append("scheduled_at", new Date(scheduledDate).toISOString());
           const { request } = await import("@/lib/api");
-          await request("/api/broadcast", { method: "POST", body: form });
+          const res = await request<any>("/api/broadcast", { method: "POST", body: form });
+          if (res?.id) ids.push(res.id);
         } else {
           if (imageFile) {
-            // With image, use manual per-group send
             const { request } = await import("@/lib/api");
             const topGroups = await api.fetchGroups(accountId);
             const groupIds = topGroups.slice(0, 5).map((g: any) => g.id);
@@ -212,7 +228,9 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             form.append("message", message.trim() || "");
             form.append("recipients", JSON.stringify(groupIds));
             if (imageFile) form.append("image", imageFile);
-            await request("/api/broadcast", { method: "POST", body: form });
+            if (scheduled && scheduledDate) form.append("scheduled_at", new Date(scheduledDate).toISOString());
+            const res = await request<any>("/api/broadcast", { method: "POST", body: form });
+            if (res?.id) ids.push(res.id);
           } else {
             const result = await quickSendToTopGroups(accountId, message.trim(), 5);
             if (!result.success) throw new Error(result.message);
@@ -223,26 +241,46 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
     }
 
     setSending(false);
+    setProgress(null);
+    lastBroadcastIds.current = ids;
+
     if (failed === 0) {
       setSent(true);
       setImageFile(null);
       draft.clearDraft();
-      // Add to recent messages
       if (message.trim()) {
         setRecentMessages(prev => [message.trim(), ...prev.slice(0, 4)]);
       }
       try { hapticFeedback.notificationOccurred("success"); } catch {}
       toast({ type: "success", title: "발송 완료", message: `${success}개 계정 발송 성공` });
-      setTimeout(() => setSent(false), 3000);
+      const timer = window.setTimeout(() => { setSent(false); setUndoTimer(null); }, 10000);
+      setUndoTimer(timer);
     } else {
       setError(`${success}건 성공, ${failed}건 실패`);
       try { hapticFeedback.notificationOccurred("error"); } catch {}
     }
-  }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, toast, draft]);
+  }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, scheduled, scheduledDate, toast, draft]);
+
+  const handleUndo = useCallback(async () => {
+    if (undoTimer) clearTimeout(undoTimer);
+    if (lastBroadcastIds.current.length > 0) {
+      try { await api.cancelBroadcasts(lastBroadcastIds.current); } catch {}
+    }
+    setSent(false);
+    setUndoTimer(null);
+    lastBroadcastIds.current = [];
+    try { hapticFeedback.notificationOccurred("success"); } catch {}
+    toast({ type: "info", title: "발송 취소", message: "발송이 취소되었습니다" });
+  }, [undoTimer, toast]);
 
   useKeyboardShortcut("Enter", handleSend, { ctrl: true });
 
+  const haptic = useCallback((level: "light" | "medium" | "heavy" = "light") => {
+    try { hapticFeedback.impactOccurred(level); } catch {}
+  }, []);
+
   const toggleAccount = useCallback((id: string) => {
+    haptic("light");
     setSelectedAccountIds(prev => {
       const newSelection = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       // 계정 전환 시 상태 업데이트
@@ -254,6 +292,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
   }, [switchAccount]);
 
   const toggleGroup = useCallback((id: string) => {
+    haptic("light");
     setSelectedGroupIds(prev => {
       const newSelection = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       // 그룹 선택 변경 시 계정 상태 업데이트
@@ -324,12 +363,12 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           <Image className="h-3 w-3" /> 이미지 첨부 (선택사항)
         </label>
         <div className="flex gap-2">
-          <button onClick={() => handlePickImage(true)}
+          <button onClick={() => { haptic("light"); handlePickImage(true); }}
             className={cn("flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95 min-h-[44px] min-w-[44px]")}
             style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
             <Camera className="h-4 w-4" /> 촬영
           </button>
-          <button onClick={() => handlePickImage(false)}
+          <button onClick={() => { haptic("light"); handlePickImage(false); }}
             className={cn("flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95 min-h-[44px] min-w-[44px]")}
             style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
             <Image className="h-4 w-4" /> 앨범
@@ -362,7 +401,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       </div>
 
       {/* Message textarea */}
-      <div className="relative" ref={(el) => el && attachSwipeListeners(el)}>
+      <div className="relative" ref={swipeAreaRef}>
         <textarea ref={textareaRef} value={message} onChange={e => { 
           setMessage(e.target.value); 
           draft.onChange(e.target.value); 
@@ -427,8 +466,39 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         </div>
       )}
 
+      {/* Scheduled send toggle */}
+      <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4" style={{ color: scheduled ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-hint-color, #708499)" }} />
+          <span className="text-xs" style={{ color: "var(--tg-theme-text-color)" }}>예약 발송</span>
+        </div>
+        <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
+          <input type="checkbox" className="peer sr-only" checked={scheduled}
+            onChange={() => { haptic("light"); setScheduled(!scheduled); if (!scheduled) setScheduledDate(""); }} />
+          <span className="absolute inset-0 rounded-full transition-colors peer-checked:bg-emerald-500 bg-gray-600" />
+          <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
+        </label>
+      </div>
+      {scheduled && (
+        <div className="space-y-2">
+          <input type="datetime-local" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)}
+            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+            style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
+            min={new Date().toISOString().slice(0, 16)} />
+          <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            {[30, 60, 120, 360].map(m => (
+              <button key={m} onClick={() => { haptic("light"); const d = new Date(Date.now() + m * 60000); setScheduledDate(d.toISOString().slice(0, 16)); }}
+                className="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-medium active:scale-90"
+                style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
+                {m >= 60 ? `${m / 60}시간 후` : `${m}분 후`}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <motion.button
-        onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}으로 발송합니다`)}
+        onClick={() => confirm("발송 확인", handleSend, `${selectedAccountIds.length}개 계정 · ${selectedGroupIds.length || "상위 5"}개 그룹${imageFile ? " · 이미지 포함" : ""}${scheduled && scheduledDate ? ` · 예약: ${new Date(scheduledDate).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""} 으로 발송합니다`)}
         disabled={(!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0}
         animate={sent ? { backgroundColor: "var(--tg-theme-button-color, #5288c1)", transition: { duration: 0.3 } } : {}}
         style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}
@@ -436,11 +506,21 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         aria-label={sending ? "발송 중" : sent ? "발송 완료" : "발송하기"}>
         <AnimatePresence mode="wait">
           {sending ? (
-            <motion.div key="spinner" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="flex items-center gap-2">
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                <Loader2 className="h-5 w-5" />
-              </motion.div>
-              발송 중...
+            <motion.div key="progress" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 w-full justify-center">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative h-5 w-5">
+                  <motion.div className="absolute inset-0 rounded-full border-2 border-t-transparent" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }}
+                    animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} />
+                </div>
+                <span className="text-sm">발송 중 {progress ? `${progress.current}/${progress.total}` : ""}</span>
+              </div>
+              {progress && (
+                <div className="w-16 h-1.5 rounded-full overflow-hidden bg-white/20">
+                  <motion.div className="h-full rounded-full bg-white"
+                    initial={{ width: 0 }} animate={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    transition={{ duration: 0.3 }} />
+                </div>
+              )}
             </motion.div>
           ) : sent ? (
             <motion.div key="check" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 15 }} className="flex items-center gap-2">
@@ -455,6 +535,20 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           )}
         </AnimatePresence>
       </motion.button>
+
+      {/* Undo bar */}
+      <AnimatePresence>
+        {sent && undoTimer && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="flex items-center justify-between rounded-xl px-4 py-3"
+            style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
+            <span className="text-xs" style={{ color: "var(--tg-theme-text-color)" }}>발송 완료 — 10초 내 취소 가능</span>
+            <button onClick={handleUndo} className="text-xs font-semibold active:scale-90" style={{ color: "var(--tg-theme-destructive-text-color, #ec3942)" }}>
+              실행 취소
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {selectedGroupIds.length === 0 && (
         <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹을 선택하지 않으면 상위 5개 그룹에 자동 발송됩니다</p>
