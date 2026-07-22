@@ -87,17 +87,6 @@ function InteractiveTemplatePreview({
     [debouncedMessage],
   );
 
-}
-
-// 수정된 부분: interface 정의
-interface SendTabProps {
-  message: string;
-  setMessage: (msg: string) => void;
-  selectedRecipients: Group[];
-  account: { name?: string | null; phone?: string | null } | undefined;  // 수정: 주석 제거
-  // ... other props
-}
-
   const resolved = useMemo(
     () =>
       previewTemplate(debouncedMessage, {
