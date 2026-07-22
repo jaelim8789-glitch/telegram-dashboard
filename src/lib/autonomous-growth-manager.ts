@@ -52,6 +52,7 @@ class AutonomousGrowthManager {
       goal,
       status: 'idle',
       currentCycle: 0,
+      retryCount: 0,
       successMetrics: {
         totalReached: 0,
         dailyGoals: [],

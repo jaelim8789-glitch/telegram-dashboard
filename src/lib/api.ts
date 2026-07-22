@@ -1589,21 +1589,7 @@ interface ApiUserLookupResult {
 export async function adminUserLookup(q: string): Promise<UserLookupResult | null> {
   const result = await request<ApiUserLookupResult | null>(`/api/admin/user-lookup?q=${encodeURIComponent(q)}`);
   if (!result) return null;
-  return {
-    userId: result.user_id,
-    phone: result.phone,
-    isActive: result.is_active,
-    createdAt: result.created_at,
-    lastLogin: result.last_login,
-    hasApiKey: result.has_api_key,
-    tenantId: result.tenant_id,
-    tenantPlan: result.tenant_plan,
-    trialExpiresAt: result.trial_expires_at,
-    subscriptionStatus: result.subscription_status,
-    telegramVerificationStatus: result.telegram_verification_status,
-    telegramUserId: result.telegram_user_id,
-    telegramVerifiedAt: result.telegram_verified_at,
-  };
+  return camelCaseKeys<UserLookupResult>(result);
 }
 
 export interface ManualIssueResult {
