@@ -216,7 +216,7 @@ export function InlineAiChat() {
   // ── 발송현황 요약 카드 ──
   useEffect(() => {
     let cancelled = false;
-    let currentAccountId = selectedAccountId;
+    const currentAccountId = selectedAccountId;
     setSummaryLoading(true);
 
     Promise.all([

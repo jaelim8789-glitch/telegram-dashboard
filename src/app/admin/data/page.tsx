@@ -231,7 +231,7 @@ export default function DataSettingsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-app-text-muted py-2">저장된 스냅샷이 없습니다. "지금 스냅샷 저장"을 눌러주세요.</p>
+              <p className="text-xs text-app-text-muted py-2">저장된 스냅샷이 없습니다. &quot;지금 스냅샷 저장&quot;을 눌러주세요.</p>
             )}
           </div>
         </Panel>

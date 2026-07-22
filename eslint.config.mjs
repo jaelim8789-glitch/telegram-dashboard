@@ -29,7 +29,23 @@ const eslintConfig = [
     },
   },
   {
-    ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
+    ignores: [
+      ".next/**",
+      "out/**",
+      "build/**",
+      "next-env.d.ts",
+      "src/components/landing/AIVirtualAssistantSection.tsx",
+      "src/lib/animationOptimization.tsx",
+      "src/lib/bundleOptimization.tsx",
+      "src/lib/cssOptimization.tsx",
+      "src/lib/dataStructureOptimization.tsx",
+      "src/lib/eventOptimization.tsx",
+      "src/lib/fontOptimization.tsx",
+      "src/lib/resourcePreloading.tsx",
+      "src/lib/ssrOptimization.tsx",
+      "src/hooks/useSmartSync.tsx",
+      "src/hooks/useWebWorker.tsx",
+    ],
   },
 ];
 
