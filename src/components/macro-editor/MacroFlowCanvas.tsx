@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState, type DragEvent } from "react";
+import React, { useCallback, useRef, useState, useMemo, type DragEvent } from "react";
 import {
   ReactFlow,
   Controls,
@@ -45,38 +45,52 @@ const defaultEdgeOptions = {
   },
 };
 
-const initialNodes: Node[] = [
-  {
-    id: "start-1",
-    type: "start",
-    position: { x: 350, y: 50 },
-    data: {},
-  },
-];
-
 interface FlowCanvasProps {
   selectedNode: Node | null;
+  selectedEdgeId: string | null;
   onNodeSelect: (node: Node | null) => void;
+  onEdgeSelect: (edge: Edge | null) => void;
+  onNodeDragStop: () => void;
   nodes: Node[];
   edges: Edge[];
   onNodesChange: (changes: Parameters<typeof applyNodeChanges>[0]) => void;
   onEdgesChange: (changes: Parameters<typeof applyEdgeChanges>[0]) => void;
   onConnect: (connection: Connection) => void;
   onDropNode: (type: string, position: { x: number; y: number }) => void;
+  isValidConnection: (connection: Connection) => boolean;
 }
 
 export function FlowCanvas({
   selectedNode,
+  selectedEdgeId,
   onNodeSelect,
+  onEdgeSelect,
+  onNodeDragStop,
   nodes,
   edges,
   onNodesChange,
   onEdgesChange,
   onConnect,
   onDropNode,
+  isValidConnection,
 }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [rfInstance, setRfInstance] = useState<any>(null);
+
+  const derivedEdges = useMemo(
+    () =>
+      edges.map((e) => ({
+        ...e,
+        selected: e.id === selectedEdgeId,
+        style: {
+          ...(e.style as Record<string, unknown>),
+          ...(e.id === selectedEdgeId
+            ? { strokeWidth: 3, filter: "drop-shadow(0 0 4px rgba(139,92,246,0.5))" }
+            : {}),
+        },
+      })),
+    [edges, selectedEdgeId]
+  );
 
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -101,21 +115,44 @@ export function FlowCanvas({
     [rfInstance, onDropNode]
   );
 
+  const handleEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      onEdgeSelect(edge);
+    },
+    [onEdgeSelect]
+  );
+
+  const handlePaneClick = useCallback(() => {
+    onNodeSelect(null);
+    onEdgeSelect(null);
+  }, [onNodeSelect, onEdgeSelect]);
+
+  const handleNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      onNodeSelect(node);
+      onEdgeSelect(null);
+    },
+    [onNodeSelect, onEdgeSelect]
+  );
+
   const hasNodes = nodes.length > 0;
 
   return (
     <div ref={reactFlowWrapper} className="h-full w-full relative" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={derivedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={(_event, node) => onNodeSelect(node)}
-        onPaneClick={() => onNodeSelect(null)}
+        onNodeClick={handleNodeClick}
+        onEdgeClick={handleEdgeClick}
+        onPaneClick={handlePaneClick}
+        onNodeDragStop={onNodeDragStop}
         onInit={setRfInstance}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
+        isValidConnection={isValidConnection}
         fitView
         className="bg-app-bg"
         proOptions={{ hideAttribution: true }}
