@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Plus, Search, Star, Trash2, Edit3, Copy, X,
   Grid3X3, List, MessageSquare, AlertCircle, Clock, History,
+  MoreHorizontal,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Input } from "@/components/ui/Input";
@@ -11,6 +12,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/cn";
+import { BottomSheetWrapper } from "@/components/ui/BottomSheetWrapper";
+import { useHapticFeedback } from "@/lib/useHapticFeedback";
 import * as api from "@/lib/api";
 import type { MessageTemplate } from "@/lib/api";
 import { useDashboardStore } from "@/store/useDashboardStore";
@@ -494,6 +497,18 @@ export function TemplateTab() {
     loadTemplates();
   }, [loadTemplates]);
 
+  const haptics = useHapticFeedback();
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [actionSheetTemplateId, setActionSheetTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const handleCreate = () => {
     setEditingTemplate(undefined);
     setShowEditor(true);
@@ -729,13 +744,34 @@ export function TemplateTab() {
               className="flex items-center gap-3 rounded-xl border border-app-border px-4 py-3 hover:border-app-border-strong transition-colors"
             >
               <button
-                onClick={() => handleToggleFavorite(t)}
+                onClick={(e) => { e.stopPropagation(); handleToggleFavorite(t); }}
                 className="shrink-0"
                 title={t.is_favorite ? "즐겨찾기 해제" : "즐겨찾기"}
               >
                 <Star className={cn("h-4 w-4", t.is_favorite ? "fill-app-warning text-app-warning" : "text-app-text-subtle")} />
               </button>
-              <div className="min-w-0 flex-1">
+              <div
+                className={cn(
+                  "min-w-0 flex-1",
+                  isMobile && [
+                    "cursor-pointer -mx-1 px-1 py-1 -my-1 rounded-lg active:bg-app-card-hover/60 transition-colors",
+                  ]
+                )}
+                onClick={() => {
+                  if (isMobile) {
+                    setActionSheetTemplateId(t.id);
+                    haptics.light();
+                  }
+                }}
+                role={isMobile ? "button" : undefined}
+                tabIndex={isMobile ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (isMobile && e.key === "Enter") {
+                    setActionSheetTemplateId(t.id);
+                    haptics.light();
+                  }
+                }}
+              >
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium text-app-text">{t.name}</span>
                   <span className={cn("rounded-full px-1.5 py-0.5 text-[9px] font-medium", CATEGORY_COLORS[t.category] ?? "bg-app-card-hover text-app-text-muted")}>
@@ -745,7 +781,7 @@ export function TemplateTab() {
                 <p className="mt-0.5 line-clamp-1 text-xs text-app-text-muted">{t.content}</p>
               </div>
               <span className="shrink-0 text-[10px] text-app-text-subtle tabular-nums">{t.use_count}회</span>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className={cn("flex items-center gap-1 shrink-0", isMobile && "hidden")}>
                 <button onClick={() => handleCopyContent(t.content)} className="rounded-lg p-1.5 text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors" title="복사">
                   <Copy className="h-3.5 w-3.5" />
                 </button>
@@ -756,6 +792,11 @@ export function TemplateTab() {
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {isMobile && (
+                <div className="flex items-center justify-center shrink-0">
+                  <MoreHorizontal className="h-4 w-4 text-app-text-subtle" />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -812,6 +853,65 @@ export function TemplateTab() {
           </div>
         </div>
       )}
+
+      {(() => {
+        const template = templates.find(t => t.id === actionSheetTemplateId);
+        if (!template) return null;
+        return (
+          <BottomSheetWrapper
+            open={!!actionSheetTemplateId}
+            onClose={() => setActionSheetTemplateId(null)}
+            title={template.name}
+          >
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { handleCopyContent(template.content); setActionSheetTemplateId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Copy className="h-5 w-5 text-app-primary" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">내용 복사</p>
+                  <p className="text-xs text-app-text-muted">템플릿 내용을 클립보드에 복사합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleEdit(template); setActionSheetTemplateId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Edit3 className="h-5 w-5 text-app-primary" />
+                <div>
+                  <p className="text-sm font-medium text-app-text">수정</p>
+                  <p className="text-xs text-app-text-muted">템플릿을 변경합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleToggleFavorite(template); setActionSheetTemplateId(null); haptics.light(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
+              >
+                <Star className={cn("h-5 w-5 text-app-warning", template.is_favorite && "fill-app-warning")} />
+                <div>
+                  <p className="text-sm font-medium text-app-text">{template.is_favorite ? "즐겨찾기 해제" : "즐겨찾기"}</p>
+                  <p className="text-xs text-app-text-muted">즐겨찾기를 토글합니다</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDeleteTarget(template); setActionSheetTemplateId(null); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-danger-muted transition-colors text-left active:scale-[0.98]"
+              >
+                <Trash2 className="h-5 w-5 text-app-danger" />
+                <div>
+                  <p className="text-sm font-medium text-app-danger">삭제</p>
+                  <p className="text-xs text-app-text-muted">이 템플릿을 영구 삭제합니다</p>
+                </div>
+              </button>
+            </div>
+          </BottomSheetWrapper>
+        );
+      })()}
 
       {/* Delete Confirmation */}
       {deleteTarget && (

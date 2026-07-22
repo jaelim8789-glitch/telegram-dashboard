@@ -1,41 +1,15 @@
-import { useCallback, useRef } from 'react';
+"use client";
 
-interface LongPressEvent {
-  onPress: () => void;
-  onLongPress: () => void;
-  delay?: number;
+import { useState, useCallback, useRef, useEffect } from "react";
+
+export function useLongPress(callback: () => void, ms = 500) {
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const [pressing, setPressing] = useState(false);
+
+  const start = useCallback(() => { setPressing(true); timer.current = setTimeout(() => { setPressing(false); callback(); }, ms); }, [callback, ms]);
+  const stop = useCallback(() => { setPressing(false); clearTimeout(timer.current); }, []);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  return { pressing, onTouchStart: start, onTouchEnd: stop, onMouseDown: start, onMouseUp: stop, onMouseLeave: stop };
 }
-
-export const useLongPress = ({ onPress, onLongPress, delay = 500 }: LongPressEvent) => {
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
-
-  const startPress = useCallback(() => {
-    pressTimer.current = setTimeout(() => {
-      onLongPress();
-    }, delay);
-  }, [onLongPress, delay]);
-
-  const endPress = useCallback(() => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-      onPress();
-    }
-  }, [onPress]);
-
-  const cancelPress = useCallback(() => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-  }, []);
-
-  return {
-    onMouseDown: startPress,
-    onMouseUp: endPress,
-    onMouseLeave: cancelPress,
-    onTouchStart: startPress,
-    onTouchEnd: endPress,
-    onTouchCancel: cancelPress,
-  };
-};
