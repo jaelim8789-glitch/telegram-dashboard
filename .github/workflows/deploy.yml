@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     branches: [master]
-    paths-ignore: ['**.md', 'docs/**', 'DOCS/**']
+    paths-ignore: ['**.md', 'docs/**', 'DOCS/**', 'scripts/**', '.kilo/**']
   workflow_dispatch:
     inputs:
       target:
@@ -29,48 +29,38 @@ env:
 
 jobs:
   # ============================================
-  # 1a. Frontend — typecheck (parallel with build/e2e)
+  # 1a. Frontend — typecheck
   # ============================================
   frontend-typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.8.1
+        with: { version: 10.8.1 }
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
 
-      - name: Cache pnpm store
-        id: cache-store
+      - name: Restore node_modules (cache hit = skip pnpm install)
+        id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/pnpm/store
-          key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          path: node_modules
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            pnpm-store-${{ runner.os }}-
+            node-modules-${{ runner.os }}-
 
-      - if: steps.cache-store.outputs.cache-hit != 'true'
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
-        name: pnpm install (miss)
+        name: pnpm install (on cache miss)
 
       - run: pnpm typecheck
         name: TypeScript type check
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
-
-      - name: Cache .tsbuildinfo (incremental tsc)
-        uses: actions/cache@v4
-        with:
-          path: .tsbuildinfo
-          key: tsb-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-${{ runner.os }}
-          restore-keys: |
-            tsb-${{ runner.os }}-
 
   # ============================================
   # 1b. Frontend — build
@@ -79,34 +69,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.8.1
+        with: { version: 10.8.1 }
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
 
-      - name: Cache pnpm store
-        id: cache-store
+      - name: Restore node_modules
+        id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/pnpm/store
-          key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          path: node_modules
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            pnpm-store-${{ runner.os }}-
+            node-modules-${{ runner.os }}-
 
-      - if: steps.cache-store.outputs.cache-hit != 'true'
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
-        name: pnpm install (miss)
+        name: pnpm install (on cache miss)
 
       - run: pnpm build
         name: Next.js production build
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
+
+      - name: Cache .next build output
+        uses: actions/cache@v4
+        with:
+          path: .next
+          key: next-build-${{ github.sha }}-${{ runner.os }}
+          restore-keys: |
+            next-build-${{ runner.os }}-
 
   # ============================================
   # 1c. Frontend — e2e smoke test
@@ -115,29 +111,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.8.1
+        with: { version: 10.8.1 }
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
 
-      - name: Cache pnpm store
-        id: cache-store
+      - name: Restore node_modules
+        id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/pnpm/store
-          key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          path: node_modules
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            pnpm-store-${{ runner.os }}-
+            node-modules-${{ runner.os }}-
 
-      - if: steps.cache-store.outputs.cache-hit != 'true'
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
-        name: pnpm install (miss)
+        name: pnpm install (on cache miss)
 
       - name: Cache Playwright browsers
         id: cache-pw
@@ -150,7 +144,7 @@ jobs:
 
       - if: steps.cache-pw.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
-        name: Install Playwright chromium (miss)
+        name: Install Playwright chromium (on cache miss)
 
       - run: >
           npx playwright test core-flows.spec.ts --project=chromium-no-auth
@@ -172,8 +166,7 @@ jobs:
       tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - name: Docker meta
         id: meta
@@ -192,7 +185,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push frontend image
+      - name: Build and push frontend image (BuildKit cache)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -209,7 +202,7 @@ jobs:
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
 
   # ============================================
-  # 2a. Deploy frontend to staging (master push)
+  # 2a. Deploy frontend staging (master push, pull-only)
   # ============================================
   deploy-frontend-staging:
     needs: [frontend-docker]
@@ -217,7 +210,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - name: Deploy staging via SSH (pull-only)
+      - name: Pull & zero-downtime deploy (staging)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -227,9 +220,9 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose -f docker-compose.yml -f docker-compose.staging.yml pull frontend -q
-            docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps frontend
+            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost:8080/health staging
 
-      - name: Smoke test (staging)
+      - name: Health check (staging)
         id: smoke-frontend
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
@@ -245,7 +238,7 @@ jobs:
             done
             echo "smoke fail"; exit 1
 
-      - name: Rollback on smoke failure
+      - name: Rollback on health failure
         if: steps.smoke-frontend.outcome != 'success'
         uses: appleboy/ssh-action@v1.2.2
         continue-on-error: true
@@ -269,7 +262,7 @@ jobs:
           preventFailureOnNoResponse: true
 
   # ============================================
-  # 2b. Deploy frontend to production (manual)
+  # 2b. Deploy frontend production (manual, pull-only)
   # ============================================
   deploy-frontend-production:
     needs: [frontend-docker]
@@ -277,7 +270,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Deploy production via SSH (pull-only)
+      - name: Zero-downtime deploy (production)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -287,9 +280,9 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose pull frontend -q
-            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost:3000/health staging
+            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost/health staging
 
-      - name: Smoke test (production)
+      - name: Health check (production)
         id: smoke-frontend-prod
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
@@ -305,7 +298,7 @@ jobs:
             done
             echo "smoke fail"; exit 1
 
-      - name: Rollback production on failure
+      - name: Rollback on health failure
         if: steps.smoke-frontend-prod.outcome != 'success'
         uses: appleboy/ssh-action@v1.2.2
         continue-on-error: true
@@ -325,11 +318,11 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Frontend deployed","username":"TeleMon CI","icon_emoji":":rocket:"}
+            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Frontend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
           preventFailureOnNoResponse: true
 
   # ============================================
-  # 3a. Backend CI — pytest, coverage
+  # 3a. Backend CI — pytest + coverage (uv pip → uvx)
   # ============================================
   backend-ci:
     runs-on: ubuntu-latest
@@ -339,19 +332,23 @@ jobs:
         working-directory: telegram-dashboard-backend
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Install uv (fast Python package manager)
+        uses: astral-sh/setup-uv@v5
         with:
-          fetch-depth: 1
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "telegram-dashboard-backend/requirements-dev.txt"
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - run: |
-          pip install uv
-          uv pip install --system -r requirements-dev.txt
-        name: Install Python deps (uv)
+      - run: uv pip install --system -r requirements-dev.txt
+        name: Install Python deps (uv pip)
 
-      - run: pytest tests/ -v --ignore=tests/test_alembic_downgrade.py -m "not slow" --junitxml=test-results/junit.xml --cov=app --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:coverage_html
+      - run: uv run pytest tests/ -v --ignore=tests/test_alembic_downgrade.py -m "not slow" --junitxml=test-results/junit.xml --cov=app --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:coverage_html
         name: Run pytest with coverage
         env:
           DATABASE_URL: sqlite+aiosqlite:///:memory:
@@ -378,7 +375,7 @@ jobs:
           retention-days: 14
 
   # ============================================
-  # 3b. Backend Docker build & push (GHCR)
+  # 3b. Backend Docker build & push (GHCR, BuildKit cache)
   # ============================================
   backend-docker:
     needs: [backend-ci]
@@ -388,8 +385,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - name: Docker meta
         id: meta
@@ -408,7 +404,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend image
+      - name: Build and push backend image (BuildKit cache)
         uses: docker/build-push-action@v6
         with:
           context: telegram-dashboard-backend
@@ -421,7 +417,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
 
   # ============================================
-  # 4a. Deploy backend to staging (master push)
+  # 4a. Deploy backend staging (pull-only + zero-downtime)
   # ============================================
   deploy-backend-staging:
     needs: [backend-docker]
@@ -429,7 +425,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - name: Deploy backend staging via SSH (pull-only)
+      - name: Pull & zero-downtime deploy backend (staging)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -439,10 +435,9 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose -f docker-compose.yml -f docker-compose.staging.yml pull backend -q
-            docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps backend
+            bash scripts/zero-downtime-deploy.sh backend docker-compose.yml http://localhost:8000/health staging
 
-      - name: Smoke test (staging backend)
-        id: smoke-backend
+      - name: Health check (staging backend)
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -457,8 +452,8 @@ jobs:
             done
             echo "smoke fail"; exit 1
 
-      - name: Rollback backend staging on failure
-        if: steps.smoke-backend.outcome != 'success'
+      - name: Rollback on health failure (backend)
+        if: failure()
         uses: appleboy/ssh-action@v1.2.2
         continue-on-error: true
         with:
@@ -477,11 +472,11 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [staging] Backend deployed","username":"TeleMon CI","icon_emoji":":robot:"}
+            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [staging] Backend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":robot:"}
           preventFailureOnNoResponse: true
 
   # ============================================
-  # 4b. Deploy backend to production (manual)
+  # 4b. Deploy backend production (manual, pull-only)
   # ============================================
   deploy-backend-production:
     needs: [backend-docker]
@@ -489,7 +484,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Deploy production via SSH (pull-only)
+      - name: Zero-downtime deploy backend (production)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -499,10 +494,9 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose pull backend -q
-            bash scripts/zero-downtime-deploy.sh backend docker-compose.yml http://localhost:8000/health latest
+            bash scripts/zero-downtime-deploy.sh backend docker-compose.yml http://localhost:8000/health staging
 
-      - name: Smoke test (production)
-        id: smoke-backend-prod
+      - name: Health check (production backend)
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -517,8 +511,8 @@ jobs:
             done
             echo "smoke fail"; exit 1
 
-      - name: Rollback production on failure
-        if: steps.smoke-backend-prod.outcome != 'success'
+      - name: Rollback on health failure (backend)
+        if: failure()
         uses: appleboy/ssh-action@v1.2.2
         continue-on-error: true
         with:
@@ -537,5 +531,5 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Backend deployed","username":"TeleMon CI","icon_emoji":":robot:"}
+            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Backend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":robot:"}
           preventFailureOnNoResponse: true
