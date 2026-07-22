@@ -86,6 +86,8 @@ export default function RootLayout({
         />
         <link rel="preload" href="/manifest.json" as="fetch" crossOrigin="anonymous" />
         <link rel="preload" href="/icons/icon-192.svg" as="image" />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
         <SplashScreen />

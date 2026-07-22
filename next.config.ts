@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
-    formats: ['image/webp', 'image/avif'], // Modern image formats
+    formats: ['image/avif', 'image/webp'], // Modern image formats
     minimumCacheTTL: 60 * 60 * 24, // 24 hours caching
   },
   experimental: {
@@ -62,6 +62,14 @@ const nextConfig: NextConfig = {
     optimisticClientCache: true,
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
+    outputFileTracingExcludes: {
+      "/*": [
+        "node_modules/@swc/core-linux-x64-gnu/**",
+        "node_modules/@swc/core-linux-x64-musl/**",
+        "node_modules/@esbuild/linux-x64/**",
+        "node_modules/caniuse-lite/data/**",
+      ],
+    },
     staleTimes: { dynamic: 30, static: 180 },
     serverComponentsExternalPackages: ["sharp", "canvas"],
   },

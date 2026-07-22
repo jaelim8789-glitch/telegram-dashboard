@@ -1,0 +1,10 @@
+export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Connection': 'keep-alive',
+      'Keep-Alive': 'timeout=30',
+      ...options.headers,
+    },
+  });
+}
