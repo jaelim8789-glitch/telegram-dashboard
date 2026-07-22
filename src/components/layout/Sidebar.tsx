@@ -233,9 +233,17 @@ export function Sidebar() {
   }
 
   function handleNavClick(item: typeof NAV_ITEMS[number]) {
+    if (item.id === "ai") {
+      window.location.href = "/app/ai-assistant";
+      return;
+    }
+    if (item.id === "group") {
+      window.location.href = "/app/accounts";
+      return;
+    }
     if (item.id === "chat") {
       navigateToChat();
-    } else if (item.id === "macro" || item.id === "analysis" || item.id === "ai") {
+    } else if (item.id === "macro" || item.id === "analysis") {
       setActiveTab("dashboard" as TabId);
     } else {
       setActiveTab(item.id as TabId);
@@ -244,7 +252,9 @@ export function Sidebar() {
 
   function isNavActive(item: typeof NAV_ITEMS[number]): boolean {
     if (item.id === "chat") return false;
-    if (item.id === "macro" || item.id === "analysis" || item.id === "ai") return false;
+    if (item.id === "ai") return typeof window !== "undefined" && window.location.pathname.startsWith("/app/ai-assistant");
+    if (item.id === "group") return typeof window !== "undefined" && window.location.pathname.startsWith("/app/accounts");
+    if (item.id === "macro" || item.id === "analysis") return false;
     return activeTab === item.id;
   }
 

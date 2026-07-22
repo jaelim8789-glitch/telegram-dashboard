@@ -12,6 +12,7 @@ interface AccountTableProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onRefresh: (id: string) => void;
+  onRowClick?: (account: AccountEntry) => void;
 }
 
 type SortableColumn = "name" | "status" | "lastActive" | "todaySent";
@@ -66,7 +67,7 @@ const SortableHeader = memo(function SortableHeader({ label, column, sortKey, so
   );
 });
 
-export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDelete, onRefresh }: AccountTableProps) {
+export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDelete, onRefresh, onRowClick }: AccountTableProps) {
   if (accounts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-app-text-muted">
@@ -106,7 +107,8 @@ export function AccountTable({ accounts, sortKey, sortDir, onSort, onEdit, onDel
             return (
               <tr
                 key={account.id}
-                className="group border-b border-app-border/50 transition-colors hover:bg-app-card-hover"
+                onClick={() => onRowClick?.(account)}
+                className={`group border-b border-app-border/50 transition-colors hover:bg-app-card-hover ${onRowClick ? "cursor-pointer" : ""}`}
               >
                 <td className="px-5 py-3.5">
                   <span className="text-sm font-medium text-app-text">{account.name}</span>

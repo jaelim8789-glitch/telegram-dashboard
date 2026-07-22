@@ -4,6 +4,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { SummaryPanel } from "@/components/ai-assistant/SummaryPanel";
 import { ChatPanel } from "@/components/ai-assistant/ChatPanel";
 import { MOCK_SUMMARY_ITEMS, MOCK_CHAT_HISTORY } from "@/components/ai-assistant/mockData";
+import { useAiChatStore } from "@/store/useAiChatStore";
+import { useNotificationStore } from "@/store/useNotificationStore";
 import type { ChatMessage } from "@/components/ai-assistant/types";
 
 function getMockResponse(text: string): string {
@@ -14,7 +16,7 @@ function getMockResponse(text: string): string {
     return `현재 응답률이 가장 낮은 채팅방 **TOP 3:**\n\n1. 고객문의-일반 **(45.2%)**\n2. 파트너사-B **(52.1%)**\n3. 이벤트알림 **(61.8%)**\n\n> "고객문의-일반" 채팅방은 자동응답 템플릿 점검이 필요해 보입니다.`;
   }
   if (text.includes("가입자") || text.includes("신규")) {
-    return `이번 주 신규 가입자 추이:\n\n| 요일 | 가입자 |\n|------|--------|\n| 월 | 18명 |\n| 화 | 22명 |\n| 수 | 19명 |\n| 목 | 24명 |\n\n📈 전주 대비 **+15%** 증가 추세입니다. 주로 "프로모션 계정 A"를 통해 유입되고 있습니다.`;
+    return `이번 주 신규 가입자 추이:\n\n월: 18명\n화: 22명\n수: 19명\n목: 24명\n\n📈 전주 대비 **+15%** 증가 추세입니다. 주로 "프로모션 계정 A"를 통해 유입되고 있습니다.`;
   }
   if (text.includes("TOP") || text.includes("계정") || text.includes("활발")) {
     return `가장 활발한 계정 **TOP 5:**\n\n1. 24시 자동응답 - **234건**\n2. 프로모션 계정 A - **201건**\n3. SNS 통합 관리 - **167건**\n4. 메인 마케팅 계정 - **142건**\n5. 인스타 연동 계정 - **112건**\n\n전체적으로 발송량이 안정적입니다.`;
@@ -37,7 +39,14 @@ function getMockResponse(text: string): string {
 const STREAM_DELAY = 30;
 
 export function AiAssistantPageClient() {
-  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_CHAT_HISTORY);
+  const storeMessages = useAiChatStore((s) => s.messages);
+  const addMessages = useAiChatStore((s) => s.addMessages);
+  const clearHistory = useAiChatStore((s) => s.clearHistory);
+  const addNotification = useNotificationStore((s) => s.addNotification);
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    return storeMessages.length > 0 ? storeMessages : MOCK_CHAT_HISTORY;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -45,6 +54,12 @@ export function AiAssistantPageClient() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingMsgIdRef = useRef<string>("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (storeMessages.length > 0 && messages !== storeMessages) {
+      setMessages(storeMessages);
+    }
+  }, [storeMessages]);
 
   const streamResponse = useCallback((fullText: string) => {
     streamRef.current = "";
@@ -65,9 +80,23 @@ export function AiAssistantPageClient() {
       if (charIndex >= fullText.length) {
         if (intervalRef.current) clearInterval(intervalRef.current);
         setIsLoading(false);
+
+        setMessages((prev) => {
+          addMessages(prev.slice(-50));
+          return prev;
+        });
+
+        if (fullText.includes("오류") || fullText.includes("실패")) {
+          addNotification({
+            type: "warning",
+            title: "AI 분석 완료",
+            message: "계정 오류 관련 인사이트가 있습니다. 확인해보세요.",
+            action: { label: "계정 관리", tabId: "group" },
+          });
+        }
       }
     }, STREAM_DELAY);
-  }, []);
+  }, [addMessages, addNotification]);
 
   useEffect(() => {
     return () => {

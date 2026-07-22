@@ -6,10 +6,32 @@ import { MOCK_ACCOUNTS } from "@/components/accounts/mockData";
 import { AccountTable } from "@/components/accounts/AccountTable";
 import { AccountFiltersBar } from "@/components/accounts/AccountFilters";
 import { AccountPagination } from "@/components/accounts/AccountPagination";
+import { AccountDetailSheet } from "@/components/accounts/AccountDetailSheet";
 import { useToast } from "@/components/ui/Toast";
+import { useDashboardStore } from "@/store/useDashboardStore";
+import { useNotificationStore } from "@/store/useNotificationStore";
 import type { AccountEntry, AccountStatus } from "@/components/accounts/types";
 
 const PAGE_SIZE = 10;
+
+function mapRealAccount(a: {
+  id: string; phone: string; name: string | null; status: string; lastActivity: string | null;
+  todaySent: number; groupCount: number; createdAt: string;
+}): AccountEntry {
+  const mappedStatus = a.status === "inactive" ? "suspended" as const : a.status as AccountEntry["status"];
+  return {
+    id: a.id,
+    name: a.name ?? a.phone,
+    phone: a.phone,
+    status: ["active", "suspended", "error", "unconfigured"].includes(mappedStatus)
+      ? (mappedStatus as AccountEntry["status"])
+      : "unconfigured" as const,
+    lastActive: a.lastActivity ?? a.createdAt,
+    createdAt: a.createdAt,
+    todaySent: a.todaySent,
+    groupCount: a.groupCount,
+  };
+}
 
 type SortKey = "name" | "status" | "lastActive" | "todaySent";
 
@@ -31,10 +53,20 @@ export function AccountsPageClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<AccountEntry | null>(null);
   const { toast } = useToast();
+  const addNotification = useNotificationStore((s) => s.addNotification);
+  const realAccounts = useDashboardStore((s) => s.accounts);
+
+  const accounts = useMemo<AccountEntry[]>(() => {
+    if (realAccounts.length > 0) {
+      return realAccounts.map(mapRealAccount);
+    }
+    return MOCK_ACCOUNTS;
+  }, [realAccounts]);
 
   const filteredAccounts = useMemo(() => {
-    return MOCK_ACCOUNTS.filter((acc) => {
+    return accounts.filter((acc) => {
       const matchesSearch =
         !search ||
         acc.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -42,7 +74,7 @@ export function AccountsPageClient() {
       const matchesStatus = statusFilter === "all" || acc.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [accounts, search, statusFilter]);
 
   const sortedAccounts = useMemo(() => {
     return sortAccounts(filteredAccounts, sortKey, sortDir);
@@ -82,27 +114,36 @@ export function AccountsPageClient() {
   }, []);
 
   const handleEdit = useCallback((id: string) => {
-    const account = MOCK_ACCOUNTS.find((a) => a.id === id);
+    const account = accounts.find((a) => a.id === id);
     toast("info", `편집: ${account?.name}`, {
       description: "계정 편집 기능은 추후 구현될 예정입니다.",
     });
-  }, [toast]);
+  }, [accounts, toast]);
 
   const handleDelete = useCallback((id: string) => {
-    const account = MOCK_ACCOUNTS.find((a) => a.id === id);
+    const account = accounts.find((a) => a.id === id);
     toast("success", `"${account?.name}" 계정이 삭제되었습니다.`);
-  }, [toast]);
+  }, [accounts, toast]);
 
   const handleRefresh = useCallback((id: string) => {
-    const account = MOCK_ACCOUNTS.find((a) => a.id === id);
+    const account = accounts.find((a) => a.id === id);
     toast("info", `${account?.name} 계정 상태를 갱신했습니다.`);
-  }, [toast]);
+    addNotification({
+      type: "success",
+      title: "계정 갱신 완료",
+      message: `${account?.name} 계정의 상태가 갱신되었습니다.`,
+    });
+  }, [accounts, toast, addNotification]);
 
   const handleAddAccount = useCallback(() => {
     toast("info", "계정 추가", {
       description: "계정 등록 페이지로 이동합니다.",
     });
   }, [toast]);
+
+  const handleRowClick = useCallback((account: AccountEntry) => {
+    setSelectedDetail(account);
+  }, []);
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col bg-app-bg">
@@ -137,6 +178,7 @@ export function AccountsPageClient() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onRefresh={handleRefresh}
+            onRowClick={handleRowClick}
           />
           <AccountPagination
             currentPage={currentPage}
@@ -147,6 +189,8 @@ export function AccountsPageClient() {
           />
         </div>
       </div>
+
+      <AccountDetailSheet account={selectedDetail} onClose={() => setSelectedDetail(null)} />
     </div>
   );
 }
