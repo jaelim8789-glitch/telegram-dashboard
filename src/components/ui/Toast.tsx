@@ -117,13 +117,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         scheduleDismiss(groupKey, duration, groupedToast.id);
         return prev.map((t) => (t.id === existing.id ? groupedToast : t));
       }
-      return [...prev, { id, groupKey, type, message, description: opts?.description, action: opts?.action, duration }];
+      const newToast: Toast = { id, groupKey, type, message, description: opts?.description, action: opts?.action, duration };
+      if (duration > 0) {
+        scheduleDismiss(groupKey, duration, id);
+      }
+      return [...prev, newToast];
     });
-
-    if (duration > 0 && !(toasts.length >= MAX_VISIBLE_TOASTS)) {
-      scheduleDismiss(groupKey, duration, id);
-    }
-  }, [scheduleDismiss, toasts.length]);
+  }, [scheduleDismiss]);
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => {

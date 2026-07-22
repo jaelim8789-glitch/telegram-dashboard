@@ -17,6 +17,7 @@ import { GestureTour } from "@/components/ui/GestureTour";
 import ShareTargetHandler from "@/components/ShareTargetHandler";
 import LiveChat from "@/components/LiveChat";
 import { MobileOptimizations } from "@/components/MobileOptimizations";
+import { PageTransitionBar } from "@/components/ui/PageTransitionBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -78,6 +79,7 @@ export default function RootLayout({
         <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
+        <PageTransitionBar />
         <SplashScreen />
         <GestureTour />
         <ShareTargetHandler />
