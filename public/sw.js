@@ -3,7 +3,7 @@
 // Supports push notifications + IndexedDB offline data layer.
 
 // 캐시 이름을 빌드 해시로 관리하여 자동 갱신
-const CACHE_NAME = `telemon-vovpHwyiQL2cB6wGC7kmDV`;
+const CACHE_NAME = `telemon-v${self.__BUILD_HASH || 'latest'}`;
 const TEMP_CACHE_NAME = 'telemon-temp-v1';
 const STATIC_ASSETS = [
   "/",
