@@ -36,6 +36,8 @@ const MiniAppReplyMacro = dynamic(() => import("./MiniAppReplyMacro").then((m) =
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
+export const dynamic = "force-dynamic";
+
 export default function MiniAppPage() {
   const [activeTab, setActiveTab] = useState<MiniAppTab>("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
