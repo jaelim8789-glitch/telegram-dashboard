@@ -20,7 +20,7 @@ export function SuggestedQuestions({ questions, onSelect }: SuggestedQuestionsPr
           <button
             key={q.id}
             onClick={() => onSelect(q.text)}
-            className="rounded-full border border-violet-500/30 bg-violet-500/5 px-4 py-2 text-xs text-app-text transition-all hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-violet-400"
+            className="rounded-full border border-violet-500/20 px-4 py-2 text-sm text-app-text-muted transition-all hover:bg-violet-500/10 hover:text-app-text cursor-pointer"
           >
             {q.text}
           </button>

@@ -35,7 +35,7 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
   return (
     <div className="flex flex-col items-center gap-3 px-5 py-3 sm:flex-row sm:justify-between">
       <span className="text-xs text-app-text-muted">
-        {startItem}-{endItem} / 총 {totalItems}개
+        {startItem}-{endItem} / {totalItems}
       </span>
       <div className="flex items-center gap-1">
         <button
@@ -57,7 +57,7 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
               onClick={() => onPageChange(page as number)}
               className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                 currentPage === page
-                  ? "bg-violet-500/20 text-violet-400"
+                  ? "bg-violet-500 text-white"
                   : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
               }`}
             >

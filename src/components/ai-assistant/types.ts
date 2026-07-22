@@ -4,6 +4,7 @@
   title: string;
   description: string;
   timestamp: string;
+  iconColor?: "green" | "violet" | "amber" | "blue" | "red";
 }
 
 export interface ChatMessage {
