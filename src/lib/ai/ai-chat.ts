@@ -1,247 +1,174 @@
 ﻿/**
- * TeleMon AI — 채팅 API 호출 레이어
+ * AI Chat — DeepSeek API 호출 레이어
  *
- * 백엔드 ai-chat-v2 (/api/ai-chat-v2) 엔드포인트를 호출하고
- * TeleMon 시스템 프롬프트를 자동으로 주입합니다.
+ * TeleMon AI 시스템 프롬프트를 자동 주입하고
+ * SSE 스트리밍을 지원합니다.
  */
 
-import { telemonSystemPrompt } from "./telemon-prompt";
-import { authHeaders, getApiBaseUrl } from "@/lib/api";
+import { getToken, getSessionToken } from "@/lib/auth";
+import { TELEMON_SYSTEM_PROMPT } from "./telemon-prompt";
 
-// ── Types ─────────────────────────────────────────────────────
+const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
+const DEEPSEEK_MODEL = "deepseek-chat";
 
-export interface AiChatMessage {
-  role: "user" | "assistant" | "system";
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
-export interface AiChatRequest {
-  /** 사용자 메시지 (시스템 프롬프트는 자동 주입됨) */
-  messages: AiChatMessage[];
-  /** 기존 세션 ID (없으면 새 세션 생성) */
-  sessionId?: string | null;
-  /** True면 SSE 스트리밍 모드 */
-  stream?: boolean;
-  /** 스트리밍 시 각 청크를 전달할 콜백 */
-  onStream?: (chunk: { type: "chunk" | "done" | "error"; content?: string; messageId?: string }) => void;
-  /** 사용할 프롬프트 템플릿 ID */
-  templateId?: string | null;
-  /** 모델 override (기본값: deepseek-chat) */
-  model?: string;
+export interface StreamCallbacks {
+  onToken: (token: string) => void;
+  onDone: (fullContent: string) => void;
+  onError: (error: Error) => void;
 }
-
-export interface AiChatResponse {
-  /** 어시스턴트 응답 텍스트 */
-  content: string;
-  /** 세션 ID (후속 메시지에 사용) */
-  sessionId: string;
-  /** 메시지 ID (피드백 등에 사용) */
-  messageId?: string;
-  /** 오류 발생 시 */
-  error?: string;
-}
-
-export interface AiChatSession {
-  session_id: string;
-  title?: string;
-  first_message: string;
-  last_message: string;
-  message_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-// ── API Base URL ─────────────────────────────────────────────
-
-const AI_CHAT_BASE = "/api/ai-chat-v2";
-
-// ── Simple (non-streaming) Chat ──────────────────────────────
 
 /**
- * TeleMon AI에 메시지를 보내고 응답을 받습니다.
- *
- * 시스템 프롬프트가 자동으로 주입되므로, messages에는
- * 사용자/어시스턴트 메시지만 포함하면 됩니다.
- *
- * @example
- * ```ts
- * const { content, sessionId } = await aiChat({
- *   messages: [{ role: "user", content: "홍보문 하나 만들어줘" }],
- * });
- * ```
+ * DeepSeek API로 스트리밍 채팅 요청을 보냅니다.
+ * 시스템 프롬프트는 자동으로 주입됩니다.
  */
-export async function aiChat(request: AiChatRequest): Promise<AiChatResponse> {
-  const {
-    messages,
-    sessionId = null,
-    stream = false,
-    onStream,
-    templateId = null,
-    model,
-  } = request;
-
-  // Build API request body per ai-chat-v2 schema
-  const body: Record<string, unknown> = {
-    message: messages[messages.length - 1]?.content ?? "",
-    session_id: sessionId,
-    stream,
-    template_id: templateId,
-  };
-  if (model) body.model = model;
-
-  // For streaming mode
-  if (stream && onStream) {
-    return streamAiChat(body, onStream);
+export async function streamChat(
+  messages: Omit<ChatMessage, "role" | "content">[],
+  callbacks: StreamCallbacks,
+  options?: { signal?: AbortSignal },
+): Promise<void> {
+  const apiKey = getDeepSeekApiKey();
+  if (!apiKey) {
+    callbacks.onError(new Error("API 키가 설정되지 않았습니다. 관리자에게 문의하세요."));
+    return;
   }
 
-  // Non-streaming
-  const headers = await authHeaders();
-  const res = await fetch(`${getApiBaseUrl()}${AI_CHAT_BASE}/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    return {
-      content: "",
-      sessionId: sessionId ?? "",
-      error: `API 오류 (${res.status}): ${errorText}`,
-    };
-  }
-
-  const data = await res.json();
-  return {
-    content: data.reply ?? data.content ?? "",
-    sessionId: data.session_id ?? sessionId ?? "",
-    messageId: data.message_id,
-  };
-}
-
-// ── SSE Streaming Chat ────────────────────────────────────────
-
-async function streamAiChat(
-  body: Record<string, unknown>,
-  onStream: AiChatRequest["onStream"],
-): Promise<AiChatResponse> {
-  const headers = await authHeaders();
-  const res = await fetch(`${getApiBaseUrl()}${AI_CHAT_BASE}/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-      ...headers,
-    },
-    body: JSON.stringify({ ...body, stream: true }),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    onStream?.({ type: "error", content: `API 오류 (${res.status}): ${errorText}` });
-    return { content: "", sessionId: "", error: `API 오류 (${res.status})` };
-  }
-
-  const reader = res.body?.getReader();
-  if (!reader) {
-    onStream?.({ type: "error", content: "스트림을 읽을 수 없습니다." });
-    return { content: "", sessionId: "", error: "Stream not available" };
-  }
-
-  const decoder = new TextDecoder();
-  let fullContent = "";
-  let sessionId = "";
-  let messageId = "";
+  const fullMessages: ChatMessage[] = [
+    { role: "system", content: TELEMON_SYSTEM_PROMPT },
+    ...messages as ChatMessage[],
+  ];
 
   try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: DEEPSEEK_MODEL,
+        messages: fullMessages,
+        stream: true,
+        max_tokens: 4096,
+        temperature: 0.7,
+      }),
+      signal: options?.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      throw new Error(`API 오류 (${response.status}): ${errorBody || response.statusText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("응답 스트림을 읽을 수 없습니다.");
+    }
+
+    const decoder = new TextDecoder();
+    let fullContent = "";
+    let buffer = "";
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "chunk") {
-              fullContent += event.content ?? "";
-              onStream?.({ type: "chunk", content: event.content });
-            } else if (event.type === "done") {
-              sessionId = event.session_id ?? "";
-              messageId = event.message_id ?? "";
-              onStream?.({ type: "done", content: fullContent, messageId });
-            } else if (event.type === "error") {
-              onStream?.({ type: "error", content: event.content });
-              return { content: fullContent, sessionId, error: event.content };
-            }
-          } catch {
-            // Skip unparseable SSE lines
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+        const data = trimmed.slice(6);
+        if (data === "[DONE]") continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content ?? "";
+          if (content) {
+            fullContent += content;
+            callbacks.onToken(content);
           }
+        } catch {
+          // 일부 청크가 JSON이 아닐 수 있음 — 무시
         }
       }
     }
-  } finally {
-    reader.releaseLock();
+
+    callbacks.onDone(fullContent);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return;
+    callbacks.onError(err instanceof Error ? err : new Error(String(err)));
   }
-
-  return { content: fullContent, sessionId, messageId };
 }
-
-// ── Session Management ────────────────────────────────────────
-
-/** 세션 목록 조회 */
-export async function listAiChatSessions(): Promise<AiChatSession[]> {
-  const headers = await authHeaders();
-  const res = await fetch(`${getApiBaseUrl()}${AI_CHAT_BASE}/sessions`, { headers });
-  if (!res.ok) return [];
-  return res.json();
-}
-
-/** 세션 삭제 */
-export async function deleteAiChatSession(sessionId: string): Promise<boolean> {
-  const headers = await authHeaders();
-  const res = await fetch(`${getApiBaseUrl()}${AI_CHAT_BASE}/sessions/${sessionId}`, {
-    method: "DELETE",
-    headers,
-  });
-  return res.ok;
-}
-
-/** 세션 메시지 히스토리 조회 */
-export async function getAiChatHistory(sessionId: string): Promise<AiChatMessage[]> {
-  const headers = await authHeaders();
-  const res = await fetch(
-    `${getApiBaseUrl()}${AI_CHAT_BASE}/sessions/${sessionId}/messages`,
-    { headers },
-  );
-  if (!res.ok) return [];
-  return res.json();
-}
-
-// ── Utility ───────────────────────────────────────────────────
 
 /**
- * 사용자 메시지와 함께 telemonSystemPrompt를 메시지 배열에 주입한
- * DeepSeek API 호출용 메시지 배열을 생성합니다.
- *
- * 주로 디버깅 또는 서버사이드 직접 호출에 사용합니다.
+ * DeepSeek API 키를 환경 변수에서 가져옵니다.
+ * 프론트엔드 클라이언트키(읽기 전용)와, 없으면 텔레몬 백엔드가 제공하는 키를 사용합니다.
  */
-export function buildMessagesWithPrompt(
-  messages: AiChatMessage[],
-): Array<{ role: string; content: string }> {
-  // 시스템 프롬프트가 이미 포함되어 있으면 추가하지 않음
-  const hasSystem = messages.some(
-    (m) => m.role === "system" && m.content === telemonSystemPrompt,
-  );
-  if (hasSystem) return messages.map((m) => ({ role: m.role, content: m.content }));
+function getDeepSeekApiKey(): string | null {
+  // 1순위: 환경 변수 (런타임에서 주입)
+  const envKey =
+    typeof process !== "undefined"
+      ? process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY ?? null
+      : null;
+  if (envKey) return envKey;
 
-  return [
-    { role: "system", content: telemonSystemPrompt },
-    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  // 2순위: 로컬스토리지 (관리자가 설정)
+  if (typeof localStorage !== "undefined") {
+    try {
+      const stored = localStorage.getItem("telemon_deepseek_key");
+      if (stored) return stored;
+    } catch { /* 무시 */ }
+  }
+
+  return null;
+}
+
+/**
+ * 논스트리밍 채팅 요청 (간단한 쿼리용)
+ */
+export async function chat(
+  messages: Omit<ChatMessage, "role" | "content">[],
+  options?: { signal?: AbortSignal },
+): Promise<string> {
+  const apiKey = getDeepSeekApiKey();
+  if (!apiKey) {
+    throw new Error("API 키가 설정되지 않았습니다.");
+  }
+
+  const fullMessages: ChatMessage[] = [
+    { role: "system", content: TELEMON_SYSTEM_PROMPT },
+    ...messages as ChatMessage[],
   ];
+
+  const response = await fetch(DEEPSEEK_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages: fullMessages,
+      stream: false,
+      max_tokens: 4096,
+      temperature: 0.7,
+    }),
+    signal: options?.signal,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`API 오류 (${response.status}): ${errorBody || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? "";
 }

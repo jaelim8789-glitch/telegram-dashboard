@@ -9,6 +9,7 @@ import {
   Workflow,
   BarChart3,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import { useCategoryStore, type CategoryId, CATEGORIES } from "@/store/useCategoryStore";
 import { cn } from "@/lib/cn";
@@ -20,6 +21,7 @@ const CATEGORY_ICONS: Record<CategoryId, React.ComponentType<{ className?: strin
   macro: Workflow,
   analytics: BarChart3,
   settings: Settings,
+  "ai-chat": Sparkles,
 };
 
 export function MobileCategoryBar() {
