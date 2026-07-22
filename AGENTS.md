@@ -133,6 +133,38 @@ These caused real production outages or hours of wasted rebuild cycles. Check fo
 - Don't use real user accounts for testing — run `bash scripts/team/use-test-tenant.sh` first.
 - Don't ignore PAUSE signal in `.kilo/PAUSE` — run `bash scripts/team/resume-all.sh` when cleared.
 
+## 2026-07-22 회고: 최우선 3가지 + 전체 규칙 (MANDATORY)
+
+이번 세션 시간 낭비 원인의 80%는 아래 3개였다. 최우선으로 지켜라:
+
+1. **절대 master에 직접 push 금지.** 반드시 `git worktree add <경로> origin/master -b <본인전용브랜치>`로 독립 디렉토리를 만들어 그 안에서 작업하고, PR로만 master에 머지해라. 같은 체크아웃 디렉토리를 여러 에이전트가 동시에 쓰면 서로 작업을 덮어쓴다.
+2. **`package.json`을 바꿨으면 반드시 같은 커밋에 `pnpm-lock.yaml`도 같이 재생성해서 커밋해라.** `pnpm install --no-frozen-lockfile`로 재생성 — 절대 lockfile을 수동 편집하지 마라. 따로 커밋하면 CI의 `--frozen-lockfile` 설치가 100% 깨진다.
+3. **"dead code 정리"나 파일 삭제 커밋을 만들기 전에 반드시 `grep -rl "파일명또는export명"`으로 실제 미사용인지 확인해라.** 여전히 import되는 파일을 지우면 빌드가 깨지거나, 더 나쁘게 조용히 기능이 죽는다.
+
+### 멀티 에이전트 동시작업
+- push 전에 항상 `git log HEAD..origin/master`로 새 커밋이 있는지 확인하는 습관화 — 없으면 남의 커밋을 덮어쓴 채로 push하게 된다.
+- 큰 배치 커밋 금지 — 작은 단위로 자주 push. 배치가 클수록 충돌 범위가 커진다.
+- 핫스팟 파일(`SendTab.tsx`, `api.ts` 등)은 한 번에 한 명만 수정.
+- push 전 로컬에서 `npm run build` 통과 확인 없이 push 금지.
+
+### Docker 빌드
+- builder 스테이지에서 `--omit=dev` 쓰지 마라 — Tailwind/PostCSS 등 빌드타임 도구가 devDependencies에 있으면 빌드 자체가 깨진다.
+- 멀티스테이지 빌드에서 builder 스테이지만 무거워도 된다 — 최종 이미지는 standalone output만 복사한다.
+- Docker `HEALTHCHECK` 명령어가 이미지에 실제로 설치된 바이너리인지 확인해라 (alpine에 curl 없는 경우가 흔하다).
+
+### 파일 무결성
+- `.gitignore`에 `node_modules/`, `.next/`가 빠졌는지 주기적으로 점검.
+- `package.json` 커밋 전에 유효한 JSON인지 확인: `node -e "JSON.parse(require('fs').readFileSync('package.json'))"`.
+
+### 병합 충돌
+- add/add 충돌은 둘 다 "진짜 구현"인지 "null stub"인지부터 구분해라 — stub 버전을 잘못 채택하면 빌드는 통과해도 기능이 죽어있다.
+- 충돌 해결 후 반드시 호출부(consumer)까지 재확인해라 — 타입만 맞다고 로직도 맞는 게 아니다 (예: 함수가 sync↔async로 바뀌면 모든 호출부의 `await` 여부를 재확인).
+
+### 배포/근본 원칙
+- health check는 실제 DB 커넥션까지 확인하는 엔드포인트로 만들어라 — 컨테이너가 뜬 것과 앱이 정상인 건 다르다.
+- **"빌드 통과" ≠ "기능 정상".** tsc/eslint/build가 클린해도 실제 브라우저에서 클릭해보기 전엔 모른다. UI에 영향을 주는 수정이면 실제로 눌러보고 나서 완료 보고해라.
+- **결제나 DB row 삭제 관련 코드를 건드릴 땐 작업 전에 한 줄로 미리 공지해라.** 그 외엔 선배포 후수정 방식으로 진행해도 된다.
+
 ## 팀 협업 도구
 
 다음 스크립트가 `scripts/team/`에 있습니다:
