@@ -17,8 +17,12 @@ export function MobileOfflineCapability() {
     const registerServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          await navigator.serviceWorker.register('/sw.js');
-        } catch {
+          // 모바일에서만 등록
+          if (window.matchMedia('(max-width: 768px)').matches) {
+            await navigator.serviceWorker.register('/sw.js');
+          }
+        } catch (error) {
+          console.error('Service Worker registration failed:', error);
           setSwError(true);
         }
       }
@@ -44,6 +48,13 @@ export function MobileOfflineCapability() {
           const objectStore = db.createObjectStore('cachedData', { keyPath: 'id' });
           objectStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
+        
+        // 오프라인 캐시를 위한 추가 스토어
+        if (!db.objectStoreNames.contains('offlineQueue')) {
+          const queueStore = db.createObjectStore('offlineQueue', { keyPath: 'id', autoIncrement: true });
+          queueStore.createIndex('timestamp', 'timestamp', { unique: false });
+          queueStore.createIndex('type', 'type', { unique: false });
+        }
       };
     };
 
@@ -52,11 +63,34 @@ export function MobileOfflineCapability() {
       initLocalDatabase();
     }
 
+    // 네트워크 상태 변경 시 캐시 동기화
+    const syncOfflineQueue = async () => {
+      if (isOnline && 'indexedDB' in window) {
+        const request = indexedDB.open('TeleMonLocalDB', 1);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['offlineQueue'], 'readonly');
+          const store = tx.objectStore('offlineQueue');
+          const getAll = store.getAll();
+          
+          getAll.onsuccess = () => {
+            if (getAll.result.length > 0) {
+              // 오프라인 큐에 있는 데이터를 서버로 전송
+              // 실제 구현은 앱 로직에 따라 달라짐
+              console.log('Syncing offline data:', getAll.result);
+            }
+          };
+        };
+      }
+    };
+
+    syncOfflineQueue();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isOnline]);
 
   if (!isOnline) {
     return (

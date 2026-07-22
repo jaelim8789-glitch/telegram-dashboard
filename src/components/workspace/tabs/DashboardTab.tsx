@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { memo, useEffect, useMemo, useState, useRef } from "react";
 import {
   Activity, AlertCircle, AlertTriangle, BarChart3, CheckCircle2, Clock, Download, Link, MessageSquare,
   RefreshCw, Send, SendHorizonal, Users, XCircle,
@@ -19,6 +19,7 @@ import * as api from "@/lib/api";
 import type { AccountHealthItem, Broadcast, BroadcastStatus, DeliveryOverview, TabId, DeliverySummary, TeleMonMemorySnapshot } from "@/types";
 import { isRecurringActive, getRecurringState } from "@/types";
 import { useCountdown, intervalLabel } from "@/lib/useRecurringCountdown";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { DailyDigest } from "@/components/workspace/tabs/dashboard/DailyDigest";
 import { UsageChartWidget } from "@/components/workspace/tabs/dashboard/UsageChartWidget";
 import { UsageProgressWidget } from "@/components/workspace/tabs/dashboard/UsageProgressWidget";
@@ -188,6 +189,21 @@ export function DashboardTab() {
     } catch { return { ...WIDGET_DEFAULTS }; }
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
+
+  // ── Mobile widget simplification ──
+  function useWidgetSimplification() {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+      const check = () => setIsMobile(window.innerWidth < 768);
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }, []);
+    return isMobile;
+  }
+  const isMobileWidget = useWidgetSimplification();
+  const CORE_WIDGETS = new Set(["dailyDigest", "realtimeMetrics", "healthScore", "usageChart", "usageProgress"]);
+  const [mobileCollapsedWidgets, setMobileCollapsedWidgets] = useState<Set<string>>(new Set());
 
   // ── Dashboard profiles ──
   interface DashboardProfile {

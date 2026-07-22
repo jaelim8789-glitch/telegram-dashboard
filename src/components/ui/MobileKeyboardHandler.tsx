@@ -33,23 +33,37 @@ export function MobileKeyboardHandler() {
     // 폼 요소에 포커스 이벤트 리스너 추가
     const inputs = document.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
-      input.addEventListener('focus', () => {
+      const onFocus = () => {
         // 입력 필드가 뷰포트 상단에 있도록 스크롤
         setTimeout(() => {
           if (input.getBoundingClientRect().top < 100) {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }, 300);
-      });
+      };
+
+      const onBlur = () => {
+        // 입력 해제 시 스크롤 복원
+        setTimeout(() => {
+          if (document.activeElement !== input) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }, 100);
+      };
+
+      input.addEventListener('focus', onFocus);
+      input.addEventListener('blur', onBlur);
     });
 
+    // Clean up function
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', handleResize);
       }
       
       inputs.forEach(input => {
-        input.removeEventListener('focus', () => {});
+        input.removeEventListener('focus', onFocus);
+        input.removeEventListener('blur', onBlur);
       });
     };
   }, [isKeyboardVisible]);

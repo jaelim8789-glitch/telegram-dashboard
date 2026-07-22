@@ -800,6 +800,138 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   }
 }
 
+/* ── Mobile-specific enhancements ── */
+@media (max-width: 768px) {
+  /* Increase tap targets for mobile */
+  button, .btn, .nav-item, .menu-item {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better form controls for mobile */
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS when focusing inputs */
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* Mobile-friendly typography */
+  .text-sm { font-size: 0.875rem; }
+  .text-base { font-size: 1rem; }
+  .text-lg { font-size: 1.125rem; }
+
+  /* Optimize scrolling behavior for mobile */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better focus indicators for mobile */
+  button:focus-visible, input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Enhanced touch feedback */
+  .active\:scale-95:active {
+    transform: scale(0.95);
+  }
+
+  /* Mobile-friendly card spacing */
+  .card, .panel {
+    margin: 8px;
+    padding: 16px;
+  }
+
+  /* Optimize for mobile screens */
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Better mobile table/list experience */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Adjust for safe areas on mobile devices */
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-area-left { padding-left: env(safe-area-inset-left); }
+  .safe-area-right { padding-right: env(safe-area-inset-right); }
+
+  /* Optimize image loading for mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Mobile-friendly modal/popup sizing */
+  .modal, .popup {
+    width: calc(100% - 32px);
+    margin: 16px;
+  }
+
+  /* Improve mobile accessibility */
+  .sr-only:not(:focus):not(:active) {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  /* Better mobile animations */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Reduce motion for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ── Touch-friendly elements ── */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Mobile keyboard handling ── */
+.keyboard-open .mobile-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Custom scrollbar for mobile webkit browsers ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-subtle);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
 /* ── Luxury Mobile Bottom CTA ── */
 .luxury-bottom-cta {
   position: fixed;
