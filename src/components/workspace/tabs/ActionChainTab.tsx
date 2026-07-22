@@ -540,6 +540,7 @@ export function ActionChainTab() {
   function clearAll() {
     if (chains.length === 0) return;
     setConfirmDeleteAll(true);
+  }
 
   const totalSteps = chains.reduce((acc, c) => acc + c.steps.length, 0);
   const activeCount = chains.filter((c) => c.isActive).length;
