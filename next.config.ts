@@ -40,7 +40,6 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["sharp", "canvas"],
   experimental: {
-    esmExternals: 'loose',
     optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
     scrollRestoration: true,
     optimisticClientCache: true,
