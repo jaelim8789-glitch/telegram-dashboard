@@ -298,6 +298,10 @@ export function SendTab() {
 
   const [history, setHistory] = useState<Broadcast[]>([]);
   const inFlightCount = history.filter((h) => h.status === "sending" || (h.status === "pending" && !h.scheduledAt)).length;
+  const recentMessages = useMemo(
+    () => Array.from(new Set(history.slice(0, 5).map((h) => h.message).filter(Boolean))),
+    [history],
+  );
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyRefreshing, setHistoryRefreshing] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1718,7 +1722,6 @@ export function SendTab() {
                   message.length > 4096 ? "text-app-danger font-semibold" : message.length > 3500 ? "text-app-warning" : "text-app-text-muted"
                 )}>{message.length.toLocaleString()} / 4,096</span>
               </div>
-            </Field>
 
             {/* ── Message preview ( Telegram style ) ── */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
