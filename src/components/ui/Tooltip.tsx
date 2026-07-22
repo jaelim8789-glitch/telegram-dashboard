@@ -184,7 +184,7 @@ function TooltipPortal({ entry }: { entry: TooltipEntry }) {
           )}
           style={{ left: pos.left, top: pos.top }}
         >
-          <div className="rounded-lg border border-app-border bg-app-card px-2.5 py-1.5 text-[11px] font-medium text-app-text shadow-lg whitespace-nowrap">
+           <div className="rounded-lg border border-app-border bg-app-card px-2.5 py-1.5 text-xs font-medium text-app-text shadow-lg whitespace-nowrap">
             {content}
           </div>
         </motion.div>

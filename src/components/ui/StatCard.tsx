@@ -48,7 +48,7 @@ export function StatCard({ icon, label, value, sub, trend, accent, children }: S
         {trend && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium",
               trend === "up" && "bg-emerald-500/10 text-emerald-500",
               trend === "down" && "bg-rose-500/10 text-rose-500",
               trend === "neutral" && "bg-app-card-hover text-app-text-muted"

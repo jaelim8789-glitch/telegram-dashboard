@@ -129,7 +129,7 @@ export function OnboardingTour() {
             <X className="h-3.5 w-3.5" />
           </button>
           <p className="pr-4 text-xs font-semibold text-app-text">{current.title}</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-app-text-muted">{current.description}</p>
+          <p className="mt-1 text-xs leading-relaxed text-app-text-muted">{current.description}</p>
           <div className="mt-3 flex items-center justify-between">
             <div className="flex gap-1">
               {STEPS.map((_, i) => (

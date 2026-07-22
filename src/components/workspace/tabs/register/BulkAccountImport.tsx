@@ -151,7 +151,7 @@ export function BulkAccountImport() {
       {rows.length > 0 && (
         <div className="max-h-32 overflow-y-auto rounded-xl border border-app-border bg-app-card/30">
           {rows.slice(0, 50).map((row, i) => (
-            <div key={i} className="flex items-center gap-2 border-b border-app-border/30 px-3 py-1.5 text-xs text-app-text-muted last:border-0">
+            <div key={`row-${i}`} className="flex items-center gap-2 border-b border-app-border/30 px-3 py-1.5 text-xs text-app-text-muted last:border-0">
               <FileText className="h-3 w-3 shrink-0" />
               <span className="font-mono">{row.phone}</span>
               {row.name && <span className="truncate">({row.name})</span>}
@@ -197,7 +197,7 @@ export function BulkAccountImport() {
           {errorCount > 0 && (
             <div className="max-h-24 overflow-y-auto space-y-0.5">
               {results.filter((r) => r.status === "error").map((r, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[11px] text-app-danger-muted">
+                <div key={`err-${i}`} className="flex items-start gap-1.5 text-[11px] text-app-danger-muted">
                   <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                   <span className="font-mono">{r.phone}</span>
                   <span className="text-app-text-muted">{r.message}</span>

@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-interface WorkerResponse<T> {
-  id: string;
-  type: 'RESULT' | 'PROGRESS' | 'ERROR';
-  payload: T | number | string; // RESULT의 경우 T, PROGRESS의 경우 number, ERROR의 경우 string
-}
+type WorkerResponse =
+  | { id: string; type: 'COMPUTATION_RESULT'; payload: unknown }
+  | { id: string; type: 'PROGRESS'; payload: number }
+  | { id: string; type: 'ERROR'; payload: string };
 
 interface WorkerRequest {
   computationType: 'sort' | 'filter' | 'map' | 'reduce' | 'search' | 'aggregate' | 'processLargeArray' | 'calculateStats';
@@ -30,19 +29,19 @@ export function useWebWorker() {
 
     // 메시지 핸들러
     const handleMessage = (e: MessageEvent) => {
-      const { type, payload, id } = e.data as WorkerResponse<any>;
+      const msg = e.data as WorkerResponse;
 
-      switch (type) {
+      switch (msg.type) {
         case 'COMPUTATION_RESULT':
-          setResult(payload);
+          setResult(msg.payload);
           setIsWorking(false);
           setProgress(0);
           break;
         case 'PROGRESS':
-          setProgress(payload as number);
+          setProgress(msg.payload);
           break;
         case 'ERROR':
-          setError(payload as string);
+          setError(msg.payload);
           setIsWorking(false);
           setProgress(0);
           break;
@@ -51,7 +50,6 @@ export function useWebWorker() {
 
     workerInstance.addEventListener('message', handleMessage);
 
-    // 클린업
     return () => {
       workerInstance.removeEventListener('message', handleMessage);
       workerInstance.terminate();
@@ -69,17 +67,17 @@ export function useWebWorker() {
       
       // 메시지 핸들러 등록
       const handleMessage = (e: MessageEvent) => {
-        const { type, payload, id: responseId } = e.data as WorkerResponse<any>;
+        const msg = e.data as WorkerResponse;
 
-        if (responseId === id) {
-          switch (type) {
+        if (msg.id === id) {
+          switch (msg.type) {
             case 'COMPUTATION_RESULT':
               workerRef.current?.removeEventListener('message', handleMessage);
-              resolve(payload);
+              resolve(msg.payload);
               break;
             case 'ERROR':
               workerRef.current?.removeEventListener('message', handleMessage);
-              reject(new Error(payload as string));
+              reject(new Error(msg.payload));
               break;
           }
         }
@@ -106,7 +104,7 @@ export function useWebWorker() {
 
   // 여러 작업을 순차적으로 실행
   const executeMultipleComputations = useCallback(async (requests: WorkerRequest[]): Promise<any[]> => {
-    const results: any[] = [];
+    const results: unknown[] = [];
     
     for (const request of requests) {
       try {
@@ -131,19 +129,19 @@ export function useWebWorker() {
     setWorker(newWorker);
 
     const handleMessage = (e: MessageEvent) => {
-      const { type, payload, id } = e.data as WorkerResponse<any>;
+      const msg = e.data as WorkerResponse;
 
-      switch (type) {
+      switch (msg.type) {
         case 'COMPUTATION_RESULT':
-          setResult(payload);
+          setResult(msg.payload);
           setIsWorking(false);
           setProgress(0);
           break;
         case 'PROGRESS':
-          setProgress(payload as number);
+          setProgress(msg.payload);
           break;
         case 'ERROR':
-          setError(payload as string);
+          setError(msg.payload);
           setIsWorking(false);
           setProgress(0);
           break;
@@ -294,14 +292,14 @@ export class WebWorkerPool {
       this.availableWorkers.push(i);
 
       worker.addEventListener('message', (e) => {
-        const { type, payload, id } = e.data as WorkerResponse<any>;
-        const task = this.tasks.find(t => t.request.data.toString() === id); // 간단한 ID 매칭
+        const msg = e.data as WorkerResponse;
+        const task = this.tasks.find(t => t.request.data.toString() === msg.id);
 
         if (task) {
-          if (type === 'COMPUTATION_RESULT') {
-            task.resolve(payload);
-          } else if (type === 'ERROR') {
-            task.reject(new Error(payload as string));
+          if (msg.type === 'COMPUTATION_RESULT') {
+            task.resolve(msg.payload);
+          } else if (msg.type === 'ERROR') {
+            task.reject(new Error(msg.payload));
           }
           this.tasks = this.tasks.filter(t => t !== task);
           this.availableWorkers.push(this.workers.indexOf(worker));

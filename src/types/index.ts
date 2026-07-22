@@ -1,15 +1,15 @@
 export type TabId = "dashboard" | "register" | "send" | "sendhub" | "group" | "groupsearch" | "linkinspector" | "profile" | "log" | "autoreply" | "replymacro" | "deliveryanalytics" | "scheduler" | "channelhub" | "folders" | "templates" | "myai" | "health" | "team" | "campaigns" | "aireply" | "aibroadcast" | "aioperations" | "aiopscenter" | "aiusage" | "guestbot" | "drafts" | "triggers" | "stars" | "apikeys" | "audit" | "referral" | "operator" | "styleprofile" | "growthloop" | "fortune" | "telegram" | "pixeloffice";
 
-// Navigation/IA grouping ??6 categories
+// Navigation/IA grouping — 6 categories
 export type TabGroup = "dashboard" | "send" | "ops" | "ai" | "settings" | "new";
 
 export const CATEGORY_META: Record<TabGroup, { label: string; icon: string }> = {
-  dashboard: { label: "?�?�보??, icon: "LayoutDashboard" },
+  dashboard: { label: "대시보드", icon: "LayoutDashboard" },
   send: { label: "발송", icon: "Send" },
-  ops: { label: "?�영", icon: "Activity" },
+  ops: { label: "운영", icon: "Activity" },
   ai: { label: "AI", icon: "Sparkles" },
-  settings: { label: "?�정", icon: "Settings" },
-  new: { label: "?�규", icon: "Plus" },
+  settings: { label: "설정", icon: "Settings" },
+  new: { label: "신규", icon: "Plus" },
 };
 
 export type NavView = "chat" | "category" | "feature";
@@ -17,56 +17,56 @@ export type NavView = "chat" | "category" | "feature";
 export interface TabDef {
   id: TabId;
   label: string;
-  /** Shorter label used on mobile when horizontal space is limited (??640px viewport). Falls back to `label` when absent. */
+  /** Shorter label used on mobile when horizontal space is limited (≤ 640px viewport). Falls back to `label` when absent. */
   shortLabel?: string;
   group: TabGroup;
 }
 
 export const TABS: TabDef[] = [
-  // ?�?� ?�?�보??(최상???�독) ?�?�
-  { id: "dashboard", label: "?�?�보??, shortLabel: "?�??, group: "dashboard" },
+  // ── 대시보드 (최상단 단독) ──
+  { id: "dashboard", label: "대시보드", shortLabel: "대시", group: "dashboard" },
 
-  // ?�?� 발송 ?�?�
-  { id: "send", label: "발송?�기", shortLabel: "발송", group: "send" },
-  { id: "sendhub", label: "발송 ?�터", shortLabel: "?�터", group: "send" },
-  { id: "drafts", label: "Draft 검??, shortLabel: "초안", group: "send" },
-  { id: "scheduler", label: "?��?줄러", group: "send" },
-  { id: "replymacro", label: "?�장매크�?, shortLabel: "매크�?, group: "send" },
-  { id: "templates", label: "?�플�?, group: "send" },
+  // ── 발송 ──
+  { id: "send", label: "발송하기", shortLabel: "발송", group: "send" },
+  { id: "sendhub", label: "발송 센터", shortLabel: "센터", group: "send" },
+  { id: "drafts", label: "Draft 검토", shortLabel: "초안", group: "send" },
+  { id: "scheduler", label: "스케줄러", group: "send" },
+  { id: "replymacro", label: "답장매크로", shortLabel: "매크로", group: "send" },
+  { id: "templates", label: "템플릿", group: "send" },
 
-  // ?�?� ?�영/모니?�링 ?�?�
-  { id: "deliveryanalytics", label: "?�달 분석", shortLabel: "분석", group: "ops" },
-  { id: "linkinspector", label: "링크 검??, shortLabel: "링크", group: "ops" },
-  { id: "register", label: "계정 ?�록", shortLabel: "?�록", group: "ops" },
+  // ── 운영/모니터링 ──
+  { id: "deliveryanalytics", label: "전달 분석", shortLabel: "분석", group: "ops" },
+  { id: "linkinspector", label: "링크 검사", shortLabel: "링크", group: "ops" },
+  { id: "register", label: "계정 등록", shortLabel: "등록", group: "ops" },
   { id: "group", label: "그룹", group: "ops" },
-  { id: "groupsearch", label: "그룹 검??, shortLabel: "검??, group: "ops" },
-  { id: "autoreply", label: "?�동 ?�답", shortLabel: "?�동", group: "ops" },
-  { id: "channelhub", label: "채널 ?�브", shortLabel: "?�브", group: "ops" },
+  { id: "groupsearch", label: "그룹 검색", shortLabel: "검색", group: "ops" },
+  { id: "autoreply", label: "자동 응답", shortLabel: "자동", group: "ops" },
+  { id: "channelhub", label: "채널 허브", shortLabel: "허브", group: "ops" },
 
-  // ?�?� AI ?�구 ?�?�
-  { id: "myai", label: "?�만??AI", shortLabel: "AI", group: "ai" },
-  { id: "aireply", label: "AI ?�장", shortLabel: "?�장", group: "ai" },
+  // ── AI 영역 ──
+  { id: "myai", label: "나만의 AI", shortLabel: "AI", group: "ai" },
+  { id: "aireply", label: "AI 답장", shortLabel: "답장", group: "ai" },
   { id: "aibroadcast", label: "AI 발송", shortLabel: "AI발송", group: "ai" },
-  { id: "aioperations", label: "AI 리포??, shortLabel: "리포??, group: "ai" },
-  { id: "aiopscenter", label: "AI ?�영?�터", shortLabel: "?�영", group: "ai" },
-  { id: "aiusage", label: "AI ?�용??, shortLabel: "?�용??, group: "ai" },
+  { id: "aioperations", label: "AI 리포트", shortLabel: "리포트", group: "ai" },
+  { id: "aiopscenter", label: "AI 운영센터", shortLabel: "운영", group: "ai" },
+  { id: "aiusage", label: "AI 사용량", shortLabel: "사용량", group: "ai" },
 
-  // ?�?� ?�정/기�? ?�?�
-  { id: "team", label: "?� 관�?, shortLabel: "?�", group: "settings" },
-  { id: "profile", label: "?�로??, group: "settings" },
-  { id: "guestbot", label: "Guest �?, shortLabel: "�?, group: "settings" },
+  // ── 설정/관리 ──
+  { id: "team", label: "팀 관리", shortLabel: "팀", group: "settings" },
+  { id: "profile", label: "프로필", group: "settings" },
+  { id: "guestbot", label: "Guest 봇", shortLabel: "봇", group: "settings" },
   { id: "stars", label: "Stars 결제", shortLabel: "결제", group: "settings" },
-  { id: "folders", label: "?�더", group: "settings" },
-  { id: "apikeys", label: "API ??, shortLabel: "API", group: "settings" },
-  { id: "audit", label: "?�동 로그", shortLabel: "?�동", group: "settings" },
-  { id: "triggers", label: "?�동??규칙", shortLabel: "규칙", group: "settings" },
-  { id: "referral", label: "추천??, shortLabel: "추천", group: "settings" },
+  { id: "folders", label: "폴더", group: "settings" },
+  { id: "apikeys", label: "API 키", shortLabel: "API", group: "settings" },
+  { id: "audit", label: "활동 로그", shortLabel: "활동", group: "settings" },
+  { id: "triggers", label: "자동화 규칙", shortLabel: "규칙", group: "settings" },
+  { id: "referral", label: "추천인", shortLabel: "추천", group: "settings" },
   { id: "operator", label: "AI 직원", shortLabel: "직원", group: "ai" },
-  { id: "styleprofile", label: "브랜????, shortLabel: "??, group: "ai" },
-  { id: "growthloop", label: "?�장 루프", shortLabel: "?�장", group: "ai" },
-  { id: "fortune", label: "?�세", shortLabel: "?�세", group: "new" },
+  { id: "styleprofile", label: "브랜드 톤", shortLabel: "톤", group: "ai" },
+  { id: "growthloop", label: "성장 루프", shortLabel: "성장", group: "ai" },
+  { id: "fortune", label: "운세", shortLabel: "운세", group: "new" },
   { id: "telegram", label: "Telegram", shortLabel: "채팅", group: "send" },
-  { id: "pixeloffice", label: "?���?AI ?�무??, shortLabel: "?�무??, group: "ai" },
+  { id: "pixeloffice", label: "🖥️ AI 사무실", shortLabel: "사무실", group: "ai" },
 ];
 
 export type AccountStatus = "active" | "inactive" | "banned" | "suspended";
@@ -115,7 +115,7 @@ export function getAccountDisplayName(account: Account): string {
 }
 
 export function getAccountInitials(account: Account): string {
-  const source = account.name?.trim() || account.phone.replace(/[^0-9A-Za-z가-??/g, "");
+  const source = account.name?.trim() || account.phone.replace(/[^0-9A-Za-z가-힣]/g, "");
   return source.slice(0, 2).toUpperCase();
 }
 
@@ -232,20 +232,20 @@ export interface BroadcastChild {
 export const MAX_BROADCAST_RECIPIENTS = 10;
 
 export const RECURRING_INTERVALS = [
-  { value: 30, label: "30�? },
-  { value: 60, label: "1?�간" },
-  { value: 120, label: "2?�간" },
-  { value: 180, label: "3?�간" },
-  { value: 360, label: "6?�간" },
-  { value: 720, label: "12?�간" },
-  { value: 1440, label: "24?�간" },
+  { value: 30, label: "30분" },
+  { value: 60, label: "1분" },
+  { value: 120, label: "2시간" },
+  { value: 180, label: "3시간" },
+  { value: 360, label: "6시간" },
+  { value: 720, label: "12시간" },
+  { value: 1440, label: "24시간" },
 ] as const;
 
 export const NORMAL_DELAY_OPTIONS = [
-  { value: 5, label: "5�? },
-  { value: 10, label: "10�? },
-  { value: 30, label: "30�? },
-  { value: 60, label: "1�? },
+  { value: 5, label: "5초" },
+  { value: 10, label: "10초" },
+  { value: 30, label: "30초" },
+  { value: 60, label: "1분" },
 ] as const;
 
 export type AutoReplyMatchType = "keyword" | "exact";
@@ -284,7 +284,7 @@ export interface AutoReplyLog {
   createdAt: string;
 }
 
-// ?�?�?� Reply Macro (?�장매크�? ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ── Reply Macro (답장매크로) ──
 
 export type ReplyMacroScheduleType = "interval" | "fixed";
 
@@ -317,7 +317,7 @@ export interface ReplyMacroLog {
   createdAt: string;
 }
 
-// ?�?�?� Delivery Analytics ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ── Delivery Analytics ──
 
 export interface DeliverySummary {
   total_attempted: number;
@@ -397,7 +397,7 @@ export interface LatencyByAccountItem {
   total_measured: number;
 }
 
-// ?�?�?� Per-endpoint Delivery Analytics types (DeliveryAnalyticsTab) ?�?�?�?�?�?�?�?�?�
+// ── Per-endpoint Delivery Analytics types (DeliveryAnalyticsTab) ──
 
 export interface AnalyticsSummary {
   total_attempts: number;
@@ -490,7 +490,7 @@ export interface AnalyticsLatency {
   period_days: number;
 }
 
-// ?�?�?� Group Folders (per-account, backend-persisted) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ── Group Folders (per-account, backend-persisted) ──占?
 
 export interface GroupFolder {
   id: string;
@@ -559,7 +559,7 @@ export interface SmartFolderConfig {
   params?: Record<string, unknown>;
 }
 
-// ?�?�?� Account Groups (localStorage only) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ── Account Groups (localStorage only) ──
 
 export interface AccountGroup {
   id: string;

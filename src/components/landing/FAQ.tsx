@@ -67,7 +67,7 @@ export function FAQ() {
             const isOpen = openIdx === i;
             return (
               <motion.div
-                key={i}
+                key={item.q}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

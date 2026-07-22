@@ -69,7 +69,7 @@ export function InlineButtonBuilder({ buttons, onChange }: InlineButtonBuilderPr
           <div className="flex flex-wrap gap-1.5 justify-center">
             {validButtons.length > 0 ? validButtons.map((btn, i) => (
               <a
-                key={i}
+                key={`btn-${i}`}
                 href={btn.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -89,7 +89,7 @@ export function InlineButtonBuilder({ buttons, onChange }: InlineButtonBuilderPr
         <Reorder.Group axis="y" values={buttons} onReorder={onChange} className="space-y-1.5">
           {buttons.map((btn, idx) => (
             <Reorder.Item
-              key={idx}
+              key={btn.label || `btn-${idx}`}
               value={btn}
               className="flex items-start gap-2 rounded-xl border border-app-border bg-app-card/50 p-2.5 cursor-grab active:cursor-grabbing"
             >

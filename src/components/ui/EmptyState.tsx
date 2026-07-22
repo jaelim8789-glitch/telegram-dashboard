@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
@@ -27,7 +27,7 @@ interface EmptyStateProps {
   compact?: boolean;
 }
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   icon: Icon,
   title,
   description,
@@ -100,4 +100,4 @@ export function EmptyState({
       )}
     </motion.div>
   );
-}
+});

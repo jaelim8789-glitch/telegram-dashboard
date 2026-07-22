@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export interface PanelProps {
@@ -23,7 +23,7 @@ const ACCENT_BAR: Record<string, string> = {
   purple: "bg-gradient-to-r from-purple-500 to-pink-500",
 };
 
-export function Panel({ title, description, action, children, className, accent, compact }: PanelProps) {
+export const Panel = memo(function Panel({ title, description, action, children, className, accent, compact }: PanelProps) {
   return (
     <section
       className={cn(
@@ -51,4 +51,4 @@ export function Panel({ title, description, action, children, className, accent,
       <div className={cn(compact ? "p-3" : "p-4")}>{children}</div>
     </section>
   );
-}
+});

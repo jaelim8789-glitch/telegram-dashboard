@@ -110,7 +110,7 @@ export function PixelOfficeWidget({ onExpand, compact }: PixelOfficeWidgetProps)
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f1a] to-transparent opacity-60" />
       )}
       {isNight && Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse" style={{ top: `${Math.random() * 30}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />
+        <div key={`pix-star-${i}`} className="absolute h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse" style={{ top: `${Math.random() * 30}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />
       ))}
 
       <div className="relative" style={{ width: WIDGET_COLS * TILE, height: WIDGET_ROWS * TILE, margin: "0 auto" }}>

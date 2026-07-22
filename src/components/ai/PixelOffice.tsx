@@ -529,7 +529,7 @@ export function PixelOffice() {
 
         {/* Stars at night */}
         {actualNight && Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse" style={{
+          <div key={`star-${i}`} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse" style={{
             top: `${Math.random() * 40}%`,
             left: `${Math.random() * 100}%`,
             animationDelay: `${Math.random() * 3}s`,
@@ -539,11 +539,11 @@ export function PixelOffice() {
 
         {/* Weather particles */}
         {weather === "rainy" && Array.from({ length: 30 }).map((_, i) => (
-          <div key={i} className="absolute h-3 w-0.5 bg-blue-400/30 animate-rain"
+          <div key={`rain-${i}`} className="absolute h-3 w-0.5 bg-blue-400/30 animate-rain"
             style={{ left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, animationDuration: `${0.5 + Math.random()}s` }} />
         ))}
         {weather === "snowy" && Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="absolute h-1.5 w-1.5 rounded-full bg-white/40 animate-snow"
+          <div key={`snow-${i}`} className="absolute h-1.5 w-1.5 rounded-full bg-white/40 animate-snow"
             style={{ left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s` }} />
         ))}
 
@@ -556,7 +556,7 @@ export function PixelOffice() {
             </div>
             {/* 별 더 많이 */}
             {Array.from({ length: 30 }).map((_, i) => (
-              <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse"
+              <div key={`night-star-${i}`} className="absolute h-0.5 w-0.5 rounded-full bg-white/60 animate-pulse"
                 style={{ top: `${Math.random() * 40}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, opacity: Math.random() * 0.5 + 0.3 }}
               />
             ))}
@@ -711,7 +711,7 @@ export function PixelOffice() {
                     <span className="text-[9px] font-bold text-white">사무실 대화</span>
                   </div>
                   {activeConversation.lines.map((line, i) => (
-                    <motion.p key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.3 }}
+                    <motion.p key={`line-${i}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.3 }}
                       className="text-[11px] text-white/80 leading-relaxed"
                     >{line}</motion.p>
                   ))}
@@ -740,7 +740,7 @@ export function PixelOffice() {
                   <span className="text-white/50">·</span>
                   <span className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={cn("h-2.5 w-2.5", i < selected.efficiency ? "text-yellow-400" : "text-white/20")} />
+                      <Star key={`eff-star-${i}`} className={cn("h-2.5 w-2.5", i < selected.efficiency ? "text-yellow-400" : "text-white/20")} />
                     ))}
                   </span>
                   <div className="flex items-center gap-2 text-[10px] text-white/50">

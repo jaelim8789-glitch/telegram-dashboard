@@ -39,7 +39,7 @@ export function NetworkStatus() {
               <p className="text-xs font-semibold">오프라인 상태입니다</p>
               <ul className="mt-1 space-y-0.5">
                 {OFFLINE_RESTRICTIONS.map((item) => (
-                  <li key={item} className="flex items-center gap-1.5 text-[11px] text-white/70">
+                  <li key={item} className="flex items-center gap-1.5 text-xs text-white/70">
                     <span className="h-1 w-1 rounded-full bg-white/40" />
                     {item} 불가
                   </li>

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import { memo, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -29,7 +29,7 @@ const SIZE_STYLE: Record<Size, string> = {
   lg: "rounded-xl px-4 py-2.5 text-sm",
 };
 
-export function Button({
+export const Button = memo(function Button({
   variant = "secondary",
   size = "md",
   loading = false,
@@ -61,4 +61,4 @@ export function Button({
       {children}
     </button>
   );
-}
+});

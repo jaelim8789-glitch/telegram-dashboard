@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export type Tone = "neutral" | "success" | "warning" | "danger" | "info";
@@ -17,11 +17,11 @@ const TONE_STYLE: Record<Tone, string> = {
   info: "bg-app-info-muted text-app-info border-app-info/20",
 };
 
-export function Badge({ tone = "neutral", className, children }: BadgeProps) {
+export const Badge = memo(function Badge({ tone = "neutral", className, children }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium leading-4",
         TONE_STYLE[tone],
         className
       )}
@@ -29,4 +29,4 @@ export function Badge({ tone = "neutral", className, children }: BadgeProps) {
       {children}
     </span>
   );
-}
+});

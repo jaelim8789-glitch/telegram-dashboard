@@ -84,7 +84,7 @@ export function CalendarPreview({ dailyCount, selectedTypes }: CalendarPreviewPr
     <div className="space-y-1.5">
       {slots.map((slot, i) => (
         <div
-          key={i}
+          key={`slot-${i}`}
           className={cn(
             "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all",
             "border-app-border bg-app-bg/50"

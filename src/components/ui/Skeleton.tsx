@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/lib/cn";
 
 interface SkeletonProps {
@@ -7,7 +8,7 @@ interface SkeletonProps {
   height?: string | number;
 }
 
-export function Skeleton({ className, variant = "default", width, height }: SkeletonProps) {
+export const Skeleton = memo(function Skeleton({ className, variant = "default", width, height }: SkeletonProps) {
   const style: React.CSSProperties = {};
   if (width != null) style.width = typeof width === "number" ? `${width}px` : width;
   if (height != null) style.height = typeof height === "number" ? `${height}px` : height;
@@ -33,4 +34,4 @@ export function Skeleton({ className, variant = "default", width, height }: Skel
       style={style}
     />
   );
-}
+});

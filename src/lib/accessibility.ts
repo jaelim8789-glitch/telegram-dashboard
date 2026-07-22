@@ -254,6 +254,7 @@ class AccessibilityManager {
   setFocusIndicator(type: 'auto' | 'always' | 'never'): void {
     if (typeof document === 'undefined') return;
     const style = document.createElement('style');
+    style.textContent = `
       :focus:not(:focus-visible) {
         outline: none;
       }

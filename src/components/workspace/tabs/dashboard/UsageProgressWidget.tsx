@@ -88,7 +88,7 @@ export function UsageProgressWidget({
       >
         <div className="space-y-3" aria-busy="true">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="space-y-1.5">
+            <div key={`upw-sk-${i}`} className="space-y-1.5">
               <div className="h-3 w-20 rounded bg-app-card-hover animate-pulse" />
               <div className="h-2 w-full rounded-full bg-app-card-hover animate-pulse" />
             </div>

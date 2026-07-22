@@ -249,7 +249,7 @@ export function DashboardPreview() {
                 {/* Message conversation */}
                 <div className="space-y-2.5">
                   {currentScreenshot.lines.map((line, i) => (
-                    <div key={i} className={`flex items-start gap-2 ${line.isUser ? "justify-end" : ""}`}>
+                    <div key={`preview-line-${i}`} className={`flex items-start gap-2 ${line.isUser ? "justify-end" : ""}`}>
                       {!line.isUser && (
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-bold"
                           style={{ background: accentGold, color: "#0d0d14" }}>
@@ -277,7 +277,7 @@ export function DashboardPreview() {
               <div className="flex items-end gap-1 h-8">
                 {[35, 55, 40, 70, 60, 85, 50].map((h, i) => (
                   <div
-                    key={i}
+                    key={`dp-bar-${i}`}
                     className="flex-1 rounded-t-sm transition-all duration-500 hover:scale-y-110 min-w-[8px]"
                     style={{
                       height: `${h}%`,

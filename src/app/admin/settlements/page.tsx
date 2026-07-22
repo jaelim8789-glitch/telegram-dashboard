@@ -100,7 +100,7 @@ function SettlementsContent() {
       >
         {loading ? (
           <div className="space-y-2">
-            {[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+            {[1,2,3,4,5].map((i) => <Skeleton key={`sett-sk-${i}`} className="h-10 w-full rounded-lg" />)}
           </div>
         ) : logs.length === 0 ? (
           <EmptyState icon={Search} title="감사로그 없음" description="아직 기록된 정산 내역이 없습니다." />

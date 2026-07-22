@@ -36,7 +36,7 @@ export function CompactCard({ icon, label, value, trend, color, compact, onClick
       <span className={cn("font-bold tracking-tight text-app-text", compact ? "text-base" : "text-lg")}>{value}</span>
       <AnimatePresence mode="wait">
         {(!compact || expanded) && (
-          <motion.span initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden text-[11px] text-app-text-muted">{label}</motion.span>
+          <motion.span initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden text-xs text-app-text-muted">{label}</motion.span>
         )}
       </AnimatePresence>
       {compact && expanded && (

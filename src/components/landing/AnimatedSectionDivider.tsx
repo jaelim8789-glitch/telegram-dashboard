@@ -134,7 +134,7 @@ function WaveDivider({ visible }: { visible: boolean }) {
       <div className="flex items-center gap-[3px]">
         {[4, 8, 12, 16, 12, 8, 4].map((h, i) => (
           <div
-            key={i}
+            key={`wave-${i}`}
             className={`w-[2px] rounded-full bg-gradient-to-t from-accent/20 to-accent/50 transition-all duration-700 ${
               visible ? "opacity-100" : "opacity-0"
             }`}
@@ -156,7 +156,7 @@ function DotsDivider({ visible }: { visible: boolean }) {
       <div className="flex items-center gap-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
-            key={i}
+            key={`dot-${i}`}
             className={`h-1.5 w-1.5 rounded-full border border-accent-border/20 bg-app-text-subtle/20 transition-all duration-500 ${
               visible ? "scale-100 opacity-100" : "scale-0 opacity-0"
             }`}

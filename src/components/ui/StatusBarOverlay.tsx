@@ -43,7 +43,7 @@ export function StatusBarOverlay() {
 
   return (
     <div
-      className="status-bar-overlay fixed left-0 right-0 top-0 z-[9999] flex h-6 items-center justify-between px-4 text-[11px] font-medium"
+      className="status-bar-overlay fixed left-0 right-0 top-0 z-[9999] flex h-6 items-center justify-between px-4 text-xs font-medium"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)", height: "calc(24px + env(safe-area-inset-top, 0px))" }}
     >
       <span className="flex items-center gap-1 opacity-70">

@@ -149,8 +149,8 @@ export function DialogList({
   if (loading) {
     return (
       <div className="space-y-1 p-2">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+          {Array.from({ length: 8 }).map((_, i) => (
+          <div key={`dl-sk-${i}`} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
             <div className="h-10 w-10 rounded-full bg-app-border animate-pulse" />
             <div className="flex-1 space-y-1.5">
               <div className="h-3 w-24 bg-app-border animate-pulse rounded" />
