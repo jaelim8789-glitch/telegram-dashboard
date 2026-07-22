@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useCountdown } from "@/lib/useRecurringCountdown";
 import { formatRelativeTime, formatDateTime, formatDuration } from "@/lib/formatTime";
 import { cn } from "@/lib/cn";
@@ -13,7 +14,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Copy, Delete,
   FileWarning, Hourglass, RefreshCw, RotateCcw,
   Users2, XCircle, ExternalLink, ArrowUp,
-  Play, Pause, Bot,
+  Play, Pause, Bot, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 import { STATUS_META } from "@/lib/statusMeta";
@@ -76,6 +77,7 @@ export function HistoryRow({
   selected,
   onToggleSelect,
 }: HistoryRowProps) {
+  const [expanded, setExpanded] = useState(false);
   const meta = STATUS_META[h.status];
   const Icon = meta.icon;
   const isFailed = h.status === "failed";
@@ -132,7 +134,12 @@ export function HistoryRow({
             isCancelled && "text-app-warning",
             !isFailed && !isSending && !isSent && !isCancelled && "text-app-text-subtle",
           )} />
-          <span className="truncate font-medium text-app-text">{h.message}</span>
+          <button type="button" onClick={() => setExpanded(!expanded)} className="flex-1 min-w-0 text-left flex items-center gap-1">
+            <span className={cn("font-medium text-app-text", expanded ? "whitespace-pre-wrap break-words" : "truncate")}>{h.message}</span>
+            {h.message.length > 60 && (
+              expanded ? <ChevronUp className="h-3 w-3 shrink-0 text-app-text-muted" /> : <ChevronDown className="h-3 w-3 shrink-0 text-app-text-muted" />
+            )}
+          </button>
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-app-text-subtle">
@@ -277,9 +284,9 @@ export function HistoryRow({
           type="button"
           onClick={() => onClone(h)}
           title="복제하여 새 발송"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover min-h-[44px] min-w-[44px]"
         >
-          <Copy className="h-3.5 w-3.5" />
+          <Copy className="h-4 w-4" />
         </button>
 
         {/* Reuse button */}
@@ -287,9 +294,9 @@ export function HistoryRow({
           type="button"
           onClick={() => onReuse(h)}
           title="설정 불러오기"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text min-h-[44px] min-w-[44px]"
         >
-          <ArrowUp className="h-3.5 w-3.5" />
+          <ArrowUp className="h-4 w-4" />
         </button>
 
         {/* Disabled cancel for future schedule */}
@@ -297,10 +304,10 @@ export function HistoryRow({
           <button
             type="button"
             title="예약 취소 (미지원)"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-subtle transition-colors hover:bg-app-card-hover disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-app-text-subtle transition-colors hover:bg-app-card-hover disabled:opacity-40 min-h-[44px] min-w-[44px]"
             disabled
           >
-            <Delete className="h-3.5 w-3.5" />
+            <Delete className="h-4 w-4" />
           </button>
         )}
 
@@ -311,18 +318,18 @@ export function HistoryRow({
                 type="button"
                 onClick={() => onPauseResume?.(h)}
                 title="반복 재개"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-app-success transition-colors hover:bg-app-success-muted"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-app-success transition-colors hover:bg-app-success-muted min-h-[44px] min-w-[44px]"
               >
-                <Play className="h-3.5 w-3.5" />
+                <Play className="h-4 w-4" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => onPauseResume?.(h)}
                 title="반복 일시정지"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted min-h-[44px] min-w-[44px]"
               >
-                <Pause className="h-3.5 w-3.5" />
+                <Pause className="h-4 w-4" />
               </button>
             )}
           </>
@@ -333,9 +340,9 @@ export function HistoryRow({
             onClick={() => onCancelClick(h)}
             disabled={cancelling === h.id}
             title={recurring ? "반복 취소" : "발송 중단"}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-app-warning transition-colors hover:bg-app-warning-muted disabled:opacity-40 min-h-[44px] min-w-[44px]"
           >
-            <XCircle className={`h-3.5 w-3.5 ${cancelling === h.id ? "animate-spin" : ""}`} />
+            <XCircle className={`h-4 w-4 ${cancelling === h.id ? "animate-spin" : ""}`} />
           </button>
         )}
 
@@ -346,18 +353,18 @@ export function HistoryRow({
               onClick={() => onRetry(h)}
               disabled={retrying === h.id}
               title="재발송"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-app-danger transition-colors hover:bg-app-danger-muted disabled:opacity-40 min-h-[44px] min-w-[44px]"
             >
-              <RotateCcw className={`h-3.5 w-3.5 ${retrying === h.id ? "animate-spin" : ""}`} />
+              <RotateCcw className={`h-4 w-4 ${retrying === h.id ? "animate-spin" : ""}`} />
             </button>
             {onAiAnalyze && (
               <button
                 type="button"
                 onClick={() => onAiAnalyze(h)}
                 title="AI 분석"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-app-primary transition-colors hover:bg-app-primary/10"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-app-primary transition-colors hover:bg-app-primary/10 min-h-[44px] min-w-[44px]"
               >
-                <Bot className="h-3.5 w-3.5" />
+                <Bot className="h-4 w-4" />
               </button>
             )}
           </>
