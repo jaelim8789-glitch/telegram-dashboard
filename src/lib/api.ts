@@ -2482,3 +2482,10 @@ export async function fetchPixelOffices(): Promise<{ id: string; name: string; s
     return request("/api/miniapp/pixel-offices");
   } catch { return []; }
 }
+
+export async function fetchAnalyticsDashboard(period?: string): Promise<import("@/types").AnalyticsDashboardResponse | null> {
+  try {
+    const qs = period ? `?period=${period}` : "";
+    return request<import("@/types").AnalyticsDashboardResponse>(`/api/delivery-analytics/dashboard${qs}`);
+  } catch { return null; }
+}

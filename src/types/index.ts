@@ -490,7 +490,24 @@ export interface AnalyticsLatency {
   period_days: number;
 }
 
-// ── Group Folders (per-account, backend-persisted) ──占?
+export interface AnalyticsDashboardResponse {
+  stat_cards: {
+    total_sent: number;
+    total_sent_change: number;
+    response_rate: number;
+    response_rate_change: number;
+    active_chat_rooms: number;
+    active_chat_rooms_change: number;
+    new_subscribers: number;
+    new_subscribers_change: number;
+  };
+  timeline: { date: string; sent: number; responses: number }[];
+  distribution: { name: string; value: number }[];
+  total_chat_rooms: number;
+  top_chat_rooms: { rank: number; name: string; messages: number; participants: number; response_rate: number }[];
+}
+
+// ── Group Folders (per-account, backend-persisted) ──?
 
 export interface GroupFolder {
   id: string;
