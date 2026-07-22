@@ -10,10 +10,10 @@ export type TextNodeData = {
 export function TextNode({ data, selected }: NodeProps<Node<TextNodeData>>) {
   return (
     <div
-      className={`min-w-[180px] max-w-[220px] rounded-2xl border-2 p-3 transition-shadow ${
+      className={`min-w-[160px] rounded-xl border bg-gray-500/10 p-3 text-app-text text-xs font-medium transition-shadow ${
         selected
-          ? "border-gray-400 bg-gray-500/30 shadow-lg shadow-gray-500/30"
-          : "border-gray-500 bg-gray-500/20"
+          ? "shadow-lg shadow-violet-500/20 [outline:2px_solid_#8B5CF6]"
+          : "border-gray-500/30 hover:shadow-md"
       }`}
     >
       <Handle
@@ -23,7 +23,7 @@ export function TextNode({ data, selected }: NodeProps<Node<TextNodeData>>) {
       />
       <div className="flex items-center gap-2">
         <Type className="h-4 w-4 text-gray-400" />
-        <span className="text-xs font-semibold text-gray-300">텍스트</span>
+        <span className="font-medium">텍스트</span>
       </div>
       {data.content && (
         <p className="mt-1.5 line-clamp-2 text-[11px] text-app-text-secondary">
