@@ -226,15 +226,12 @@ export class ApiError extends Error {
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const startTime = performance.now();
-  let responseStatus: number | undefined;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    // 첫 시도
     try {
-      // Only set Content-Type for JSON-string bodies ? GET, HEAD, and bodyless DELETE
-      // calls should not force application/json, which can confuse some backends and
-      // is semantically incorrect.  Non-string bodies (FormData, Blob) also skip the
-      // hardcoded Content-Type so the browser can set the correct multipart boundary.
       const hasJsonBody = typeof init?.body === "string";
       const defaultHeaders: Record<string, string> = {
         ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
@@ -246,26 +243,11 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         headers: { ...defaultHeaders, ...init?.headers },
       });
 
-      // Token expired ? attempt refresh once, then retry
-      if (res.status === 401 && attempt === 0 && !path.includes("/auth/refresh") && !path.includes("/auth/login")) {
-        clearTimeout(timeoutId);
-        const refreshed = await tryRefreshToken();
-        if (refreshed) {
-          continue;
-        }
-      }
-
       if (!res.ok) {
-        const elapsed = performance.now() - startTime;
-        recordSlowApi(path, elapsed, res.status);
         const body = await readErrorBody(res);
         const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-        // HTTP error ? surface immediately, do NOT retry
         throw new ApiError(detail, res.status, false);
       }
-
-      const elapsed = performance.now() - startTime;
-      recordSlowApi(path, elapsed, res.status);
 
       if (res.status === 204) return undefined as T;
       return res.json() as Promise<T>;
@@ -275,39 +257,64 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         throw err;
       }
 
-      // Network/Abort error ? retry with exponential backoff up to MAX_RETRIES
-      if (attempt < MAX_RETRIES) {
-        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
+      // First attempt failed ? surface the error to the UI immediately
+      const firstError = err instanceof DOMException && err.name === "AbortError"
+        ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+        : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
 
-      // Last attempt failed ? surface the final network error
+      // 타임아웃이 발생한 경우 즉시 종료
       if (err instanceof DOMException && err.name === "AbortError") {
-        throw new ApiError(
-          "서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.",
-          undefined,
-          true,
-        );
+        throw firstError;
       }
-      throw new ApiError(
-        "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
-        undefined,
-        true,
-      );
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
 
-  // Unreachable ? the loop always throws on the last failed attempt
-  const elapsed = performance.now() - startTime;
-  recordSlowApi(path, elapsed, undefined);
-  throw new ApiError(
-    "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.",
-    undefined,
-    true,
-  );
+      // Retry with exponential backoff, returning the first success or final error
+      const lastError = await (async () => {
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          // 타임아웃 검사
+          if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% 시간이 지나면 종료
+            throw new ApiError("요청 시간이 곧 초과됩니다. 네트워크 상태를 확인해주세요.", undefined, true);
+          }
+
+          const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          
+          const bgController = new AbortController();
+          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+          const hasJsonBody = typeof init?.body === "string";
+          const defaultHeaders: Record<string, string> = {
+            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+            ...(await authHeaders()),
+          };
+          
+          try {
+            const res = await fetch(`${API_BASE_URL}${path}`, {
+              ...init,
+              signal: bgController.signal,
+              headers: { ...defaultHeaders, ...init?.headers },
+            });
+            clearTimeout(bgTimeout);
+
+            if (!res.ok) {
+              const body = await readErrorBody(res);
+              const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+              throw new ApiError(detail, res.status, false);
+            }
+
+            if (res.status === 204) return undefined as T;
+            return res.json() as Promise<T>;
+          } catch (bgErr) {
+            clearTimeout(bgTimeout);
+            if (attempt < MAX_RETRIES - 1) continue;
+            throw bgErr;
+          }
+        }
+        throw firstError;
+      })();
+      throw lastError;
+    }
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
