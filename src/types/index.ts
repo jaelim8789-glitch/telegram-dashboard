@@ -162,7 +162,7 @@ export interface Broadcast {
   /** Whether this recurring broadcast is paused (keeps schedule but doesn't execute). */
   isRecurringPaused: boolean;
   failureInfo: FailureInfo | null;
-  deliveryMode?: "normal" | "cycle" | "bulk";
+  deliveryMode?: "normal" | "cycle" | "bulk" | "replyMacro";
   /** Reply to a specific Telegram message ID. When set, sends as a reply instead of a new message. */
   replyToMessageId: number | null;
   /** Inline keyboard buttons attached to this broadcast message. */
@@ -224,7 +224,7 @@ export interface BroadcastChild {
   /** Normalized failure intelligence for failed child broadcasts. */
   failureInfo: FailureInfo | null;
   /** Delivery mode inherited from parent. */
-  deliveryMode?: "normal" | "cycle" | "bulk" | "reply";
+  deliveryMode?: "normal" | "cycle" | "bulk" | "replyMacro";
   /** Inline keyboard buttons. */
   inlineButtons: InlineButton[] | null;
 }
