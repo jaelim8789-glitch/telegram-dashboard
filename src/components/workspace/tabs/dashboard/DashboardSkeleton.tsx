@@ -13,7 +13,7 @@ function CriticalMetricsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-app-border bg-app-card p-3">
+        <div key={`cm-${i}`} className="rounded-xl border border-app-border bg-app-card p-3">
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-3 rounded-full bg-app-card-hover animate-pulse" />
             <div className="h-3 w-12 rounded bg-app-card-hover animate-pulse" />
@@ -62,7 +62,7 @@ function ProgressSkeleton() {
       </div>
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="space-y-1.5">
+          <div key={`progress-${i}`} className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="h-3 w-12 rounded bg-app-card-hover animate-pulse" />
               <div className="h-3 w-16 rounded bg-app-card-hover animate-pulse" />
@@ -89,7 +89,7 @@ function ActivitySkeleton() {
       </div>
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
+          <div key={`activity-${i}`} className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-app-card-hover animate-pulse" />
             <div className="flex-1 space-y-1">
               <div className="h-3 w-2/3 rounded bg-app-card-hover animate-pulse" />
@@ -111,7 +111,7 @@ function AttentionSkeleton() {
       </div>
       <div className="divide-y divide-app-border">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+          <div key={`attention-${i}`} className="flex items-center gap-3 px-4 py-2.5">
             <div className="h-7 w-7 rounded-lg bg-app-card-hover animate-pulse" />
             <div className="flex-1 space-y-1">
               <div className="h-3 w-32 rounded bg-app-card-hover animate-pulse" />

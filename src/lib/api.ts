@@ -877,7 +877,7 @@ export async function fetchRecurringChildren(
     createdAt: api.created_at,
     errorMessage: api.error_message,
     failureInfo: api.failure_info as BroadcastChild["failureInfo"] | null ?? null,
-    deliveryMode: api.delivery_mode,
+    deliveryMode: api.delivery_mode as BroadcastChild["deliveryMode"],
     inlineButtons: api.inline_buttons as BroadcastChild["inlineButtons"] | null ?? null,
   }));
 }

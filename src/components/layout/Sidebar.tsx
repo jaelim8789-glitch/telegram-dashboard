@@ -338,7 +338,7 @@ export function Sidebar() {
             {showRecent && recentSearches.length > 0 && !searchQuery && (
               <div className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-app-border bg-app-card shadow-lg z-50 py-1">
                 {recentSearches.map((s, i) => (
-                  <button key={i} type="button" onMouseDown={() => setSearchQuery(s)}
+                  <button key={s} type="button" onMouseDown={() => setSearchQuery(s)}
                     className="w-full px-3 py-1.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors">
                     {s}
                   </button>
@@ -442,7 +442,7 @@ export function Sidebar() {
         {accountsError && <InlineError>{accountsError}</InlineError>}
         {deleteError && <InlineError>{deleteError}</InlineError>}
         {!accountsError && accountsLoading && accounts.length === 0 && (
-          <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={`sidebar-sk-${i}`} className="h-16 w-full rounded-xl" />)}</div>
         )}
         {!accountsLoading && !accountsError && accounts.length === 0 && (
           <EmptyState
