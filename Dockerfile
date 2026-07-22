@@ -26,12 +26,13 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV CI=1
 
 RUN pnpm build
 
 # Post-build verification: check that App Router produced at least one route.
 # Zero routes means /app or /backend leaked into the build context and
-# shadowed src/app — the build exits 0 but every page 404s.
+# shadowed src/app ??the build exits 0 but every page 404s.
 RUN node scripts/verify-build.js
 
 FROM node:20-alpine AS runner
