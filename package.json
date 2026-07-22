@@ -109,7 +109,7 @@
     "@types/react-dom": "^18.3.7",
     "conventional-changelog-cli": "^5",
     "cross-env": "^10.1.0",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "^15.5.20",
     "jscpd": "^4",
     "knip": "^5",
