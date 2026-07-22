@@ -7,6 +7,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import { GestureGuide } from "@/components/ui/GestureGuide";
 import { MobileSendSheet } from "@/components/ui/MobileSendSheet";
 import { NetworkStatusBar } from "@/components/ui/NetworkStatusBar";
+import { QuickActionBar } from "@/components/ui/QuickActionBar"; // 퀵 액션 바 추가
 import { cn } from "@/lib/cn";
 
 const QUICK_ACTIONS = [
@@ -55,7 +56,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
 
   return (
     <div className="flex flex-col h-full">
-      <NetworkStatusBar online={online} latency={latency} />
+      <NetworkStatusBar online={online} latency={latency}>
 
       <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-app-border/50 shrink-0" style={{ scrollbarWidth: "none" }}>
         <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">자주 사용</span>
@@ -70,6 +71,8 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
       <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}
         role="region" aria-label="대시보드 컨텐츠">
         {children}
+        {/* 퀵 액션 바 추가 */}
+        <QuickActionBar />
       </div>
 
       <MobileSendSheet open={showSendSheet} onClose={() => setShowSendSheet(false)} onSent={() => setActiveTab("dashboard")} />

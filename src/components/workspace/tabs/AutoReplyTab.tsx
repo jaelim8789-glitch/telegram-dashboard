@@ -20,6 +20,8 @@ import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 import { useToast } from "@/components/ui/Toast";
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
+import { useSwipeTemplate } from "@/hooks/useSwipeTemplate"; // 스와이프 템플릿 훅 추가
+import { QuickTemplateSelector } from "@/components/ui/QuickTemplateSelector"; // 퀵 템플릿 선택기 추가
 
 const MATCH_TYPE_LABEL: Record<AutoReplyMatchType, string> = {
   keyword: "키워드 포함",
@@ -322,21 +324,105 @@ export function AutoReplyTab() {
     );
   }
 
+  // 템플릿 상태 추가
+  const [templates, setTemplates] = useState([
+    { id: '1', name: '기본 응답', content: '안녕하세요, 확인 후 답변드리겠습니다.' },
+    { id: '2', name: '업무시간 안내', content: '업무시간은 평일 09:00~18:00입니다.' },
+    { id: '3', name: '휴무일 안내', content: '주말 및 공휴일은 휴무입니다.' },
+  ]);
+
+  // 최근 메시지 상태 추가
+  const [recentMessages, setRecentMessages] = useState([
+    '안녕하세요',
+    '문의 드립니다',
+    '확인 부탁드립니다'
+  ]);
+
+  // 스와이프 템플릿 훅 사용
+  const {
+    showTemplates,
+    showRecent,
+    attachSwipeListeners,
+    hidePanels,
+    onTemplateSelect,
+    onRecentMessageSelect
+  } = useSwipeTemplate({
+    templates: templates.map(t => t.content),
+    recentMessages,
+    onTemplateSelect: (template: string) => {
+      // 템플릿을 현재 입력 필드에 삽입하는 로직
+      console.log('템플릿 선택:', template);
+    },
+    onRecentMessageSelect: (message: string) => {
+      // 최근 메시지를 현재 입력 필드에 삽입하는 로직
+      console.log('최근 메시지 선택:', message);
+    }
+  });
+
+  // 폼 레퍼런스에 스와이프 리스너 연결
+  useEffect(() => {
+    if (formRef.current) {
+      const cleanup = attachSwipeListeners(formRef.current);
+      return cleanup;
+    }
+  }, [attachSwipeListeners]);
+
   return (
     <div className="mx-auto max-w-2xl space-y-5 pb-8">
       {/* Master toggle */}
       <Panel title="자동 응답" description={`${account.name ?? account.phone} 계정의 자동 응답을 켜거나 끕니다`}>
-        <Toggle
-          label={enabled ? "자동 응답 켜짐" : "자동 응답 꺼짐"}
-          description="켜져 있어야 등록된 규칙이 메시지에 자동으로 응답합니다"
-          checked={enabled}
-          onChange={handleToggleMaster}
-          disabled={toggling}
-        />
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-app-text">
+              {enabled ? "자동 응답 켜짐" : "자동 응답 꺼짐"}
+            </span>
+            <span className="text-xs text-app-text-muted">
+              {enabled 
+                ? "등록된 규칙이 메시지에 자동으로 응답하고 있습니다" 
+                : "등록된 규칙이 메시지에 자동으로 응답하지 않습니다"}
+            </span>
+          </div>
+          <Button
+            variant={enabled ? "outline-destructive" : "outline-success"}
+            size="sm"
+            onClick={handleToggleMaster}
+            disabled={toggling}
+            className="whitespace-nowrap"
+          >
+            {toggling ? (
+              <span>처리중...</span>
+            ) : enabled ? (
+              <span>끄기</span>
+            ) : (
+              <span>켜기</span>
+            )}
+          </Button>
+        </div>
         {toggleError && (
           <div className="mt-2 rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{toggleError}</div>
         )}
       </Panel>
+
+      {/* 퀵 템플릿 선택기 추가 */}
+      <div className="px-4">
+        <QuickTemplateSelector 
+          templates={templates}
+          onTemplateSelect={(template) => {
+            // 선택된 템플릿을 현재 입력 필드에 삽입
+            console.log('선택된 템플릿:', template);
+          }}
+          onAddTemplate={(name, content) => {
+            // 새 템플릿 추가
+            const newTemplate = {
+              id: Date.now().toString(),
+              name,
+              content,
+              createdAt: new Date().toISOString()
+            };
+            setTemplates(prev => [newTemplate, ...prev]);
+          }}
+        />
+      </div>
 
       {/* Watermark + Referral Gate — free plan users must enable watermark */}
       <WatermarkGate plan={plan} />

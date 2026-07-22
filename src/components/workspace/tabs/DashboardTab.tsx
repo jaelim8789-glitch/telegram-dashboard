@@ -1379,60 +1379,63 @@ export function DashboardTab() {
               <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-1">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>계정</TableHead>
-                    <TableHead>상태</TableHead>
-                    <TableHead className="hidden sm:table-cell">자동 응답</TableHead>
-                    <TableHead className="text-right">오늘</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">그룹</TableHead>
-                    <TableHead className="hidden md:table-cell">최근 활동</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accounts.map((a) => {
-                    const healthItem = healthItems.find(h => h.accountId === a.id);
-                    const healthStatus = healthItem?.status;
-                    const hasHealthIssue = healthStatus && healthStatus !== "healthy";
-                    return (
-                      <TableRow key={a.id} className={hasHealthIssue ? "bg-app-danger-muted/5" : undefined}>
-                        <TableCell className="max-w-[120px] sm:max-w-[180px]">
-                          <div className="truncate text-sm font-medium text-app-text" title={a.name || a.phone}>{a.name || a.phone}</div>
-                          {a.name && <div className="truncate text-xs text-app-text-muted">{a.phone}</div>}
-                        </TableCell>
-                        <TableCell>
-                          <span className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                            a.status === "active" && !hasHealthIssue && "bg-app-success-muted text-app-success",
-                            a.status === "active" && hasHealthIssue && "bg-app-warning-muted text-app-warning",
-                            a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
-                            a.status === "banned" && "bg-app-danger-muted text-app-danger",
-                          )}>
-                            <span className={cn("h-1.5 w-1.5 rounded-full",
-                              a.status === "active" && !hasHealthIssue && "bg-app-success",
-                              a.status === "active" && hasHealthIssue && "bg-app-warning",
-                              a.status === "inactive" && "bg-app-text-subtle",
-                              a.status === "banned" && "bg-app-danger")} />
-                            {a.status === "active" ? (hasHealthIssue ? "주의" : "활성") : a.status === "inactive" ? "비활성" : "차단"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {a.autoReplyEnabled
-                            ? <span className="text-app-success text-xs font-medium">켜짐</span>
-                            : <span className="text-app-text-subtle text-xs">꺼짐</span>}
-                        </TableCell>
-                        <TableCell className="font-medium tabular-nums text-right">{a.todaySent}</TableCell>
-                        <TableCell className="tabular-nums text-app-text-muted text-right hidden sm:table-cell">{a.groupCount}</TableCell>
-                        <TableCell className="text-xs text-app-text-muted hidden md:table-cell">
-                          {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+            <div className="relative">
+              <div className="overflow-x-auto -mx-1">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>계정</TableHead>
+                      <TableHead>상태</TableHead>
+                      <TableHead className="hidden sm:table-cell">자동 응답</TableHead>
+                      <TableHead className="text-right">오늘</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">그룹</TableHead>
+                      <TableHead className="hidden md:table-cell">최근 활동</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accounts.map((a) => {
+                      const healthItem = healthItems.find(h => h.accountId === a.id);
+                      const healthStatus = healthItem?.status;
+                      const hasHealthIssue = healthStatus && healthStatus !== "healthy";
+                      return (
+                        <TableRow key={a.id} className={hasHealthIssue ? "bg-app-danger-muted/5" : undefined}>
+                          <TableCell className="max-w-[120px] sm:max-w-[180px]">
+                            <div className="truncate text-sm font-medium text-app-text" title={a.name || a.phone}>{a.name || a.phone}</div>
+                            {a.name && <div className="truncate text-xs text-app-text-muted">{a.phone}</div>}
+                          </TableCell>
+                          <TableCell>
+                            <span className={cn(
+                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              a.status === "active" && !hasHealthIssue && "bg-app-success-muted text-app-success",
+                              a.status === "active" && hasHealthIssue && "bg-app-warning-muted text-app-warning",
+                              a.status === "inactive" && "bg-app-card-hover text-app-text-muted",
+                              a.status === "banned" && "bg-app-danger-muted text-app-danger",
+                            )}>
+                              <span className={cn("h-1.5 w-1.5 rounded-full",
+                                a.status === "active" && !hasHealthIssue && "bg-app-success",
+                                a.status === "active" && hasHealthIssue && "bg-app-warning",
+                                a.status === "inactive" && "bg-app-text-subtle",
+                                a.status === "banned" && "bg-app-danger")} />
+                              {a.status === "active" ? (hasHealthIssue ? "주의" : "활성") : a.status === "inactive" ? "비활성" : "차단"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {a.autoReplyEnabled
+                              ? <span className="text-app-success text-xs font-medium">켜짐</span>
+                              : <span className="text-app-text-subtle text-xs">꺼짐</span>}
+                          </TableCell>
+                          <TableCell className="font-medium tabular-nums text-right">{a.todaySent}</TableCell>
+                          <TableCell className="tabular-nums text-app-text-muted text-right hidden sm:table-cell">{a.groupCount}</TableCell>
+                          <TableCell className="text-xs text-app-text-muted hidden md:table-cell">
+                            {a.lastActivity ? formatRelativeTime(a.lastActivity) : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-app-bg to-transparent" />
             </div>
           )}
         </Panel>
