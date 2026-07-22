@@ -13,6 +13,7 @@ export interface ReferralReferredUser {
   plan: string;
   has_paid: boolean;
   joined_at: string | null;
+  level: number | null;
 }
 
 export interface ReferralDashboardResponse {
@@ -21,6 +22,11 @@ export interface ReferralDashboardResponse {
   referred_users: ReferralReferredUser[];
   pending_commission_total: number;
   paid_commission_total: number;
+  tier_label: string;
+  tier_rate: number;
+  distributor_level: number;
+  badges: string[];
+  weekly_referrals: number;
 }
 
 export interface CommissionItem {
@@ -30,6 +36,7 @@ export interface CommissionItem {
   amount: number;
   commission_rate: number;
   commission_amount: number;
+  level: number;
   status: string;
   created_at: string;
 }
@@ -46,6 +53,7 @@ export interface LeaderboardEntry {
   referral_count: number;
   total_commission_earned: number;
   tier: string;
+  level: number;
 }
 
 export interface PayoutRecord {
@@ -53,6 +61,8 @@ export interface PayoutRecord {
   referrer_id: string;
   referrer_phone: string;
   amount: number;
+  fee: number;
+  payout_type: string;
   status: string;
   paid_at: string | null;
   created_at: string;
@@ -66,6 +76,23 @@ export interface RegisterDistributorResponse {
 
 export interface DistributorStatus {
   isDistributor: boolean;
+}
+
+export interface BadgeDef {
+  key: string;
+  label: string;
+  desc: string;
+  icon: string;
+  earned_at: string | null;
+}
+
+export interface WeeklyMission {
+  key: string;
+  label: string;
+  current: number;
+  target: number;
+  reward: string;
+  completed: boolean;
 }
 
 // ── API Functions ───────────────────────────────────────────────────
@@ -106,12 +133,26 @@ export async function setWalletAddress(wallet: string): Promise<{ success: boole
   });
 }
 
+export async function setPayoutMethod(method: string, walletAddress?: string): Promise<{ success: boolean }> {
+  return request("/api/referral/set-payout-method", {
+    method: "POST",
+    body: JSON.stringify({ method, wallet_address: walletAddress }),
+  });
+}
+
 export async function getPayoutHistory(): Promise<{ items: PayoutRecord[]; total_count: number }> {
   return request("/api/referral/payouts");
 }
 
-export async function requestPayout(): Promise<{ success: boolean; message: string }> {
+export async function requestPayout(): Promise<{ success: boolean; message: string; payouts_created?: number; total_amount?: number }> {
   return request("/api/referral/request-payout", { method: "POST" });
+}
+
+export async function instantCashout(amount?: number): Promise<{ success: boolean; payout_id: string | null; amount: number; fee: number; net_amount: number; message: string }> {
+  return request("/api/referral/instant-cashout", {
+    method: "POST",
+    body: JSON.stringify(amount ? { amount } : {}),
+  });
 }
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
@@ -121,4 +162,13 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 
 export async function getMyReferralLink(): Promise<{ link: string; code: string }> {
   return request("/api/referral/my-link");
+}
+
+export async function getBadges(): Promise<{ badges: { badge_key: string; earned_at: string | null }[]; all_badges: BadgeDef[] }> {
+  return request("/api/referral/badges");
+}
+
+export async function getWeeklyMissions(): Promise<WeeklyMission[]> {
+  const result = await request<{ missions: WeeklyMission[] }>("/api/referral/weekly-missions");
+  return result.missions;
 }
