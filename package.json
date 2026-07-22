@@ -17,7 +17,7 @@
     "cap:build": "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build && npx cap copy",
     "cap:sync": "cross-env CAPACITOR=1 next build && npx cap sync",
     "cap:android": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open android",
-    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open ios",
+    "cap:ios": "cross-env CAPACITOR=1 next build && npx cap open ios",
     "seed": "cd telegram-dashboard-backend && python scripts/seed_local.py",
     "openapi": "cd telegram-dashboard-backend && python -c \"from app.main import app; import json; open('../openapi.json','w').write(json.dumps(app.openapi(), indent=2))\"",
     "typegen": "npx openapi-typescript openapi.json -o src/lib/api.types.ts",
@@ -27,7 +27,11 @@
     "jscpd": "jscpd src/ --min-lines 10 --min-tokens 50 --pattern \"src/**/*.{ts,tsx}\" --output report/jscpd",
     "knip": "knip --exclude-dirs node_modules,.next --production",
     "ts-strict-report": "node scripts/ts-strict-report.js",
-    "quality:full": "npm run typecheck && npm run lint && npm run jscpd && npm run knip"
+    "quality:full": "npm run typecheck && npm run lint && npm run jscpd && npm run knip",
+    "verify": "npm run typecheck && npm run lint && npm run build",
+    "prepush": "npm run verify",
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
@@ -84,6 +88,8 @@
     "prettier": "^3",
     "storybook": "^8",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@next/bundle-analyzer": "^15.5.20",
+    "webpack-bundle-analyzer": "^4.10.1"
   }
 }
