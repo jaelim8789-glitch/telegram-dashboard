@@ -212,8 +212,9 @@
   --color-warning-muted: rgba(245, 158, 11, 0.16);
   --color-danger-muted: rgba(239, 68, 68, 0.14);
   --color-info-muted: rgba(0, 212, 255, 0.14);
+}
 
-  body {
+[data-theme="dark-pure"] body {
     background-image: none;
       repeating-linear-gradient(
         90deg,

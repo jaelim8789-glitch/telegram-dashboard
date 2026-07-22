@@ -429,7 +429,7 @@ export function Workspace() {
         <OnboardingTour />
         <div className="fixed bottom-20 right-2 z-30"><NetworkQualityIndicator /></div>
       </main>
-      </AppShell>
     </MotionConfig>
+    </AppShell>
   );
 }

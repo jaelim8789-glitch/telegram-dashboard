@@ -1069,12 +1069,10 @@ export function NewRegistrationForm({
     }
   };
   return (
+    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
     <Panel
       title={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4 text-app-primary" /> 새 계정 등록</div>}
       description="전화번호로 실제 Telegram 인증을 진행합니다. API ID/Hash는 서버(.env)에 앱 단위로 한 번만 설정하면 됩니다."
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <form onSubmit={onSubmit}>
         <div className="grid grid-cols-2 gap-4">
@@ -1139,5 +1137,6 @@ export function NewRegistrationForm({
         <BulkAccountImport />
       </div>
     </Panel>
+    </div>
   );
 }
