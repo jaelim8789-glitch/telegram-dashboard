@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Users, DollarSign, Shield, Ban, CheckCircle2, XCircle, RefreshCw, Search } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Shield, Ban, CheckCircle2, XCircle, RefreshCw, Search, Download } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
@@ -117,6 +117,16 @@ function DistributorsContent() {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
 
+  const [sortBy, setSortBy] = useState<SortKey>(null);
+  const [memos, setMemosState] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("distributor-memos") ?? "{}"); } catch { return {}; }
+  });
+  function setMemos(next: Record<string, string>) {
+    setMemosState(next);
+    try { localStorage.setItem("distributor-memos", JSON.stringify(next)); } catch {}
+  }
+  const [dateRange, setDateRange] = useState<string>("all");
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -144,6 +154,40 @@ function DistributorsContent() {
   const filtered = distributors.filter(
     (d) => d.phone.includes(search) || d.referral_code.toLowerCase().includes(search.toLowerCase())
   );
+
+  function getSortValue(d: Distributor, key: SortKey): number {
+    if (key === "referral_count") return d.referral_count;
+    if (key === "total_commission") return d.total_commission;
+    if (key === "total_revenue") return d.total_revenue;
+    if (key === "total_payout") return d.total_payout;
+    return 0;
+  }
+  const sorted = sortBy
+    ? [...filtered].sort((a, b) => getSortValue(b, sortBy) - getSortValue(a, sortBy))
+    : filtered;
+
+  function toggleSort(key: SortKey) {
+    setSortBy((prev) => (prev === key ? null : key));
+  }
+
+  function exportDistributorsCsv(data: Distributor[]) {
+    const headers = ["전화번호","코드","유치인원","누적매출","커미션","지급완료","상태","수수료율"];
+    const rows = data.map(d => [d.phone, d.referral_code, d.referral_count, d.total_revenue, d.total_commission, d.total_payout, d.status === "suspended" ? "정지" : "활성", d.commission_rate_override != null ? `${(d.commission_rate_override * 100).toFixed(1)}%` : "자동"]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "distributors.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const now = new Date();
+  const dayStart = (daysAgo: number) => { const d = new Date(now); d.setDate(d.getDate() - daysAgo); d.setHours(0,0,0,0); return d; };
+  const filteredPayouts = pendingPayouts.filter((p) => {
+    if (dateRange === "all") return true;
+    const created = new Date(p.created_at);
+    const cutoff = dateRange === "today" ? dayStart(0) : dateRange === "7d" ? dayStart(7) : dayStart(30);
+    return created >= cutoff;
+  });
 
   async function handleSaveRate(tenantId: string) {
     const rate = parseFloat(rateEdits[tenantId]);
@@ -229,6 +273,9 @@ function DistributorsContent() {
           <Button variant="primary" size="sm" onClick={handleBatchProcess}>
             <DollarSign className="h-3.5 w-3.5" /> 일괄 정산 생성
           </Button>
+          <Button variant="ghost" size="sm" onClick={() => exportDistributorsCsv(filtered)}>
+            <Download className="h-3.5 w-3.5" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>
@@ -236,10 +283,10 @@ function DistributorsContent() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <SummaryCard icon={Users} label="총판 수" value={totalDistributors} color="text-blue-500" />
-        <SummaryCard icon={TrendingUp} label="유치 인원" value={totalReferrals} color="text-emerald-500" />
-        <SummaryCard icon={DollarSign} label="커미션 총액" value={totalCommission.toLocaleString()} color="text-violet-500" suffix="원" />
-        <SummaryCard icon={CheckCircle2} label="지급 완료" value={totalPayout.toLocaleString()} color="text-green-500" suffix="원" />
+        <SummaryCard icon={Users} label="총판 수" value={totalDistributors} color="text-blue-500" onClick={() => toggleSort(null)} />
+        <SummaryCard icon={TrendingUp} label="유치 인원" value={totalReferrals} color="text-emerald-500" onClick={() => toggleSort("referral_count")} />
+        <SummaryCard icon={DollarSign} label="커미션 총액" value={totalCommission.toLocaleString()} color="text-violet-500" suffix="원" onClick={() => toggleSort("total_commission")} />
+        <SummaryCard icon={CheckCircle2} label="지급 완료" value={totalPayout.toLocaleString()} color="text-green-500" suffix="원" onClick={() => toggleSort("total_payout")} />
         <SummaryCard icon={Ban} label="정지" value={suspendedCount} color="text-red-500" />
       </div>
 
