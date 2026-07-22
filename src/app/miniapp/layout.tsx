@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useMiniApp } from "@tma.js/sdk-react";
 import { retrieveLaunchParams } from "@tma.js/sdk-react";
 import { init } from "./core/init";
 import { GlobalToast } from "@/components/ui/GlobalToast";
@@ -14,7 +13,7 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setOpen = useCommandPaletteStore(s => s.setOpen);
-  const { launchParams } = useMiniApp();
+  const launchParams = retrieveLaunchParams();
 
   useKeyboardShortcut("k", () => setOpen(true), { ctrl: true });
 

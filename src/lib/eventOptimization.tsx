@@ -288,7 +288,100 @@ class EventOptimizer {
 }
 
 // 이벤트 최적화 훅
-import { useCallback, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
+
+export function useThrottledCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
+  return useCallback((...args: Parameters<T>): void => {
+    if (timeoutRef.current) return;
+    
+    callbackRef.current(...args);
+    timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = null;
+    }, delay);
+  }, [delay]) as T;
+}
+
+export function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
+  return useCallback((...args: Parameters<T>): void => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      callbackRef.current(...args);
+      timeoutRef.current = null;
+    }, delay);
+  }, [delay]) as T;
+}
+
+export function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+export function useThrottledValue<T>(value: T, delay: number): T {
+  const [throttledValue, setThrottledValue] = useState<T>(value);
+  const lastExecuted = useRef<number>(Date.now());
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (Date.now() - lastExecuted.current >= delay) {
+        setThrottledValue(value);
+        lastExecuted.current = Date.now();
+      }
+    }, delay - (Date.now() - lastExecuted.current));
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return throttledValue;
+}
+
+export function useEventListener<T extends HTMLElement = HTMLElement>(
+  element: T | Window | Document | null,
+  event: string,
+  handler: (e: Event) => void,
+  options?: boolean | AddEventListenerOptions
+) {
+  useEffect(() => {
+    if (!element) return;
+    
+    const optimizedHandler = handler;
+    
+    element.addEventListener(event, optimizedHandler, options);
+    
+    return () => {
+      element.removeEventListener(event, optimizedHandler, options);
+    };
+  }, [element, event, handler, options]);
+}
 
 export function useEventOptimization() {
   const optimizerRef = useRef(EventOptimizer.getInstance());
