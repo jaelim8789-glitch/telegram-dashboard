@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: actions/setup-node@v4
         with:
@@ -21,6 +23,8 @@ jobs:
         with:
           path: node_modules
           key: nm-nightly-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+          restore-keys: |
+            nm-nightly-${{ runner.os }}-
 
       - run: npm ci --prefer-offline
 
@@ -29,6 +33,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: pw-nightly-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+          restore-keys: |
+            pw-nightly-${{ runner.os }}-
 
       - run: npx playwright install --with-deps
 
@@ -36,6 +42,7 @@ jobs:
         name: Run full E2E suite
         env:
           PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+          PLAYWRIGHT_WORKERS: 2
 
       - uses: actions/upload-artifact@v4
         if: failure()

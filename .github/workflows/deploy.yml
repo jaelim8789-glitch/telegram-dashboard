@@ -230,6 +230,7 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps frontend
 
       - name: Smoke test (staging)
+        id: smoke-frontend
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -243,6 +244,18 @@ jobs:
               sleep 5
             done
             echo "smoke fail"; exit 1
+
+      - name: Rollback on smoke failure
+        if: steps.smoke-frontend.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/telemon/backend
+            bash scripts/rollback-deploy.sh docker-compose.yml frontend
 
       - name: Notify staging deploy result
         if: always()
@@ -274,9 +287,10 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose pull frontend -q
-            docker compose up -d --no-deps frontend
+            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost:3000/health staging
 
       - name: Smoke test (production)
+        id: smoke-frontend-prod
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -290,6 +304,18 @@ jobs:
               sleep 5
             done
             echo "smoke fail"; exit 1
+
+      - name: Rollback production on failure
+        if: steps.smoke-frontend-prod.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/telemon/backend
+            bash scripts/rollback-deploy.sh docker-compose.yml frontend
 
       - name: Notify production deploy result
         if: always()
@@ -416,6 +442,7 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps backend
 
       - name: Smoke test (staging backend)
+        id: smoke-backend
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -429,6 +456,18 @@ jobs:
               sleep 5
             done
             echo "smoke fail"; exit 1
+
+      - name: Rollback backend staging on failure
+        if: steps.smoke-backend.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/telemon/backend
+            bash scripts/rollback-deploy.sh docker-compose.yml backend
 
       - name: Notify staging deploy result
         if: always()
@@ -460,9 +499,10 @@ jobs:
             set -e
             cd /opt/telemon/backend
             docker compose pull backend -q
-            docker compose up -d --no-deps backend
+            bash scripts/zero-downtime-deploy.sh backend docker-compose.yml http://localhost:8000/health latest
 
       - name: Smoke test (production)
+        id: smoke-backend-prod
         continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -476,6 +516,18 @@ jobs:
               sleep 5
             done
             echo "smoke fail"; exit 1
+
+      - name: Rollback production on failure
+        if: steps.smoke-backend-prod.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/telemon/backend
+            bash scripts/rollback-deploy.sh docker-compose.yml backend
 
       - name: Notify production deploy result
         if: always()
