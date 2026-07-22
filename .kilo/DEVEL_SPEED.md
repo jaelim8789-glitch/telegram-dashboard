@@ -58,10 +58,25 @@ gh alias set prv "pr view --web"
 - 파일 저장 시 UTF-8 BOM 없음 확인
 - `eventOptimization.tsx`, `useContextMenu.ts` 이미 깨져있음 — 수정 금지 (별도 정리 예정)
 
-## MCP 그래프 (공유)
-- `@anthropic/mcp-codebase` 설치 추천: `pnpm add -D @anthropic/mcp-codebase`
-- 설치 후 `npx @anthropic/mcp-codebase --index`로 인덱싱
-- Kilo는 이 파일을 통해 모든 에이전트가 동일한 MCP 설정 공유
+## MCP 그래프 (모든 에이전트 공유)
+
+```
+Kilo Agent (Kiro)
+  ├── codebase-memory (코드검색/추적)
+  ├── context7 (라이브러리문서)
+  ├── git (히스토리/블레임)
+  ├── postgres (DB직접쿼리)
+  ├── redis (캐시/큐)
+  ├── docker (컨테이너관리)
+  ├── playwright (UI테스트)
+  ├── github (PR/이슈)
+  ├── filesystem (파일읽기)
+  ├── fetch (URL요청)
+  ├── sequential-thinking (복잡분석)
+  └── memory (세션메모리)
+```
+
+순서: codebase-memory 우선 → git/postgres/redis 실데이터 → 나머지
 
 ## 기타
 - .env.local은 `scripts/sync-worktree.sh`로 자동 복사
