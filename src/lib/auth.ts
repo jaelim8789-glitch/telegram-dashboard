@@ -128,7 +128,6 @@ export function verifyJwtSignature(token: string): boolean {
     return false;
   }
 }
-}
 
 export function isTokenExpired(token: string): boolean {
   const payload = decodeJwt(token);

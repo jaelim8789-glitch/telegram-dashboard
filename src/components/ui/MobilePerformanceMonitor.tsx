@@ -7,6 +7,7 @@ export function MobilePerformanceMonitor() {
   const [fps, setFps] = useState<number | null>(null);
   const [memory, setMemory] = useState<{ used: number; total: number; percentage: number } | null>(null);
   const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
+  const [network, setNetwork] = useState<{ effectiveType: string; downlink: number } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -22,6 +23,22 @@ export function MobilePerformanceMonitor() {
         setMemory(mem);
       }
     }, 5000);
+    
+    // 네트워크 상태 확인
+    const updateNetworkInfo = () => {
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        setNetwork({
+          effectiveType: connection.effectiveType || 'unknown',
+          downlink: connection.downlink || 0
+        });
+      }
+    };
+    
+    updateNetworkInfo();
+    if ('connection' in navigator) {
+      (navigator as any).connection.addEventListener('change', updateNetworkInfo);
+    }
     
     // 배터리 상태 확인
     const batteryCheck = async () => {
@@ -40,6 +57,9 @@ export function MobilePerformanceMonitor() {
     return () => {
       stopFPS();
       clearInterval(memoryInterval);
+      if ('connection' in navigator) {
+        (navigator as any).connection.removeEventListener('change', updateNetworkInfo);
+      }
     };
   }, []);
 
@@ -53,6 +73,9 @@ export function MobilePerformanceMonitor() {
       )}
       {battery && (
         <div>Bat: {battery.level}% {battery.charging ? '⚡' : ''}</div>
+      )}
+      {network && (
+        <div>Net: {network.effectiveType} ({network.downlink}Mbps)</div>
       )}
     </div>
   );

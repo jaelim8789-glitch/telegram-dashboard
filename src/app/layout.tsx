@@ -16,16 +16,7 @@ import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
 import ShareTargetHandler from "@/components/ShareTargetHandler";
 import LiveChat from "@/components/LiveChat";
-import { MobilePerformanceMonitor } from "@/components/ui/MobilePerformanceMonitor";
-import { MobileKeyboardHandler } from "@/components/ui/MobileKeyboardHandler";
-import { MobileCacheManager } from "@/components/ui/MobileCacheManager";
-import { MobileImageOptimizer } from "@/components/ui/MobileImageOptimizer";
-import { MobileAccessibilityEnhancer } from "@/components/ui/MobileAccessibilityEnhancer";
-import { MobilePowerOptimizer } from "@/components/ui/MobilePowerOptimizer";
-import { MobilePushNotifier } from "@/components/ui/MobilePushNotifier";
-import { MobileLocalizationOptimizer } from "@/components/ui/MobileLocalizationOptimizer";
-import { MobileOfflineCapability } from "@/components/ui/MobileOfflineCapability";
-import { MobileFontOptimizer } from "@/components/ui/MobileFontOptimizer";
+import { MobileOptimizations } from "@/components/MobileOptimizations";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -91,14 +82,7 @@ export default function RootLayout({
         <RuntimeInitializer />
         <PwaRegister />
         <PwaInstallPrompt />
-        <MobilePerformanceMonitor />
-        <MobileKeyboardHandler />
-        <MobileCacheManager />
-        <MobileImageOptimizer />
-        <MobileAccessibilityEnhancer />
-        <MobilePowerOptimizer />
-        <MobilePushNotifier />
-        <MobileLocalizationOptimizer />
+        <MobileOptimizations />
         <ToastProvider>{children}</ToastProvider>
         <LiveChat />
       </body>
