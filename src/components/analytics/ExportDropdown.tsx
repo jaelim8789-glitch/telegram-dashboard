@@ -98,11 +98,11 @@ export function ExportDropdown(props: ExportDropdownProps) {
       <button
         onClick={() => setOpen((p) => !p)}
         data-export-trigger
-        className="inline-flex items-center gap-1.5 rounded-lg bg-app-card px-3.5 py-1.5 text-xs font-medium text-app-text-muted hover:bg-app-card-hover transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-app-card px-3.5 py-1.5 text-xs font-medium text-app-text-muted hover:bg-app-card-hover transition-all hover:scale-[1.02] active:scale-[0.98]"
       >
-        <FileDown className="h-3.5 w-3.5" />
+        <FileDown className="h-4 w-4" />
         <span>내보내기</span>
-        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -115,16 +115,16 @@ export function ExportDropdown(props: ExportDropdownProps) {
           >
             <button
               onClick={handleCsv}
-              className="w-full px-4 py-2.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover transition-colors flex items-center gap-2"
+              className="w-full px-4 py-2.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center gap-2"
             >
-              {csvDone ? <Check className="h-3.5 w-3.5 text-green-400" /> : <span className="w-3.5" />}
+              {csvDone ? <Check className="h-4 w-4 text-green-400" /> : <span className="w-4" />}
               CSV로 내보내기
             </button>
             <button
               onClick={handlePdf}
-              className="w-full px-4 py-2.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover transition-colors flex items-center gap-2"
+              className="w-full px-4 py-2.5 text-left text-xs text-app-text-muted hover:bg-app-card-hover transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center gap-2"
             >
-              <span className="w-3.5" />
+              <span className="w-4" />
               PDF로 인쇄
             </button>
           </motion.div>

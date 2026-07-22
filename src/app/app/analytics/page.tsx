@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
-import { Send, MessageSquare, Users, UserPlus, RefreshCw, Zap, Database } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, RefreshCw, PackageOpen } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import * as api from "@/lib/api";
 import { InlineError } from "@/components/ui/InlineError";
@@ -165,11 +165,13 @@ export default function AnalyticsPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [load, handleDateRangeChange]);
 
-  const statCards = useMemo(() => apiData?.statCards ?? MOCK_STAT_CARDS, [apiData]);
-  const lineData = useMemo(() => apiData?.lineData ?? MOCK_LINE_CHART_DATA, [apiData]);
-  const donutData = useMemo(() => apiData?.donutData ?? MOCK_DONUT_DATA, [apiData]);
-  const donutTotal = useMemo(() => apiData?.donutTotal ?? MOCK_DONUT_TOTAL, [apiData]);
-  const topChatRooms = useMemo(() => apiData?.topChatRooms ?? MOCK_TOP_CHAT_ROOMS, [apiData]);
+  const statCards = useMemo(() => apiData?.statCards ?? (loading ? MOCK_STAT_CARDS : []), [apiData, loading]);
+  const lineData = useMemo(() => apiData?.lineData ?? (loading ? MOCK_LINE_CHART_DATA : []), [apiData, loading]);
+  const donutData = useMemo(() => apiData?.donutData ?? (loading ? MOCK_DONUT_DATA : []), [apiData, loading]);
+  const donutTotal = useMemo(() => apiData?.donutTotal ?? (loading ? MOCK_DONUT_TOTAL : 0), [apiData, loading]);
+  const topChatRooms = useMemo(() => apiData?.topChatRooms ?? (loading ? MOCK_TOP_CHAT_ROOMS : []), [apiData, loading]);
+
+  const isEmpty = !loading && !error && !apiData;
 
   const dateDisplay = dateRange === "custom"
     ? formatDateDisplay(customStart, customEnd)
@@ -185,18 +187,18 @@ export default function AnalyticsPage() {
       <div className="flex flex-col gap-5 pb-8">
         <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3">
           <div>
-            <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
-            <p className="text-xs text-app-text-muted">{dateDisplay}</p>
+            <h1 className="text-base font-bold tracking-tight text-app-text">분석 리포트</h1>
+            <p className="text-xs font-normal text-app-text-muted">{dateDisplay}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
             <ExportDropdown {...exportData} />
           </div>
         </header>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2"><LineChartSkeleton /></div>
           <DonutChartSkeleton />
         </div>
@@ -207,30 +209,60 @@ export default function AnalyticsPage() {
 
   if (error && !apiData) {
     return (
-      <div className="flex flex-col gap-5 pb-8">
+      <div className="flex flex-col gap-6 pb-8">
         <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3">
           <div>
-            <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
-            <p className="text-xs text-app-text-muted">{dateDisplay}</p>
+            <h1 className="text-base font-bold tracking-tight text-app-text">분석 리포트</h1>
+            <p className="text-xs font-normal text-app-text-muted">{dateDisplay}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
             <ExportDropdown {...exportData} />
           </div>
         </header>
-        <InlineError title="데이터를 불러오지 못했습니다" action={<button onClick={() => load(true)} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg">다시 시도</button>}>
+        <InlineError title="데이터를 불러오지 못했습니다" action={<button onClick={() => load(true)} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-transform">다시 시도</button>}>
           {error}
         </InlineError>
       </div>
     );
   }
 
+  if (isEmpty) {
+    return (
+      <div className="flex flex-col gap-6 pb-8">
+        <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3">
+          <div>
+            <h1 className="text-base font-bold tracking-tight text-app-text">분석 리포트</h1>
+            <p className="text-xs font-normal text-app-text-muted">{dateDisplay}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <DateRangeSelector active={dateRange} onChange={handleDateRangeChange} />
+            <ExportDropdown {...exportData} />
+          </div>
+        </header>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 rounded-2xl border border-violet-500/15 bg-app-card">
+          <PackageOpen className="h-10 w-10 text-app-text-muted" />
+          <div className="text-center space-y-1">
+            <p className="text-sm font-normal text-app-text-muted">아직 수집된 분석 데이터가 없습니다</p>
+            <p className="text-xs font-normal text-app-text-muted/60">메시지를 발송하면 데이터가 자동으로 집계됩니다</p>
+          </div>
+          <button
+            onClick={() => load(true)}
+            className="px-4 py-2 text-xs font-medium bg-violet-500 text-white rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-5 pb-8">
+    <div className="flex flex-col gap-6 pb-8">
       <header className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 bg-app-bg/80 backdrop-blur-sm -mx-4 px-4 py-3 -mt-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-app-text">분석 리포트</h1>
+            <h1 className="text-base font-bold tracking-tight text-app-text">분석 리포트</h1>
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                 isLive
@@ -243,7 +275,7 @@ export default function AnalyticsPage() {
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-xs text-app-text-muted">{dateDisplay}</p>
+            <p className="text-xs font-normal text-app-text-muted">{dateDisplay}</p>
             {lastUpdated && (
               <span className="text-xs text-app-text-muted/60">
                 · 업데이트: {formatLastUpdated(lastUpdated)}
@@ -256,10 +288,10 @@ export default function AnalyticsPage() {
           <button
             onClick={() => load(false)}
             disabled={refreshing}
-            className={`p-1.5 rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors ${refreshing ? "animate-spin" : ""}`}
+            className={`p-1.5 rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-all hover:scale-[1.02] active:scale-[0.98] ${refreshing ? "animate-spin" : ""}`}
             title="새로고침 (R)"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-4 w-4" />
           </button>
           <ExportDropdown {...exportData} />
           {showDatePicker && (
@@ -279,7 +311,7 @@ export default function AnalyticsPage() {
         </InlineError>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card, i) => (
           <StatCard
             key={card.label}
@@ -295,11 +327,11 @@ export default function AnalyticsPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={dataKey}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
         >
           <div className="lg:col-span-2">
             <LineChartCard data={lineData} />

@@ -62,7 +62,7 @@ export function LineChartCard({ data }: LineChartCardProps) {
 
   return (
     <div className="rounded-2xl border border-violet-500/20 bg-app-card p-5">
-      <h3 className="text-sm font-semibold text-app-text">메시지 발송 추이</h3>
+      <h3 className="text-sm font-bold tracking-tight text-app-text">메시지 발송 추이</h3>
       <div className="mt-4" style={{ height: chartHeight }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 8, left: isMobile ? -24 : -16, bottom: 0 }}>

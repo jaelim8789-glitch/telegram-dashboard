@@ -51,7 +51,7 @@ export function StatCard({ label, value, change, positive, icon: Icon }: StatCar
 
   return (
     <motion.div
-      className="rounded-2xl border border-violet-500/15 bg-app-card p-5 backdrop-blur cursor-default"
+      className="rounded-2xl border border-violet-500/15 bg-app-card p-5 backdrop-blur cursor-default hover:shadow-lg hover:shadow-purple-500/10"
       whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(139,92,246,0.1)" }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >

@@ -73,11 +73,11 @@ export function CustomDatePicker({ startDate, endDate, onChange, onClose }: Cust
       className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-app-border bg-app-card p-4 shadow-xl"
     >
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => setViewMonth(subMonths(viewMonth, 1))} className="p-1 rounded hover:bg-app-card-hover">
+        <button onClick={() => setViewMonth(subMonths(viewMonth, 1))} className="p-1 rounded hover:bg-app-card-hover transition-all hover:scale-[1.05] active:scale-[0.95]">
           <ChevronLeft className="h-4 w-4 text-app-text-muted" />
         </button>
         <span className="text-sm font-medium text-app-text">{format(viewMonth, "yyyy년 M월")}</span>
-        <button onClick={() => setViewMonth(addMonths(viewMonth, 1))} className="p-1 rounded hover:bg-app-card-hover">
+        <button onClick={() => setViewMonth(addMonths(viewMonth, 1))} className="p-1 rounded hover:bg-app-card-hover transition-all hover:scale-[1.05] active:scale-[0.95]">
           <ChevronRight className="h-4 w-4 text-app-text-muted" />
         </button>
       </div>
@@ -98,7 +98,7 @@ export function CustomDatePicker({ startDate, endDate, onChange, onClose }: Cust
             <button
               key={day.toISOString()}
               onClick={() => handleDayClick(day)}
-              className={`text-center text-sm py-1.5 rounded transition-colors ${
+              className={`text-center text-sm py-1.5 rounded transition-all hover:scale-[1.05] active:scale-[0.95] ${
                 isSelected
                   ? "bg-violet-500 text-white"
                   : inRange(day)
@@ -118,10 +118,10 @@ export function CustomDatePicker({ startDate, endDate, onChange, onClose }: Cust
           {format(tempStart, "yyyy.MM.dd")} - {format(tempEnd, "yyyy.MM.dd")}
         </div>
         <div className="flex gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 text-xs text-app-text-muted hover:text-app-text">
+          <button onClick={onClose} className="px-3 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-all hover:scale-[1.02] active:scale-[0.98]">
             취소
           </button>
-          <button onClick={apply} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg">
+          <button onClick={apply} className="px-3 py-1.5 text-xs bg-violet-500 text-white rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
             적용
           </button>
         </div>

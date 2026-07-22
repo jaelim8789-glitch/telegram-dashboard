@@ -49,7 +49,7 @@ function CustomLegend({
         return (
           <button
             key={entry.value}
-            className={`flex items-center gap-2 text-xs text-app-text-muted text-left transition-opacity ${
+            className={`flex items-center gap-2 text-xs text-app-text-muted text-left transition-all hover:scale-[1.01] active:scale-[0.99] ${
               isActive ? "opacity-100" : "opacity-40"
             }`}
             onMouseEnter={() => onHover(i)}
@@ -75,7 +75,7 @@ export function DonutChartCard({ data, total }: DonutChartCardProps) {
 
   return (
     <div className="rounded-2xl border border-violet-500/20 bg-app-card p-5">
-      <h3 className="text-sm font-semibold text-app-text">채팅방 분포</h3>
+      <h3 className="text-sm font-bold tracking-tight text-app-text">채팅방 분포</h3>
       <div className="mt-4" style={{ height: 280, position: "relative" }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

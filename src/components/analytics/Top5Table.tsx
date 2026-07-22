@@ -38,7 +38,7 @@ export function Top5Table({ data }: Top5TableProps) {
   return (
     <div className="rounded-2xl border border-violet-500/20 bg-app-card overflow-hidden">
       <div className="px-5 py-4 border-b border-app-border">
-        <h3 className="text-sm font-semibold text-app-text">인기 채팅방 TOP5</h3>
+        <h3 className="text-sm font-bold tracking-tight text-app-text">인기 채팅방 TOP5</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
