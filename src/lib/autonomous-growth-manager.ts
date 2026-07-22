@@ -183,7 +183,18 @@ class AutonomousGrowthManager {
       return;
     }
 
+    // 루프 실행 시간 추적
+    const loopStartTime = Date.now();
+    const MAX_LOOP_DURATION = 24 * 60 * 60 * 1000; // 24시간
+
     try {
+      // 최대 루프 실행 시간 초과 시 종료
+      if (Date.now() - loopStartTime > MAX_LOOP_DURATION) {
+        console.warn(`Loop ${loopId} exceeded maximum duration, stopping.`);
+        await this.stopLoop(loopId);
+        return;
+      }
+
       await this.executeCycle(loopId);
 
       loop.retryCount = 0;
@@ -191,9 +202,13 @@ class AutonomousGrowthManager {
       saveLoops(this.loops);
 
       const nextRunDelay = this.calculateNextRunDelay(loop.strategy.timingStrategy);
+      
+      // 너무 짧은 지연 시간을 방지하여 시스템 과부하 방지
+      const safeDelay = Math.max(nextRunDelay, 30000); // 최소 30초 지연
+      
       const timer = setTimeout(() => {
         this.executeLoop(loopId);
-      }, nextRunDelay);
+      }, safeDelay);
 
       this.activeTimers.set(loopId, timer);
     } catch (error) {
@@ -202,27 +217,34 @@ class AutonomousGrowthManager {
       const isRateLimit = this.isRateLimitError(error);
       loop.lastError = error instanceof Error ? error.message : String(error);
 
-      if (loop.retryCount < MAX_RETRY_COUNT) {
-        loop.retryCount++;
-        const delay = this.getBackoffDelay(loop.retryCount, isRateLimit);
-        console.log(
-          `Retrying loop ${loopId} in ${delay}ms (attempt ${loop.retryCount}/${MAX_RETRY_COUNT})`
-        );
-        loop.updatedAt = new Date();
-        this.loops.set(loopId, loop);
-        saveLoops(this.loops);
-
-        const timer = setTimeout(() => {
-          this.executeLoop(loopId);
-        }, delay);
-        this.activeTimers.set(loopId, timer);
-      } else {
+      // 최대 재시도 횟수 초과 시 실패 처리
+      if (loop.retryCount >= MAX_RETRY_COUNT) {
         console.error(`Loop ${loopId} failed after ${MAX_RETRY_COUNT} retries`);
         loop.status = 'failed';
         loop.updatedAt = new Date();
         this.loops.set(loopId, loop);
         saveLoops(this.loops);
+        return; // 더 이상 재시도하지 않음
       }
+
+      // 재시도 로직
+      loop.retryCount++;
+      const delay = this.getBackoffDelay(loop.retryCount, isRateLimit);
+      
+      // 너무 긴 대기 시간을 방지
+      const cappedDelay = Math.min(delay, 30 * 60 * 1000); // 최대 30분
+      
+      console.log(
+        `Retrying loop ${loopId} in ${cappedDelay}ms (attempt ${loop.retryCount}/${MAX_RETRY_COUNT})`
+      );
+      loop.updatedAt = new Date();
+      this.loops.set(loopId, loop);
+      saveLoops(this.loops);
+
+      const timer = setTimeout(() => {
+        this.executeLoop(loopId);
+      }, cappedDelay);
+      this.activeTimers.set(loopId, timer);
     }
   }
 

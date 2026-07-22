@@ -309,15 +309,19 @@ class BroadcastQueue:
                 current_idx += 1
             except FloodWaitError as e:
                 retry_count = self._retry_counts.get(broadcast.id, 0)
+                
+                # Rate limit 횟수 제한 검사
                 if retry_count >= self.MAX_RETRIES:
                     broadcast.status = "failed"
-                    broadcast.error_message = f"Flood wait limit exceeded after {self.MAX_RETRIES} retries"
+                    broadcast.error_message = f"Rate limit exceeded after {self.MAX_RETRIES} retries"
                     break
 
                 await self._event_bus.emit(RateLimitHitEvent(
                     action="send_message",
                     retry_after_seconds=e.seconds,
                 ))
+                
+                # Rate limit 조정
                 self._rate_limiter.adjust_limit("send_message", 1.0, max(e.seconds + 1, 5.0))
                 self._retry_counts[broadcast.id] = retry_count + 1
 
@@ -327,7 +331,19 @@ class BroadcastQueue:
                     "[%s] flood wait %.0fs (retry %d/%d), %d remaining",
                     self._account_id, e.seconds, retry_count + 1, self.MAX_RETRIES, len(remaining),
                 )
-                await asyncio.sleep(min(e.seconds, 60))
+                
+                # Rate limit이 너무 긴 경우 중단 (1시간 초과)
+                if e.seconds > 3600:
+                    logger.warning("[%s] Rate limit too long (%ds), aborting broadcast %s", 
+                                 self._account_id, e.seconds, broadcast.id)
+                    broadcast.status = "failed"
+                    broadcast.error_message = f"Rate limit too long: {e.seconds}s, aborting"
+                    break
+                
+                # 대기 시간 제한 (최대 10분)
+                wait_time = min(e.seconds, 600)  # 10분으로 제한
+                await asyncio.sleep(wait_time)
+                
                 # CRITICAL: Create a copy before modifying recipients so _broadcast_store
                 # still has the original full recipient list. If we modify broadcast in-place,
                 # the store entry is also truncated and the frontend shows fewer recipients.
@@ -1251,7 +1267,8 @@ class AccountRuntime:
             logger.error("[%s] session auto-recovery failed", self.account_id)
             try:
                 from .runtime_manager import RuntimeManager
-                RuntimeManager.get_instance().healing_engine.record_failure(self.account_id)
+                manager = RuntimeManager.get_instance()
+                manager.healing_engine.record_failure(self.account_id)
             except Exception:
                 pass
 
