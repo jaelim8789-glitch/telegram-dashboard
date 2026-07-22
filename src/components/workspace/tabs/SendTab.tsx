@@ -89,12 +89,12 @@ function InteractiveTemplatePreview({
 
 }
 
-// 또는 실제 Account 타입을 사용하도록 수정
+// 수정된 부분: interface 정의
 interface SendTabProps {
   message: string;
   setMessage: (msg: string) => void;
   selectedRecipients: Group[];
-  account: { name?: string | null; phone?: string | null } | undefined;  // 수정된 타입
+  account: { name?: string | null; phone?: string | null } | undefined;  // 수정: 주석 제거
   // ... other props
 }
 
