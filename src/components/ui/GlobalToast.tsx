@@ -11,7 +11,7 @@ interface ToastState { toasts: Toast[]; add: (t: Omit<Toast, "id">) => void; rem
 
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  add: (t) => { const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`; set(s => ({ toasts: [...s.toasts, { ...t, id } })); setTimeout(() => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), t.duration || 4000); },
+  add: (t) => { const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`; set(s => ({ toasts: [...s.toasts, { ...t, id }] })); setTimeout(() => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), t.duration || 4000); },
   remove: (id) => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })),
 }));
 

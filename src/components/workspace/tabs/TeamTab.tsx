@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Users, UserPlus, UserMinus, Shield, ShieldAlert, ShieldCheck, ChevronDown, Search, X, Copy, Check, Loader2 } from "lucide-react";
 import { fetchAuthMe, request } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
-// ?�?�?� Types ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ─── Types ────────────────────────────────────────────────────────────
 
 interface TeamMember {
   id: string;
@@ -34,7 +33,7 @@ interface TeamMemberListResponse {
 
 type RoleBadge = "owner" | "admin" | "member";
 
-// ?�?�?� Helpers ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ─── Helpers ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<RoleBadge, string> = {
   owner: "Owner",
@@ -80,7 +79,7 @@ function getTenantId(): string | null {
   }
 }
 
-// ?�?�?� Main Component ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// ─── Main Component ───────────────────────────────────────────────────
 
 export function TeamTab() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -110,7 +109,7 @@ export function TeamTab() {
       setMembers(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "멤버 목록??불러?�는???�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "멤버 목록을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -124,7 +123,7 @@ export function TeamTab() {
     const stored = localStorage.getItem("telemon-tenant-id");
         if (stored) setTenantId(stored);
       }).catch(() => {
-        setError("?�넌???�보�?찾을 ???�습?�다. 로그?????�시 ?�띄?�주?�요.");
+        setError("테넌트 정보를 찾을 수 없습니다. 로그인 후 다시 시도해주세요.");
         setLoading(false);
       });
     } else {
@@ -149,7 +148,7 @@ export function TeamTab() {
       setInviteUsername("");
       await fetchMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "초�????�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "초대에 실패했습니다.");
     } finally {
       setInviting(false);
     }
@@ -168,7 +167,7 @@ export function TeamTab() {
       setDeleteTarget(null);
       await fetchMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "멤버 ?�거???�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "멤버 제거에 실패했습니다.");
       setDeleteTarget(null);
     }
   };
@@ -182,7 +181,7 @@ export function TeamTab() {
       });
       await fetchMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "??�� 변경엝 ?�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "역할 변경에 실패했습니다.");
     }
   };
 
@@ -211,7 +210,7 @@ export function TeamTab() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center text-app-text-muted">
           <Users className="mx-auto mb-3 h-12 w-12 opacity-40" />
-          <p className="text-sm">?�넌???�보�?불러?�는 �?..</p>
+          <p className="text-sm">테넌트 정보를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -222,8 +221,8 @@ export function TeamTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-app-text">?� 관�?/h2>
-          <p className="text-sm text-app-text-muted">�?{total}명의 멤버</p>
+          <h2 className="text-lg font-semibold text-app-text">팀 관리</h2>
+          <p className="text-sm text-app-text-muted">총 {total}명의 멤버</p>
         </div>
         <button
           type="button"
@@ -231,7 +230,7 @@ export function TeamTab() {
           className="focus-ring flex items-center gap-2 rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-app-primary/90"
         >
           <UserPlus className="h-4 w-4" />
-          멤버 초�?
+          멤버 초대
         </button>
       </div>
 
@@ -240,8 +239,8 @@ export function TeamTab() {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted" />
         <input
           type="text"
-          placeholder="멤버 검??.."
-          aria-label="멤버 검??
+          placeholder="멤버 검색..."
+          aria-label="멤버 검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="focus-ring w-full rounded-lg border border-app-border bg-app-surface py-2 pl-10 pr-4 text-sm text-app-text placeholder:text-app-text-muted"
@@ -250,7 +249,7 @@ export function TeamTab() {
           <button
             type="button"
             onClick={() => setSearch("")}
-            aria-label="검??지?�기"
+            aria-label="검색 지우기"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-muted hover:text-app-text"
           >
             <X className="h-4 w-4" />
@@ -262,7 +261,7 @@ export function TeamTab() {
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
           {error}
-          <button type="button" onClick={() => setError(null)} className="ml-2 underline">?�기</button>
+          <button type="button" onClick={() => setError(null)} className="ml-2 underline">닫기</button>
         </div>
       )}
 
@@ -270,7 +269,7 @@ export function TeamTab() {
       {copiedToken && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
           <p className="mb-2 text-sm font-medium text-blue-700 dark:text-blue-400">
-            ??초�?가 ?�성?�었?�니?? ?�래 망희�???멤버?�게 공유?�주?�요.
+            ✅ 초대가 생성되었습니다. 아래 링크를 새 멤버에게 공유해주세요.
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white px-3 py-2 text-xs font-mono text-blue-800 dark:bg-blue-950 dark:text-blue-300">
@@ -282,7 +281,7 @@ export function TeamTab() {
               className="focus-ring flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
             >
               {copiedFeedback ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              {copiedFeedback ? "복사?? : "복사"}
+              {copiedFeedback ? "복사됨" : "복사"}
             </button>
           </div>
         </div>
@@ -296,8 +295,8 @@ export function TeamTab() {
       ) : members.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-app-border py-16">
           <Users className="mb-3 h-10 w-10 text-app-text-muted/40" />
-          <p className="text-sm text-app-text-muted">?�짝 ?� 멤버가 ?�습?�다.</p>
-          <p className="text-xs text-app-text-muted/60 mt-1">멤버�?초�??�여 ?�??구성?�보?�요.</p>
+          <p className="text-sm text-app-text-muted">아직 팀 멤버가 없습니다.</p>
+          <p className="text-xs text-app-text-muted/60 mt-1">멤버를 초대하여 팀을 구성해보세요.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -316,7 +315,7 @@ export function TeamTab() {
                     <RoleBadge role={member.role as RoleBadge} />
                     {!member.is_active && (
                       <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400">
-                        초�? ?��?
+                        초대 대기
                       </span>
                     )}
                   </div>
@@ -324,7 +323,7 @@ export function TeamTab() {
                     {member.phone && <span>{member.phone}</span>}
                     <span>@{member.username}</span>
                     {member.joined_at && (
-                      <span>가?? {new Date(member.joined_at).toLocaleDateString()}</span>
+                      <span>가입: {new Date(member.joined_at).toLocaleDateString()}</span>
                     )}
                   </div>
                 </div>
@@ -369,7 +368,7 @@ export function TeamTab() {
                       className="focus-ring flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                     >
                       <UserMinus className="h-3.5 w-3.5" />
-                      ?�거
+                      제거
                     </button>
                   </>
                 )}
@@ -383,9 +382,9 @@ export function TeamTab() {
       {deleteTarget && (
         <ConfirmDialog
           open
-          title="멤버 ?�거"
-          description={`?�망�?"${deleteTarget.display_name || deleteTarget.username}" 멤버�??�?�서 ?�거?�시겠습?�까?`}
-          confirmLabel="?�거"
+          title="멤버 제거"
+          description={`정말로 "${deleteTarget.display_name || deleteTarget.username}" 멤버를 팀에서 제거하시겠습니까?`}
+          confirmLabel="제거"
           cancelLabel="취소"
           variant="danger"
           onConfirm={confirmRemoveMember}
@@ -400,16 +399,16 @@ export function TeamTab() {
             ref={inviteRef}
             role="dialog"
             aria-modal="true"
-            aria-label="멤버 초�?"
+            aria-label="멤버 초대"
             className="w-full max-w-md rounded-xl bg-app-surface p-6 shadow-2xl mx-auto max-h-[85dvh] overflow-y-auto"
           >
-            <h3 className="mb-4 text-base font-semibold text-app-text">멤버 초�?</h3>
+            <h3 className="mb-4 text-base font-semibold text-app-text">멤버 초대</h3>
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-app-text-muted">?�용?�명</label>
+                <label className="mb-1.5 block text-xs font-medium text-app-text-muted">사용자명</label>
                 <input
                   type="text"
-                  placeholder="초�???멤버???�용?�명"
+                  placeholder="초대할 멤버의 사용자명"
                   value={inviteUsername}
                   onChange={(e) => setInviteUsername(e.target.value)}
                   className="focus-ring w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted"
@@ -423,8 +422,8 @@ export function TeamTab() {
                   onChange={(e) => setInviteRole(e.target.value as "admin" | "member")}
                   className="focus-ring w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text"
                 >
-                  <option value="member">Member - ?�옝 기능 ?�용</option>
-                  <option value="admin">Admin - ?� 관�?+ ?�옝</option>
+                  <option value="member">Member - 운영 기능 사용</option>
+                  <option value="admin">Admin - 팀 관리 + 운영</option>
                 </select>
               </div>
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -442,7 +441,7 @@ export function TeamTab() {
                   className="focus-ring flex items-center gap-2 rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-app-primary/90 disabled:opacity-50"
                 >
                   {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                  초�? 보내�?
+                  초대 보내기
                 </button>
               </div>
             </div>

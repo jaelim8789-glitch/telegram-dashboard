@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { retrieveLaunchParams } from "@tma.js/sdk-react";
 import { init } from "./core/init";
 import { GlobalToast } from "@/components/ui/GlobalToast";
-import { CommandPaletteMobile } from "@/components/ui/CommandPaletteMobile";
+import { CommandPalette as CommandPaletteMobile } from "@/components/ui/CommandPaletteMobile";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
 
