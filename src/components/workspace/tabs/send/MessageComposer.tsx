@@ -4,7 +4,6 @@ import { memo, useRef, useState, type ChangeEvent } from "react";
 import { Field } from "@/components/ui/Field";
 import { RecentPhraseChips } from "@/components/ui/RecentPhraseChips";
 import { SmartKeyboardToolbar } from "@/components/ui/SmartKeyboardToolbar"; // 스마트 키보드 툴바 추가
-import { useKeyboardStatus } from "@/hooks/useKeyboardStatus"; // 키보드 상태 훅 추가
 
 interface MessageComposerProps {
   message: string;
@@ -21,7 +20,6 @@ export const MessageComposer = memo(function MessageComposer({
 }: MessageComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [toolbarVisible, setToolbarVisible] = useState(false);
-  const { isKeyboardVisible, keyboardHeight } = useKeyboardStatus(); // 키보드 상태 사용
 
   // 템플릿 데이터
   const templates = [
@@ -61,7 +59,7 @@ export const MessageComposer = memo(function MessageComposer({
   };
 
   return (
-    <div className={isKeyboardVisible ? "pb-[120px]" : ""}> {/* 키보드가 보일 때 여유 공간 추가 */}
+    <div>
       <RecentPhraseChips
         phrases={recentMessages}
         onSelect={onRecentSelect}

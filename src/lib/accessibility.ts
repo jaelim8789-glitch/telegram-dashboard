@@ -195,7 +195,7 @@ class AccessibilityManager {
     `;
     
     const container = document.createElement('div');
-    container.innerHTML = skipLinkHTML;
+    container.insertAdjacentHTML('afterbegin', skipLinkHTML);
     document.body.insertBefore(container.firstElementChild!, document.body.firstChild);
   }
 

@@ -14,7 +14,7 @@ function getWeekStart(): string {
 
 export const useWeeklySummary = create<SummaryStore>((set) => ({
   summary: null,
-  dismissed: typeof window !== "undefined" && localStorage.getItem(DISMISS_KEY) === getWeekStart(),
+  dismissed: false,
   fetch: async () => {
     try {
       const res = await fetch("/api/analytics/weekly");
@@ -33,6 +33,12 @@ export function WeeklySummaryCard() {
   const dismissed = useWeeklySummary(s => s.dismissed);
   const fetch = useWeeklySummary(s => s.fetch);
   const dismiss = useWeeklySummary(s => s.dismiss);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem(DISMISS_KEY) === getWeekStart()) {
+      useWeeklySummary.setState({ dismissed: true });
+    }
+  }, []);
 
   useEffect(() => { if (!dismissed) fetch(); }, [dismissed, fetch]);
 
