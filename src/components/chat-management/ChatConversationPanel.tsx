@@ -8,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ChatMessage, ChatRoom } from "./mockData";
 
 interface ChatConversationPanelProps {
@@ -56,6 +57,33 @@ function DateDivider({ date }: { date: Date }) {
   );
 }
 
+function TimeGapLabel({ time }: { time: string }) {
+  return (
+    <div className="my-2 text-center">
+      <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-app-text-muted">
+        {time}
+      </span>
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      className="mt-3 flex justify-start"
+    >
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-[#1a1a24] px-4 py-3">
+        <span className="typing-dot h-1.5 w-1.5 rounded-full bg-app-text-muted" />
+        <span className="typing-dot h-1.5 w-1.5 rounded-full bg-app-text-muted" />
+        <span className="typing-dot h-1.5 w-1.5 rounded-full bg-app-text-muted" />
+      </div>
+    </motion.div>
+  );
+}
+
 export function ChatConversationPanel({
   room,
   messages,
@@ -63,7 +91,9 @@ export function ChatConversationPanel({
 }: ChatConversationPanelProps) {
   const [input, setInput] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const scrollMemory = useRef<Map<string, number>>(new Map());
   const prevRoomIdRef = useRef<string | null>(null);
 
@@ -100,6 +130,9 @@ export function ChatConversationPanel({
     });
 
     prevRoomIdRef.current = room.id;
+
+    const timer = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(timer);
   }, [room, saveScroll]);
 
   useEffect(() => {
@@ -122,6 +155,9 @@ export function ChatConversationPanel({
     if (!trimmed) return;
     onSend(trimmed);
     setInput("");
+
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), 2500);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -148,6 +184,7 @@ export function ChatConversationPanel({
   function handleReply(msg: ChatMessage) {
     setInput(`[답장] @${msg.senderName}: `);
     setContextMenu(null);
+    inputRef.current?.focus();
   }
 
   function handleDelete(msgId: string) {
@@ -171,6 +208,7 @@ export function ChatConversationPanel({
   let lastDate: string | null = null;
   let lastSender: string | null = null;
   let lastSenderIndex = -1;
+  let prevTimestamp: number | null = null;
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
@@ -184,7 +222,21 @@ export function ChatConversationPanel({
       );
       lastDate = msgDate;
       lastSender = null;
+      prevTimestamp = null;
     }
+
+    if (prevTimestamp !== null) {
+      const gapMs = msg.timestamp.getTime() - prevTimestamp;
+      if (gapMs > 5 * 60 * 1000) {
+        chatNodes.push(
+          <TimeGapLabel
+            key={`gap-${msg.id}`}
+            time={formatTimeOnly(new Date(prevTimestamp))}
+          />
+        );
+      }
+    }
+    prevTimestamp = msg.timestamp.getTime();
 
     const isMe = msg.sender === "me";
     const prevConsecutive =
@@ -259,6 +311,11 @@ export function ChatConversationPanel({
                   }`}
                 />
               )}
+              {isTyping && (
+                <span className="text-[10px] text-green-400 animate-pulse">
+                  입력 중...
+                </span>
+              )}
             </div>
             {room.subscriberCount != null && (
               <span className="text-[11px] text-app-text-muted">
@@ -274,11 +331,15 @@ export function ChatConversationPanel({
         className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3"
       >
         {chatNodes}
+        <AnimatePresence>
+          {isTyping && <TypingIndicator />}
+        </AnimatePresence>
       </div>
 
       <div className="border-t border-violet-500/20 p-3">
         <div className="flex items-center gap-2">
           <input
+            ref={inputRef}
             type="text"
             placeholder="메시지를 입력하세요..."
             value={input}
