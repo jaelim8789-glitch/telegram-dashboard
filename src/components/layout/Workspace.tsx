@@ -12,7 +12,7 @@ import { CategoryStrip } from "@/components/navigation/CategoryStrip";
 import { CategoryDashboard } from "@/components/navigation/CategoryDashboard";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
-import { AppShell } from "@/components/layout/AppShell";
+import { AppShell as AppShellLegacy } from "@/components/layout/AppShellLegacy";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useNetworkQuality } from "@/hooks/useNetworkQuality";
 import { NetworkQualityIndicator } from "@/components/ui/NetworkQualityIndicator";
@@ -342,7 +342,7 @@ export function Workspace() {
   }
 
   return (
-    <AppShell>
+    <AppShellLegacy>
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* ── Network offline strip ── */}
@@ -499,6 +499,6 @@ export function Workspace() {
         {isMobile && <MobileFab />}
       </main>
     </MotionConfig>
-    </AppShell>
+    </AppShellLegacy>
   );
 }
