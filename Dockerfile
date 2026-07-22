@@ -3,9 +3,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --omit=dev
+RUN corepack enable && corepack prepare pnpm@10.8.1 --activate
+
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
 
 COPY . .
 
@@ -31,7 +33,7 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build --silent 2>&1
+RUN pnpm build
 
 # Post-build verification: check that App Router produced at least one route.
 # Zero routes means /app or /backend leaked into the build context and
