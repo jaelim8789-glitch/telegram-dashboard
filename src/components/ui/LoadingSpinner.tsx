@@ -1,54 +1,39 @@
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { Loader2 } from "lucide-react";
+import { HTMLAttributes } from "react";
 
-interface LoadingSpinnerProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  label?: string;
-  className?: string;
-  variant?: "primary" | "secondary" | "accent";
+interface LoadingSpinnerProps extends HTMLAttributes<HTMLDivElement> {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  message?: string;
+  fullScreen?: boolean;
 }
 
-const sizeClasses = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6",
-  lg: "h-8 w-8",
-  xl: "h-12 w-12",
-};
-
-const variantClasses = {
-  primary: "animate-spin text-app-primary",
-  secondary: "animate-spin text-app-text-muted",
-  accent: "animate-spin text-[var(--tg-theme-button-color,#5288c1)]",
-};
-
 export function LoadingSpinner({ 
-  size = "md", 
-  label, 
-  className, 
-  variant = "primary" 
+  size = 'md', 
+  message, 
+  fullScreen = false,
+  className,
+  ...props 
 }: LoadingSpinnerProps) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2">
-      <Loader2 
-        className={cn(
-          sizeClasses[size],
-          variantClasses[variant],
-          "animate-spin",
-          className
-        )} 
-      />
-      {label && (
-        <span 
-          className={cn(
-            "text-sm",
-            variant === "primary" && "text-app-primary",
-            variant === "secondary" && "text-app-text-muted",
-            variant === "accent" && "text-[var(--tg-theme-button-color,#5288c1)]"
-          )}
-        >
-          {label}
-        </span>
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16',
+  };
+
+  const spinner = (
+    <div className={cn(
+      "flex flex-col items-center justify-center gap-3",
+      fullScreen && "fixed inset-0 z-50 bg-app-bg/80 backdrop-blur-sm",
+      className
+    )} {...props}>
+      <Loader2 className={cn(sizeClasses[size], "animate-spin text-app-primary")} />
+      {message && (
+        <p className="text-sm text-app-text-muted font-medium">{message}</p>
       )}
     </div>
   );
+
+  return spinner;
 }

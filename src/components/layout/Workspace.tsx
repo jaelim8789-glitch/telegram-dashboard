@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useDashboardStore } from "@/store/useDashboardStore";
+
 import type { NavView, TabId } from "@/types";
 import { TABS } from "@/types";
 import { cn } from "@/lib/cn";
@@ -175,6 +176,13 @@ function usePullToRefresh(
   const touchStartY = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const THRESHOLD = 60;
+  const hapticTriggered = useRef(false);
+
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -186,6 +194,7 @@ function usePullToRefresh(
     if (!enabled || !scrollRef.current) return;
     if (scrollRef.current.scrollTop > 0) return;
     touchStartY.current = e.touches[0].clientY;
+    hapticTriggered.current = false;
   }, [enabled]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
@@ -193,13 +202,21 @@ function usePullToRefresh(
     const dy = e.touches[0].clientY - touchStartY.current;
     if (dy > 5) {
       setPulling(true);
-      setPullDist(Math.min(dy * 0.5, 100));
+      const dist = Math.min(dy * 0.5, 100);
+      setPullDist(dist);
+      if (dist > THRESHOLD && !hapticTriggered.current) {
+        vibrate(15);
+        hapticTriggered.current = true;
+      } else if (dist <= THRESHOLD) {
+        hapticTriggered.current = false;
+      }
     }
-  }, [enabled, refreshing]);
+  }, [enabled, refreshing, vibrate]);
 
   const onTouchEnd = useCallback((_e: React.TouchEvent) => {
     if (!enabled) return;
     if (pullDist > THRESHOLD && !refreshing) {
+      vibrate([10, 40, 10]);
       setRefreshing(true);
       setPullDist(0);
       onRefresh();
@@ -209,7 +226,7 @@ function usePullToRefresh(
       setPullDist(0);
     }
     touchStartY.current = 0;
-  }, [enabled, pullDist, refreshing, onRefresh]);
+  }, [enabled, pullDist, refreshing, onRefresh, vibrate]);
 
   return { pulling, pullDist, refreshing, toast, showToast, onTouchStart, onTouchMove, onTouchEnd };
 }
@@ -409,7 +426,7 @@ export function Workspace() {
             : {})}
         >
           {/* ── Pull-to-refresh indicator ── */}
-          {pull.pulling && (
+                  {pull.pulling && (
             <motion.div
               className="flex items-center justify-center pb-2"
               animate={{ opacity: pull.pullDist > 30 ? 1 : 0.5 }}
@@ -419,21 +436,26 @@ export function Workspace() {
                 animate={{ scale: pull.pullDist > 50 ? 1.1 : 1 }}
               >
                 {pull.refreshing ? (
-                  <>
-                    <div className="relative h-4 w-4 overflow-hidden rounded-full">
-                      <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(var(--color-accent), var(--color-gold-deep), var(--color-accent))", animation: "spin 0.8s linear infinite" }} />
-                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
-                    </div>
-                    <span className="text-xs font-medium" style={{ background: "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>새로고침 중...</span>
-                  </>
+                  <div className="flex items-center gap-1.5">
+                    <svg className="h-4 w-4 animate-spin text-app-primary" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                      <path d="M14 8A6 6 0 0 1 2 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-xs font-medium text-app-primary">새로고침 중...</span>
+                  </div>
                 ) : (
-                  <>
-                    <div className="relative h-4 w-4 overflow-hidden rounded-full" style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}>
-                      <div className="absolute inset-0 rounded-full opacity-60" style={{ background: "conic-gradient(var(--color-accent), transparent 60%, var(--color-accent))" }} />
-                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
-                    </div>
-                    <span className="text-xs text-app-text-muted">{pull.pullDist > 50 ? "놓으면 새로고침" : "아래로 당겨서 새로고침"}</span>
-                  </>
+                  <div className="flex items-center gap-1.5">
+                    <svg
+                      className="h-4 w-4 text-app-text-muted"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}
+                    >
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                      <path d="M8 2v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="text-xs text-app-text-muted">{pull.pullDist > 50 ? "놓으면 새로고침" : "당겨서 새로고침"}</span>
+                  </div>
                 )}
               </motion.div>
             </motion.div>

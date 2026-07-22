@@ -75,3 +75,38 @@ export async function flushQueue(sendFn: (item: QueuedSend) => Promise<boolean>)
   }
   return { sent, failed };
 }
+
+export async function getQueuedItems(): Promise<QueuedSend[]> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    return new Promise(resolve => {
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve([]);
+    });
+  } catch { return []; }
+}
+
+export function useOnlineFlush(sendFn: (item: QueuedSend) => Promise<boolean>) {
+  useEffect(() => {
+    function onOnline() {
+      flushQueue(sendFn).then(({ sent }) => {
+        if (sent > 0) {
+          try {
+            const toast = document.createElement("div");
+            toast.className = "fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-app-success px-4 py-2 text-xs font-medium text-white shadow-lg";
+            toast.textContent = `${sent}개의 메시지가 자동 전송되었습니다`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+          } catch {}
+        }
+      });
+    }
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [sendFn]);
+}
+
+import { useEffect } from "react";

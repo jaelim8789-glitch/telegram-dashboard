@@ -27,10 +27,16 @@ export function MobileAccessibilityEnhancer() {
         }
       });
 
+      // 모바일 환경에서 포커스 가능한 요소에 접근성 클래스 추가
       if (window.matchMedia('(max-width: 768px)').matches) {
         const focusableElements = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
         focusableElements.forEach(element => {
           element.classList.add('focus-ring');
+          
+          // 터치 기기에서의 접근성을 위해 추가 속성 부여
+          if (!element.getAttribute('role')) {
+            element.setAttribute('role', 'button');
+          }
         });
       }
     };
@@ -58,6 +64,14 @@ export function MobileAccessibilityEnhancer() {
                 const textContent = element.textContent?.trim();
                 if (textContent && textContent.length <= 50) {
                   element.setAttribute('aria-label', textContent);
+                }
+              }
+              
+              // 동적으로 추가되는 요소에도 모바일 접근성 클래스 적용
+              if (window.matchMedia('(max-width: 768px)').matches) {
+                element.classList.add('focus-ring');
+                if (!element.getAttribute('role')) {
+                  element.setAttribute('role', 'button');
                 }
               }
             }

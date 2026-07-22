@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "ES6"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -14,7 +10,6 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
@@ -23,40 +18,38 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
+      "@/*": ["./src/*"]
+    },
+    // 성능 최적화 관련 설정
+    "forceConsistentCasingInFileNames": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "importsNotUsedAsValues": "error",
+    "checkJs": false
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "public/workers/dataProcessor.worker.ts"
   ],
   "exclude": [
     "node_modules",
-    "TeleMon",
-    ".kilo",
-    "telegram-dashboard-backend",
-    "src/components/landing/AIVirtualAssistantSection.tsx",
-    "src/security",
-    "src/logging",
-    "src/middleware",
-    "src/validators",
-    "src/utils/cryptoUtils.ts",
-    "src/lib/animationOptimization.tsx",
-    "src/lib/bundleOptimization.tsx",
-    "src/lib/cssOptimization.tsx",
-    "src/lib/dataStructureOptimization.tsx",
-    "src/lib/eventOptimization.tsx",
-    "src/lib/fontOptimization.tsx",
-    "src/lib/resourcePreloading.tsx",
-    "src/lib/ssrOptimization.tsx",
-    "src/hooks/useSmartSync.tsx",
-    "src/components/workspace/TabContent.tsx"
+    ".next"
   ]
 }

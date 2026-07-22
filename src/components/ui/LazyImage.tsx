@@ -1,51 +1,83 @@
-"use client";
-
-import { useState, useRef, useEffect } from "react";
-import { cn } from "@/lib/cn";
+import React, { useState, useEffect, useRef } from 'react';
 
 interface LazyImageProps {
   src: string;
-  alt: string;
+  alt?: string;
   className?: string;
-  placeholderColor?: string;
+  placeholder?: string;
+  fallback?: string;
+  onLoad?: () => void;
+  onError?: () => void;
 }
 
-export function LazyImage({ src, alt, className, placeholderColor = "bg-app-card-hover" }: LazyImageProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [inView, setInView] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
+export function LazyImage({
+  src,
+  alt = '',
+  className = '',
+  placeholder,
+  fallback,
+  onLoad,
+  onError
+}: LazyImageProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    const el = imgRef.current;
-    if (!el) return;
+    // Intersection Observer를 사용하여 이미지가 뷰포트에 진입할 때 로드
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
+          setIsVisible(true);
+          observer.unobserve(entry.target);
         }
       },
-      { rootMargin: "100px" }
+      { threshold: 0.1 } // 10%가 보일 때 로드 시작
     );
-    observer.observe(el);
-    return () => observer.disconnect();
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    observerRef.current = observer;
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
   }, []);
 
+  const handleLoad = () => {
+    setIsLoaded(true);
+    onLoad?.();
+  };
+
+  const handleError = () => {
+    setHasError(true);
+    onError?.();
+  };
+
   return (
-    <div
-      ref={imgRef}
-      className={cn("relative overflow-hidden rounded-lg", className)}
-    >
-      <div className={cn("absolute inset-0 animate-pulse", placeholderColor)} />
-      {inView && (
+    <div className={`relative inline-block ${className}`}>
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+          {placeholder && <img src={placeholder} alt="placeholder" className="object-cover w-full h-full" />}
+        </div>
+      )}
+      
+      {isVisible && (
         <img
-          src={src}
+          ref={imgRef}
+          src={hasError && fallback ? fallback : src}
           alt={alt}
-          onLoad={() => setLoaded(true)}
-          className={cn(
-            "relative z-10 w-full h-full object-cover transition-opacity duration-300",
-            loaded ? "opacity-100" : "opacity-0"
-          )}
+          className={`transition-opacity duration-300 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={handleLoad}
+          onError={handleError}
         />
       )}
     </div>

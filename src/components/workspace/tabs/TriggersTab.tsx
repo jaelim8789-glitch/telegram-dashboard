@@ -548,7 +548,7 @@ export function TriggersTab() {
                       onClick={(e) => { e.stopPropagation(); handleToggle(r.id); }}
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover",
-                        isMobile && "min-h-[36px] min-w-[36px]"
+                        isMobile && "min-h-[44px] min-w-[44px] p-2" // 모바일에서 터치 영역 확보
                       )}
                       title={r.is_active ? "비활성화" : "활성화"}
                     >

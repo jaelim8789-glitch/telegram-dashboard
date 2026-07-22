@@ -20,8 +20,7 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { AutoReplyLog, AutoReplyLogStatus, AutoReplyMatchType, AutoReplyRule } from "@/types";
 import { useToast } from "@/components/ui/Toast";
-import { hapticFeedback as tmaHaptic } from "@tma.js/sdk-react";
-const haptics = new Proxy({}, { get: () => (...args: any[]) => { try { (tmaHaptic as any).impactOccurred?.(...args); } catch {} } }) as any;
+import { useHapticFeedback } from "@tma.js/sdk-react";
 import { WatermarkGate } from "@/components/workspace/WatermarkGate";
 import { useSwipeTemplate } from "@/hooks/useSwipeTemplate"; // 스와이프 템플릿 훅 추가
 import { QuickTemplateSelector } from "@/components/ui/QuickTemplateSelector"; // 퀵 템플릿 선택기 추가
@@ -105,7 +104,7 @@ export function AutoReplyTab() {
   const submitLockRef = useRef(false);
 
   const { toast } = useToast();
-
+  const haptics = useHapticFeedback();
 
   const [isMobile, setIsMobile] = useState(false);
   const [actionSheetRuleId, setActionSheetRuleId] = useState<string | null>(null);
@@ -337,7 +336,7 @@ export function AutoReplyTab() {
   }
 
   // 템플릿 상태 추가
-  const [templates, setTemplates] = useState<any[]>([
+  const [templates, setTemplates] = useState([
     { id: '1', name: '기본 응답', content: '안녕하세요, 확인 후 답변드리겠습니다.' },
     { id: '2', name: '업무시간 안내', content: '업무시간은 평일 09:00~18:00입니다.' },
     { id: '3', name: '휴무일 안내', content: '주말 및 공휴일은 휴무입니다.' },
@@ -423,13 +422,14 @@ export function AutoReplyTab() {
             // 선택된 템플릿을 현재 입력 필드에 삽입
             console.log('선택된 템플릿:', template);
           }}
-          onTemplateAdd={(template) => {
+          onAddTemplate={(name, content) => {
+            // 새 템플릿 추가
             const newTemplate = {
               id: Date.now().toString(),
-              name: template.name,
-              content: template.content,
+              name,
+              content,
               createdAt: new Date().toISOString()
-            } as any;
+            };
             setTemplates(prev => [newTemplate, ...prev]);
           }}
         />
@@ -684,10 +684,13 @@ export function AutoReplyTab() {
                     <Badge tone="neutral" className="shrink-0 text-[10px]">{MATCH_TYPE_LABEL[rule.matchType]}</Badge>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleToggleRule(rule); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); // 이벤트 버블링 방지
+                        handleToggleRule(rule); 
+                      }}
                       className={cn(
                         "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
-                        isMobile && "min-h-[32px] min-w-[32px] flex items-center justify-center",
+                        isMobile && "min-h-[44px] min-w-[44px] flex items-center justify-center",
                         rule.isActive
                           ? "bg-app-success-muted text-app-success hover:bg-app-success-muted/60"
                           : "bg-app-card-hover text-app-text-muted hover:text-app-text"
@@ -706,20 +709,16 @@ export function AutoReplyTab() {
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleCopyReply(rule.replyContent); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); // 이벤트 버블링 방지
+                        handleCopyReply(rule.replyContent); 
+                      }}
                       className="shrink-0 rounded p-0.5 text-app-text-subtle hover:text-app-text transition-colors min-h-[24px] min-w-[24px] flex items-center justify-center"
-                      aria-label="응답 내용 복사"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-app-text-subtle">
-                    <span>쿨다운 {rule.cooldownHours}시간</span>
-                    <span>일 {rule.maxRepliesPerDay}회</span>
-                    <span>{formatRuleDateTime(rule.createdAt)}</span>
-                  </div>
                 </div>
-
                 {/* Mobile tap indicator */}
                 {isMobile && (
                   <div className="flex shrink-0 items-center justify-center py-1">

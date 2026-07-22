@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Bell } from "lucide-react";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
 function useEdgeSwipe(
@@ -45,6 +45,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Workspace } from "@/components/layout/Workspace";
 import { Inspector } from "@/components/layout/Inspector";
 import MobileInspectorSheet from "@/components/ui/MobileInspectorSheet";
+import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
@@ -189,37 +190,33 @@ export function DashboardShell() {
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
       <Header />
-      {/* Mobile nav toggle */}
-      <div className="flex items-center gap-2 border-b border-app-border bg-app-surface px-3 py-1.5 sm:hidden" role="toolbar" aria-label="모바일 탐색">
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          aria-label={sidebarOpen ? "계정 사이드바 닫기" : "계정 사이드바 열기"}
-          aria-expanded={sidebarOpen}
-          aria-controls="dashboard-sidebar"
-          className="flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
-        >
-          <Menu className="h-4 w-4" /> 계정
-        </button>
-        <CommandPaletteTrigger />
-        <button
-          type="button"
-          onClick={() => {
-            haptics.light();
-            if (isMobile) {
-              setMobileInspectorOpen(true);
-            } else {
-              toggleInspector();
-            }
-          }}
-          aria-label={inspectorOpen ? "인스펙터 패널 닫기" : "인스펙터 패널 열기"}
-          aria-expanded={inspectorOpen}
-          aria-controls="dashboard-inspector"
-          className="flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card transition-all ml-auto"
-        >
-          인스펙터 <X className="h-4 w-4" />
-        </button>
-      </div>
+      {/* Mobile: slim top bar with account + inspector toggles */}
+      {isMobile && (
+        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="모바일 탐색">
+          <button
+            type="button"
+            onClick={() => { haptics.tick(); setSidebarOpen(v => !v); }}
+            aria-label="계정 목록"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all"
+          >
+            <Menu className="h-4 w-4 shrink-0" />
+            <span className="text-[11px]">계정</span>
+          </button>
+          <CommandPaletteTrigger />
+          <button
+            type="button"
+            onClick={() => {
+              haptics.light();
+              setMobileInspectorOpen(v => !v);
+            }}
+            aria-label="인스펙터"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all ml-auto"
+          >
+            <Bell className="h-4 w-4 shrink-0" />
+            <span className="text-[11px]">인스펙터</span>
+          </button>
+        </div>
+      )}
       <div
         ref={containerRef}
         className="relative flex min-h-0 flex-1"
@@ -267,6 +264,7 @@ export function DashboardShell() {
         )}
       </div>
       <ScrollToTop />
+      {isMobile && <MobileBottomNav />}
       <div className="hidden sm:flex absolute bottom-2 left-72">
         <KeyboardShortcutHints compact />
       </div>

@@ -1,7 +1,5 @@
-"use client";
-
-import { AppShell } from "@/components/layout/AppShell";
+﻿"use client";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return <>{children}</>;
 }
