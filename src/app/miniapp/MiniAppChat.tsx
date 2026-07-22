@@ -117,7 +117,7 @@ export function MiniAppChat() {
                 key={prompt}
                 onClick={() => handleSend(prompt)}
                 disabled={loading}
-                className="rounded-full px-3 py-1.5 text-xs transition-opacity disabled:opacity-50"
+                className="rounded-full px-3 py-2 text-xs transition-opacity disabled:opacity-50 active:scale-95"
                 style={{
                   backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)",
                   color: "var(--tg-theme-button-color, #5288c1)",
@@ -142,23 +142,27 @@ export function MiniAppChat() {
               }
             }}
             placeholder="메시지를 입력하세요..."
-            className="flex-1 rounded-xl px-4 py-3 text-sm outline-none"
+            className="flex-1 rounded-xl px-4 py-3.5 text-sm outline-none"
             style={{
               backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)",
               color: "var(--tg-theme-text-color, #f5f5f5)",
               border: "1px solid var(--tg-theme-hint-color, #708499)",
             }}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            spellCheck="false"
           />
           <button
             onClick={() => handleSend(input)}
             disabled={!input.trim() || loading}
-            className="flex h-12 w-12 items-center justify-center rounded-xl"
+            className="flex h-14 w-14 items-center justify-center rounded-xl active:scale-95"
             style={{
               backgroundColor: "var(--tg-theme-button-color, #5288c1)",
               opacity: !input.trim() || loading ? 0.5 : 1,
             }}
           >
-            <Send className="h-4 w-4 text-white" />
+            <Send className="h-5 w-5 text-white" />
           </button>
         </div>
       </div>

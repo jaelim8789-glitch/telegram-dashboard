@@ -38,20 +38,20 @@ function MenuItem({
   return (
     <button
       onClick={handleClick}
-      className="flex w-full items-center justify-between px-4 py-3.5 transition-colors active:opacity-70"
+      className="flex w-full items-center justify-between px-4 py-4 transition-colors active:bg-[var(--tg-theme-section-separator-color,#3a4a5a)]"
       style={{
         color: danger ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-text-color, #f5f5f5)",
       }}
     >
       <div className="flex items-center gap-3">
-        <span className="flex h-5 w-5 items-center justify-center" style={{ color: danger ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-button-color, #5288c1)" }}>
+        <span className="flex h-6 w-6 items-center justify-center" style={{ color: danger ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-button-color, #5288c1)" }}>
           {icon}
         </span>
         <span className="text-sm">{label}</span>
       </div>
       <div className="flex items-center gap-2">
         {value && <span className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{value}</span>}
-        <ChevronRight className="h-4 w-4" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
+        <ChevronRight className="h-5 w-5" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
       </div>
     </button>
   );
@@ -88,8 +88,8 @@ export function MiniAppProfile() {
             <Image 
               src={user.photo_url} 
               alt={user.first_name} 
-              width={40}
-              height={40}
+              width={80}
+              height={80}
               className="h-full w-full rounded-full object-cover"
               priority={false}
               unoptimized // 외부 이미지이므로 최적화 비활성화
@@ -116,29 +116,29 @@ export function MiniAppProfile() {
       </div>
 
       <div className="mx-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<User className="h-4 w-4" />} label="계정 관리" href="/app" />
+        <MenuItem icon={<User className="h-5 w-5" />} label="계정 관리" href="/app" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Settings className="h-4 w-4" />} label="전체 대시보드" value="Web" href="/app" />
+        <MenuItem icon={<Settings className="h-5 w-5" />} label="전체 대시보드" value="Web" href="/app" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Star className="h-4 w-4" />} label="요금제" value={planName} href="/pricing" />
+        <MenuItem icon={<Star className="h-5 w-5" />} label="요금제" value={planName} href="/pricing" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Bell className="h-4 w-4" />} label="알림 설정" href="/app" />
+        <MenuItem icon={<Bell className="h-5 w-5" />} label="알림 설정" href="/app" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Globe className="h-4 w-4" />} label="웹 버전 열기" href={SITE.app} />
+        <MenuItem icon={<Globe className="h-5 w-5" />} label="웹 버전 열기" href={SITE.app} />
       </div>
 
       <div className="mx-4 mt-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<Info className="h-4 w-4" />} label="버전 정보" value="v0.1.0" />
+        <MenuItem icon={<Info className="h-5 w-5" />} label="버전 정보" value="v0.1.0" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
         <MenuItem
-          icon={<ExternalLink className="h-4 w-4" />}
+          icon={<ExternalLink className="h-5 w-5" />}
           label="문의하기"
           href={`https://t.me/${SITE.support.telegram.replace("@", "")}`}
         />
       </div>
 
       <div className="mx-4 mt-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<LogOut className="h-4 w-4" />} label="로그아웃" danger onClick={handleLogout} />
+        <MenuItem icon={<LogOut className="h-5 w-5" />} label="로그아웃" danger onClick={handleLogout} />
       </div>
     </div>
   );

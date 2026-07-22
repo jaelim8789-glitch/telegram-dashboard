@@ -34,7 +34,7 @@ export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavPr
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="relative flex flex-col items-center gap-0.5 px-3 py-1 min-w-[64px] transition-colors"
+            className="relative flex flex-col items-center gap-0.5 px-3 py-3 min-w-[72px] transition-colors active:scale-95"
             style={{
               color: isActive
                 ? "var(--tg-theme-button-color, #5288c1)"
@@ -42,14 +42,14 @@ export function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavPr
             }}
           >
             <div className="relative">
-              <Icon className="h-5 w-5" />
+              <Icon className="h-6 w-6" />
               {tab.id === "chat" && unreadCount && unreadCount > 0 ? (
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white min-w-[16px] h-[16px] leading-[16px]">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               ) : null}
             </div>
-            <span className="text-[10px] font-medium">{tab.label}</span>
+            <span className="text-[11px] font-medium">{tab.label}</span>
             {isActive && (
               <span
                 className="absolute -top-[1px] left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full"
