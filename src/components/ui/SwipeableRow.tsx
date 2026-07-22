@@ -1,132 +1,32 @@
 "use client";
 
-import React, { useRef, useCallback, useState, useEffect } from "react";
-import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Copy, RotateCcw, Trash2 } from "lucide-react";
 
-interface SwipeAction {
-  label: string;
-  icon?: React.ReactNode;
-  color: string; // tailwind bg class e.g. "bg-app-danger"
-  onAction: () => void;
-}
+interface SwipeAction { icon: typeof Copy; label: string; color: string; onAction: () => void; }
 
-interface SwipeableRowProps {
-  children: React.ReactNode;
-  leftActions?: SwipeAction[];
-  rightActions?: SwipeAction[];
-  threshold?: number; // px to trigger action
-  disabled?: boolean;
-  className?: string;
-}
+export function SwipeableRow({ children, actions, onSwipeStart, onSwipeEnd }: { children: React.ReactNode; actions: SwipeAction[]; onSwipeStart?: () => void; onSwipeEnd?: () => void }) {
+  const [swiped, setSwiped] = useState(false);
+  const startX = useRef(0);
 
-export function SwipeableRow({
-  children,
-  leftActions = [],
-  rightActions = [],
-  threshold = 80,
-  disabled = false,
-  className = "",
-}: SwipeableRowProps) {
-  const x = useMotionValue(0);
-  const [snapped, setSnapped] = useState<"left" | "right" | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const leftWidth = leftActions.length * 72;
-  const rightWidth = rightActions.length * 72;
-
-  const leftOpacity = useTransform(x, [0, leftWidth], [0, 1]);
-  const rightOpacity = useTransform(x, [-rightWidth, 0], [1, 0]);
-
-  const handleDragEnd = useCallback(() => {
-    const currentX = x.get();
-    if (currentX > threshold && leftActions.length > 0) {
-      x.set(leftWidth);
-      setSnapped("left");
-    } else if (currentX < -threshold && rightActions.length > 0) {
-      x.set(-rightWidth);
-      setSnapped("right");
-    } else {
-      x.set(0);
-      setSnapped(null);
-    }
-  }, [x, threshold, leftActions.length, rightActions.length, leftWidth, rightWidth]);
-
-  function close() {
-    x.set(0);
-    setSnapped(null);
+  function onTouchStart(e: React.TouchEvent) { startX.current = e.touches[0].clientX; }
+  function onTouchEnd(e: React.TouchEvent) {
+    const dx = startX.current - e.changedTouches[0].clientX;
+    if (dx > 60) { setSwiped(true); onSwipeStart?.(); }
+    else if (dx < -30) { setSwiped(false); onSwipeEnd?.(); }
   }
-
-  function triggerAction(action: SwipeAction) {
-    close();
-    setTimeout(action.onAction, 150);
-  }
-
-  // Close on outside interaction
-  useEffect(() => {
-    if (!snapped) return;
-    function handleClick(e: MouseEvent | TouchEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        close();
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("touchstart", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("touchstart", handleClick);
-    };
-  }, [snapped]);
-
-  if (disabled) return <div className={className}>{children}</div>;
 
   return (
-    <div className={`relative overflow-hidden ${className}`} ref={containerRef}>
-      {/* Left actions (reveal on swipe right) */}
-      <div className="absolute inset-y-0 left-0 flex" style={{ width: leftWidth }}>
-        <motion.div className="flex h-full" style={{ opacity: leftOpacity }}>
-          {leftActions.map((action, i) => (
-            <button
-              key={action.label}
-              onClick={() => triggerAction(action)}
-              className={`flex w-[72px] items-center justify-center ${action.color} text-white text-[10px] font-medium`}
-            >
-              <div className="flex flex-col items-center gap-0.5">
-                {action.icon}
-                <span>{action.label}</span>
-              </div>
-            </button>
-          ))}
-        </motion.div>
+    <div className="relative overflow-hidden rounded-xl">
+      <div className="absolute right-0 top-0 bottom-0 flex items-center gap-1 pr-2">
+        {actions.map((a, i) => (
+          <button key={i} onClick={() => { a.onAction(); setSwiped(false); }} className="flex h-10 w-10 items-center justify-center rounded-lg active:scale-90" style={{ backgroundColor: a.color }}>
+            <a.icon className="h-4 w-4 text-white" />
+          </button>
+        ))}
       </div>
-
-      {/* Right actions (reveal on swipe left) */}
-      <div className="absolute inset-y-0 right-0 flex" style={{ width: rightWidth }}>
-        <motion.div className="flex h-full ml-auto" style={{ opacity: rightOpacity }}>
-          {rightActions.map((action, i) => (
-            <button
-              key={action.label}
-              onClick={() => triggerAction(action)}
-              className={`flex w-[72px] items-center justify-center ${action.color} text-white text-[10px] font-medium`}
-            >
-              <div className="flex flex-col items-center gap-0.5">
-                {action.icon}
-                <span>{action.label}</span>
-              </div>
-            </button>
-          ))}
-        </motion.div>
-      </div>
-
-      {/* Content */}
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: -rightWidth, right: leftWidth }}
-        dragElastic={0.1}
-        style={{ x }}
-        onDragEnd={handleDragEnd}
-        className="relative bg-app-card"
-        onDragStart={() => snapped && close()}
-      >
+      <motion.div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} animate={{ x: swiped ? -(actions.length * 52) : 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>
         {children}
       </motion.div>
     </div>

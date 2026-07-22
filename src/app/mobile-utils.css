@@ -1,0 +1,27 @@
+// globals.css — 하단에 추가
+// 모바일 전용 유틸 클래스
+
+.mobile-single-column {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+  .mobile-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem;
+  }
+  .landscape-hide {
+    display: none !important;
+  }
+  .landscape-chart-lg {
+    height: 200px !important;
+  }
+}

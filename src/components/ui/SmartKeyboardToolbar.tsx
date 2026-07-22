@@ -1,140 +1,131 @@
 import { useState, useEffect } from 'react';
-import { Smile, Hash, AtSign, Clipboard, Clock } from 'lucide-react';
+import { Smile, Hash, Star, Clock, X } from 'lucide-react';
 import { Button } from './Button';
 import { cn } from '@/lib/cn';
-import { useTemplates } from '@/hooks/useTemplates';
 
 interface SmartKeyboardToolbarProps {
-  onInsert: (text: string) => void;
-  className?: string;
+  onInsertTemplate: (template: string) => void;
+  onInsertEmoji: (emoji: string) => void;
+  onInsertSpecialChar: (char: string) => void;
+  onInsertRecentMessage: (message: string) => void;
+  templates: { id: string; name: string; content: string }[];
+  recentMessages: string[];
+  isVisible: boolean;
+  onClose: () => void;
 }
 
-export function SmartKeyboardToolbar({ onInsert, className }: SmartKeyboardToolbarProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'template' | 'emoji' | 'special' | 'recent'>('template');
-  const { templates, getRecentMessages } = useTemplates();
+export function SmartKeyboardToolbar({
+  onInsertTemplate,
+  onInsertEmoji,
+  onInsertSpecialChar,
+  onInsertRecentMessage,
+  templates,
+  recentMessages,
+  isVisible,
+  onClose
+}: SmartKeyboardToolbarProps) {
+  const [activeTab, setActiveTab] = useState<'templates' | 'emojis' | 'special' | 'recent'>('templates');
 
-  const recentMessages = getRecentMessages();
+  // 자주 사용하는 이모지 목록
+  const commonEmojis = ['😀', '😂', '😍', '👍', '❤️', '🔥', '😊', '🎉', '👏', '🙌'];
+  
+  // 특수문자 목록
+  const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '※', '○', '●'];
 
-  const emojiList = ['😊', '👍', '❤️', '🎉', '👏', '🔥', '💯', '👌', '🙏', '😎'];
-  const specialChars = ['@', '#', '&', '%', '$', '€', '£', '¥', '₩', '₹'];
-
-  // 키보드가 활성화될 때 자동으로 열기
-  useEffect(() => {
-    const handleFocusIn = () => setIsOpen(true);
-    const handleFocusOut = () => {
-      // 잠시 대기 후 닫힘 처리 (다른 요소에 포커스가 이동할 수 있으므로)
-      setTimeout(() => {
-        if (!document.activeElement?.matches('input, textarea, [contenteditable]')) {
-          setIsOpen(false);
-        }
-      }, 100);
-    };
-
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
-
-    return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
-    };
-  }, []);
-
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   return (
-    <div className={cn('bg-app-card border-t border-app-border p-2', className)}>
-      {/* 탭 네비게이션 */}
-      <div className="flex border-b border-app-border mb-2">
+    <div className={cn(
+      "fixed bottom-0 left-0 right-0 z-50 bg-app-card border-t border-app-border",
+      "transform transition-transform duration-300 ease-in-out",
+      isVisible ? "translate-y-0" : "translate-y-full"
+    )}>
+      <div className="flex items-center justify-between p-2 border-b border-app-border">
+        <div className="flex space-x-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('templates')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs",
+              activeTab === 'templates' 
+                ? "bg-[var(--color-accent)] text-white" 
+                : "bg-app-card-hover text-app-text-muted"
+            )}
+          >
+            템플릿
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('emojis')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs",
+              activeTab === 'emojis' 
+                ? "bg-[var(--color-accent)] text-white" 
+                : "bg-app-card-hover text-app-text-muted"
+            )}
+          >
+            이모지
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('special')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs",
+              activeTab === 'special' 
+                ? "bg-[var(--color-accent)] text-white" 
+                : "bg-app-card-hover text-app-text-muted"
+            )}
+          >
+            특수문자
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('recent')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs",
+              activeTab === 'recent' 
+                ? "bg-[var(--color-accent)] text-white" 
+                : "bg-app-card-hover text-app-text-muted"
+            )}
+          >
+            최근
+          </button>
+        </div>
         <button
-          className={cn(
-            'flex-1 py-2 text-center text-sm font-medium',
-            activeTab === 'template' && 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
-          )}
-          onClick={() => setActiveTab('template')}
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-full hover:bg-app-card-hover"
+          aria-label="툴바 닫기"
         >
-          템플릿
-        </button>
-        <button
-          className={cn(
-            'flex-1 py-2 text-center text-sm font-medium',
-            activeTab === 'recent' && 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
-          )}
-          onClick={() => setActiveTab('recent')}
-        >
-          최근
-        </button>
-        <button
-          className={cn(
-            'flex-1 py-2 text-center text-sm font-medium',
-            activeTab === 'emoji' && 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
-          )}
-          onClick={() => setActiveTab('emoji')}
-        >
-          이모지
-        </button>
-        <button
-          className={cn(
-            'flex-1 py-2 text-center text-sm font-medium',
-            activeTab === 'special' && 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
-          )}
-          onClick={() => setActiveTab('special')}
-        >
-          특수문자
+          <X className="h-4 w-4 text-app-text-muted" />
         </button>
       </div>
 
-      {/* 콘텐츠 영역 */}
-      <div className="max-h-32 overflow-y-auto">
-        {activeTab === 'template' && (
-          <div className="grid grid-cols-2 gap-1">
-            {templates.length > 0 ? (
-              templates.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => onInsert(template.content)}
-                  className="p-2 text-left text-xs bg-app-card-hover rounded-lg truncate"
-                  title={template.name}
-                >
-                  <div className="font-medium truncate">{template.name}</div>
-                  <div className="text-app-text-muted truncate">{template.content.substring(0, 20)}...</div>
-                </button>
-              ))
-            ) : (
-              <div className="col-span-2 text-center text-app-text-muted text-sm py-4">
-                저장된 템플릿이 없습니다
-              </div>
-            )}
+      <div className="max-h-32 overflow-y-auto p-2">
+        {activeTab === 'templates' && (
+          <div className="flex flex-wrap gap-1">
+            {templates.slice(0, 8).map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => onInsertTemplate(template.content)}
+                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20"
+                title={template.name}
+              >
+                {template.name}
+              </button>
+            ))}
           </div>
         )}
 
-        {activeTab === 'recent' && (
-          <div className="grid grid-cols-2 gap-1">
-            {recentMessages.length > 0 ? (
-              recentMessages.map((msg, index) => (
-                <button
-                  key={index}
-                  onClick={() => onInsert(msg)}
-                  className="p-2 text-left text-xs bg-app-card-hover rounded-lg truncate"
-                >
-                  <div className="truncate">{msg.substring(0, 20)}...</div>
-                </button>
-              ))
-            ) : (
-              <div className="col-span-2 text-center text-app-text-muted text-sm py-4">
-                최근 메시지가 없습니다
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'emoji' && (
-          <div className="grid grid-cols-5 gap-1">
-            {emojiList.map((emoji, index) => (
+        {activeTab === 'emojis' && (
+          <div className="flex flex-wrap gap-1">
+            {commonEmojis.map((emoji, index) => (
               <button
                 key={index}
-                onClick={() => onInsert(emoji)}
-                className="h-10 flex items-center justify-center text-xl hover:bg-app-card-hover rounded-lg"
+                type="button"
+                onClick={() => onInsertEmoji(emoji)}
+                className="p-2 text-lg hover:bg-app-card-hover rounded-lg"
               >
                 {emoji}
               </button>
@@ -143,14 +134,30 @@ export function SmartKeyboardToolbar({ onInsert, className }: SmartKeyboardToolb
         )}
 
         {activeTab === 'special' && (
-          <div className="grid grid-cols-5 gap-1">
+          <div className="flex flex-wrap gap-1">
             {specialChars.map((char, index) => (
               <button
                 key={index}
-                onClick={() => onInsert(char)}
-                className="h-10 flex items-center justify-center text-lg font-bold hover:bg-app-card-hover rounded-lg"
+                type="button"
+                onClick={() => onInsertSpecialChar(char)}
+                className="px-2 py-1.5 text-sm bg-app-card-hover rounded-lg text-app-text hover:bg-[var(--color-accent)]/20"
               >
                 {char}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'recent' && (
+          <div className="flex flex-wrap gap-1">
+            {recentMessages.slice(0, 6).map((msg, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => onInsertRecentMessage(msg)}
+                className="px-2 py-1.5 text-xs bg-app-card-hover rounded-lg text-app-text truncate max-w-[120px] hover:bg-[var(--color-accent)]/20"
+              >
+                {msg.substring(0, 15)}...
               </button>
             ))}
           </div>

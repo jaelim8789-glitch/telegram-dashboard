@@ -17,18 +17,18 @@ export default function PinnedKpiBar() {
   ];
 
   return (
-    <div className="sticky z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm"
+    <div className="sticky z-10 border-b border-app-border bg-app-surface/95 backdrop-blur-sm"
          style={{ top: "var(--category-strip-height, 44px)" }}>
       <div className="flex gap-3 overflow-x-auto px-4 py-3 scrollbar-hide snap-x snap-mandatory">
         {kpis.map((kpi) => (
           <div
             key={kpi.key}
-            className="flex shrink-0 snap-start items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 min-w-[120px]"
+            className="flex shrink-0 snap-start items-center gap-2 rounded-xl border border-app-border bg-app-card px-3 py-2 min-w-[120px]"
           >
             <span className="text-lg">{kpi.icon}</span>
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-gray-900">{kpi.value}</span>
-              <span className="text-xs text-gray-500 whitespace-nowrap">{kpi.label}</span>
+              <span className="text-sm font-bold text-app-text">{kpi.value}</span>
+              <span className="text-xs text-app-text-muted whitespace-nowrap">{kpi.label}</span>
             </div>
           </div>
         ))}
