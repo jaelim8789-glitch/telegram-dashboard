@@ -32,6 +32,7 @@ jobs:
   # 0. Lockfile integrity check
   # ============================================
   lockfile-check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +128,7 @@ jobs:
   # 1c. Frontend — e2e smoke test
   # ============================================
   frontend-e2e:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -224,66 +226,6 @@ jobs:
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
 
   # ============================================
-  # 2a. Deploy frontend staging (master push, pull-only)
-  # ============================================
-  deploy-frontend-staging:
-    needs: [frontend-docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Pull & zero-downtime deploy (staging)
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/telemon/backend
-            docker compose -f docker-compose.yml -f docker-compose.staging.yml pull frontend -q
-            bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost:8080/health staging
-
-      - name: Health check (staging)
-        id: smoke-frontend
-        continue-on-error: true
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set +e
-            for i in $(seq 1 12); do
-              curl -sf http://localhost:8080/health > /dev/null 2>&1 && { echo "ok"; exit 0; }
-              sleep 5
-            done
-            echo "smoke fail"; exit 1
-
-      - name: Rollback on health failure
-        if: steps.smoke-frontend.outcome != 'success'
-        uses: appleboy/ssh-action@v1.2.2
-        continue-on-error: true
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /opt/telemon/backend
-            bash scripts/rollback-deploy.sh docker-compose.yml frontend
-
-      - name: Notify staging deploy result
-        if: always()
-        uses: fjogeleit/http-request-action@v1
-        continue-on-error: true
-        with:
-          url: ${{ secrets.ALERT_WEBHOOK_URL }}
-          method: POST
-          data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [staging] Frontend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
-          preventFailureOnNoResponse: true
-
-  # ============================================
   # 2b. Deploy frontend production (manual, pull-only)
   # ============================================
   deploy-frontend-production:
@@ -303,6 +245,7 @@ jobs:
             cd /opt/telemon/backend
             docker compose pull frontend -q
             bash scripts/zero-downtime-deploy.sh frontend docker-compose.yml http://localhost/health staging
+            docker compose restart nginx || true
 
       - name: Health check (production)
         id: smoke-frontend-prod

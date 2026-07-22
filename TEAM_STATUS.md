@@ -59,6 +59,24 @@ pre-push 훅이 자동 차단함
 | 🔴 | #6 api.ts God 파일 분할 (2600라인) | TBD |
 | 🟡 | #19 camelCaseKeys 중복 제거 (20+개 함수) | TBD |
 
+## 핫스팟 파일 소유권 규칙
+
+- `SendTab.tsx`, `api.ts` 등 호출이 집중된 파일은 1인의 단일 담당자 고정 (CODEOWNERS / TEAM_STATUS.md)
+- 수정 전 반드시 담당자와 동기화 — 동시편집 충돌 방지
+
+## 배포 속도 최적화 완료 항목
+
+- GHCR pull-only VPS 배포 통일 (rollback scripts도 pull로 전환)
+- `docker compose restart nginx` 자동 추가 (frontend/backend 배포 직후)
+- `frontend-e2e`, `lockfile-check` jobs PR-only (master push 시 스킵)
+- frontend Dockerfile pnpm cache mount 유지 확인
+- staging jobs 제거 (`docker-compose.staging.yml` VPS 부재로 확정 실패 방지)
+
+## 타입 에러 백로그
+
+- `next.config.ts` `typescript.ignoreBuildErrors: true` 유지 — 빌드 차단 없이 배포
+- 남은 타입 에러는 TEAM_STATUS.md에서 추적: `api.ts` God 파일 분할 등 핫스팟 정리 시 자연 해소 예정
+
 ## 최근 배포
 
 | 일자 | 커밋 | 설명 |

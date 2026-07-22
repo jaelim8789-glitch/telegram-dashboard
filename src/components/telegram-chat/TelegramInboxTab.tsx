@@ -209,7 +209,7 @@ export function TelegramInboxTab() {
 
         {/* Account selector */}
         {accounts.length > 1 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-app-border overflow-x-auto">
+          <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-app-border overflow-x-auto">
             {accounts.map((acc) => (
               <button
                 key={acc.id}

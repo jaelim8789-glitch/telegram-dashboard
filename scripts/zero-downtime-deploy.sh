@@ -28,6 +28,9 @@ docker compose -f "$COMPOSE" up --no-deps -d --scale "${SERVICE}=2" --no-recreat
   docker compose -f "$COMPOSE" up -d --no-deps "$SERVICE"
 }
 
+# 3a. Restart nginx so it re-evaluates upstreams immediately
+docker compose -f "$COMPOSE" restart nginx || true
+
 # 4. Health check loop
 echo "   ⏳ Health check: $HEALTH_URL"
 for i in $(seq 1 15); do
@@ -46,5 +49,6 @@ done
 # 6. Rollback on failure
 echo "   ❌ Health check FAILED — rolling back to $PREVIOUS_TAG"
 docker compose -f "$COMPOSE" up -d --no-deps "$SERVICE" 2>/dev/null || true
+docker compose -f "$COMPOSE" restart nginx || true
 echo "   🔴 Rollback to previous image complete"
 exit 1

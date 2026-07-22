@@ -743,7 +743,7 @@ export function AccountRegisterTab() {
                     <button
                       onClick={() => selectAccount(acc.id)}
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-lg transition-colors min-h-[44px] min-w-[44px]",
+                        "flex items-center justify-center rounded-lg transition-colors min-h-[44px] min-w-[44px]",
                         acc.id === selectedAccountId
                           ? "bg-app-primary text-white"
                           : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
@@ -757,7 +757,7 @@ export function AccountRegisterTab() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleTestAccount(acc.id)}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[44px] min-w-[44px]"
+                        className="flex items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[44px] min-w-[44px]"
                         aria-label="계정 테스트"
                         disabled={submitting}
                       >
@@ -769,7 +769,7 @@ export function AccountRegisterTab() {
                           setDeleteTarget(acc.id);
                           setDeleteConfirmOpen(true);
                         }}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-app-danger hover:bg-app-danger-muted hover:text-app-danger transition-colors min-h-[44px] min-w-[44px]"
+                        className="flex items-center justify-center rounded-lg text-app-danger hover:bg-app-danger-muted hover:text-app-danger transition-colors min-h-[44px] min-w-[44px]"
                         aria-label="계정 삭제"
                         disabled={submitting}
                       >

@@ -2273,6 +2273,7 @@ export function SendTab() {
             )}
 
             {/* Send Button */}
+            <div className="luxury-bottom-cta">
             <Button
               type="submit"
               variant="primary"
@@ -2293,6 +2294,7 @@ export function SendTab() {
                 </>
               )}
             </Button>
+            </div>
           </form>
         </Panel>
 

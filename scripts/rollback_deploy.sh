@@ -91,10 +91,10 @@ while [ "$attempt" -le "$MAX_ROLLBACK_ATTEMPTS" ]; do
     info "Rebuilding Docker images..."
 
     if [ "$TARGET" = "production" ]; then
-        docker compose build frontend
+        docker compose pull frontend
         docker compose up -d --no-deps frontend
     else
-        docker compose -f docker-compose.yml -f docker-compose.staging.yml build frontend
+        docker compose -f docker-compose.yml -f docker-compose.staging.yml pull frontend
         docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps frontend
     fi
 

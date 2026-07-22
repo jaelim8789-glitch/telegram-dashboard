@@ -17,7 +17,7 @@ interface FieldProps {
 export function Field({ label, hint, error, children, touchOptimized = false }: FieldProps) {
   return (
     <label className={cn("block", touchOptimized && "py-1.5")}>
-      <span className={cn("mb-1.5 block text-xs font-medium text-app-text-muted", touchOptimized && "text-sm")}>{label}</span>
+      <span className={cn("mb-2 block text-sm font-medium text-app-text-muted", touchOptimized && "text-sm")}>{label}</span>
       {children}
       {error ? (
         <span role="alert" className={cn("mt-1 block text-xs text-app-danger", touchOptimized && "text-sm mt-2")}>

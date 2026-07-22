@@ -102,7 +102,7 @@ do_rollback() {
   # Rebuild & restart on VPS
   log "🚀 VPS 재배포..."
   local service="$label"
-  local compose_cmd="docker compose build $service && docker compose up -d --no-deps $service"
+  local compose_cmd="docker compose pull $service && docker compose up -d --no-deps $service"
   if [ "$label" = "frontend" ]; then
     cd /opt/telemon/backend || true
   else
@@ -171,5 +171,5 @@ echo ""
 echo "  VPS 수동 배포 필요:"
 echo "    ssh ${VPS_HOST:-root@VPS}"
 echo "    cd /opt/telemon && git pull"
-echo "    cd /opt/telemon/backend && docker compose build frontend && docker compose up -d --no-deps frontend"
+echo "    cd /opt/telemon/backend && docker compose pull frontend && docker compose up -d --no-deps frontend"
 echo "═══════════════════════════════════════════"

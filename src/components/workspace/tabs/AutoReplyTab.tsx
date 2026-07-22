@@ -551,6 +551,7 @@ export function AutoReplyTab() {
             <form onSubmit={handleSubmit} className="space-y-4 p-4">
               <Field label="규칙 이름" error={validationErrors.name}>
                 <Input
+                  autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="예: 가격 문의"
@@ -618,11 +619,13 @@ export function AutoReplyTab() {
                 <div className="rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{submitError}</div>
               )}
 
-              <div className="flex flex-wrap justify-end gap-2">
+              <div className="luxury-bottom-cta">
+              <div className="flex flex-wrap justify-end gap-2 w-full">
                 <Button variant="ghost" onClick={closeForm}>취소</Button>
                 <Button type="submit" variant="primary" loading={submitting}>
                   {editingRuleId ? "수정 완료" : "규칙 추가"}
                 </Button>
+              </div>
               </div>
             </form>
           </div>
@@ -677,7 +680,7 @@ export function AutoReplyTab() {
                       <Copy className="h-3 w-3" />
                     </button>
                   </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-app-text-subtle">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-app-text-subtle">
                     <span>쿨다운 {rule.cooldownHours}시간</span>
                     <span>일 {rule.maxRepliesPerDay}회</span>
                     <span>{formatRuleDateTime(rule.createdAt)}</span>
