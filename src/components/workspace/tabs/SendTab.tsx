@@ -63,7 +63,6 @@ import { STATUS_META } from "@/lib/statusMeta";
 import { Modal } from "@/components/ui/Modal";
 import { useRouter } from "next/navigation";
 import { analyzeSendRisk, riskLevelColor, riskLevelBg, riskLevelLabel } from "@/lib/riskAnalysis";
-import { SendProgressBar } from "@/components/ui/SendProgressBar";
 import { useDebounce } from "@/hooks/useDebounce";
 import { computeSpamScore, type SpamScoreResult } from "@/lib/spamScore";
 import { analyzeTone, toneLabel, toneColor, toneBg, type ToneAnalysis } from "@/lib/toneAnalyzer";
@@ -2290,67 +2289,7 @@ export function SendTab() {
           </form>
         </Panel>
 
-        {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
-        {distributionStatus && (
-          <Panel
-            title="배포 상태"
-            description="그룹이 많은 경우 여러 계정에 나누어 발송됩니다"
-          >
-            <div className="space-y-2">
-              {distributionStatus.siblings.map((sibling) => (
-                <div
-                  key={sibling.broadcast.id}
-                  className="rounded-lg border border-app-border bg-app-card p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-app-text">
-                        {sibling.accountName || sibling.accountPhone}
-                      </p>
-                      <p className="text-xs text-app-text-subtle">
-                        {sibling.broadcast.recipients.length}개 그룹
-                      </p>
-                    </div>
-                    <Badge
-                      tone={
-                        sibling.broadcast.status === "sent"
-                          ? "success"
-                          : sibling.broadcast.status === "failed"
-                          ? "danger"
-                          : sibling.broadcast.status === "cancelled"
-                          ? "warning"
-                          : "info"
-                      }
-                    >
-                      {sibling.broadcast.status === "pending"
-                        ? "대기 중"
-                        : sibling.broadcast.status === "sending"
-                        ? "발송 중"
-                        : sibling.broadcast.status === "sent"
-                        ? "완료"
-                        : sibling.broadcast.status === "failed"
-                        ? "실패"
-                        : "취소됨"}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        )}
       </div>
-
-      {/* Send Confirmation Modal */}
-      <ConfirmDialog
-        open={sendConfirmOpen}
-        title="메시지 발송 확인"
-        description={`선택한 ${selectedGroupIds.length}개 그룹에 메시지를 발송하시겠습니까?`}
-        confirmLabel="발송"
-        cancelLabel="취소"
-        onConfirm={handleSend}
-        onCancel={() => setSendConfirmOpen(false)}
-      />
-      <SendProgressBar inFlightCount={inFlightCount} onTap={() => setActiveTab(historyEntry?.id ? "" : "log")} />
-  </>
+    </>
   );
 }

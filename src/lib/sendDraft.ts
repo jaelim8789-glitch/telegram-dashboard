@@ -19,7 +19,7 @@ export interface SendDraft {
   scheduledAtLocal: string;
   isRecurring: boolean;
   recurringInterval: number;
-  deliveryMode?: "normal" | "bulk" | "replyMacro";
+  deliveryMode?: "normal" | "bulk" | "replyMacro" | "cycle";
   replyMacroEnabled?: boolean;
   replyToMessageId?: string;
 }
