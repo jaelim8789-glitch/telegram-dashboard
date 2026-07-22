@@ -6,13 +6,12 @@
  * This file handles the layout shell only (no business logic)
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MessageSquare, Send, BarChart3, Users, Settings, Gamepad2 } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { TabId } from "@/types";
 import { cn } from "@/lib/cn";
-import { GoldSplash } from "@/components/ui/GoldSplash";
 
 interface AppShellProps {
   children: ReactNode;
@@ -33,41 +32,11 @@ export function AppShell({ children }: AppShellProps) {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
   const navView = useDashboardStore((s) => s.navView);
   const navigateToChat = useDashboardStore((s) => s.navigateToChat);
-  const [splash, setSplash] = useState(true);
-
-  // Splash: show until data loads, minimum 500ms to prevent flash
-  useEffect(() => {
-    const shown = sessionStorage.getItem("telemon-splash-shown");
-    if (shown) { setSplash(false); return; }
-    const accountsLoading = useDashboardStore.getState().accountsLoading;
-    if (!accountsLoading) {
-      setSplash(false);
-      sessionStorage.setItem("telemon-splash-shown", "1");
-      return;
-    }
-    const unsub = useDashboardStore.subscribe((state) => {
-      if (!state.accountsLoading) {
-        setSplash(false);
-        sessionStorage.setItem("telemon-splash-shown", "1");
-        unsub();
-      }
-    });
-    const minTimer = setTimeout(() => {
-      if (!useDashboardStore.getState().accountsLoading) {
-        setSplash(false);
-        sessionStorage.setItem("telemon-splash-shown", "1");
-      }
-    }, 500);
-    return () => { clearTimeout(minTimer); unsub(); };
-  }, []);
 
   const isChatActive = navView === "chat";
 
   return (
-    <>
-      <GoldSplash show={splash} onDone={() => {}} />
-
-      <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "var(--color-bg)" }}>
+    <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "var(--color-bg)" }}>
         {/* Sidebar — icon rail, shown on mobile and desktop alike (user-requested) */}
         <aside className="flex w-14 shrink-0 flex-col items-center gap-2 border-r border-[var(--color-border)] py-4" style={{ backgroundColor: "var(--color-bg-surface)" }}>
           {/* Logo — click always goes home (AI 채팅 화면) */}
@@ -157,6 +126,5 @@ export function AppShell({ children }: AppShellProps) {
           </AnimatePresence>
         </main>
       </div>
-    </>
   );
 }
