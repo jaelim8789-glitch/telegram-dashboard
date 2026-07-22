@@ -26,7 +26,6 @@ import { MobilePushNotifier } from "@/components/ui/MobilePushNotifier";
 import { MobileLocalizationOptimizer } from "@/components/ui/MobileLocalizationOptimizer";
 import { MobileOfflineCapability } from "@/components/ui/MobileOfflineCapability";
 import { MobileFontOptimizer } from "@/components/ui/MobileFontOptimizer";
-import { handleOrientationChange } from "@/lib/mobileOptimization";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -77,14 +76,8 @@ export default function RootLayout({
             back to a client-side re-render of the whole tree, which is what
             was causing tab/button clicks to silently misfire right after
             first paint. */}
-        <script 
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} 
-          onLoad={() => {
-            // 화면 회전 대응 초기화
-            if (typeof window !== 'undefined') {
-              handleOrientationChange();
-            }
-          }}
+        <script
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
         <link rel="preload" href="/manifest.json" as="fetch" crossOrigin="anonymous" />
         <link rel="preload" href="/icons/icon-192.svg" as="image" />

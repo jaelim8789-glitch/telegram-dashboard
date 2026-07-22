@@ -53,7 +53,7 @@ const computeTasks = {
 
   reduce: (data: any[], reducer: string, initialValue?: any) => {
     try {
-      const func = new Function('accumulator', 'currentValue', `return ${reducer}`);
+      const func = new Function('accumulator', 'currentValue', `return ${reducer}`) as (acc: any, cur: any) => any;
       return data.reduce(func, initialValue);
     } catch (e) {
       throw new Error('Invalid reduce function');
@@ -120,19 +120,18 @@ const computeTasks = {
   calculateStats: (data: number[]) => {
     const sorted = [...data].sort((a, b) => a - b);
     const n = sorted.length;
-    
+    const mean = data.reduce((sum, val) => sum + val, 0) / n;
+    const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+
     return {
       count: n,
       min: sorted[0],
       max: sorted[n - 1],
       sum: data.reduce((sum, val) => sum + val, 0),
-      mean: data.reduce((sum, val) => sum + val, 0) / n,
+      mean,
       median: n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)],
-      variance: (() => {
-        const mean = data.reduce((sum, val) => sum + val, 0) / n;
-        return data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
-      })(),
-      stdDev: Math.sqrt(data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n)
+      variance,
+      stdDev: Math.sqrt(variance)
     };
   }
 };

@@ -47,7 +47,7 @@ export function useVisualViewport(): VisualViewportState {
   const vvRef = useRef<VisualViewport | null>(null);
   const previousKeyboardRef = useRef(false);
   const stableScrollParentRef = useRef<HTMLElement | null>(null);
-  const orientationRef = useRef(screen.orientation?.angle ?? 0);
+  const orientationRef = useRef(typeof window !== "undefined" ? (screen.orientation?.angle ?? 0) : 0);
 
   useEffect(() => {
     const vv = window.visualViewport;

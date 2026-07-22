@@ -450,7 +450,7 @@ export function SendTab() {
         const est = await api.fetchBroadcastEstimate({
           accountId: selectedAccountId,
           recipientCount: selectedRecipientIds.length,
-          deliveryMode: deliveryMode === "replyMacro" ? "normal" : deliveryMode,
+          deliveryMode: deliveryMode === "replyMacro" || deliveryMode === "cycle" ? "normal" : deliveryMode,
           delaySeconds: normalDelaySeconds,
         });
         setEstimatePreview(est);
@@ -1083,7 +1083,9 @@ export function SendTab() {
     try {
       const scheduledAtIso = isScheduled && scheduledAtLocal ? new Date(scheduledAtLocal).toISOString() : undefined;
       // 답장 모드가 활성화되면 delivery_mode를 "replyMacro"로 설정
-      const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim() ? "replyMacro" : deliveryMode;
+      const effectiveDeliveryMode = replyMacroEnabled && replyToMessageId.trim()
+        ? "replyMacro"
+        : deliveryMode === "cycle" ? "normal" : deliveryMode;
       // Use send-to-group API when sending to groups (no manual recipients)
       const created = await api.createBroadcast({
         accountId: selectedAccountId,
@@ -2357,13 +2359,13 @@ export function SendTab() {
         </Panel>
 
         {/* ── Distribution Status Panel ── 대상 그룹이 많아 여러 계정에 나눠 보낸 경우에만 표시 */}
-        {distributionStatus && (
+        {distributionBatchId && distributionSiblings.length > 0 && (
           <Panel
             title="배포 상태"
             description="그룹이 많은 경우 여러 계정에 나누어 발송됩니다"
           >
             <div className="space-y-2">
-              {distributionStatus.siblings.map((sibling) => (
+              {distributionSiblings.map((sibling) => (
                 <div
                   key={sibling.broadcast.id}
                   className="rounded-lg border border-app-border bg-app-card p-3"
@@ -2410,13 +2412,13 @@ export function SendTab() {
       <ConfirmDialog
         open={sendConfirmOpen}
         title="메시지 발송 확인"
-        description={`선택한 ${selectedGroupIds.length}개 그룹에 메시지를 발송하시겠습니까?`}
+        description={`선택한 ${selectedIds.length}개 그룹에 메시지를 발송하시겠습니까?`}
         confirmLabel="발송"
         cancelLabel="취소"
-        onConfirm={handleSend}
+        onConfirm={() => handleSubmit({ preventDefault: () => {} } as FormEvent)}
         onCancel={() => setSendConfirmOpen(false)}
       />
-      <SendProgressBar inFlightCount={inFlightCount} onTap={() => setActiveTab(historyEntry?.id ? "" : "log")} />
+      <SendProgressBar inFlightCount={inFlightCount} onTap={() => {}} />
   </>
   );
 }

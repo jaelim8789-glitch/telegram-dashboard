@@ -14,6 +14,11 @@ import * as api from '@/lib/api'; // 발송을 위한 API
 
 const STORAGE_KEY = "autonomous_growth_loops";
 
+const MAX_RETRY_COUNT = 3;
+const BASE_RETRY_DELAY_MS = 5_000;
+const MAX_BACKOFF_DELAY_MS = 5 * 60_000;
+const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
+
 function loadLoops(): Map<string, AutonomousGrowthLoop> {
   if (typeof window === "undefined") return new Map();
   try {
