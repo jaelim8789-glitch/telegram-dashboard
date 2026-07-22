@@ -11,6 +11,9 @@ import * as triggerApi from "@/lib/trigger-api";
 import { BottomSheetWrapper } from "@/components/ui/BottomSheetWrapper";
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
+// 수정: cn 함수 import 추가
+import { cn } from "@/lib/cn";
+
 // ── Trigger/Action Icons ────────────────────────────────────────────
 
 const TRIGGER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

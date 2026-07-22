@@ -64,6 +64,15 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  const handleRetry = useCallback(async (id: string) => {
+    setRetrying(id);
+    try { await api.retryBroadcast(id); hapticFeedback.notificationOccurred("success"); fetchHistory(); } catch {}
+    setRetrying(null);
+  }, [fetchHistory]);
+
+  const displayEntries = entries.slice(0, (page + 1) * PAGE_SIZE);
+  const hasMore = entries.length > displayEntries.length;
+
   // IntersectionObserver infinite scroll
   useEffect(() => {
     const el = sentinelRef.current;
@@ -74,15 +83,6 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
     obs.observe(el);
     return () => obs.disconnect();
   }, [hasMore, loading]);
-
-  const handleRetry = useCallback(async (id: string) => {
-    setRetrying(id);
-    try { await api.retryBroadcast(id); hapticFeedback.notificationOccurred("success"); fetchHistory(); } catch {}
-    setRetrying(null);
-  }, [fetchHistory]);
-
-  const displayEntries = entries.slice(0, (page + 1) * PAGE_SIZE);
-  const hasMore = entries.length > displayEntries.length;
 
   return (
     <div className="pb-4 space-y-3">

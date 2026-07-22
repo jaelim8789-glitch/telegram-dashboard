@@ -45,17 +45,21 @@ function MacroEditorInner() {
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      onEdgesChangeRaw(changes);
+      onEdgesChangeRaw(changes as EdgeChange[]);
     },
     [onEdgesChangeRaw]
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) =>
+      const { sourceId, targetId } = connection;
+      setEdges((eds: EdgeBase[]) =>
         addEdge(
           {
-            ...connection,
+            id: `${sourceId}-${targetId}`,
+            source: sourceId,
+            target: targetId,
+            animated: true,
             style: { stroke: "url(#edgeGradient)", strokeWidth: 2 },
           },
           eds
@@ -97,7 +101,7 @@ function MacroEditorInner() {
   const handleDeleteNode = useCallback(
     (id: string) => {
       setNodes((nds) => nds.filter((n) => n.id !== id));
-      setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+      setEdges((eds: EdgeBase[]) => eds.filter((e) => e.source !== id && e.target !== id));
       setSelectedNodeId(null);
     },
     [setEdges, setNodes]

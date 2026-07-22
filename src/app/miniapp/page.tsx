@@ -9,7 +9,7 @@ if (typeof window !== "undefined") {
   backButton = tma.backButton;
   hapticFeedback = tma.hapticFeedback;
 }
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { MiniAppNav, type MiniAppTab } from "./MiniAppNav";
 import { MiniAppDashboard } from "./MiniAppDashboard";
@@ -20,19 +20,19 @@ import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
 import { ConnectionStatusCard } from "@/components/ui/ConnectionStatusCard";
 import { useAutoDraft } from "@/hooks/useAutoDraft";
 
-const MiniAppChat = dynamic(() => import("./MiniAppChat").then((m) => ({ default: m.MiniAppChat })), {
+const MiniAppChat = nextDynamic(() => import("./MiniAppChat").then((m) => ({ default: m.MiniAppChat })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
-const MiniAppProfile = dynamic(() => import("./MiniAppProfile").then((m) => ({ default: m.MiniAppProfile })), {
+const MiniAppProfile = nextDynamic(() => import("./MiniAppProfile").then((m) => ({ default: m.MiniAppProfile })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
-const MiniAppPixelOffice = dynamic(() => import("./MiniAppPixelOffice").then((m) => ({ default: m.MiniAppPixelOffice })), {
+const MiniAppPixelOffice = nextDynamic(() => import("./MiniAppPixelOffice").then((m) => ({ default: m.MiniAppPixelOffice })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 
-const MiniAppReplyMacro = dynamic(() => import("./MiniAppReplyMacro").then((m) => ({ default: m.MiniAppReplyMacro })), {
+const MiniAppReplyMacro = nextDynamic(() => import("./MiniAppReplyMacro").then((m) => ({ default: m.MiniAppReplyMacro })), {
   loading: () => <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--tg-theme-button-color,#5288c1)] border-t-transparent" /></div>,
 });
 

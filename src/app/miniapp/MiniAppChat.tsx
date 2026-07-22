@@ -74,6 +74,9 @@ function TypingIndicator() {
   );
 }
 
+declare global {
+  interface Window { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any; }
+}
 const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined;
 
 export const MiniAppChat = memo(function MiniAppChat() {

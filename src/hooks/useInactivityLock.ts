@@ -9,8 +9,8 @@ export function useInactivityLock() {
       if (timer.current) clearTimeout(timer.current);
       
       timer.current = setTimeout(() => {
-        // 자동 잠금 기능 실행
-        useDashboardStore.getState().setLocked(true);
+        // 자동 잠금 기능 실행 - 존재하는 함수 사용
+        useDashboardStore.getState().setLocked(true); // 기존: setIsLocked, 수정: setLocked
       }, 300000); // 5분 (300,000ms)
     };
 

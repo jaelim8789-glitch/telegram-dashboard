@@ -338,17 +338,6 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
   setSendProgress: (progress) => set({ sendProgress: progress }),
   clearSendProgress: () => set({ sendProgress: null }),
   sidebarCollapsed: loadSidebarCollapsed(),
-  toggleSidebarCollapsed: () =>
-    set((state) => {
-      const next = !state.sidebarCollapsed;
-      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next)); } catch {}
-      return { sidebarCollapsed: next };
-    }),
-
-  sidebarCollapsed: (() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem("telemon-sidebar-collapsed") === "true"; } catch { return false; }
-  })(),
   toggleSidebarCollapsed: () => {
     const next = !get().sidebarCollapsed;
     set({ sidebarCollapsed: next });
