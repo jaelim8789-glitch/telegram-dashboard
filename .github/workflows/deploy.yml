@@ -24,6 +24,7 @@ env:
   FRONTEND_IMAGE: ${{ github.repository_owner }}/telemon-frontend
   BACKEND_IMAGE: ${{ github.repository_owner }}/telemon-backend
   NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
+  NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
   NEXT_TELEMETRY_DISABLED: "1"
   PLAYWRIGHT_WORKERS: 2
 
