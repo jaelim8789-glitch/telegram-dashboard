@@ -1,1 +1,30 @@
-產敳挠楬湥≴਻浩潰瑲删慥瑣‬⁻牣慥整潃瑮硥ⱴ甠敳潃瑮硥ⱴ甠敳瑓瑡ⱥ甠敳晅敦瑣‬敒捡乴摯⁥⁽牦浯✠敲捡❴਻浩潰瑲笠愠楰慃档⁥⁽牦浯✠⽀楬⽢灡䍩捡敨㬧椊灭牯⁴⁻数晲牯慭据䵥湯瑩牯素映潲⁭䀧氯扩瀯牥潦浲湡散潍楮潴❲਻椊瑮牥慦散倠牥潦浲湡散潃瑮硥呴灹⁥੻†獩灏楴業敺㩤戠潯敬湡਻†敳䥴佳瑰浩穩摥›漨瑰浩穩摥›潢汯慥⥮㴠‾潶摩਻†慣档㩥琠灹潥⁦灡䍩捡敨਻†潭楮潴㩲琠灹潥⁦数晲牯慭据䵥湯瑩牯਻†汣慥䍲捡敨›⤨㴠‾潶摩਻†潦捲䝥㩃⠠ 㸽瘠楯㭤紊ਊ潣獮⁴敐晲牯慭据䍥湯整瑸㴠挠敲瑡䍥湯整瑸值牥潦浲湡散潃瑮硥呴灹⁥⁼湵敤楦敮㹤用摮晥湩摥㬩ਊ湩整晲捡⁥敐晲牯慭据健潲楶敤偲潲獰笠 挠楨摬敲㩮删慥瑣潎敤਻੽攊灸牯⁴畦据楴湯倠牥潦浲湡散牐癯摩牥笨挠楨摬敲⁮㩽倠牥潦浲湡散牐癯摩牥牐灯⥳笠 挠湯瑳嬠獩灏楴業敺Ɽ猠瑥獉灏楴業敺嵤㴠甠敳瑓瑡⡥牴敵㬩ਊ†⼯뒻迭㾬뢊袧髬㾴㼿㼿ꖊꢪ诫㾈膧㼠醞 甠敳晅敦瑣⠨ 㸽笠 †椠⁦瀨潲散獳攮癮丮䑏彅久⁖㴽‽搧癥汥灯敭瑮⤧笠 ††瀠牥潦浲湡散潍楮潴⹲瑳牡䵴湯瑩牯湩⡧㬩 †素ਊ††敲畴湲⠠ 㸽笠 ††瀠牥潦浲湡散潍楮潴⹲瑳灯潍楮潴楲杮⤨਻††㭽 素‬嵛㬩ਊ†⼯邺诬ₜ锿ꛫ€꠿裬ઘ†潣獮⁴汣慥䍲捡敨㴠⠠ 㸽笠 †愠楰慃档⹥汣慥⡲㬩 素਻ ⼠ 냪蒹㿬겻ꃫ㾉㼿蒏⠠룫벝뀿㿬냪₀꟬㾀颕㼿닪낚਩†潣獮⁴潦捲䝥⁃‽⤨㴠‾੻††晩⠠眨湩潤⁷獡愠祮⸩捧 ੻†††眨湩潤⁷獡愠祮⸩捧⤨਻††੽†㭽ਊ†潣獮⁴慶畬㩥倠牥潦浲湡散潃瑮硥呴灹⁥‽੻††獩灏楴業敺Ɽ †猠瑥獉灏楴業敺Ɽ †挠捡敨›灡䍩捡敨ਬ††潭楮潴㩲瀠牥潦浲湡散潍楮潴Ⱳ †挠敬牡慃档ⱥ †映牯散䍇 素਻ 爠瑥牵⁮ਨ††值牥潦浲湡散潃瑮硥⹴牐癯摩牥瘠污敵笽慶畬絥ਾ†††捻楨摬敲絮 †㰠倯牥潦浲湡散潃瑮硥⹴牐癯摩牥ਾ†㬩紊ਊ硥潰瑲映湵瑣潩⁮獵健牥潦浲湡散⤨笠 挠湯瑳挠湯整瑸㴠甠敳潃瑮硥⡴敐晲牯慭据䍥湯整瑸㬩 椠⁦挨湯整瑸㴠㴽甠摮晥湩摥 ੻††桴潲⁷敮⁷牅潲⡲甧敳敐晲牯慭据⁥畭瑳戠⁥獵摥眠瑩楨⁮⁡敐晲牯慭据健潲楶敤❲㬩 素 爠瑥牵⁮潣瑮硥㭴紊ਊ⼯㼠ꖊ鲵ꃬ㾁䠿䍏攊灸牯⁴畦据楴湯眠瑩偨牥潦浲湡散值攠瑸湥獤删捥牯㱤瑳楲杮‬湡㹹⠾ 䌠浯潰敮瑮›敒捡⹴潃灭湯湥呴灹㱥㹐⤊›敒捡⹴䍆值‾੻†敲畴湲映湵瑣潩⁮楗桴敐晲牯慭据⡥牰灯㩳倠 ੻††敲畴湲⠠ ††㰠敐晲牯慭据健潲楶敤㹲 †††㰠潃灭湯湥⁴⹻⸮牰灯絳⼠ਾ†††⼼敐晲牯慭据健潲楶敤㹲 †⤠਻†㭽紊
+"use client";
+import { createContext, useContext, useState } from "react";
+
+interface PerformanceMetrics {
+  fps: number;
+  memoryUsage: number;
+  clearCache: () => void;
+}
+
+export const PerformanceContext = createContext<PerformanceMetrics>({
+  fps: 60,
+  memoryUsage: 0,
+  clearCache: () => {},
+});
+
+export function PerformanceProvider({ children }: { children: React.ReactNode }) {
+  const [fps] = useState(60);
+  const [memoryUsage] = useState(0);
+  const clearCache = () => {};
+
+  return (
+    <PerformanceContext.Provider value={{ fps, memoryUsage, clearCache }}>
+      {children}
+    </PerformanceContext.Provider>
+  );
+}
+
+export function usePerformanceContext() {
+  return useContext(PerformanceContext);
+}
