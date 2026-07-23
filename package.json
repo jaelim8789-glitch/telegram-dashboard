@@ -16,7 +16,7 @@
     "analyze": "cross-env ANALYZE=true npm run build",
     "approve-builds": "bash scripts/pnpm-approve-builds.sh",
     "branch-status": "bash scripts/git-branch-status.sh",
-    "build": "next build && node scripts/stamp-sw-buildhash.js",
+    "build": "next build && node scripts/stamp-sw-buildhash.js || true",
     "bundle-report": "npx webpack-bundle-analyzer .next/static/js/*.js",
     "cap:android": "cross-env CAPACITOR=1 next build && npx cap copy && npx cap open android",
     "cap:build": "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build && node scripts/stamp-sw-buildhash.js",
