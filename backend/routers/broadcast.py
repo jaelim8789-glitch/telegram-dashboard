@@ -181,11 +181,10 @@ async def get_recurring_broadcasts():
 async def get_broadcast(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        broadcasts = await manager.get_broadcasts(limit=500)
-        for b in broadcasts:
-            if b.id == broadcast_id:
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -213,21 +212,18 @@ async def get_logs(
 async def retry_broadcast(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                runtime = manager.get_runtime(b.account_id)
-                if not runtime:
-                    raise HTTPException(status_code=404, detail="Account runtime not found")
-                # Reset status to pending and clear error so the scheduler re-dispatches
-                b.status = "pending"
-                b.error_message = None
-                b.failure_info = None
-                b.sent_at = None
-                # Re-enqueue via the runtime's broadcast queue
-                await runtime.broadcast_queue.enqueue(b)
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        runtime = manager.get_runtime(b.account_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Account runtime not found")
+        b.status = "pending"
+        b.error_message = None
+        b.failure_info = None
+        b.sent_at = None
+        await runtime.broadcast_queue.enqueue(b)
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -238,23 +234,19 @@ async def retry_broadcast(broadcast_id: str):
 async def cancel_broadcast(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                # Actually cancel via the owning runtime's BroadcastQueue
-                runtime = manager.get_runtime(b.account_id)
-                if not runtime:
-                    raise HTTPException(status_code=404, detail="Account runtime not found")
-                cancelled = runtime.broadcast_queue.cancel_broadcast(broadcast_id)
-                # After cancel_broadcast() — even if it was queued via _cancelled_set —
-                # update the broadcast object's status so the response is consistent.
-                if b.status == "pending":
-                    b.status = "cancelled"
-                    b.cancelled_at = datetime.now(timezone.utc).isoformat()
-                if not cancelled and b.status != "cancelled":
-                    raise HTTPException(status_code=404, detail="Broadcast not found in queue")
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        runtime = manager.get_runtime(b.account_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Account runtime not found")
+        cancelled = runtime.broadcast_queue.cancel_broadcast(broadcast_id)
+        if b.status == "pending":
+            b.status = "cancelled"
+            b.cancelled_at = datetime.now(timezone.utc).isoformat()
+        if not cancelled and b.status != "cancelled":
+            raise HTTPException(status_code=404, detail="Broadcast not found in queue")
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -265,20 +257,17 @@ async def cancel_broadcast(broadcast_id: str):
 async def send_now(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                runtime = manager.get_runtime(b.account_id)
-                if not runtime:
-                    raise HTTPException(status_code=404, detail="Account runtime not found")
-                # Clear scheduled_at so it sends immediately
-                b.scheduled_at = None
-                b.status = "pending"
-                b.error_message = None
-                # Enqueue for immediate dispatch
-                await runtime.broadcast_queue.enqueue(b)
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        runtime = manager.get_runtime(b.account_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Account runtime not found")
+        b.scheduled_at = None
+        b.status = "pending"
+        b.error_message = None
+        await runtime.broadcast_queue.enqueue(b)
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -289,15 +278,14 @@ async def send_now(broadcast_id: str):
 async def pause_broadcast(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                runtime = manager.get_runtime(b.account_id)
-                if not runtime:
-                    raise HTTPException(status_code=404, detail="Account runtime not found")
-                b.is_recurring_paused = True
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        runtime = manager.get_runtime(b.account_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Account runtime not found")
+        b.is_recurring_paused = True
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -308,15 +296,14 @@ async def pause_broadcast(broadcast_id: str):
 async def unpause_broadcast(broadcast_id: str):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                runtime = manager.get_runtime(b.account_id)
-                if not runtime:
-                    raise HTTPException(status_code=404, detail="Account runtime not found")
-                b.is_recurring_paused = False
-                return b
-        raise HTTPException(status_code=404, detail="Broadcast not found")
+        b = await manager.get_broadcast_by_id(broadcast_id)
+        if not b:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        runtime = manager.get_runtime(b.account_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Account runtime not found")
+        b.is_recurring_paused = False
+        return b
     except HTTPException:
         raise
     except Exception as e:
@@ -327,12 +314,7 @@ async def unpause_broadcast(broadcast_id: str):
 async def get_broadcast_children(broadcast_id: str, limit: int = Query(50), offset: int = Query(0)):
     manager = RuntimeManager.get_instance()
     try:
-        all_broadcasts = await manager.get_broadcasts(limit=500)
-        parent = None
-        for b in all_broadcasts:
-            if b.id == broadcast_id:
-                parent = b
-                break
+        parent = await manager.get_broadcast_by_id(broadcast_id)
         if not parent:
             raise HTTPException(status_code=404, detail="Broadcast not found")
         # Return all broadcasts with matching recurring_interval_minutes as children

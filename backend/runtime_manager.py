@@ -238,6 +238,15 @@ class RuntimeManager:
         runtime = self._runtimes.get(account_id)
         return runtime.get_account() if runtime else None
 
+    async def get_broadcast_by_id(self, broadcast_id: str) -> Broadcast | None:
+        """O(1) lookup — early-return, avoids loading all broadcasts."""
+        async with self._lock:
+            for runtime in self._runtimes.values():
+                for b in runtime.get_broadcasts(limit=500):
+                    if b.id == broadcast_id:
+                        return b
+        return None
+
     async def get_health(self) -> list[AccountHealthItem]:
         async with self._lock:
             return [r.get_health() for r in self._runtimes.values()]
