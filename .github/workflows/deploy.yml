@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     branches: [master]
-    paths-ignore: ['**.md', 'docs/**', 'DOCS/**', 'scripts/**', '.kilo/**', 'telegram-dashboard-backend/**', 'backend/**']
+    paths-ignore: ['**.md', 'docs/**', 'scripts/**', '.kilo/**']
   workflow_dispatch:
     inputs:
       target:
