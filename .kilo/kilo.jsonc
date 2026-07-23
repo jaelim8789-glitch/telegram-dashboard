@@ -3,6 +3,7 @@
   "snapshot": false,
   "instructions": [
     "AGENTS.md",
+    ".kilo/AGENTS_SHARED.md",
     ".kilo/DEVEL_SPEED.md"
   ],
   "permission": {
@@ -26,6 +27,7 @@
   },
   "compaction": {
     "auto": true,
-    "prune": true
+    "prune": true,
+    "interval": 3
   }
 }

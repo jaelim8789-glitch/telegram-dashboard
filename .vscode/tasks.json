@@ -2,48 +2,73 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Dev: Start all (frontend + backend)",
+      "label": "dev",
       "type": "shell",
-      "command": ".\\dev.ps1",
-      "windows": { "command": ".\\dev.ps1" },
-      "group": { "kind": "build", "isDefault": true },
-      "presentation": { "panel": "new", "group": "dev" }
+      "command": "pwsh.exe",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./dev.ps1"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "TeleMon 개발 서버 시작 (백엔드 + 프론트엔드)"
     },
     {
-      "label": "Dev: Frontend only",
+      "label": "dev-fast",
       "type": "shell",
-      "command": "pnpm dev",
+      "command": "pwsh.exe",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./scripts/install_uv_deps.ps1"
+      ],
       "group": "build",
-      "presentation": { "panel": "new", "group": "dev" }
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "TeleMon 빠른 종속성 설치 (uv 사용)"
     },
     {
-      "label": "Dev: Backend only",
+      "label": "test-smoke",
       "type": "shell",
-      "command": "cd backend && $env:RELOAD='true'; $env:ENVIRONMENT='development'; python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
-      "windows": { "command": "cd backend; $env:RELOAD='true'; $env:ENVIRONMENT='development'; python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000" },
-      "group": "build",
-      "presentation": { "panel": "new", "group": "dev" }
-    },
-    {
-      "label": "Build: Frontend production",
-      "type": "shell",
-      "command": "pnpm build",
-      "group": "build",
-      "presentation": { "panel": "new", "group": "build" }
-    },
-    {
-      "label": "TypeCheck",
-      "type": "shell",
-      "command": "pnpm typecheck",
-      "group": "build",
-      "presentation": { "panel": "new", "group": "test" }
-    },
-    {
-      "label": "Lint",
-      "type": "shell",
-      "command": "pnpm lint",
-      "group": "build",
-      "presentation": { "panel": "new", "group": "test" }
+      "command": "pwsh.exe",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./scripts/run_smoke_tests.ps1"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "TeleMon 스모크 테스트 실행 (3개 핵심 테스트)"
     }
   ]
 }
