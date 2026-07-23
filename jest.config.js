@@ -2,7 +2,7 @@
  * Jest 설정 파일 - 스냅샷 테스트를 위한 설정
  */
 module.exports = {
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: [
     '**/__tests__/**/*.+(ts|tsx|js)',

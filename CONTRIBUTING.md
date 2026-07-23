@@ -1,60 +1,110 @@
 # Contributing to TeleMon
 
-## Overview
-TeleMon is a Telegram account management dashboard with a Next.js frontend and FastAPI backend. This guide covers the workflow all contributors should follow.
-
-## Repo Structure
-- c:\Dev\TeleMon — Next.js frontend (Git root)
-- 	elegram-dashboard-backend/ — FastAPI backend (**separate git repo**)
-- Worktrees at c:\Dev\TeleMon-* for development isolation
+Thank you for your interest in contributing to TeleMon! This document outlines the guidelines for contributing to this project.
 
 ## Branch Strategy
-| Branch | Purpose |
-|--------|---------|
-| master | Production — merge-only via PR |
-| worktree/<agent> | Individual developer worktrees |
-| eat/* | Feature branches (created from master) |
-| ix/* | Bug fix branches |
-| elease-* | Release staging (managed by CI) |
 
-## Commit Rules
-1. **Format**: 	ype(scope): description — e.g. eat(send): add bulk send UI
-2. **Types**: eat, ix, efactor, perf, docs, chore, ci, 	est
-3. **One logical change per commit** — no batch commits
-4. package.json changes **must** include pnpm-lock.yaml in the same commit
-5. Run pnpm build before committing
-6. Never force-push to shared branches
+- `master` - Production-ready code
+- `develop` - Integration branch for features
+- Feature branches: `feature/<feature-name>`, `bugfix/<issue-id>-<short-description>`, `hotfix/<issue-id>-<short-description>`
+- Release branches: `release/v<version>`
 
-## PR Workflow
-1. Create a worktree: git worktree add .kilo/worktrees/feat-name origin/master -b feat/name
-2. Develop and commit in the worktree
-3. Push the branch: git push origin feat/name
-4. Open a PR against master on GitHub
-5. Ensure all CI checks pass (build, typecheck, lint, tests)
-6. Request review from at least one team member
-7. Merge via **Squash & Merge** (keeps history clean)
+## Commit Convention
 
-## Code Standards
-- Frontend: React 18 + Next.js App Router + Tailwind v4 + Zustand
-- Backend: FastAPI + SQLAlchemy async + Pydantic v2
-- Package manager: **pnpm only** (never npm)
-- Use @/ path alias for frontend imports
-- All new UI components go in src/components/ui/
-- All API routes in src/lib/api.ts
-- All constants in src/lib/constants/
-- **Never put JSX in .ts files** — use .tsx
+We follow the Conventional Commits specification:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `build`: Changes that affect the build system or external dependencies
+- `ci`: Changes to our CI configuration files and scripts
+- `chore`: Other changes that don't modify src or test files
+
+### Examples
+```
+feat(auth): add login with social accounts
+fix(api): resolve timeout issue in user profile endpoint
+docs(readme): update installation instructions
+```
+
+## Pull Request Guidelines
+
+### Before Submitting
+- Ensure all tests pass (`npm run test`)
+- Run linter (`npm run lint`) and formatter (`npm run format`)
+- Run type checking (`npm run typecheck`)
+- Update documentation if necessary
+- Squash commits if they don't represent meaningful milestones
+
+### PR Description Template
+```
+## Summary
+Brief description of changes
+
+## Changes Made
+- List of changes made
 
 ## Testing
-- Frontend: Jest for unit tests, Playwright for E2E
-- Backend: pytest
-- Write tests alongside features, not after
+- How was this tested?
+- What scenarios were covered?
 
-## Setup
-`ash
-pnpm install
-pnpm dev        # frontend only
-pnpm dev:with-backend  # frontend + backend
-`
+## Notes
+- Any additional notes for reviewers
+```
 
-## Need Help?
-Open a GitHub Discussion or ask in the team channel.
+### Review Process
+- At least one approval required before merging
+- Address all review comments before merging
+- PR author should merge their own PR after approval
+
+## Code Quality Standards
+
+### TypeScript
+- All code must pass type checking (`npx tsc --noEmit`)
+- Follow strict mode settings in tsconfig.json
+- Use explicit types where inference isn't clear
+
+### Testing
+- New features must include unit tests
+- Bug fixes should include regression tests
+- Aim for 80%+ test coverage on critical paths
+
+### Documentation
+- Exported functions/classes must have JSDoc
+- Complex logic should have inline comments
+- Update README if public APIs change
+
+## Local Development Setup
+
+1. Fork and clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment: copy `.env.example` to `.env.local`
+4. Run development server: `npm run dev`
+
+## Pre-push Hooks
+
+The project includes pre-push hooks that run:
+- Build validation (`npm run build`)
+- Type checking (`npx tsc --noEmit`)
+- Linting (`npm run lint`)
+
+## Getting Help
+
+- For questions about contribution, create a GitHub issue
+- For bugs, please include reproduction steps
+- For feature requests, explain the use case
+
+Thank you for contributing!

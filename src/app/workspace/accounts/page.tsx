@@ -1,4 +1,5 @@
-﻿import type { Metadata } from "next";
+"use client";
+import type { Metadata } from "next";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import { AccountsPageClient } from "./AccountsPageClient";
 

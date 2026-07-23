@@ -1,10 +1,12 @@
 /**
  * Jest 테스트 설정 파일
  */
-import '@testing-library/jest-dom';
+require('@testing-library/jest-dom');
+
+const win = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {});
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(win, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
     matches: false,
@@ -19,14 +21,14 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock ResizeObserver
-window.ResizeObserver = jest.fn().mockImplementation(() => ({
+win.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
 
 // Mock Intersection Observer
-window.IntersectionObserver = jest.fn().mockImplementation(() => ({
+win.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
