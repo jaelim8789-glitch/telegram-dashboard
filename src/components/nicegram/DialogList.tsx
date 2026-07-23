@@ -1,62 +1,62 @@
 "use client";
 
 /**
- * Nicegram DialogList ? ÁÂÃø Ã¤ÆÃ¹æ ¸ñ·Ï ÆĞ³Î
+ * Nicegram DialogList ? ÃÃ‚ÃƒÃ¸ ÃƒÂ¤Ã†ÃƒÂ¹Ã¦ Â¸Ã±Â·Ã Ã†ÃÂ³Ã
  *
- * ±âÁ¸ Telegram DialogList¸¦ ±×´ë·Î Àç»ç¿ë. º°µµ ¼öÁ¤ ±İÁö.
+ * Â±Ã¢ÃÂ¸ Telegram DialogListÂ¸Â¦ Â±Ã—Â´Ã«Â·Ã Ã€Ã§Â»Ã§Â¿Ã«. ÂºÂ°ÂµÂµ Â¼Ã¶ÃÂ¤ Â±ÃÃÃ¶.
  */
 
 import { useState } from "react";
 import { DialogList as BaseDialogList } from "@/components/telegram-chat/DialogList";
 
-// ¦¡¦¡ Demo / placeholder data ¦¡¦¡
+// Â¦Â¡Â¦Â¡ Demo / placeholder data Â¦Â¡Â¦Â¡
 const MOCK_DIALOGS = [
   {
     id: 1,
-    title: "±è°í°´",
+    title: "Â±Ã¨Â°Ã­Â°Â´",
     type: "private" as const,
     unread_count: 3,
-    last_message: "³×, ¾Ë°Ú½À´Ï´Ù. È®ÀÎÇØº¼°Ô¿ä.",
+    last_message: "Â³Ã—, Â¾Ã‹Â°ÃšÂ½Ã€Â´ÃÂ´Ã™. ÃˆÂ®Ã€ÃÃ‡Ã˜ÂºÂ¼Â°Ã”Â¿Ã¤.",
     last_message_date: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     pinned: true,
     participants_count: 0,
   },
   {
     id: 2,
-    title: "ÀÌ´ë¸®",
+    title: "Ã€ÃŒÂ´Ã«Â¸Â®",
     type: "private" as const,
     unread_count: 0,
-    last_message: "°¨»çÇÕ´Ï´Ù!",
+    last_message: "Â°Â¨Â»Ã§Ã‡Ã•Â´ÃÂ´Ã™!",
     last_message_date: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     pinned: false,
     participants_count: 0,
   },
   {
     id: 3,
-    title: "ÇÁ·Î¸ğ¼Ç ´ÜÃ¼¹æ",
+    title: "Ã‡ÃÂ·ÃÂ¸Ã°Â¼Ã‡ Â´ÃœÃƒÂ¼Â¹Ã¦",
     type: "group" as const,
     unread_count: 12,
-    last_message: "¹Ú¸Å´ÏÀú: »õ ÇÁ·Î¸ğ¼Ç ¾È³»µå¸³´Ï´Ù",
+    last_message: "Â¹ÃšÂ¸Ã…Â´ÃÃ€Ãº: Â»Ãµ Ã‡ÃÂ·ÃÂ¸Ã°Â¼Ã‡ Â¾ÃˆÂ³Â»ÂµÃ¥Â¸Â³Â´ÃÂ´Ã™",
     last_message_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     pinned: false,
     participants_count: 45,
   },
   {
     id: 4,
-    title: "°øÁö Ã¤³Î",
+    title: "Â°Ã¸ÃÃ¶ ÃƒÂ¤Â³Ã",
     type: "channel" as const,
     unread_count: 1,
-    last_message: "[°øÁö] ½Ã½ºÅÛ Á¡°Ë ¾È³»",
+    last_message: "[Â°Ã¸ÃÃ¶] Â½ÃƒÂ½ÂºÃ…Ã› ÃÂ¡Â°Ã‹ Â¾ÃˆÂ³Â»",
     last_message_date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     pinned: false,
     participants_count: 128,
   },
   {
     id: 5,
-    title: "ÃÖºÎÀå",
+    title: "ÃƒÃ–ÂºÃÃ€Ã¥",
     type: "private" as const,
     unread_count: 0,
-    last_message: "³×, ³»ÀÏ È¸ÀÇ ¶§ ³íÀÇÇÏÁÒ",
+    last_message: "Â³Ã—, Â³Â»Ã€Ã ÃˆÂ¸Ã€Ã‡ Â¶Â§ Â³Ã­Ã€Ã‡Ã‡ÃÃÃ’",
     last_message_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     pinned: false,
     participants_count: 0,

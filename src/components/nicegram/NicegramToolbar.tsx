@@ -18,8 +18,8 @@ export function NicegramToolbar() {
       <button
         type="button"
         className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-        title="°Ë»ö"
-        aria-label="°Ë»ö"
+        title="Â°Ã‹Â»Ã¶"
+        aria-label="Â°Ã‹Â»Ã¶"
       >
         <Search className="h-3.5 w-3.5" />
       </button>
@@ -28,8 +28,8 @@ export function NicegramToolbar() {
       <button
         type="button"
         className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-        title="ÇÊÅÍ"
-        aria-label="ÇÊÅÍ"
+        title="Ã‡ÃŠÃ…Ã"
+        aria-label="Ã‡ÃŠÃ…Ã"
       >
         <Filter className="h-3.5 w-3.5" />
       </button>
@@ -38,8 +38,8 @@ export function NicegramToolbar() {
       <button
         type="button"
         className="flex h-7 w-7 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-        title="»õ·Î°íÄ§"
-        aria-label="»õ·Î°íÄ§"
+        title="Â»ÃµÂ·ÃŽÂ°Ã­Ã„Â§"
+        aria-label="Â»ÃµÂ·ÃŽÂ°Ã­Ã„Â§"
       >
         <RefreshCw className="h-3.5 w-3.5" />
       </button>
@@ -47,28 +47,28 @@ export function NicegramToolbar() {
       {/* Divider */}
       <div className="mx-1 h-5 w-px bg-app-border" />
 
-      {/* Send button ¡æ /send category */}
+      {/* Send button Â¡Ã¦ /send category */}
       <button
         type="button"
         onClick={() => setCategory("send")}
         className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-app-text hover:bg-app-card-hover transition-colors"
-        title="¹ß¼ÛÀ¸·Î ÀÌµ¿"
-        aria-label="¹ß¼ÛÀ¸·Î ÀÌµ¿"
+        title="Â¹ÃŸÂ¼Ã›Ã€Â¸Â·ÃŽ Ã€ÃŒÂµÂ¿"
+        aria-label="Â¹ÃŸÂ¼Ã›Ã€Â¸Â·ÃŽ Ã€ÃŒÂµÂ¿"
       >
         <Send className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">¹ß¼Û</span>
+        <span className="hidden sm:inline">Â¹ÃŸÂ¼Ã›</span>
       </button>
 
-      {/* Macro button ¡æ /macro category */}
+      {/* Macro button Â¡Ã¦ /macro category */}
       <button
         type="button"
         onClick={() => setCategory("macro")}
         className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-app-text hover:bg-app-card-hover transition-colors"
-        title="¸ÅÅ©·Î·Î ÀÌµ¿"
-        aria-label="¸ÅÅ©·Î·Î ÀÌµ¿"
+        title="Â¸Ã…Ã…Â©Â·ÃŽÂ·ÃŽ Ã€ÃŒÂµÂ¿"
+        aria-label="Â¸Ã…Ã…Â©Â·ÃŽÂ·ÃŽ Ã€ÃŒÂµÂ¿"
       >
         <Workflow className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">¸ÅÅ©·Î</span>
+        <span className="hidden sm:inline">Â¸Ã…Ã…Â©Â·ÃŽ</span>
       </button>
     </div>
   );
