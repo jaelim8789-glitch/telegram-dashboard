@@ -411,21 +411,6 @@ export class ApiError extends Error {
   }
 }
 
-        } catch (bgErr) {
-          clearTimeout(bgTimeout);
-          if (attempt < MAX_RETRIES - 1) continue;
-          throw bgErr;
-        }
-      }
-      throw firstError;
-    })();
-
-    return lastError;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
 export async function fetchAccounts(): Promise<Account[]> {
   const body = await request<{ items: ApiAccount[] }>("/api/accounts");
   return (body.items ?? body).map(toAccount);
