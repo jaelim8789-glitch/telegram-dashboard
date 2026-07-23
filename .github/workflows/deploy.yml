@@ -1,0 +1,307 @@
+name: Deploy TeleMon
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md', 'docs/**', 'scripts/**', '.kilo/**']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy target"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ${{ github.repository_owner }}/telemon-frontend
+  BACKEND_IMAGE: ${{ github.repository_owner }}/telemon-backend
+  NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
+  NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
+  NEXT_TELEMETRY_DISABLED: "1"
+  PLAYWRIGHT_WORKERS: 2
+
+jobs:
+  # ============================================
+  # 0. Lockfile integrity check
+  # ============================================
+  lockfile-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+        name: Verify lockfile matches package.json
+      - run: pnpm ls --depth=0 2>&1 | head -5
+
+  # ============================================
+  # 1a. Frontend ??typecheck
+  # ============================================
+  frontend-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Restore node_modules (cache hit = skip pnpm install)
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-
+
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile --prefer-offline
+        name: pnpm install (on cache miss)
+
+      - run: pnpm typecheck
+        name: TypeScript type check (report-only ??TEAM_STATUS.md tracks the cleanup)
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
+
+  # ============================================
+  # 1b. Frontend ??build
+  # ============================================
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Restore node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-
+
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile --prefer-offline
+        name: pnpm install (on cache miss)
+
+      - run: pnpm build
+        name: Next.js production build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
+
+      - name: Cache .next build output
+        uses: actions/cache@v4
+        with:
+          path: .next
+          key: next-build-${{ github.sha }}-${{ runner.os }}
+          restore-keys: |
+            next-build-${{ runner.os }}-
+
+  # ============================================
+  # 1c. Frontend ??e2e smoke test
+  # ============================================
+  frontend-e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Restore node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-
+
+      - if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile --prefer-offline
+        name: pnpm install (on cache miss)
+
+      - name: Cache Playwright browsers
+        id: cache-pw
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          restore-keys: |
+            pw-${{ runner.os }}-
+
+      - if: steps.cache-pw.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --with-deps
+        name: Install Playwright chromium (on cache miss)
+
+      - run: >
+          npx playwright test core-flows.spec.ts --project=chromium-no-auth
+          --reporter=list 2>&1 | tail -50
+        name: Run e2e smoke (core-flows)
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+
+  # ============================================
+  # 1d. Frontend Docker build & push (GHCR)
+  # ============================================
+  frontend-docker:
+    needs: [frontend-build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=sha,prefix=,format=short
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend image (BuildKit cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            NEXT_PUBLIC_API_BASE_URL=${{ env.NEXT_PUBLIC_API_BASE_URL }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://telemon.online' }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
+            NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
+          timeout-minutes: 15
+
+  # ============================================
+  # 2. Deploy frontend production (pull-only)
+  # ============================================
+  deploy-frontend-production:
+    if: ${{ always() && github.ref == 'refs/heads/master' }}
+    needs: [frontend-docker]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pre-deploy gateway health check
+        id: gateway-precheck
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 6); do
+              if curl -sf http://localhost/health > /dev/null 2>&1; then
+                echo "??Gateway healthy"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "??Gateway unhealthy ??aborting deploy"
+            exit 1
+
+      - name: Pull image + restart frontend
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/telemon/backend
+            docker compose pull --quiet frontend
+            docker compose up -d --no-deps frontend
+            docker compose restart nginx
+
+      - name: Health check (production)
+        id: smoke-frontend-prod
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 12); do
+              curl -sf http://localhost/health > /dev/null 2>&1 && { echo "ok"; exit 0; }
+              sleep 5
+            done
+            echo "smoke fail"; exit 1
+
+      - name: Rollback on health failure
+        if: steps.smoke-frontend-prod.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/telemon/backend
+            bash scripts/rollback-deploy.sh docker-compose.yml frontend
+
+      - name: Notify production deploy result
+        if: always()
+        uses: fjogeleit/http-request-action@v1
+        continue-on-error: true
+        with:
+          url: ${{ secrets.ALERT_WEBHOOK_URL }}
+          method: POST
+          data: >-

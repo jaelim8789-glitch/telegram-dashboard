@@ -1,0 +1,424 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]: TM
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: TeleMon
+      - paragraph [ref=e11]: 앱 환경 준비 중
+    - paragraph [ref=e12]: Loading...
+  - generic [ref=e15]:
+    - paragraph [ref=e16]: TeleMon — 텔레그램 자동화 플랫폼
+    - heading "TIME IS LIMITED. POSSIBILITY IS NOT." [level=1] [ref=e20]: TIME IS LIMITED.POSSIBILITY IS NOT.
+    - paragraph [ref=e21]: 시간은 유한하지만, 가능성은 무한하다. 현실에 안주하지 않는 사람들을 위해.
+    - paragraph [ref=e23]: “BUILT FOR THOSE WHO REFUSE TO SETTLE.”
+    - generic [ref=e24]:
+      - link "기능" [ref=e25] [cursor=pointer]:
+        - /url: /features
+      - link "시작하기" [ref=e26] [cursor=pointer]:
+        - /url: /signup
+  - generic [ref=e36]:
+    - generic [ref=e37]:
+      - generic [ref=e38]: 230+
+      - generic [ref=e39]: 활성 계정
+    - generic [ref=e40]:
+      - generic [ref=e41]: 1,284
+      - generic [ref=e42]: 오늘 발송
+    - generic [ref=e43]:
+      - generic [ref=e44]: 99.8%
+      - generic [ref=e45]: 가동률
+    - generic [ref=e46]:
+      - generic [ref=e47]: 50K+
+      - generic [ref=e48]: 전체 메시지
+  - generic [ref=e51]:
+    - paragraph [ref=e52]: 다양한 분야에서 신뢰하는 플랫폼
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - listitem [ref=e55]: 스타트업
+        - listitem [ref=e60]: 마케팅 에이전시
+        - listitem [ref=e63]: IT 기업
+        - listitem [ref=e68]: 커뮤니티 운영자
+        - listitem [ref=e72]: 교육 기관
+        - listitem [ref=e76]: 병원
+        - listitem [ref=e80]: 핀테크
+        - listitem [ref=e86]: 게임 스튜디오
+        - listitem [ref=e89]: 부동산
+        - listitem [ref=e93]: 자동화 전문가
+        - listitem [ref=e97]: 디지털 마케터
+        - listitem [ref=e100]: 공공기관
+        - listitem [ref=e103]: 비영리단체
+        - listitem [ref=e106]: P2P
+        - listitem [ref=e110]: 크립토
+        - listitem [ref=e117]: 물류
+        - listitem [ref=e121]: 컨설팅
+        - listitem [ref=e125]: SaaS
+        - listitem [ref=e130]: 연구소
+        - listitem [ref=e134]: 은행
+      - generic [ref=e140]: 스타트업 마케팅 에이전시 IT 기업 커뮤니티 운영자 교육 기관 병원 핀테크 게임 스튜디오 부동산 자동화 전문가 디지털 마케터 공공기관 비영리단체 P2P 크립토 물류 컨설팅 SaaS 연구소 은행
+  - generic [ref=e209]:
+    - generic [ref=e210]:
+      - generic [ref=e211]:
+        - paragraph [ref=e212]: AI 어시스턴트
+        - heading "나만의 AI와 함께" [level=2] [ref=e213]
+        - paragraph [ref=e214]: AI 비서가 대화하듯 채널 운영을 도와줍니다.
+      - generic [ref=e215]:
+        - generic [ref=e216]:
+          - generic [ref=e217]: TM
+          - heading "질문하면 AI가 바로 답변" [level=3] [ref=e221]
+          - paragraph [ref=e222]: 채널 운영에 대한 질문을 자연스럽게 물어보세요. AI 비서가 실시간으로 도와줍니다.
+        - generic [ref=e223]:
+          - generic [ref=e224]: TM
+          - heading "24시간 AI 어시스턴트" [level=3] [ref=e229]
+          - paragraph [ref=e230]: 언제든지 AI가 대기하고 있어, 밤낮 없이 채널 운영을 도와줍니다.
+        - generic [ref=e231]:
+          - generic [ref=e232]: TM
+          - heading "채널 운영을 AI에게 맡기세요" [level=3] [ref=e237]
+          - paragraph [ref=e238]: AI가 자동으로 메시지를 보내고, 응답하고, 채널을 관리합니다.
+        - generic [ref=e239]:
+          - generic [ref=e240]: TM
+          - heading "지능형 대화" [level=3] [ref=e245]
+          - paragraph [ref=e246]: AI는 단순한 키워드가 아닌, 진짜 대화를 이해하고 자연스럽게 응답합니다.
+    - img "AI 비서 이미지" [ref=e249]
+  - generic [ref=e252]:
+    - generic [ref=e253]:
+      - paragraph [ref=e256]: 보안
+      - heading "당신의 데이터는 안전합니다" [level=2] [ref=e260]
+      - paragraph [ref=e261]: 보안은 선택이 아닌 기본입니다. TeleMon은 안전하게 보호합니다.
+    - generic [ref=e263]:
+      - generic [ref=e264]:
+        - generic [ref=e265]: TM
+        - heading "암호화 저장" [level=3] [ref=e270]
+        - paragraph [ref=e271]: 모든 Telegram 세션 데이터는 AES-256으로 암호화되어 저장됩니다.
+      - generic [ref=e272]:
+        - generic [ref=e273]: TM
+        - heading "API 키 인증" [level=3] [ref=e278]
+        - paragraph [ref=e279]: 전화번호 인증을 통한 API 키 발급으로 안전하게 외부 연동하십시오.
+      - generic [ref=e280]:
+        - generic [ref=e281]: TM
+        - heading "투명한 로깅" [level=3] [ref=e286]
+        - paragraph [ref=e287]: 모든 발송 내역이 기록되며, 실패 원인까지 상세히 추적 가능합니다.
+      - generic [ref=e288]:
+        - generic [ref=e289]: TM
+        - heading "FloodWait 보호" [level=3] [ref=e293]
+        - paragraph [ref=e294]: Telegram 제한을 자동 감지하고 준수하여 계정을 보호합니다.
+      - generic [ref=e295]:
+        - generic [ref=e296]: TM
+        - heading "세션 격리" [level=3] [ref=e301]
+        - paragraph [ref=e302]: 각 계정의 세션이 독립적으로 관리되어 한 계정의 오류가 다른 계정에 영향을 주지 않습니다.
+      - generic [ref=e303]:
+        - generic [ref=e304]: TM
+        - heading "자동 재인증" [level=3] [ref=e311]
+        - paragraph [ref=e312]: 세션 만료 시 자동 감지하고 재인증을 유도하여 다운타임을 줄입니다.
+  - generic [ref=e315]:
+    - generic [ref=e316]:
+      - paragraph [ref=e319]: 현실을 직시하라
+      - heading "당신, 이런 적 없습니까?" [level=2] [ref=e323]
+      - paragraph [ref=e324]: 솔직히 털어놓으십시오. 우리는 당신을 판단하지 않습니다.함께 해결하러 온 동료입니다.
+    - generic [ref=e326]:
+      - generic [ref=e327]:
+        - generic [ref=e328]: TM
+        - heading "당신은 매일 돈을 버리고 있다" [level=3] [ref=e332]
+        - paragraph [ref=e333]: 하루 8시간, 일주일에 40시간. 그중 얼마나 많은 시간을 의미 없는 반복에 쓰고 있습니까? 그 시간에 당신은 새로운 비즈니스를 만들 수 있습니다. 시간은 곧 돈입니다. 당신은 지금 현금을 창밖으로 던지고 있습니다.
+        - paragraph [ref=e335]: "\"시간은 돈이다. 당신은 매일 천만원을 길바닥에 버리고 있다.\""
+      - generic [ref=e336]:
+        - generic [ref=e337]: TM
+        - heading "기회는 당신의 무관심 속에 사라진다" [level=3] [ref=e342]
+        - paragraph [ref=e343]: 경쟁자는 이미 자동화하고 있습니다. 그들은 당신이 고객 한 명 한 명에게 답장하는 동안, 같은 시간에 수백 명에게 메시지를 보내고 있습니다. 당신의 안일함이 당신의 수익을 갉아먹고 있습니다.
+        - paragraph [ref=e345]: "\"경쟁자는 이미 자동화했다. 당신은 아직도 하나하나 수동으로 하는가?\""
+      - generic [ref=e346]:
+        - generic [ref=e347]: TM
+        - heading "똑같은 질문, 똑같은 답변, 똑같은 하루" [level=3] [ref=e351]
+        - paragraph [ref=e352]: "\"가격이 어떻게 되나요?\" — 같은 질문에 오늘도 30분을 낭비했습니다. 1년이면 182시간입니다. 그 시간에 당신은 무엇을 할 수 있었습니까?"
+        - paragraph [ref=e354]: "\"오늘도 같은 질문에 답했다. 내일도 그럴 것인가?\""
+      - generic [ref=e355]:
+        - generic [ref=e356]: TM
+        - heading "모르는 것이 가장 무섭다" [level=3] [ref=e360]
+        - paragraph [ref=e361]: 발송이 왜 실패했는지 모릅니다. 계정이 왜 차단됐는지 모릅니다. 당신은 깜깜한 방 안에서 눈을 감고 일하고 있습니다. TeleMon은 당신의 눈이 되어 모든 것을 투명하게 보여드립니다.
+        - paragraph [ref=e363]: "\"무지는 가장 큰 비용이다. 알면 통제할 수 있다.\""
+    - generic [ref=e364]:
+      - paragraph [ref=e365]: “변화를 원한다면, 지금 이 순간부터 다르게 행동하라.내일은 없다. 오늘이 전부다.”
+      - link "지금 바꾸십시오" [ref=e366] [cursor=pointer]:
+        - /url: /signup
+  - generic [ref=e372]:
+    - generic [ref=e376]:
+      - generic [ref=e377]: 처리율
+      - generic [ref=e378]: 99.8%
+    - generic [ref=e382]:
+      - generic [ref=e383]: 응답 시간
+      - generic [ref=e384]: 0.3s
+    - generic [ref=e388]:
+      - generic [ref=e389]: 가동률
+      - generic [ref=e390]: 99.9%
+    - generic [ref=e391]:
+      - generic [ref=e392]: app.telemon.online
+      - generic [ref=e400]:
+        - generic [ref=e401]:
+          - generic [ref=e402]: Dashboard
+          - generic [ref=e404]: Send
+          - generic [ref=e406]: Auto Reply
+          - generic [ref=e408]: Groups
+          - generic [ref=e410]: Logs
+          - generic [ref=e412]: Schedule
+          - generic [ref=e414]: Profile
+        - generic [ref=e416]:
+          - generic [ref=e417]: Live
+          - generic [ref=e423]:
+            - generic [ref=e424]:
+              - generic [ref=e425]: Connected Accounts
+              - generic [ref=e426]:
+                - generic [ref=e427]: "3"
+                - generic [ref=e428]: "+1"
+            - generic [ref=e429]:
+              - generic [ref=e430]: Messages Sent
+              - generic [ref=e431]:
+                - generic [ref=e432]: 1,284
+                - generic [ref=e433]: +12%
+            - generic [ref=e434]:
+              - generic [ref=e435]: Auto Replies
+              - generic [ref=e436]:
+                - generic [ref=e437]: "347"
+                - generic [ref=e438]: +8%
+          - generic [ref=e439]:
+            - generic [ref=e440]:
+              - button "자동 응답 발송" [ref=e441]
+              - button "그룹 발송" [ref=e442]
+              - button "예약 발송" [ref=e443]
+              - generic [ref=e444]: 자동 전환 중
+            - generic [ref=e450]:
+              - generic [ref=e452]:
+                - paragraph [ref=e453]: 안녕하세요, 가격이 어떻게 되나요?
+                - paragraph [ref=e454]: 14:23
+              - generic [ref=e455]:
+                - generic [ref=e456]: TM
+                - generic [ref=e457]:
+                  - paragraph [ref=e458]: "안녕하세요! 🙏 Pro 요금제: $100/월 (10개 계정) Team 요금제: $199/분기 (20개 계정) 자세한 내용은 요금제 페이지를 확인해주세요!"
+                  - paragraph [ref=e459]: 14:23
+              - generic [ref=e461]:
+                - paragraph [ref=e462]: 감사합니다! 바로 가입할게요
+                - paragraph [ref=e463]: 14:24
+  - generic [ref=e476]:
+    - generic [ref=e477]:
+      - paragraph [ref=e480]: 사용 방법
+      - heading "4단계로 완벽 자동화" [level=2] [ref=e482]
+      - paragraph [ref=e483]: 복잡한 설정 없이, 클릭 몇 번으로 끝납니다.
+    - generic [ref=e485]:
+      - generic [ref=e486]:
+        - generic [ref=e487]: TM
+        - heading "1. 계정 등록" [level=3] [ref=e491]
+        - paragraph [ref=e492]: 전화번호를 입력하고 Telegram 계정을 등록하세요. SMS/2FA 인증을 지원합니다.
+      - generic [ref=e493]:
+        - generic [ref=e494]: TM
+        - heading "2. 타겟 설정" [level=3] [ref=e501]
+        - paragraph [ref=e502]: 참여 중인 그룹에서 발송 대상을 선택하거나, 키워드로 새 그룹을 검색하세요.
+      - generic [ref=e503]:
+        - generic [ref=e504]: TM
+        - heading "3. 자동 응답" [level=3] [ref=e508]
+        - paragraph [ref=e509]: 키워드 기반 자동 응답 규칙을 설정해 들어오는 메시지에 즉시 답장하세요.
+      - generic [ref=e510]:
+        - generic [ref=e511]: TM
+        - heading "4. 자동화 실행" [level=3] [ref=e515]
+        - paragraph [ref=e516]: 예약 발송, 반복 발송, 답장매크로로 모든 메시지 작업을 자동화하세요.
+    - link "지금 시작하기" [ref=e518] [cursor=pointer]:
+      - /url: /signup
+  - generic [ref=e523]:
+    - generic [ref=e524]:
+      - paragraph [ref=e527]: 활용 사례
+      - heading "이렇게 활용하십시오" [level=2] [ref=e529]
+      - paragraph [ref=e530]: TeleMon은 다양한 분야에서 사용됩니다.
+    - generic [ref=e532]:
+      - generic [ref=e533]:
+        - generic [ref=e534]: TM
+        - heading "마케팅 자동화" [level=3] [ref=e539]
+        - paragraph [ref=e540]: 예약 발송으로 정기 뉴스레터, 프로모션 메시지를 자동 전송하십시오. 여러 그룹에 동시 발송, 이미지 첨부도 가능합니다.
+        - list [ref=e541]:
+          - listitem [ref=e542]: 예약 발송으로 일괄 전송
+          - listitem [ref=e544]: 여러 그룹 동시 타겟팅
+          - listitem [ref=e546]: 이미지 첨부
+        - link "자세히 보기" [ref=e549] [cursor=pointer]:
+          - /url: /features
+      - generic [ref=e552]:
+        - generic [ref=e553]: TM
+        - heading "고객 지원 자동화" [level=3] [ref=e557]
+        - paragraph [ref=e558]: 자주 묻는 질문에 키워드 기반 자동 응답으로 24시간 즉시 대응하십시오.
+        - list [ref=e559]:
+          - listitem [ref=e560]: 24/7 자동 응답
+          - listitem [ref=e562]: 키워드 매칭 + 조건부 응답
+          - listitem [ref=e564]: 응답 횟수 제한
+        - link "자세히 보기" [ref=e567] [cursor=pointer]:
+          - /url: /features
+      - generic [ref=e570]:
+        - generic [ref=e571]: TM
+        - heading "커뮤니티 운영" [level=3] [ref=e578]
+        - paragraph [ref=e579]: 그룹 검색으로 관련 커뮤니티를 찾고, 자동 가입하여 네트워크를 확장하십시오.
+        - list [ref=e580]:
+          - listitem [ref=e581]: 그룹 검색 → 자동 가입
+          - listitem [ref=e583]: 멀티 계정 동시 운영
+          - listitem [ref=e585]: 일일 가입 한도 관리
+        - link "자세히 보기" [ref=e588] [cursor=pointer]:
+          - /url: /features
+      - generic [ref=e591]:
+        - generic [ref=e592]: TM
+        - heading "데이터 분석 & 모니터링" [level=3] [ref=e596]
+        - paragraph [ref=e597]: 발송 로그와 전달 분석으로 메시지 도달률, 성공률, 실패 원인을 한눈에 파악하십시오.
+        - list [ref=e598]:
+          - listitem [ref=e599]: 전달 성공/실패 분석
+          - listitem [ref=e601]: 계정 건강 진단
+          - listitem [ref=e603]: Failure Intelligence
+        - link "자세히 보기" [ref=e606] [cursor=pointer]:
+          - /url: /features
+  - generic [ref=e611]:
+    - generic [ref=e612]:
+      - paragraph [ref=e615]: 새로운 기능
+      - heading "이제 AI와 함께 운영하십시오" [level=2] [ref=e617]
+      - paragraph [ref=e618]: TeleMon의 최신 기능으로 그룹 운영을 한 단계 업그레이드하세요.
+    - generic [ref=e620]:
+      - generic [ref=e621]:
+        - generic [ref=e622]: TM
+        - generic [ref=e623]: NEW
+        - heading "AI 비서와 채팅" [level=3] [ref=e632]
+        - paragraph [ref=e633]: 고도로 훈련된 AI 비서에게 그룹 운영, 메시지 전략, 일정 관리를 물어보세요. 자연어로 명령하고 즉시 실행합니다.
+        - list [ref=e634]:
+          - listitem [ref=e635]: DeepSeek 기반 지능형 에이전트
+          - listitem [ref=e638]: 레벨업 & 경험치 시스템
+          - listitem [ref=e641]: 업무 추천 / 일정 제안
+        - link "AI 비서 사용해보기" [ref=e645] [cursor=pointer]:
+          - /url: /app/chat
+      - generic [ref=e648]:
+        - generic [ref=e649]: TM
+        - generic [ref=e650]: NEW
+        - heading "랜덤 리플라이" [level=3] [ref=e662]
+        - paragraph [ref=e663]: 여러 응답 템플릿 중 하나를 무작위로 골라 자동 답장합니다. 정해진 답변이 아닌, 자연스러운 대화를 연출하세요.
+        - list [ref=e664]:
+          - listitem [ref=e665]: 여러 템플릿 간 랜덤 선택
+          - listitem [ref=e668]: 조건부 응답 트리거
+          - listitem [ref=e671]: 사용자 지정 응답 풀
+        - link "AI 비서 사용해보기" [ref=e675] [cursor=pointer]:
+          - /url: /app/chat
+      - generic [ref=e678]:
+        - generic [ref=e679]: TM
+        - generic [ref=e680]: NEW
+        - heading "Agent 템플릿 마켓" [level=3] [ref=e690]
+        - paragraph [ref=e691]: 커뮤니티가 만든 AI Agent 템플릿을 탐색하고 즉시 적용하십시오. 마케팅, 고객응대, 커뮤니티 관리 등 목적별 템플릿을 제공합니다.
+        - list [ref=e692]:
+          - listitem [ref=e693]: 템플릿 구매 & 즉시 적용
+          - listitem [ref=e696]: 카테고리별 탐색 & 검색
+          - listitem [ref=e699]: 직접 템플릿 출시 가능
+        - link "AI 비서 사용해보기" [ref=e703] [cursor=pointer]:
+          - /url: /app/chat
+    - link "모든 기능 살펴보기" [ref=e707] [cursor=pointer]:
+      - /url: /signup
+  - generic [ref=e710]:
+    - generic [ref=e711]:
+      - paragraph [ref=e714]: 요금제
+      - heading "당신에게 맞는 요금제" [level=2] [ref=e716]
+      - paragraph [ref=e717]: 필요한 만큼만 선택하세요.
+    - generic [ref=e719]:
+      - generic [ref=e720]:
+        - generic [ref=e721]: TM
+        - heading "Free Plan" [level=3] [ref=e724]
+        - generic [ref=e725]: 무료
+        - list [ref=e727]:
+          - listitem [ref=e728]: 1개 계정 연결
+          - listitem [ref=e732]: 자동 응답 기능
+          - listitem [ref=e736]: 메시지 발송
+          - listitem [ref=e740]: 기본 발송 로그
+          - listitem [ref=e744]: 무료 플랜
+          - listitem [ref=e748]: 발송 시 워터마크 광고 포함
+        - link "무료 시작" [ref=e752] [cursor=pointer]:
+          - /url: /signup
+      - generic [ref=e755]:
+        - generic [ref=e756]: TM
+        - heading "Pro" [level=3] [ref=e759]
+        - generic [ref=e760]: $29/월
+        - list [ref=e762]:
+          - listitem [ref=e763]: 10개 계정 연결
+          - listitem [ref=e767]: 예약 & 반복 발송
+          - listitem [ref=e771]: 이미지 첨부 발송
+          - listitem [ref=e775]: 발송 로그 & 전달 분석
+          - listitem [ref=e779]: 계정 건강 모니터링
+        - link "Pro 시작" [ref=e783] [cursor=pointer]:
+          - /url: /pricing
+      - generic [ref=e786]:
+        - generic [ref=e787]: TM
+        - generic [ref=e788]: 나만의 AI
+        - heading "AI Premium" [level=3] [ref=e794]
+        - generic [ref=e795]: $99/월
+        - list [ref=e797]:
+          - listitem [ref=e798]: 3개 커스텀 AI 에이전트
+          - listitem [ref=e802]: 목적 템플릿 선택 가능
+          - listitem [ref=e806]: 사실상 무제한 AI 토큰
+          - listitem [ref=e810]: 웹 검색/마케팅/분석 에이전트
+          - listitem [ref=e814]: 우선 고객 지원
+        - link "AI Premium 시작" [ref=e818] [cursor=pointer]:
+          - /url: /pricing
+      - generic [ref=e821]:
+        - generic [ref=e822]: TM
+        - heading "Team" [level=3] [ref=e825]
+        - generic [ref=e826]: $199/분기
+        - list [ref=e828]:
+          - listitem [ref=e829]: 20개 계정 연결
+          - listitem [ref=e833]: 모든 프리미엄 기능
+          - listitem [ref=e837]: API 키 발급
+          - listitem [ref=e841]: 우선 지원
+        - link "Team 시작" [ref=e845] [cursor=pointer]:
+          - /url: /pricing
+      - generic [ref=e848]:
+        - generic [ref=e849]: TM
+        - heading "첫 발자취+" [level=3] [ref=e852]
+        - generic [ref=e853]:
+          - generic [ref=e854]: $1,000
+          - generic [ref=e855]: /영구
+        - paragraph [ref=e856]: 함께 성장하는 파트너십
+        - list [ref=e857]:
+          - listitem [ref=e858]: 무제한 계정 연결
+          - listitem [ref=e862]: 모든 프리미엄 기능 평생 무료
+          - listitem [ref=e866]: 평생 업데이트 포함
+          - listitem [ref=e870]: 24시간 우선 지원
+        - link "첫 발자취 남기기" [ref=e874] [cursor=pointer]:
+          - /url: /pricing
+  - generic [ref=e879]:
+    - generic [ref=e880]:
+      - paragraph [ref=e883]: FAQ
+      - heading "자주 묻는 질문" [level=2] [ref=e885]
+      - paragraph [ref=e886]: TeleMon에 대해 궁금한 점을 확인하세요.
+    - textbox "질문 검색..." [ref=e889]
+    - generic [ref=e890]:
+      - generic [ref=e891]:
+        - generic [ref=e892]: TM
+        - button "TeleMon은 무엇인가요?" [ref=e894]
+      - generic [ref=e898]:
+        - generic [ref=e899]: TM
+        - button "기술을 몰라도 사용할 수 있나요?" [ref=e901]
+      - generic [ref=e905]:
+        - generic [ref=e906]: TM
+        - button "계정이 차단될 위험이 있나요?" [ref=e908]
+      - generic [ref=e912]:
+        - generic [ref=e913]: TM
+        - button "무료로 사용해 볼 수 있나요?" [ref=e915]
+      - generic [ref=e919]:
+        - generic [ref=e920]: TM
+        - button "여러 계정을 동시에 운영할 수 있나요?" [ref=e922]
+      - generic [ref=e926]:
+        - generic [ref=e927]: TM
+        - button "환불 정책은 어떻게 되나요?" [ref=e929]
+      - generic [ref=e933]:
+        - generic [ref=e934]: TM
+        - button "AI 자동 응답은 얼마나 정확한가요?" [ref=e936]
+      - generic [ref=e940]:
+        - generic [ref=e941]: TM
+        - button "보안과 개인정보 보호는 어떻게 이루어지나요?" [ref=e943]
+    - paragraph [ref=e948]:
+      - text: 더 궁금한 점이 있으면
+      - link "support@telemon.io" [ref=e949] [cursor=pointer]:
+        - /url: mailto:support@telemon.io
+      - text: 로 문의해주세요.
+  - generic [ref=e953]:
+    - paragraph [ref=e956]: 지금 시작
+    - heading "지금 바로 시작하세요" [level=2] [ref=e958]
+    - paragraph [ref=e959]: 코드 없이, 복잡한 설정 없이. 하나의 대시보드로 모든 텔레그램 작업을 자동화하십시오.
+    - generic [ref=e961]:
+      - link "무료로 시작하기" [ref=e962] [cursor=pointer]:
+        - /url: /signup
+      - link "요금제 보기" [ref=e965] [cursor=pointer]:
+        - /url: /pricing
+  - generic "Notifications"
+  - button "고객지원 챗봇 열기"
+  - alert [ref=e966]
