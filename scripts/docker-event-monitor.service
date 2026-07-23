@@ -1,0 +1,16 @@
+[Unit]
+Description=TeleMon Docker Event Monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/telemon/backend
+ExecStart=/bin/bash scripts/docker-event-monitor.sh
+Restart=always
+RestartSec=5
+Environment="DOCKER_EVENT_WEBHOOK=${DOCKER_EVENT_WEBHOOK:-}"
+
+[Install]
+WantedBy=multi-user.target

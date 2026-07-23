@@ -1,0 +1,14 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - generic [ref=f1e5]: TM
+    - generic [ref=f1e9]:
+      - paragraph [ref=f1e10]: TeleMon
+      - paragraph [ref=f1e11]: 앱 환경 준비 중
+    - paragraph [ref=f1e12]: Loading...
+  - generic [ref=f1e14]:
+    - generic [ref=f1e25]:
+      - heading "잠금 해제" [level=2] [ref=f1e26]
+      - paragraph [ref=f1e27]: 탭하여 인증하세요
+    - button [ref=f1e28]
+  - button "고객지원 챗봇 열기"
+  - alert [ref=f1e32]

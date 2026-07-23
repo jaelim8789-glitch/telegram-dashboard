@@ -1,0 +1,17 @@
+# Code owners — reviewed automatically on PR
+* @jaelim8789-glitch
+
+# Backend
+/telegram-dashboard-backend/ @jaelim8789-glitch
+
+# GitHub Actions
+/.github/ @jaelim8789-glitch
+
+# Documentation
+/docs/ @jaelim8789-glitch
+/DOCS/ @jaelim8789-glitch
+/*.md @jaelim8789-glitch
+
+# Docker
+/Dockerfile @jaelim8789-glitch
+/docker-compose*.yml @jaelim8789-glitch

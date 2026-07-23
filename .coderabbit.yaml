@@ -1,0 +1,28 @@
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "src/**/*.{ts,tsx}"
+      instructions: |
+        Check for common TeleMon mistakes:
+        1. JSX in .ts file (must be .tsx)
+        2. camelCase vs snake_case API mismatches
+        3. Badge/Panel without onClick wrapper
+        4. UTF-8 without BOM
+    - path: "telegram-dashboard-backend/**/*.py"
+      instructions: |
+        Check for common FastAPI mistakes:
+        1. Response model consistency
+        2. Error handling
+        3. DB session management
+chat:
+  auto_reply: true

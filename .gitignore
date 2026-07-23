@@ -1,0 +1,61 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+.tsbuildinfo
+next-env.d.ts
+
+# project-specific
+temp_*
+*.tmp
+__pycache__/
+*.pyc
+.aider.*
+.vscode/
+*.db
+sessions/
+logs/
+data/
+nul
+dev_out*.txt
+git_log*.txt
+next-env.d.ts
+.tsbuildinfo
+node_modules
+# Added by user request - cleanup patterns
+tmp_*
+tsc_*.txt
+RUN_ME*.bat
+master_result*.txt
+null
+query
+git_log.txt
+tmp_b64*.txt

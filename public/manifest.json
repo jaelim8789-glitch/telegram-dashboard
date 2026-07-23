@@ -1,0 +1,102 @@
+{
+  "id": "/app",
+  "name": "TeleMon — 텔레그램 자동화 플랫폼",
+  "short_name": "TeleMon",
+  "description": "Telegram 계정 관리, 자동 응답, 예약 발송을 하나의 대시보드에서",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "browser"],
+  "background_color": "#0a0a0a",
+  "theme_color": "#bfa260",
+  "orientation": "any",
+  "dir": "ltr",
+  "categories": ["business", "communication", "productivity"],
+  "lang": "ko-KR",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-monochrome.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "대시보드",
+      "short_name": "대시보드",
+      "description": "운영 대시보드",
+      "url": "/app",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "발송",
+      "short_name": "발송",
+      "description": "새 메시지 발송",
+      "url": "/app?tab=send",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "그룹",
+      "short_name": "그룹",
+      "description": "그룹 관리",
+      "url": "/app?tab=group",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "short_name": "AI",
+      "description": "AI 어시스턴트",
+      "url": "/app?tab=myai",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/app?share-target=true",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "related_applications": []
+}

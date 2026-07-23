@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="TeleMon icon monochrome">
+  <rect width="512" height="512" rx="84" fill="#0a0a0a" />
+  <path d="M386 118L86 250l120 54 44 120 136-306z" fill="#ffffff" />
+  <path d="M206 304l22 72 44-36-66-36z" fill="#0a0a0a" opacity="0.28" />
+</svg>

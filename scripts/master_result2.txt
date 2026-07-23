@@ -1,0 +1,23 @@
+======================================== 
+CONTINUED MERGE SCRIPT (after conflict fix) 
+2026-07-15 18:01:43.69 
+======================================== 
+ 
+[STATE BEFORE] 
+e1eb747ee7cf822ed71a530cbe383c3c91c0db5a
+e1eb747 Merge feat/15-delivery-analytics-csv
+7465df9 Merge feat/10-account-search-enhance
+475a642 Merge feat/11-fullscreen-toggle
+ 
+--- Staging resolved files and committing merge --- 
+[master 256ef78] Merge feat/account-labels
+[OK] feat/account-labels merge committed successfully 
+ 
+===== CHAIN B (REMAINING) ===== 
+ 
+--- Merging feat/account-search --- 
+Auto-merging src/components/layout/Sidebar.tsx
+CONFLICT (content): Merge conflict in src/components/layout/Sidebar.tsx
+Automatic merge failed; fix conflicts and then commit the result.
+[FAIL] feat/account-search FAILED with code 1 
+=== ABORTING === 

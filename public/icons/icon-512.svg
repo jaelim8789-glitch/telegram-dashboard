@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bfa260;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a08030;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="#0a0a0a"/>
+  <rect x="24" y="24" width="464" height="464" rx="48" fill="url(#g)" opacity="0.12"/>
+  <!-- Telegram paper plane icon -->
+  <path d="M384 128L64 256l128 56 48 128 144-312z" fill="url(#g)" stroke="#bfa260" stroke-width="3"/>
+  <path d="M192 304l24 80 48-40-72-40z" fill="#bfa260" opacity="0.5"/>
+  <path d="M128 256l256-128-112 192-40-32 64-120-152 80z" fill="#bfa260" opacity="0.2"/>
+</svg>

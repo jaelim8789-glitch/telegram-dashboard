@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+echo "==> [pre-push] running..."
+UPSTREAM=$(git log HEAD..origin/master --oneline 2>/dev/null || true)
+if [ -n "$UPSTREAM" ]; then
+  echo "WARNING: upstream has new commits:"
+  echo "$UPSTREAM"
+  echo "Run: git pull --rebase origin master"
+  exit 1
+fi
+
+echo "==> [pre-push] running CI simulation (build check)..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "Build failed! Push blocked."
+  exit 1
+fi
+
+echo "==> [pre-push] complete. Pushing..."
