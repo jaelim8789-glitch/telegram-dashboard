@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Pencil, ChevronDown, ChevronUp, History, Sparkles } from "lucide-react";
+import { X, Send, Pencil, History, Sparkles } from "lucide-react";
 import type { WhisperData } from "@/types/ai-whisper";
 import { cn } from "@/lib/cn";
 

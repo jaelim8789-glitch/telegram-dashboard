@@ -1,4 +1,4 @@
-export interface WhisperTag {
+﻿export interface WhisperTag {
   label: string;
   type: "info" | "warning" | "vip" | "language" | "urgent";
 }
