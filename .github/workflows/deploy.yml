@@ -178,8 +178,8 @@ jobs:
   # 1d. Frontend Docker build & push (GHCR)
   # ============================================
   frontend-docker:
-    if: ${{ !cancelled() }}
     needs: [frontend-build]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -229,7 +229,7 @@ jobs:
   # 2. Deploy frontend production (pull-only)
   # ============================================
   deploy-frontend-production:
-    if: ${{ !cancelled() && github.ref == 'refs/heads/master' }}
+    if: ${{ always() && github.ref == 'refs/heads/master' }}
     needs: [frontend-docker]
     runs-on: ubuntu-latest
     environment: production
