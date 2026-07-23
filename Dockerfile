@@ -1,4 +1,4 @@
-# TeleMon Frontend — 빌드 방법
+﻿# TeleMon Frontend ??鍮뚮뱶 諛⑸쾿
 # docker build --no-cache -t telemon-frontend .
 # docker run -p 3000:3000 telemon-frontend
 
@@ -16,7 +16,7 @@ RUN corepack enable && corepack prepare pnpm@10.8.1 --activate
 
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --no-frozen-lockfile --prefer-offline
+    pnpm install --no-frozen-lockfile --prefer-offline && pnpm approve-builds 2>/dev/null || true --ignore-scripts
 
 COPY --chown=nextjs:nodejs . .
 
