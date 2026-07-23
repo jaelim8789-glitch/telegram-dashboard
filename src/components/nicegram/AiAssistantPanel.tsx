@@ -206,6 +206,7 @@ function WelcomeScreen({ onPrompt, chatTitle }: { onPrompt: (text: string) => vo
       <p className="text-xs text-white/40 leading-relaxed max-w-[260px] mb-8">
         {chatTitle
           ? "선택한 대화방의 맥락을 분석하여 최적의 답변을 추천해드립니다."
+          : null}
       </p>
 
       {/* Suggested prompts */}
