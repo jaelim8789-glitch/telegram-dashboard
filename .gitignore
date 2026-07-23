@@ -7,7 +7,9 @@ node_modules/
 coverage/
 
 # next.js
-.next/
+.next
+imgur-screenshot.png
+.playwright-mcp//
 out/
 build/
 dist/

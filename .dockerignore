@@ -34,3 +34,7 @@ sessions/
 *.session
 .backup
 *.log
+.kilo/
+tests/
+e2e/
+docs/
