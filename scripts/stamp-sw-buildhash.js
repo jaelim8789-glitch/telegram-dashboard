@@ -1,9 +1,4 @@
-// Stamps public/sw.js's CACHE_NAME with the current Next.js build ID so every
-// deploy gets a distinct cache name. Without this, self.__BUILD_HASH is never
-// set by anything, so CACHE_NAME stays "telemon-vlatest" forever ? the service
-// worker never invalidates its cache across deploys, serving stale JS chunks
-// alongside fresh HTML and causing mismatched/blank UI after a deploy.
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 
 const buildIdPath = path.join(__dirname, "..", ".next", "BUILD_ID");
@@ -13,19 +8,17 @@ let buildId;
 try {
   buildId = fs.readFileSync(buildIdPath, "utf8").trim();
 } catch {
-  console.warn("stamp-sw-buildhash: BUILD_ID not found at " + buildIdPath + " ? skipping stamp, using 'latest'");
+  console.warn("stamp-sw-buildhash: BUILD_ID not found — skipping");
   buildId = "latest";
 }
 
 const sw = fs.readFileSync(swPath, "utf8");
-
-const stamped = sw.replace(
-  /const CACHE_NAME = \	elemon-v\$\{self\.__BUILD_HASH \|\| 'latest'\}\;/,
-  "const CACHE_NAME = \	elemon-v" + buildId + "\;"
-);
+const regex = new RegExp('const CACHE_NAME = ' + String.fromCharCode(96) + 'telemon-v\\$\\{self\\.__BUILD_HASH \\|\\| \\x27latest\\x27\\}' + String.fromCharCode(96));
+const replacement = 'const CACHE_NAME = ' + String.fromCharCode(96) + 'telemon-v' + buildId + String.fromCharCode(96);
+const stamped = sw.replace(regex, replacement);
 
 if (stamped === sw) {
-  console.warn("stamp-sw-buildhash: CACHE_NAME pattern not found in public/sw.js ? warning: could not stamp");
+  console.warn("stamp-sw-buildhash: CACHE_NAME pattern not found — could not stamp");
 }
 
 fs.writeFileSync(swPath, stamped);

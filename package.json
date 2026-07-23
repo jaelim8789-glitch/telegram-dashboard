@@ -17,8 +17,8 @@
                     "typecheck":  "tsc --noEmit",
                     "test:e2e":  "playwright test",
                     "prepare":  "husky 2\u003e/dev/null || true",
-                    "cap:build":  "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build \u0026\u0026 npx cap copy",
-                    "cap:sync":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap sync",
+                    "cap:build":  "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build \u0026\u0026 node scripts/stamp-sw-buildhash.js",
+                    "cap:sync":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap copy",
                     "cap:android":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap copy \u0026\u0026 npx cap open android",
                     "cap:ios":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap open ios",
                     "seed":  "cd telegram-dashboard-backend \u0026\u0026 python scripts/seed_local.py",
@@ -67,8 +67,9 @@
                     "branch-status":  "bash scripts/git-branch-status.sh",
                     "tunnel":  "bash scripts/tunnel.sh",
                     "setup":  "pnpm install && pre-commit install",
-                    "approve-builds": "bash scripts/pnpm-approve-builds.sh"
-                    
+                    "approve-builds": "bash scripts/pnpm-approve-builds.sh",
+                    "clean":  "rm -rf .next/ node_modules/.cache tsconfig.tsbuildinfo",
+                    "doctor":  "node scripts/port_handler.js \u0026\u0026 git status \u0026\u0026 node -v \u0026\u0026 pnpm -v \u0026\u0026 npm run typecheck \u0026\u0026 npm run build"
                     
                 },
     "lint-staged":  {

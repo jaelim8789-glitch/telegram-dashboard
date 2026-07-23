@@ -1,4 +1,4 @@
-﻿name: Deploy TeleMon
+name: Deploy TeleMon
 
 concurrency:
   group: deploy-${{ github.ref }}
