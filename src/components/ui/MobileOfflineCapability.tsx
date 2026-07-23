@@ -1,2 +1,3 @@
-\use client\;
-export default function MobileOfflineCapability() { return null; }
+"use client";
+
+export function MobileOfflineCapability() { return null; }
