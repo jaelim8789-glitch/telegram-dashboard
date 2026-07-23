@@ -1,3 +1,7 @@
+# TeleMon Frontend — 빌드 방법
+# docker build --no-cache -t telemon-frontend .
+# docker run -p 3000:3000 telemon-frontend
+
 # Multi-stage build using Next.js's standalone output (next.config.ts) so the final
 # image ships a minimal self-contained server instead of the full node_modules tree.
 FROM node:20-alpine AS builder
