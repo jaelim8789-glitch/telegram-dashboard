@@ -1,89 +1,138 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { Send, MessageCircle, Settings, Zap } from "lucide-react";
-import { hapticFeedback } from "@tma.js/sdk-react";
-import { cn } from "@/lib/cn";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
+import { 
+  Send, 
+  MessageSquare, 
+  Settings, 
+  Plus, 
+  Clock, 
+  Bot, 
+  Users, 
+  Zap, 
+  Search,
+  BarChart3,
+  Package
+} from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-interface QuickActionBarProps {
-  onSendMessage?: () => void;
-  onQuickReply?: () => void;
-  onAutoReplyToggle?: () => void;
-  onSettings?: () => void;
-  className?: string;
+interface QuickAction {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  action: () => void;
+  hotkey?: string;
+  visible: boolean;
 }
 
-const QuickActionBar = memo(function QuickActionBar({
-  onSendMessage,
-  onQuickReply,
-  onAutoReplyToggle,
-  onSettings,
-  className
-}: QuickActionBarProps) {
-  const handleAction = async (callback?: () => void) => {
-    try {
-      await hapticFeedback.impactOccurred("light");
-    } catch {}
-    
-    if (callback) callback();
-  };
+export function QuickActionBar() {
+  const [actions] = useLocalStorage<QuickAction[]>('quick-actions', [
+    {
+      id: 'send-message',
+      label: '메시지 보내기',
+      icon: <Send className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/send'; },
+      hotkey: 'Ctrl+M',
+      visible: true
+    },
+    {
+      id: 'create-auto-reply',
+      label: '자동 응답 생성',
+      icon: <Bot className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/auto-reply'; },
+      hotkey: 'Ctrl+R',
+      visible: true
+    },
+    {
+      id: 'add-account',
+      label: '계정 추가',
+      icon: <Users className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/accounts'; },
+      hotkey: 'Ctrl+A',
+      visible: true
+    },
+    {
+      id: 'schedule-broadcast',
+      label: '방송 예약',
+      icon: <Clock className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/broadcast'; },
+      hotkey: 'Ctrl+S',
+      visible: true
+    },
+    {
+      id: 'ai-assistant',
+      label: 'AI 어시스턴트',
+      icon: <Bot className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/ai'; },
+      hotkey: 'Ctrl+I',
+      visible: true
+    },
+    {
+      id: 'analytics',
+      label: '분석',
+      icon: <BarChart3 className="w-4 h-4" />,
+      action: () => { window.location.hash = '#/analytics'; },
+      hotkey: 'Ctrl+L',
+      visible: true
+    },
+    {
+      id: 'create-business',
+      label: '비즈니스 생성',
+      icon: <Zap className="w-4 h-4" />,
+      action: () => {
+        const event = new CustomEvent('openOneClickBusinessModal');
+        window.dispatchEvent(event);
+      },
+      hotkey: 'Ctrl+B',
+      visible: true
+    },
+    {
+      id: 'search',
+      label: '검색',
+      icon: <Search className="w-4 h-4" />,
+      action: () => {
+        const event = new CustomEvent('openCommandPalette');
+        window.dispatchEvent(event);
+      },
+      hotkey: 'Ctrl+K',
+      visible: true
+    }
+  ]);
+
+  const [visibleActions, setVisibleActions] = useState<QuickAction[]>([]);
+
+  useEffect(() => {
+    setVisibleActions(actions.filter(action => action.visible));
+  }, [actions]);
 
   return (
-    <div className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5",
-      "pb-[calc(env(safe-area-inset-bottom)+4px)]",
-      "bg-[var(--tg-theme-bg-color,#17212b)] border-[var(--tg-theme-section-separator-color,#3a4a5a)]",
-      className
-    )}>
-      <button
-        onClick={() => handleAction(onSendMessage)}
-        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
-        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
-        aria-label="메시지 보내기"
-      >
-        <div className="flex items-center justify-center h-6 w-6">
-          <Send className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] font-medium opacity-60">보내기</span>
-      </button>
-      
-      <button
-        onClick={() => handleAction(onQuickReply)}
-        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
-        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
-        aria-label="빠른 답장"
-      >
-        <div className="flex items-center justify-center h-6 w-6">
-          <MessageCircle className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] font-medium opacity-60">답장</span>
-      </button>
-      
-      <button
-        onClick={() => handleAction(onAutoReplyToggle)}
-        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
-        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
-        aria-label="자동 응답 전환"
-      >
-        <div className="flex items-center justify-center h-6 w-6">
-          <Zap className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] font-medium opacity-60">자동</span>
-      </button>
-      
-      <button
-        onClick={() => handleAction(onSettings)}
-        className="flex flex-col items-center gap-0.5 p-3 min-w-[64px] transition-all active:scale-90"
-        style={{ color: "var(--tg-theme-hint-color, #708499)" }}
-        aria-label="설정"
-      >
-        <div className="flex items-center justify-center h-6 w-6">
-          <Settings className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] font-medium opacity-60">설정</span>
-      </button>
-    </div>
+    <TooltipProvider>
+      <div className="flex items-center gap-1 p-2 bg-muted rounded-lg border">
+        {visibleActions.map((action) => (
+          <Tooltip key={action.id}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={action.action}
+                className="rounded-md p-2 hover:bg-accent"
+              >
+                {action.icon}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <div className="flex flex-col items-start">
+                <span>{action.label}</span>
+                {action.hotkey && (
+                  <span className="text-xs text-muted-foreground">{action.hotkey}</span>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
-});
-
-export { QuickActionBar };
+}

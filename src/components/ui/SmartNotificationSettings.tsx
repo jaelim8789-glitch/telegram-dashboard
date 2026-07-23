@@ -1,240 +1,265 @@
-import { useState, useEffect } from "react";
-import { Bell, Smartphone, Mail, Volume2, VolumeX, Clock, Activity } from "lucide-react";
-import { cn } from "@/lib/cn";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Switch } from '@/components/ui/Switch';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Bell, Activity, TrendingUp, Clock, Moon, Sun } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface NotificationSettings {
-  sound: boolean;
-  vibration: boolean;
-  badgeCount: boolean;
+  desktopNotifications: boolean;
   emailNotifications: boolean;
-  pushNotifications: boolean;
+  mobilePush: boolean;
+  smartMode: boolean;
   quietHours: {
     enabled: boolean;
-    startTime: string;
-    endTime: string;
+    start: string;
+    end: string;
   };
-  activitySummary: 'daily' | 'weekly' | 'none';
+  activityBased: {
+    highActivity: boolean;
+    lowActivity: boolean;
+  };
 }
 
-interface SmartNotificationSettingsProps {
-  initialSettings?: Partial<NotificationSettings>;
-  onSave?: (settings: NotificationSettings) => void;
-  className?: string;
-}
+export function SmartNotificationSettings() {
+  const [settings, setSettings] = useLocalStorage<NotificationSettings>(
+    'notification-settings',
+    {
+      desktopNotifications: true,
+      emailNotifications: false,
+      mobilePush: true,
+      smartMode: true,
+      quietHours: {
+        enabled: false,
+        start: '22:00',
+        end: '07:00'
+      },
+      activityBased: {
+        highActivity: true,
+        lowActivity: true
+      }
+    }
+  );
 
-export function SmartNotificationSettings({ 
-  initialSettings, 
-  onSave,
-  className 
-}: SmartNotificationSettingsProps) {
-  const [settings, setSettings] = useState<NotificationSettings>({
-    sound: true,
-    vibration: true,
-    badgeCount: true,
-    emailNotifications: false,
-    pushNotifications: true,
-    quietHours: {
-      enabled: false,
-      startTime: "22:00",
-      endTime: "07:00"
-    },
-    activitySummary: 'daily'
-  });
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    if (initialSettings) {
-      setSettings(prev => ({ ...prev, ...initialSettings }));
-    }
-  }, [initialSettings]);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // 1분마다 업데이트
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSettingChange = (key: keyof NotificationSettings, value: any) => {
-    setSettings(prev => {
-      const newSettings = { ...prev, [key]: value };
-      if (onSave) onSave(newSettings);
-      return newSettings;
-    });
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   const handleQuietHoursChange = (key: keyof NotificationSettings['quietHours'], value: any) => {
-    setSettings(prev => {
-      const newSettings = {
-        ...prev,
-        quietHours: { ...prev.quietHours, [key]: value }
-      };
-      if (onSave) onSave(newSettings);
-      return newSettings;
-    });
+    setSettings(prev => ({
+      ...prev,
+      quietHours: {
+        ...prev.quietHours,
+        [key]: value
+      }
+    }));
+  };
+
+  const handleActivityBasedChange = (key: keyof NotificationSettings['activityBased'], value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      activityBased: {
+        ...prev.activityBased,
+        [key]: value
+      }
+    }));
+  };
+
+  // 현재 시간이 숨은 시간대에 해당하는지 확인
+  const isQuietHours = () => {
+    if (!settings.quietHours.enabled) return false;
+    
+    const now = currentTime.getHours() * 100 + currentTime.getMinutes();
+    const start = parseInt(settings.quietHours.start.replace(':', ''));
+    const end = parseInt(settings.quietHours.end.replace(':', ''));
+    
+    if (end < start) {
+      // 자정을 넘는 경우
+      return now >= start || now <= end;
+    }
+    
+    return now >= start && now <= end;
   };
 
   return (
-    <div className={cn("rounded-xl border bg-app-card p-4", className)}>
-      <div className="flex items-center gap-2 mb-4" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>
-        <Bell className="h-5 w-5" />
-        <h3 className="font-semibold">알림 설정</h3>
-      </div>
-      
-      <div className="space-y-4">
-        {/* 사운드 및 진동 설정 */}
+    <Card>
+      <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4" />
-            <span className="text-sm">사운드 알림</span>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              스마트 알림 설정
+            </CardTitle>
+            <CardDescription>
+              사용자 활동 패턴에 따라 자동으로 알림 설정을 조정합니다
+            </CardDescription>
           </div>
-          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={settings.sound}
-              onChange={(e) => handleSettingChange('sound', e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-            <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-          </label>
+          <Badge variant={settings.smartMode ? "default" : "secondary"}>
+            {settings.smartMode ? "스마트 모드" : "수동 모드"}
+          </Badge>
         </div>
-        
+      </CardHeader>
+      <CardContent className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-4 w-4" />
-            <span className="text-sm">진동 알림</span>
+          <div>
+            <h3 className="font-medium">스마트 모드</h3>
+            <p className="text-sm text-muted-foreground">
+              활동 패턴에 따라 자동으로 알림 설정 조정
+            </p>
           </div>
-          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={settings.vibration}
-              onChange={(e) => handleSettingChange('vibration', e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-            <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-          </label>
+          <Switch
+            checked={settings.smartMode}
+            onCheckedChange={(checked) => handleSettingChange('smartMode', checked)}
+          />
         </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span className="text-sm">뱃지 표시</span>
-          </div>
-          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={settings.badgeCount}
-              onChange={(e) => handleSettingChange('badgeCount', e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-            <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-          </label>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            <span className="text-sm">이메일 알림</span>
-          </div>
-          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={settings.emailNotifications}
-              onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-            <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-          </label>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="text-sm">푸시 알림</span>
-          </div>
-          <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={settings.pushNotifications}
-              onChange={(e) => handleSettingChange('pushNotifications', e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-            <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-          </label>
-        </div>
-        
-        {/* 무음 시간 설정 */}
-        <div className="pt-2 border-t" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm">무음 시간</span>
-            </div>
-            <label className="relative inline-flex h-6 w-11 cursor-pointer items-center">
-              <input
-                type="checkbox"
-                checked={settings.quietHours.enabled}
-                onChange={(e) => handleQuietHoursChange('enabled', e.target.checked)}
-                className="peer sr-only"
+
+        <div className="space-y-4">
+          <h3 className="font-medium flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            기본 알림
+          </h3>
+          <div className="space-y-3 ml-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">데스크톱 알림</p>
+                <p className="text-sm text-muted-foreground">브라우저 알림</p>
+              </div>
+              <Switch
+                checked={settings.desktopNotifications}
+                onCheckedChange={(checked) => handleSettingChange('desktopNotifications', checked)}
               />
-              <span className="absolute inset-0 rounded-full bg-gray-600 transition-colors peer-checked:bg-app-primary"></span>
-              <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-            </label>
-          </div>
-          
-          {settings.quietHours.enabled && (
-            <div className="grid grid-cols-2 gap-2 ml-6">
+            </div>
+            <div className="flex items-center justify-between">
               <div>
-                <label className="text-xs text-app-text-muted block mb-1">시작 시간</label>
-                <input
-                  type="time"
-                  value={settings.quietHours.startTime}
-                  onChange={(e) => handleQuietHoursChange('startTime', e.target.value)}
-                  className="w-full rounded-lg border bg-app-bg px-3 py-2 text-sm outline-none"
-                  style={{ 
-                    borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
-                    backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
-                    color: "var(--tg-theme-text-color, #f5f5f5)"
-                  }}
+                <p className="font-medium">이메일 알림</p>
+                <p className="text-sm text-muted-foreground">중요 업데이트</p>
+              </div>
+              <Switch
+                checked={settings.emailNotifications}
+                onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">모바일 푸시</p>
+                <p className="text-sm text-muted-foreground">모바일 앱 알림</p>
+              </div>
+              <Switch
+                checked={settings.mobilePush}
+                onCheckedChange={(checked) => handleSettingChange('mobilePush', checked)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="font-medium flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            숨은 시간
+            {isQuietHours() && (
+              <Badge variant="destructive" className="ml-2">지금은 숨은 시간입니다</Badge>
+            )}
+          </h3>
+          <div className="space-y-3 ml-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">숨은 시간 사용</p>
+                <p className="text-sm text-muted-foreground">
+                  특정 시간대에는 알림을 받지 않음
+                </p>
+              </div>
+              <Switch
+                checked={settings.quietHours.enabled}
+                onCheckedChange={(checked) => handleQuietHoursChange('enabled', checked)}
+              />
+            </div>
+            {settings.quietHours.enabled && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">시작 시간</label>
+                  <input
+                    type="time"
+                    value={settings.quietHours.start}
+                    onChange={(e) => handleQuietHoursChange('start', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">종료 시간</label>
+                  <input
+                    type="time"
+                    value={settings.quietHours.end}
+                    onChange={(e) => handleQuietHoursChange('end', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {settings.smartMode && (
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              활동 기반 설정
+            </h3>
+            <div className="space-y-3 ml-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">고활동 시 알림 강화</p>
+                  <p className="text-sm text-muted-foreground">
+                    활동이 많을 때 더 많은 알림 수신
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.activityBased.highActivity}
+                  onCheckedChange={(checked) => handleActivityBasedChange('highActivity', checked)}
                 />
               </div>
-              <div>
-                <label className="text-xs text-app-text-muted block mb-1">종료 시간</label>
-                <input
-                  type="time"
-                  value={settings.quietHours.endTime}
-                  onChange={(e) => handleQuietHoursChange('endTime', e.target.value)}
-                  className="w-full rounded-lg border bg-app-bg px-3 py-2 text-sm outline-none"
-                  style={{ 
-                    borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
-                    backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
-                    color: "var(--tg-theme-text-color, #f5f5f5)"
-                  }}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">저활동 시 알림 축소</p>
+                  <p className="text-sm text-muted-foreground">
+                    활동이 적을 때 알림 빈도 조절
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.activityBased.lowActivity}
+                  onCheckedChange={(checked) => handleActivityBasedChange('lowActivity', checked)}
                 />
               </div>
             </div>
-          )}
-        </div>
-        
-        {/* 활동 요약 설정 */}
-        <div className="pt-2">
-          <label className="text-sm block mb-2">활동 요약</label>
-          <div className="grid grid-cols-3 gap-2">
-            {(['daily', 'weekly', 'none'] as const).map(option => (
-              <button
-                key={option}
-                onClick={() => handleSettingChange('activitySummary', option)}
-                className={`py-2 px-3 rounded-lg text-center text-sm ${
-                  settings.activitySummary === option
-                    ? 'bg-[var(--tg-theme-button-color,#5288c1)] text-white'
-                    : 'bg-app-card-hover text-app-text'
-                }`}
-              >
-                {option === 'daily' && '일간'}
-                {option === 'weekly' && '주간'}
-                {option === 'none' && '안 함'}
-              </button>
-            ))}
           </div>
+        )}
+
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-2">
+            {isQuietHours() ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            <span className="font-medium">
+              현재 시간: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <Badge variant={isQuietHours() ? "destructive" : "default"}>
+            {isQuietHours() ? "숨은 시간" : "일반 시간"}
+          </Badge>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
