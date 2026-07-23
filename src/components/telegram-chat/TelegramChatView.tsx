@@ -368,7 +368,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
         <div className="flex items-center gap-2 border-t border-app-border bg-app-card px-3 py-2">
           <CornerUpRight className="h-3.5 w-3.5 shrink-0 text-app-primary" />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-app-primary">?듭옣 以?/p>
+            <p className="text-[10px] font-medium text-app-primary">회신 대상</p>
             <p className="truncate text-xs text-app-text-muted">{replyTo.text.slice(0, 100)}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="shrink-0 h-6 w-6 flex items-center justify-center rounded hover:bg-app-card-hover">
