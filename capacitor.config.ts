@@ -1,11 +1,11 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+﻿import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.telemon.app',
   appName: 'TeleMon',
   webDir: 'dist',
   server: {
-    url: process.env.CAP_SERVER_URL || undefined,
+    url: (process.env.CAP_SERVER_URL ?? undefined) as string | undefined,
     cleartext: true,
   },
   plugins: {

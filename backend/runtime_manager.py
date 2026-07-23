@@ -104,6 +104,10 @@ class RuntimeManager:
                 self.healing_engine.register_account(acct["id"])
 
                 await runtime.start()
+
+                # Load reply macros from DB into runtime
+                await self._load_macros_for_account(acct["id"], runtime)
+
                 logger.info("[%s] Runtime 시작됨 (%d/%d)", acct["id"], idx + 1, len(accounts))
 
                 # Staggered delay between account starts
@@ -157,6 +161,7 @@ class RuntimeManager:
 
         try:
             await runtime.start()
+            await self._load_macros_for_account(account_id, runtime)
         except Exception as e:
             logger.warning("[%s] Runtime start failed (non-fatal): %s", account_id, e)
             # Runtime is still registered; user can re-auth later
@@ -206,6 +211,9 @@ class RuntimeManager:
         runtime.scheduler.start()
         runtime.broadcast_queue.start()
 
+        # Load any existing reply macros from DB
+        asyncio.create_task(self._load_macros_for_account(account_id, runtime))
+
         logger.info("[%s] Legacy account created (no auth) -- waiting for verification", account_id)
         return runtime.get_account()
 
@@ -252,6 +260,42 @@ class RuntimeManager:
         if not runtime:
             raise LookupError(f"Account {account_id} not found")
         return runtime
+
+    async def _load_macros_for_account(self, account_id: str, runtime: AccountRuntime) -> None:
+        """Load reply macros from DB into the runtime's ReplyMacroEngine on startup."""
+        try:
+            import json
+            conn = sqlite3.connect("data/runtime.db")
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM reply_macros WHERE account_id = ? ORDER BY created_at DESC",
+                (account_id,),
+            )
+            rows = []
+            for row in cursor.fetchall():
+                rows.append(ReplyMacro(
+                    id=row["id"],
+                    account_id=row["account_id"],
+                    name=row["name"],
+                    is_active=bool(row["is_active"]),
+                    target_chats=json.loads(row["target_chats"]) if isinstance(row["target_chats"], str) else (row["target_chats"] or []),
+                    message_content=row["message_content"],
+                    media_path=row["media_path"],
+                    schedule_type=row["schedule_type"],
+                    interval_hours=row["interval_hours"],
+                    fixed_time=row["fixed_time"],
+                    max_sends_per_day=row["max_sends_per_day"],
+                    reply_to_message_id=row["reply_to_message_id"],
+                    last_sent_at=row["last_sent_at"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                ))
+            conn.close()
+            if rows:
+                runtime.reply_macro.set_macros(rows)
+                logger.info("[%s] Loaded %d reply macro(s) from DB", account_id, len(rows))
+        except Exception as e:
+            logger.debug("[%s] No reply macros to load from DB: %s", account_id, e)
 
     # ── Auth operations (delegated to AccountRuntime) ──────────────
 

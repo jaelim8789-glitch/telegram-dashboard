@@ -81,7 +81,13 @@ fi
 
 # Restart backend service
 if [ "$DO_RESTART" = true ]; then
-  echo "[3/3] Starting backend server..."
+  echo "[3/4] Restarting nginx to clear cached upstream IPs..."
+  if command -v nginx &> /dev/null; then
+    nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || echo "Warning: nginx reload skipped (not running as root)"
+  fi
+  echo ""
+
+  echo "[4/4] Starting backend server..."
   
   # Kill existing process if running
   PID_FILE="/tmp/telemon.pid"

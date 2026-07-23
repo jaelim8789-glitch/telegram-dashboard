@@ -60,10 +60,21 @@ async def toggle_auto_reply(account_id: str, body: dict):
     enabled = body.get("enabled", False)
     manager = RuntimeManager.get_instance()
     try:
+        if enabled:
+            runtime = manager.get_runtime(account_id)
+            if not runtime:
+                raise HTTPException(status_code=404, detail="Account not found")
+            if not runtime.health_monitor._state.has_session:
+                raise HTTPException(
+                    status_code=400,
+                    detail="계정이 아직 인증되지 않았습니다. 먼저 '계정 등록'에서 Telegram 인증을 완료해주세요."
+                )
         result = await manager.toggle_auto_reply(account_id, enabled)
         return {"account_id": account_id, "auto_reply_enabled": result}
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
