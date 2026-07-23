@@ -1,4 +1,4 @@
-name: Frontend CI/CD
+﻿name: Frontend CI/CD
 
 on:
   push:
@@ -7,7 +7,19 @@ on:
     branches: [master]
 
 jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.8.1 }
+      - uses: actions/setup-node@v3
+        with: { node-version: 20, cache: "pnpm" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
   frontend-docker:
+    needs: [frontend-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
