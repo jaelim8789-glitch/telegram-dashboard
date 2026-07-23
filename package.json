@@ -63,7 +63,9 @@
     "qa": "npm run typecheck && pnpm lint && npm run build",
     "fresh": "bash scripts/git-cleanup.sh",
     "fresh-remote": "bash scripts/git-cleanup-remote.sh",
-    "branch-status": "bash scripts/git-branch-status.sh"
+    "branch-status": "bash scripts/git-branch-status.sh",
+    "tunnel": "bash scripts/tunnel.sh",
+    "setup": "pnpm install && pre-commit install"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
