@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">TeleMon</string>
-    <string name="title_activity_main">TeleMon</string>
-    <string name="package_name">com.telemon.app</string>
-    <string name="custom_url_scheme">com.telemon.app</string>
-</resources>

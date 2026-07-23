@@ -1,6 +1,0 @@
-[     403ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://app.telemon.online/api/accounts:0
-[     413ms] [WARNING] [RuntimeManager] accounts refresh failed: ApiError: 인증이 필요합니다.
-    at c (https://app.telemon.online/_next/static/chunks/960-2de992fdf9425035.js:1:3687)
-    at async Object.s (https://app.telemon.online/_next/static/chunks/960-2de992fdf9425035.js:1:4129)
-    at async c._refreshAccounts (https://app.telemon.online/_next/static/chunks/4936-51894e4a8a95055d.js:1:11500)
-    at async c._doInit (https://app.telemon.online/_next/static/chunks/4936-51894e4a8a95055d.js:1:6066) @ https://app.telemon.online/_next/static/chunks/4936-51894e4a8a95055d.js:0

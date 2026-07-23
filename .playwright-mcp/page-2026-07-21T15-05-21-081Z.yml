@@ -1,8 +1,0 @@
-- generic [active] [ref=e1]:
-  - generic [ref=e14]:
-    - generic [ref=e25]:
-      - heading "잠금 해제" [level=2] [ref=e26]
-      - paragraph [ref=e27]: 지문 또는 Face ID로 인증하세요
-    - button [disabled] [ref=e28]
-  - button "고객지원 챗봇 열기" [ref=e53]
-  - alert [ref=e32]
