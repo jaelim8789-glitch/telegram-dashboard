@@ -165,6 +165,7 @@ def _init_session_db() -> None:
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             token TEXT PRIMARY KEY,
+            token_hash TEXT,
             user_id TEXT NOT NULL,
             created_at REAL NOT NULL,
             expires_at REAL NOT NULL
@@ -174,6 +175,12 @@ def _init_session_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_sessions_expires 
         ON sessions(expires_at)
     """)
+    # Migration: add token_hash column to existing tables
+    cursor = conn.execute("PRAGMA table_info(sessions)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "token_hash" not in columns:
+        conn.execute("ALTER TABLE sessions ADD COLUMN token_hash TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)")
     conn.commit()
     conn.close()
 
@@ -198,14 +205,15 @@ _token_expiry = 86400  # 24 hours
 def _generate_token(user_id: str) -> str:
     """Generate a DB-backed session token."""
     token = f"tm_admin_{secrets_module.token_urlsafe(32)}"
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
     now = time.time()
     expires_at = now + _token_expiry
     
     conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
     try:
         conn.execute(
-            "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-            (token, user_id, now, expires_at),
+            "INSERT INTO sessions (token, token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?)",
+            (token, token_hash, user_id, now, expires_at),
         )
         conn.commit()
     finally:
@@ -226,13 +234,14 @@ async def get_current_user(
     if token.startswith("Bearer "):
         token = token[7:]
     
-    # Check session token (DB-backed)
+    # Check session token (DB-backed, hashed comparison)
     conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
     try:
         conn.row_factory = sqlite3.Row
+        hashed = hashlib.sha256(token.encode()).hexdigest()
         cursor = conn.execute(
-            "SELECT * FROM sessions WHERE token = ? AND expires_at > ?",
-            (token, time.time()),
+            "SELECT * FROM sessions WHERE token_hash = ? AND expires_at > ?",
+            (hashed, time.time()),
         )
         session = cursor.fetchone()
     finally:

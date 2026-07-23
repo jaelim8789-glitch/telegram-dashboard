@@ -122,6 +122,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# IP-based rate limiting (after CORS, before metrics)
+from .ip_rate_limiter import IPRateLimitMiddleware
+app.add_middleware(IPRateLimitMiddleware, max_requests=cfg.rate_limit.global_rate_limit, window_seconds=60)
+
 # Metrics middleware (must be early in middleware chain)
 if cfg.monitoring.metrics_enabled:
     app.add_middleware(MetricsMiddleware)
@@ -215,12 +219,13 @@ async def _init_db() -> None:
     def _create():
         conn = sqlite3.connect(db_path)
 
-        # Enable WAL mode for concurrent read performance
+        # Enable WAL mode + foreign keys for concurrent read performance & integrity
         if cfg.db.wal_mode:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute("PRAGMA busy_timeout=10000")
             conn.execute("PRAGMA cache_size=-8000")  # 8MB cache
+            conn.execute("PRAGMA foreign_keys=ON")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS accounts (

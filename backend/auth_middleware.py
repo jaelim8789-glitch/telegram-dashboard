@@ -17,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -65,9 +66,10 @@ async def get_current_user(
     conn = sqlite3.connect(SESSION_DB_PATH, timeout=10)
     try:
         conn.row_factory = sqlite3.Row
+        hashed = hashlib.sha256(token.encode()).hexdigest()
         cursor = conn.execute(
-            "SELECT * FROM sessions WHERE token = ? AND expires_at > ?",
-            (token, _time.time()),
+            "SELECT * FROM sessions WHERE token_hash = ? AND expires_at > ?",
+            (hashed, _time.time()),
         )
         session = cursor.fetchone()
     finally:
@@ -284,3 +286,21 @@ def require_feature(feature: str):
         await check_plan_feature(feature, user)
         return user
     return _dep
+
+
+async def require_permission(
+    required: str,
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Enforce API key permission scopes."""
+    if user.get("from_api_key"):
+        perm = user.get("api_key_permissions", "read")
+        if required == "admin" and user.get("role") in ("admin", "super_admin"):
+            return user
+        permissions_hierarchy = {"read": 0, "write": 1, "admin": 2}
+        if permissions_hierarchy.get(perm, 0) < permissions_hierarchy.get(required, 0):
+            raise HTTPException(
+                status_code=403,
+                detail=f"API key permission '{perm}' is insufficient. Required: '{required}'",
+            )
+    return user
