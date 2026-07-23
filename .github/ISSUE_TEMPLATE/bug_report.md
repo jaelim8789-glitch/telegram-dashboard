@@ -1,40 +1,37 @@
 ---
 name: Bug Report
 about: Create a report to help us improve
-title: "[BUG] "
-labels: bug
+title: ''
+labels: 'bug'
 assignees: ''
-
 ---
 
-## Bug Description
-A clear and concise description of what the bug is.
+## 버그 설명
+<!-- 문제가 무엇인지에 대한 명확하고 간결한 설명 -->
 
-## Steps to Reproduce
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## 재현 단계
+<!-- 문제를 재현하는 단계 -->
+1. 
+2. 
+3. 
+4. 
 
-## Expected Behavior
-A clear and concise description of what you expected to happen.
+## 기대 동작
+<!-- 원래 어떻게 동작해야 하는지에 대한 명확하고 간결한 설명 -->
 
-## Actual Behavior
-What actually happened instead.
+## 실제 동작
+<!-- 실제로 어떤 일이 발생했는지에 대한 명확하고 간결한 설명 -->
 
-## Screenshots / Screen Recording
-If applicable, add screenshots to help explain your problem.
+## 스크린샷
+<!-- 문제가 발생하는 상황을 보여주는 스크린샷 -->
 
-## Environment
-- Device: [e.g. Desktop / iPhone 15 / Galaxy S24]
-- Browser: [e.g. Chrome 120, Safari 17]
-- OS: [e.g. Windows 11, macOS 14, Android 14]
-- App Version / Commit SHA:
+## 브라우저 정보 (웹 관련인 경우)
+ - 브라우저: [e.g. Chrome, Safari]
+ - 버전: [e.g. 22]
 
-## Console Errors (if applicable)
-`
-Paste any browser console errors here
-`
+## 기기 정보
+ - 운영체제: [e.g. iOS, Android, Windows]
+ - 브라우저 [e.g. Chrome, Safari]
 
-## Additional Context
-Add any other context about the problem here.
+## 추가 정보
+<!-- 문제와 관련된 기타 정보 -->
