@@ -37,7 +37,190 @@ import type {
   TeleMonMemorySnapshot,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const REQUEST_TIMEOUT_MS = 60000;
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
+
+// API 요청 함수
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // 환경 변수 존재 여부 확인
+  if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+    console.warn("NEXT_PUBLIC_API_BASE_URL is not set, using default");
+  }
+
+  const startTime = performance.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const hasJsonBody = typeof init?.body === "string";
+        const defaultHeaders: Record<string, string> = {
+          ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+          ...(await authHeaders()),
+        };
+        const res = await fetch(`${API_BASE_URL}${path}`, {
+          ...init,
+          signal: controller.signal,
+          headers: { ...defaultHeaders, ...init?.headers },
+        });
+
+        if (!res.ok) {
+          const body = await readErrorBody(res);
+          const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+          throw new ApiError(detail, res.status, false);
+        }
+
+        if (res.status === 204) return undefined as T;
+        return res.json() as Promise<T>;
+      } catch (err) {
+        // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
+        if (err instanceof ApiError && !err.isNetworkError) {
+          throw err;
+        }
+
+        // First attempt failed ? surface the error to the UI immediately
+        const firstError = err instanceof DOMException && err.name === "AbortError"
+          ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+          : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+
+        // Retry with exponential backoff, returning the first success or final error
+        const lastError = await (async () => {
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            // 타임아웃 검사
+            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% 시간이 지나면 종료
+              throw new ApiError("요청 시간이 곧 초과됩니다. 네트워크 상태를 확인해주세요.", undefined, true);
+            }
+
+            const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            const bgController = new AbortController();
+            const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+            const hasJsonBody = typeof init?.body === "string";
+            const defaultHeaders: Record<string, string> = {
+              ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+              ...(await authHeaders()),
+            };
+            try {
+              const res = await fetch(`${API_BASE_URL}${path}`, {
+                ...init,
+                signal: bgController.signal,
+                headers: { ...defaultHeaders, ...init?.headers },
+              });
+              clearTimeout(bgTimeout);
+
+              if (!res.ok) {
+                const body = await readErrorBody(res);
+                const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+                throw new ApiError(detail, res.status, false);
+              }
+
+              if (res.status === 204) return undefined as T;
+              return res.json() as Promise<T>;
+            } catch (bgErr) {
+              clearTimeout(bgTimeout);
+              if (attempt < MAX_RETRIES - 1) continue;
+              throw bgErr;
+            }
+          }
+          throw firstError;
+        })();
+        throw lastError;
+      }
+    }
+    throw firstError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Like request(), but fails fast on the first network error so the UI can
+ * show a fallback immediately.  Retries are performed silently in the
+ * background; if a retry eventually succeeds the resolved value is returned
+ * via the returned promise (the caller can ignore it since the UI already
+ * showed a fallback).  If all retries fail, the final error is thrown.
+ *
+ * Use this for non-critical or speculative fetches where the UI should
+ * never block for 60+ seconds.
+ */
+export async function requestFast<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const hasJsonBody = typeof init?.body === "string";
+    const defaultHeaders: Record<string, string> = {
+      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+      ...(await authHeaders()),
+    };
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: { ...defaultHeaders, ...init?.headers },
+    });
+
+    if (!res.ok) {
+      const body = await readErrorBody(res);
+      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      throw new ApiError(detail, res.status, false);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
+    if (err instanceof ApiError && !err.isNetworkError) {
+      throw err;
+    }
+
+    // First attempt failed ? surface the error to the UI immediately
+    const firstError = err instanceof DOMException && err.name === "AbortError"
+      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+      : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+
+    // Retry with exponential backoff, returning the first success or final error
+    const lastError = await (async () => {
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        const bgController = new AbortController();
+        const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
+        const hasJsonBody = typeof init?.body === "string";
+        const defaultHeaders: Record<string, string> = {
+          ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+          ...(await authHeaders()),
+        };
+        try {
+          const res = await fetch(`${API_BASE_URL}${path}`, {
+            ...init,
+            signal: bgController.signal,
+            headers: { ...defaultHeaders, ...init?.headers },
+          });
+          clearTimeout(bgTimeout);
+
+          if (!res.ok) {
+            const body = await readErrorBody(res);
+            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+            throw new ApiError(detail, res.status, false);
+          }
+
+          if (res.status === 204) return undefined as T;
+          return res.json() as Promise<T>;
+        } catch (bgErr) {
+          clearTimeout(bgTimeout);
+          if (attempt < MAX_RETRIES - 1) continue;
+          throw bgErr;
+        }
+      }
+      throw firstError;
+    })();
+    throw lastError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
@@ -94,10 +277,6 @@ export function getSlowApiLog(): { path: string; durationMs: number; status: num
 export function clearSlowApiLog(): void {
   try { localStorage.removeItem(SLOW_LOG_KEY); } catch {}
 }
-
-const REQUEST_TIMEOUT_MS = 60_000;
-const MAX_RETRIES = 2;
-const BASE_RETRY_DELAY_MS = 2_000;
 
 export function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -224,171 +403,6 @@ export class ApiError extends Error {
   }
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const startTime = performance.now();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  try {
-    // 첫 시도
-    try {
-      const hasJsonBody = typeof init?.body === "string";
-      const defaultHeaders: Record<string, string> = {
-        ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-        ...(await authHeaders()),
-      };
-      const res = await fetch(`${API_BASE_URL}${path}`, {
-        ...init,
-        signal: controller.signal,
-        headers: { ...defaultHeaders, ...init?.headers },
-      });
-
-      if (!res.ok) {
-        const body = await readErrorBody(res);
-        const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-        throw new ApiError(detail, res.status, false);
-      }
-
-      if (res.status === 204) return undefined as T;
-      return res.json() as Promise<T>;
-    } catch (err) {
-      // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
-      if (err instanceof ApiError && !err.isNetworkError) {
-        throw err;
-      }
-
-      // First attempt failed ? surface the error to the UI immediately
-      const firstError = err instanceof DOMException && err.name === "AbortError"
-        ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
-        : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
-
-      // 타임아웃이 발생한 경우 즉시 종료
-      if (err instanceof DOMException && err.name === "AbortError") {
-        throw firstError;
-      }
-
-      // Retry with exponential backoff, returning the first success or final error
-      const lastError = await (async () => {
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-          // 타임아웃 검사
-          if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% 시간이 지나면 종료
-            throw new ApiError("요청 시간이 곧 초과됩니다. 네트워크 상태를 확인해주세요.", undefined, true);
-          }
-
-          const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          
-          const bgController = new AbortController();
-          const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
-          const hasJsonBody = typeof init?.body === "string";
-          const defaultHeaders: Record<string, string> = {
-            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-            ...(await authHeaders()),
-          };
-          
-          try {
-            const res = await fetch(`${API_BASE_URL}${path}`, {
-              ...init,
-              signal: bgController.signal,
-              headers: { ...defaultHeaders, ...init?.headers },
-            });
-            clearTimeout(bgTimeout);
-
-            if (!res.ok) {
-              const body = await readErrorBody(res);
-              const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-              throw new ApiError(detail, res.status, false);
-            }
-
-            if (res.status === 204) return undefined as T;
-            return res.json() as Promise<T>;
-          } catch (bgErr) {
-            clearTimeout(bgTimeout);
-            if (attempt < MAX_RETRIES - 1) continue;
-            throw bgErr;
-          }
-        }
-        throw firstError;
-      })();
-      throw lastError;
-    }
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-/**
- * Like request(), but fails fast on the first network error so the UI can
- * show a fallback immediately.  Retries are performed silently in the
- * background; if a retry eventually succeeds the resolved value is returned
- * via the returned promise (the caller can ignore it since the UI already
- * showed a fallback).  If all retries fail, the final error is thrown.
- *
- * Use this for non-critical or speculative fetches where the UI should
- * never block for 60+ seconds.
- */
-export async function requestFast<T>(path: string, init?: RequestInit): Promise<T> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const hasJsonBody = typeof init?.body === "string";
-    const defaultHeaders: Record<string, string> = {
-      ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-      ...(await authHeaders()),
-    };
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      signal: controller.signal,
-      headers: { ...defaultHeaders, ...init?.headers },
-    });
-
-    if (!res.ok) {
-      const body = await readErrorBody(res);
-      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-      throw new ApiError(detail, res.status, false);
-    }
-
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
-  } catch (err) {
-    // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
-    if (err instanceof ApiError && !err.isNetworkError) {
-      throw err;
-    }
-
-    // First attempt failed ? surface the error to the UI immediately
-    const firstError = err instanceof DOMException && err.name === "AbortError"
-      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
-      : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
-
-    // Retry with exponential backoff, returning the first success or final error
-    const lastError = await (async () => {
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        const bgController = new AbortController();
-        const bgTimeout = setTimeout(() => bgController.abort(), REQUEST_TIMEOUT_MS);
-        const hasJsonBody = typeof init?.body === "string";
-        const defaultHeaders: Record<string, string> = {
-          ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
-          ...(await authHeaders()),
-        };
-        try {
-          const res = await fetch(`${API_BASE_URL}${path}`, {
-            ...init,
-            signal: bgController.signal,
-            headers: { ...defaultHeaders, ...init?.headers },
-          });
-          clearTimeout(bgTimeout);
-
-          if (!res.ok) {
-            const body = await readErrorBody(res);
-            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
-            throw new ApiError(detail, res.status, false);
-          }
-
-          if (res.status === 204) return undefined as T;
-          return res.json() as Promise<T>;
         } catch (bgErr) {
           clearTimeout(bgTimeout);
           if (attempt < MAX_RETRIES - 1) continue;
