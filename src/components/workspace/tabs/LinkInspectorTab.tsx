@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ScanSearch, Users, MessageCircle, UserPlus, CheckCircle, AlertCircle,
@@ -166,17 +166,18 @@ export function LinkInspectorTab() {
 
   // Poll while anything is still in flight server-side (the scheduler
   // processes items in the background independent of this tab being open).
+  const hasActiveRef = useRef(false);
+  hasActiveRef.current = queueItems.some(
+    (it) => it.status === "queued" || it.status === "processing" || it.status === "flood_wait"
+  );
   useEffect(() => {
     if (!selectedAccountId) return;
-    const hasActive = queueItems.some(
-      (it) => it.status === "queued" || it.status === "processing" || it.status === "flood_wait"
-    );
-    if (!hasActive) return;
+    if (!hasActiveRef.current) return;
     const interval = setInterval(() => {
       void loadQueue(selectedAccountId, { silent: true });
     }, QUEUE_POLL_MS);
     return () => clearInterval(interval);
-  }, [selectedAccountId, queueItems]);
+  }, [selectedAccountId]);
 
   async function handleAddToQueue() {
     if (!selectedAccountId || selected.size === 0 || queueAdding) return;
