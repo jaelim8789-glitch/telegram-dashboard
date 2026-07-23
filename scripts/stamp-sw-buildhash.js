@@ -18,7 +18,7 @@ const stamped = sw
     `const CACHE_NAME = \`telemon-v${buildId}\`;`,
   )
   .replace(
-    /const CACHE_NAME = `telemon-v[a-f0-9]+`;/,
+    /const CACHE_NAME = `telemon-v[a-zA-Z0-9]+`;/,
     `const CACHE_NAME = \`telemon-v${buildId}\`;`,
   );
 
