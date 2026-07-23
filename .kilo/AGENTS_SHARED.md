@@ -29,3 +29,13 @@
 - Build: npm run build
 - Deploy: git push origin master (CI auto)
 - Backend: cd telegram-dashboard-backend && git push origin master
+
+## VPS 연결 정보
+- Host: 130.94.32.152
+- User: root
+- SSH Key: C:\Users\UserC\.ssh\telemon_vps_ed25519
+- Frontend: /opt/telemon/telegram-dashboard/
+- Backend: /opt/telemon/backend/
+- Docker: /opt/telemon/backend/docker-compose.yml
+- GHCR: ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+- GitHub: jaelim8789-glitch/telegram-dashboard (PUBLIC)

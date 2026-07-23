@@ -7,9 +7,15 @@ const swPath = path.join(__dirname, "..", "public", "sw.js");
 let buildId;
 try {
   buildId = fs.readFileSync(buildIdPath, "utf8").trim();
-} catch {
+} catch (error) {
   console.warn("stamp-sw-buildhash: BUILD_ID not found — skipping");
   buildId = "latest";
+}
+
+// Gracefully handle if sw.js doesn't exist
+if (!fs.existsSync(swPath)) {
+  console.warn("stamp-sw-buildhash: sw.js not found — skipping");
+  process.exit(0); // Exit gracefully
 }
 
 const sw = fs.readFileSync(swPath, "utf8");

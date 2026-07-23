@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+﻿import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 type EnterKeyHint = InputHTMLAttributes<HTMLInputElement>["enterKeyHint"];
@@ -13,19 +13,37 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
   autoCorrect?: string;
   autoCapitalize?: string;
-  // 모바일 터치를 위한 추가 속성
-  touchTargetSize?: 'default' | 'large';
+  touchTargetSize?: "default" | "large";
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, inputMode, enterKeyHint, autoCorrect, autoCapitalize, type, touchTargetSize = 'default', ...props }, ref) => {
-    const resolvedInputMode = inputMode ??
-      (type === "number" || type === "tel" ? "numeric" :
-       type === "email" ? "email" :
-       type === "url" ? "url" :
-       type === "search" ? "search" :
-       "text");
-    const resolvedEnterKeyHint = enterKeyHint ?? RESOLVE_KEY_HINT[type ?? ""] ?? "done";
+  (
+    {
+      className,
+      error,
+      inputMode,
+      enterKeyHint,
+      autoCorrect,
+      autoCapitalize,
+      type,
+      touchTargetSize = "default",
+      ...props
+    },
+    ref
+  ) => {
+    const resolvedInputMode =
+      inputMode ??
+      (type === "number" || type === "tel"
+        ? "numeric"
+        : type === "email"
+          ? "email"
+          : type === "url"
+            ? "url"
+            : type === "search"
+              ? "search"
+              : "text");
+    const resolvedEnterKeyHint =
+      enterKeyHint ?? RESOLVE_KEY_HINT[type ?? ""] ?? "done";
 
     return (
       <input
@@ -33,20 +51,33 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         type={type}
         inputMode={resolvedInputMode}
         enterKeyHint={resolvedEnterKeyHint}
-        autoCorrect={autoCorrect ?? (type === "email" || type === "url" ? "off" : undefined)}
-        autoCapitalize={autoCapitalize ?? (type === "email" || type === "url" ? "off" : undefined)}
+        autoCorrect={
+          autoCorrect ??
+          (type === "email" || type === "url" ? "off" : undefined)
+        }
+        autoCapitalize={
+          autoCapitalize ??
+          (type === "email" || type === "url" ? "off" : undefined)
+        }
         className={cn(
-          "flex h-9 w-full rounded-lg border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted outline-none transition-all",
-          "border-app-border focus:border-app-primary focus:ring-1 focus:ring-app-primary/30",
-          // 터치 타겟 크기 옵션에 따라 높이 조정 - now ensuring minimum 44px height
-          touchTargetSize === 'large' ? 'min-h-[48px] sm:min-h-11 text-base py-3' : 'min-h-[44px] sm:min-h-12 py-3',
-          error && "border-app-danger focus:border-app-danger focus:ring-app-danger/30",
+          "flex w-full rounded-[14px] border px-3 py-2 text-sm text-[#e5e5ec] placeholder:text-[#686880] outline-none transition-all duration-200",
+          "bg-[rgba(10,10,15,0.88)] backdrop-blur-xl saturate-[1.2]",
+          "border-[rgba(139,92,246,0.12)]",
+          "focus:border-[rgba(139,92,246,0.50)] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12),0_0_20px_rgba(139,92,246,0.06)]",
+          touchTargetSize === "large"
+            ? "min-h-[48px] sm:min-h-11 text-base py-3"
+            : "min-h-[44px] sm:min-h-12 py-3",
+          error &&
+            "border-[rgba(239,68,68,0.35)] focus:border-[rgba(239,68,68,0.50)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]",
           className
         )}
-        // iOS 가상 키보드 관련 속성 추가
-        {...(type === 'text' || type === 'email' || type === 'url' || type === 'tel' || type === 'search' ? { 
-          "data-mobile-keyboard": "true" 
-        } : {})}
+        {...(type === "text" ||
+        type === "email" ||
+        type === "url" ||
+        type === "tel" ||
+        type === "search"
+          ? { "data-mobile-keyboard": "true" }
+          : {})}
         {...props}
       />
     );

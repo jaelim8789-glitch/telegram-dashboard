@@ -40,7 +40,7 @@ jobs:
         with: { fetch-depth: 1 }
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -59,7 +59,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -94,7 +94,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -121,9 +121,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .next
-          key: next-build-${{ github.sha }}-${{ runner.os }}
+          key: next-build-${{ github.sha }}
           restore-keys: |
-            next-build-${{ runner.os }}-
+            next-build-
 
   # ============================================
   # 1c. Frontend ??e2e smoke test
@@ -137,7 +137,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -219,6 +219,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+          timeout-minutes: 15
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             NEXT_PUBLIC_API_BASE_URL=${{ env.NEXT_PUBLIC_API_BASE_URL }}
