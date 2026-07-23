@@ -134,7 +134,7 @@ function ChatBubble({ message }: { message: Message }) {
   };
 
   return (
-    <div className="flex animate-fade-in">
+    <div className={`flex animate-fade-in`}>
       <div className="max-w-[88%]">
         {/* Bubble */}
         <div className="relative group">
