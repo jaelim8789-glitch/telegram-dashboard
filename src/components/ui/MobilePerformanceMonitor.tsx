@@ -1,2 +1,3 @@
-\use client\;
-export default function MobilePerformanceMonitor() { return null; }
+"use client";
+
+export function MobilePerformanceMonitor() { return null; }

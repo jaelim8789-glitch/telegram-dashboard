@@ -1,2 +1,3 @@
-" use client\;
-export default function MobileLocalizationOptimizer() { return null; }
+"use client";
+
+export function MobileLocalizationOptimizer() { return null; }
