@@ -4,6 +4,8 @@
 > 백엔드: `telegram-dashboard-backend` 저장소  
 > 혼동 방지를 위해 각각의 기능이 분리되어 있습니다.
 
+![CI](https://github.com/jaelim8789-glitch/telegram-dashboard/actions/workflows/deploy.yml/badge.svg)
+
 <!-- END FRONTEND REPO NOTICE -->
 
 # Telegram Management Dashboard — Frontend

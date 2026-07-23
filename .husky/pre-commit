@@ -1,8 +1,1 @@
-. "$(dirname "$0")/_/husky.sh"
-
-echo "==> [pre-commit] lint-staged..."
-npx lint-staged 2>&1 || {
-  echo "  FAIL: lint-staged failed — fix lint errors before committing"
-  exit 1
-}
-echo "==> [pre-commit] OK"
+npm test

@@ -1,31 +1,19 @@
 ---
 name: Feature Request
 about: Suggest an idea for this project
-title: "[FEAT] "
-labels: enhancement
+title: ''
+labels: 'enhancement'
 assignees: ''
-
 ---
 
-## Problem Statement
-Is your feature request related to a problem? Please describe.
-Ex. I'm always frustrated when [...]
+## 문제 설명
+<!-- 어떤 문제가 있고, 왜 해결이 필요한지 명확하고 간결하게 설명 -->
 
-## Proposed Solution
-A clear and concise description of what you want to happen.
+## 원하는 솔루션
+<!-- 원하는 솔루션이 무엇인지 명확하고 간결하게 설명 -->
 
-## Alternative Solutions
-A clear and concise description of any alternative solutions or features you've considered.
+## 대안 고려사항
+<!-- 고려했던 대안이나 해결책에 대해 설명 -->
 
-## Target Users
-Who will benefit from this feature?
-- [ ] End users (dashboard users)
-- [ ] Developers / maintainers
-- [ ] Administrators
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Additional Context
-Add any other context, mockups, or screenshots about the feature request here.
+## 추가 정보
+<!-- 기능 요청과 관련된 기타 정보 -->

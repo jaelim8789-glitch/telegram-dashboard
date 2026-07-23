@@ -6,7 +6,11 @@ Thank you for your interest in contributing to TeleMon! This document outlines t
 
 - `master` - Production-ready code
 - `develop` - Integration branch for features
-- Feature branches: `feature/<feature-name>`, `bugfix/<issue-id>-<short-description>`, `hotfix/<issue-id>-<short-description>`
+- Feature branches: 
+  - `feature/<feature-name>` or `feat/<feature-name>` - New features
+  - `bugfix/<issue-id>-<short-description>` or `fix/<issue-name>` - Bug fixes
+  - `redesign/<feature-name>` - UI changes
+  - `opt/<optimization-name>` - Performance optimizations
 - Release branches: `release/v<version>`
 
 ## Commit Convention
