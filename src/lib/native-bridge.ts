@@ -75,10 +75,10 @@ export async function setStatusBarStyle(style: "light" | "dark") {
 export async function setNativeBadge(count: number) {
   if (!isNative()) return;
   try {
-    // @ts-expect-error — @capacitor/badge is an optional native dependency, not always installed
-    const { Badge } = await import("@capacitor/badge");
-    if (count > 0) await Badge.set({ badge: count });
-    else await Badge.clear();
+    const mod = await import("@capacitor/badge").catch(() => null);
+    if (!mod) return;
+    if (count > 0) await mod.Badge.set({ badge: count });
+    else await mod.Badge.clear();
   } catch {}
 }
 
