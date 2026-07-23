@@ -1,4 +1,4 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "ES6"],
@@ -36,7 +36,7 @@
     
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "importsNotUsedAsValues": "error",
+    "verbatimModuleSyntax": true,
     "checkJs": false
   },
   "include": [

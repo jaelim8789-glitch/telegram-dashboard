@@ -6,10 +6,9 @@
 .tsbuildinfo*
 report/
 .pnpm-store
+scripts/
 
-# CRITICAL: Root app/ and backend/ dirs shadow src/app for Next.js App Router.
-# Present here for historical reasons -- they must NOT be in the Docker build context
-# or the frontend build silently produces zero routes (all 404s).
+# CRITICAL: Root dirs that shadow src/app for Next.js App Router.
 /app
 /backend
 /telegram-dashboard-backend
