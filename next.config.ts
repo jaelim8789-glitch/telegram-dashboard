@@ -15,7 +15,6 @@ let nextConfig: NextConfig = {
     scrollRestoration: true,
     optimisticClientCache: true,
     webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
     staleTimes: { dynamic: 30, static: 180 },
   },
   images: {

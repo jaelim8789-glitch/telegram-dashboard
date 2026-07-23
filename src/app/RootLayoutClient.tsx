@@ -1,14 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { GestureTour } from "@/components/ui/GestureTour";
-import { ShareTargetHandler } from "@/components/ui/ShareTargetHandler";
-import { RuntimeInitializer } from "@/components/ui/RuntimeInitializer";
+import { ShareTargetHandler } from "@/components/ShareTargetHandler";
+import { RuntimeInitializer } from "@/lib/RuntimeInitializer";
 import { PwaRegister } from "@/components/ui/PwaRegister";
 import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
 import { ToastProvider } from "@/components/ui/Toast";
-import { LiveChat } from "@/components/ui/LiveChat";
+import { LiveChat } from "@/components/LiveChat";
 import { MobileOptimizations } from "@/components/MobileOptimizations";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { PerformanceProvider } from "@/contexts/PerformanceContext";

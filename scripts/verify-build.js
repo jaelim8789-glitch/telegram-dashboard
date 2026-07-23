@@ -12,6 +12,7 @@ const path = require('path');
 
 const BUILD_MANIFEST = path.join(__dirname, '..', '.next', 'build-manifest.json');
 const APP_PATH_MANIFEST = path.join(__dirname, '..', '.next', 'server', 'app-paths-manifest.json');
+const STANDALONE_DIR = path.join(__dirname, '..', '.next', 'standalone');
 
 let routeCount = 0;
 
@@ -32,6 +33,22 @@ if (routeCount === 0) {
   console.error('[verify-build] This is likely caused by a root /app directory shadowing src/app.');
   console.error('[verify-build] Verify .dockerignore contains "/app" and "/backend" entries.');
   process.exit(1);
+}
+
+// 추가: .next/standalone 디렉토리의 실제 라우트 수 확인
+if (fs.existsSync(STANDALONE_DIR)) {
+  const standaloneFiles = fs.readdirSync(STANDALONE_DIR, { recursive: true })
+    .filter(file => typeof file === 'string')
+    .filter(file => file.endsWith('.html') || file.includes('/app/') || file.includes('pages/'));
+  
+  console.log(`[verify-build] Standalone routes found: ${standaloneFiles.length}`);
+  standaloneFiles.slice(0, 10).forEach(file => console.log(`  Standalone file: ${file}`)); // 최대 10개까지만 출력
+  
+  if (standaloneFiles.length === 0) {
+    console.warn('[verify-build] WARNING: No standalone route files found in .next/standalone');
+  }
+} else {
+  console.log('[verify-build] INFO: .next/standalone directory not found (not in standalone mode)');
 }
 
 console.log(`[verify-build] ✅ ${routeCount} route(s) verified.`);

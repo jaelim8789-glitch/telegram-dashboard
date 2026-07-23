@@ -1,8 +1,6 @@
-/**
- * @jest-environment node
- */
+import * as ws from "@/store/useWorkspaceStore";
 
-import { useStore } from "@/store/useWorkspaceStore";
+const useStore = ws.useStore;
 
 beforeEach(() => {
   useStore.setState({
@@ -23,15 +21,15 @@ describe("useWorkspaceStore", () => {
   });
 
   it("addGrowthLoop adds a loop to activeGrowthLoops", () => {
-    const loop = { id: "loop-1", name: "Test Loop", status: "idle" } as any;
+    const loop = { id: "loop-1", name: "Test Loop", status: "idle" };
     useStore.getState().addGrowthLoop(loop);
     expect(useStore.getState().activeGrowthLoops).toHaveLength(1);
     expect(useStore.getState().activeGrowthLoops[0].id).toBe("loop-1");
   });
 
   it("removeGrowthLoop removes a loop by id", () => {
-    const loop1 = { id: "loop-1", name: "Loop 1" } as any;
-    const loop2 = { id: "loop-2", name: "Loop 2" } as any;
+    const loop1 = { id: "loop-1", name: "Loop 1" };
+    const loop2 = { id: "loop-2", name: "Loop 2" };
     useStore.getState().addGrowthLoop(loop1);
     useStore.getState().addGrowthLoop(loop2);
     useStore.getState().removeGrowthLoop("loop-1");
