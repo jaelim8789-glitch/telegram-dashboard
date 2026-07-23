@@ -1,14 +1,19 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, Send, MessageSquare, User, LayoutDashboard, Settings, Moon, Sun, RotateCcw } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Search, Send, MessageSquare, Settings, Zap, Users, Clock, Bot, LayoutDashboard, Moon, RotateCcw } from 'lucide-react';
 import { MiniAppTab } from "@/app/miniapp/MiniAppNav";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useAccountStateStore } from "@/store/useAccountStateStore";
+import { cn } from '@/lib/cn';
 
 interface Command {
   id: string;
   title: string;
   description: string;
   shortcut: string[];
+  icon: React.ReactNode;
   category: string;
   action: () => void;
 }
@@ -20,7 +25,8 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const { fetchAccounts: refreshDashboard } = useDashboardStore();
   const { getCurrentAccountState, updateAccountState } = useAccountStateStore();
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
@@ -136,34 +142,39 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     );
   }, [commands, searchQuery]);
 
-  // 단축키 처리
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+  // 단축키 이벤트 핸들러
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      onClose(); // 기존 팔레트 닫기
+      setIsOpen(true); // 새로운 팔레트 열기
+    }
+    
+    if (isOpen) {
+      if (e.key === 'Escape') {
         onClose();
-        return;
-      }
-
-      // 명령어 단축키 처리
-      const matchedCommand = commands.find(cmd => 
-        cmd.shortcut.some(shortcut => {
-          if (shortcut === e.key.toLowerCase()) return true;
-          if (shortcut.startsWith("Shift+") && e.shiftKey && shortcut.endsWith(e.key)) return true;
-          return false;
-        })
-      );
-
-      if (matchedCommand) {
+        setSearchTerm('');
+      } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        matchedCommand.action();
+        setSelectedIndex(prev => (prev < filteredCommands.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev > 0 ? prev - 1 : filteredCommands.length - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[selectedIndex]) {
+          filteredCommands[selectedIndex].action();
+          onClose();
+          setSearchTerm('');
+        }
       }
-    };
+    }
+  }, [isOpen, selectedIndex, filteredCommands, onClose]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, commands, onClose]);
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   // 팔레트가 열릴 때 포커스 설정
   useEffect(() => {
@@ -175,7 +186,24 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // 추가된 UI 요소를 위한 함수
+  const handleCommandSelect = (command: Command) => {
+    command.action();
+    onClose();
+    setSearchTerm('');
+  };
+  
+  // 단축키 표시를 위한 함수
+  const renderShortcut = (shortcut: string[]) => {
+    return shortcut.map((key, idx) => (
+      <kbd 
+        key={idx}
+        className="inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium"
+      >
+        {key}
+      </kbd>
+    ));
+  };
 
   return (
     <div 
@@ -191,18 +219,21 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
           color: "var(--tg-theme-text-color, #f5f5f5)"
         }}
       >
-        <div className="p-3 border-b" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
+        {/* 명령 팔레트 헤더 */}
+        <div className="p-4 pb-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               id="command-palette-search"
               type="text"
               placeholder="명령 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border bg-app-bg pl-10 pr-4 py-2 text-sm outline-none"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setSelectedIndex(0);
+              }}
+              className="pl-10 pr-4 py-3 text-lg border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
               style={{ 
-                borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
                 backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)",
                 color: "var(--tg-theme-text-color, #f5f5f5)"
               }}
@@ -215,43 +246,36 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
           {filteredCommands.length > 0 ? (
             <ul>
               {filteredCommands.map((cmd) => (
-                <li key={cmd.id}>
-                  <button
-                    onClick={cmd.action}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-app-card-hover active:scale-[0.98] transition-colors"
-                    style={{ 
-                      color: "var(--tg-theme-text-color, #f5f5f5)",
-                      backgroundColor: "var(--tg-theme-bg-color, #17212b)"
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      {cmd.id.includes("dashboard") && <LayoutDashboard className="h-4 w-4" />}
-                      {cmd.id.includes("chat") && <MessageSquare className="h-4 w-4" />}
-                      {cmd.id.includes("send") && <Send className="h-4 w-4" />}
-                      {cmd.id.includes("profile") && <User className="h-4 w-4" />}
-                      {cmd.id.includes("refresh") && <RotateCcw className="h-4 w-4" />}
-                      {cmd.id.includes("theme") && <Moon className="h-4 w-4" />}
-                      <div className="flex flex-col text-left">
-                        <span className="font-medium">{cmd.title}</span>
-                        <span className="text-xs text-app-text-muted">{cmd.description}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {cmd.shortcut.map((s, idx) => (
-                        <kbd 
-                          key={idx}
-                          className="rounded bg-app-card px-2 py-0.5 text-xs font-medium"
-                          style={{ 
-                            backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
-                            color: "var(--tg-theme-hint-color, #708499)"
-                          }}
-                        >
-                          {s}
-                        </kbd>
-                      ))}
-                    </div>
-                  </button>
-                </li>
+                <button
+                  key={cmd.id}
+                  className={cn(
+                    "w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-accent cursor-pointer",
+                    index === selectedIndex && "bg-accent"
+                  )}
+                  onClick={handleCommandSelect}
+                  style={{ 
+                    color: "var(--tg-theme-text-color, #f5f5f5)",
+                    backgroundColor: "var(--tg-theme-bg-color, #17212b)"
+                  }}
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                    {cmd.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">{cmd.title}</div>
+                    <div className="text-sm text-muted-foreground truncate">{cmd.description}</div>
+                  </div>
+                  <div className="flex-shrink-0 flex gap-1">
+                    {cmd.shortcut.map((key, idx) => (
+                      <kbd 
+                        key={idx}
+                        className="inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium"
+                      >
+                        {key}
+                      </kbd>
+                    ))}
+                  </div>
+                </button>
               ))}
             </ul>
           ) : (
@@ -261,10 +285,10 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
           )}
         </div>
         
+        {/* 명령 팔레트 푸터 */}
         <div className="border-t p-3 text-xs text-app-text-muted flex justify-between" 
           style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
-          <span>↑↓ 이동 • Enter 선택</span>
-          <span>Esc 닫기</span>
+          <span>↑↓ 이동 • Enter 선택 • Esc 닫기</span>
         </div>
       </div>
     </div>

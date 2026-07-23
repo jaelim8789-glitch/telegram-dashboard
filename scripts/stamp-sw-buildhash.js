@@ -12,10 +12,15 @@ const swPath = path.join(__dirname, "..", "public", "sw.js");
 const buildId = fs.readFileSync(buildIdPath, "utf8").trim();
 const sw = fs.readFileSync(swPath, "utf8");
 
-const stamped = sw.replace(
-  /const CACHE_NAME = `telemon-v\$\{self\.__BUILD_HASH \|\| 'latest'\}`;/,
-  `const CACHE_NAME = \`telemon-v${buildId}\`;`,
-);
+const stamped = sw
+  .replace(
+    /const CACHE_NAME = `telemon-v\$\{self\.__BUILD_HASH \|\| 'latest'\}`;/,
+    `const CACHE_NAME = \`telemon-v${buildId}\`;`,
+  )
+  .replace(
+    /const CACHE_NAME = `telemon-v[a-f0-9]+`;/,
+    `const CACHE_NAME = \`telemon-v${buildId}\`;`,
+  );
 
 if (stamped === sw) {
   throw new Error("stamp-sw-buildhash: CACHE_NAME pattern not found in public/sw.js — refusing to leave it unstamped");
