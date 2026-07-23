@@ -1,12 +1,7 @@
-import { H } from "@highlight-ai/react";
-
-const IS_DEV = typeof process !== "undefined" && process.env.NODE_ENV === "development";
+import { H } from "@highlight-run/react";
 
 export function initHighlight() {
-  if (IS_DEV && process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID) {
-    H.init(process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID, {
-      environment: "development",
-      serviceName: "telemon-frontend",
-    });
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+    H.init(process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID ?? "");
   }
 }
