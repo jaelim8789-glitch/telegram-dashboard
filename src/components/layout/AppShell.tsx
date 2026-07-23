@@ -1,16 +1,16 @@
-"use client";
+ï»¿"use client";
 
 /**
  * AppShell ? Premium glass 3-column AI OS layout
  *
  * Desktop (sm:):
- * ¦£¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¨¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¨¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¤
- * ¦¢ Sidebar    ¦¢       Main Content          ¦¢ AI Panel     ¦¢
- * ¦¢ (64px)     ¦¢    (glass cards, KPIs)      ¦¢ (320px)      ¦¢
- * ¦¢ glass dark ¦¢       premium               ¦¢ glass dark   ¦¢
- * ¦¢ purple     ¦¢       dashboard             ¦¢ purple       ¦¢
- * ¦¢ border-right¦¢                           ¦¢ border-left  ¦¢
- * ¦¦¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦ª¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦ª¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¥
+ *                                                            
+ *   Sidebar            Main Content            AI Panel      
+ *   (64px)          (glass cards, KPIs)        (320px)       
+ *   glass dark         premium                 glass dark    
+ *   purple             dashboard               purple        
+ *   border-right                              border-left   
+ *                                                            
  *
  * Mobile (max-sm:): single panel + glass bottom bar with safe-area
  */
@@ -37,7 +37,7 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
   const activeCategory = useCategoryStore((s) => s.activeCategory);
   const { showLeftPanel, showRightPanel } = usePanelVisibility();
 
-  // ¦¡¦¡ Nicegram mode state ¦¡¦¡
+  //    Nicegram mode state   
   const [ngActiveChatId, setNgActiveChatId] = useState<number | null>(null);
   const [ngChatTitle, setNgChatTitle] = useState<string>("");
   const isNicegram = activeCategory === "nicegram";
@@ -54,7 +54,7 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
 
   return (
     <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "#0a0a0f" }}>
-      {/* ¦¡¦¡ Ambient background glow (purple radial, top-right) ¦¡¦¡ */}
+      {/*    Ambient background glow (purple radial, top-right)    */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
@@ -64,12 +64,12 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
         }}
       />
 
-      {/* ¦¡¦¡ Category Icon Sidebar (desktop only) ¦¡¦¡ */}
+      {/*    Category Icon Sidebar (desktop only)    */}
       <div className="relative z-10">
         <CategorySidebar />
       </div>
 
-      {/* ¦¡¦¡ Main content area ¦¡¦¡ */}
+      {/*    Main content area    */}
       <div className="relative z-10 flex flex-1 min-w-0 overflow-hidden">
         {/* Left Panel */}
         {isNicegram ? (
@@ -141,10 +141,11 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
         ) : null}
       </div>
 
-      {/* ¦¡¦¡ Mobile Bottom Tab Bar (glass) ¦¡¦¡ */}
+      {/*    Mobile Bottom Tab Bar (glass)    */}
       <div className="relative z-20 sm:hidden">
         <MobileCategoryBar />
       </div>
     </div>
   );
 }
+
