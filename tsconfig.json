@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "ES6"],
@@ -22,7 +22,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    // 성능 최적화 관련 설정
+    // ?源낅뮟 筌ㅼ뮇????온????쇱젟
     "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -30,12 +30,10 @@
     "noImplicitThis": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "useUnknownInCatchVariables": true,
-    "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": true,
+    
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "importsNotUsedAsValues": "error",

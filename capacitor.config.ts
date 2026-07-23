@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'TeleMon',
   webDir: 'dist',
   server: {
-    url: (process.env['CAP_SERVER_URL'] ?? undefined) as any,
+    url: process.env.CAP_SERVER_URL ?? undefined,
     cleartext: true,
   },
   plugins: {

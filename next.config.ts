@@ -1,4 +1,4 @@
-﻿import type { NextConfig } from "next";
+import type { NextConfig } from "next";
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
@@ -9,7 +9,37 @@ let nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  typescript: { ignoreBuildErrors: false },
+  // 로그 레벨 최소화 - 개발 속도 향상
+  webpack: (config, { isServer, dev }) => {
+    if (dev && !isServer) {
+      // 개발 모드에서 번들러 로그 최소화
+      config.stats = 'errors-only';
+    }
+    
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false, net: false, tls: false,
+      };
+    }
+    return config;
+  },
+  // 개발 서버 로그 최소화
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'date-fns', '@reduxjs/toolkit'],
+    scrollRestoration: true,
+    optimisticClientCache: true,
+    webpackBuildWorker: true,
+    parallelServerBuildTraces: true,
+    staleTimes: { dynamic: 30, static: 180 },
+    // 로그 출력 최소화
+    logging: {
+      fetches: {
+        fullUrl: false
+      }
+    }
+  },
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
@@ -33,14 +63,6 @@ let nextConfig: NextConfig = {
   },
   serverExternalPackages: ["sharp", "canvas", "@tma.js/sdk-react"],
   typedRoutes: true,
-  experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'date-fns', '@reduxjs/toolkit'],
-    scrollRestoration: true,
-    optimisticClientCache: true,
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    staleTimes: { dynamic: 30, static: 180 },
-  },
   async headers() {
     return [
       {
@@ -68,15 +90,6 @@ let nextConfig: NextConfig = {
         ]
       }
     ];
-  },
-  webpack: (config, { isServer, dev }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false, net: false, tls: false,
-      };
-    }
-    return config;
   },
 };
 
