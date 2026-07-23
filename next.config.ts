@@ -19,7 +19,13 @@ let nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      { protocol: "http", hostname: "localhost" },
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+            { protocol: "http", hostname: "localhost" },
       { protocol: "http", hostname: "127.0.0.1" },
       ...(process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_API_BASE_URL
         ? [{ protocol: "https" as const, hostname: new URL(process.env.NEXT_PUBLIC_API_BASE_URL).hostname }]
