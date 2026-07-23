@@ -5,7 +5,8 @@
                     "node":  "\u003e=20.0.0",
                     "pnpm":  "\u003e=10.0.0"
                 },
-    "packageManager":  "pnpm@10.8.1",
+  "packageManager": "pnpm@10.8.1",
+  "onlyBuiltDependencies": ["@sentry/cli", "core-js-pure", "esbuild"],
     "private":  true,
     "scripts":  {
                     "dev":  "next dev --turbo",
@@ -15,14 +16,14 @@
                     "lint":  "eslint --fix",
                     "typecheck":  "tsc --noEmit",
                     "test:e2e":  "playwright test",
-                    "prepare":  "husky || true",
+                    "prepare":  "husky 2\u003e/dev/null || true",
                     "cap:build":  "cross-env CAPACITOR=1 CAP_EXPORT_DIR=dist next build \u0026\u0026 npx cap copy",
                     "cap:sync":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap sync",
                     "cap:android":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap copy \u0026\u0026 npx cap open android",
                     "cap:ios":  "cross-env CAPACITOR=1 next build \u0026\u0026 npx cap open ios",
                     "seed":  "cd telegram-dashboard-backend \u0026\u0026 python scripts/seed_local.py",
                     "openapi":  "cd telegram-dashboard-backend \u0026\u0026 python -c \"from app.main import app; import json; open(\u0027../openapi.json\u0027,\u0027w\u0027).write(json.dumps(app.openapi(), indent=2))\"",
-                    "typegen":  "npx openapi-typescript openapi.json -o src/lib/api.types.ts \u0026\u0026 echo \u0027typegen complete ? commit openapi.json + api.types.ts together\u0027",
+                    "typegen":  "npx openapi-typescript openapi.json -o src/lib/api.types.ts",
                     "changelog":  "npx conventional-changelog-cli -p angular -i CHANGELOG.md -s",
                     "storybook":  "storybook dev -p 6006",
                     "build-storybook":  "storybook build",
@@ -63,7 +64,12 @@
                     "qa":  "npm run typecheck \u0026\u0026 pnpm lint \u0026\u0026 npm run build",
                     "fresh":  "bash scripts/git-cleanup.sh",
                     "fresh-remote":  "bash scripts/git-cleanup-remote.sh",
-                    "branch-status":  "bash scripts/git-branch-status.sh"
+                    "branch-status":  "bash scripts/git-branch-status.sh",
+                    "tunnel":  "bash scripts/tunnel.sh",
+                    "setup":  "pnpm install && pre-commit install",
+                    "approve-builds": "bash scripts/pnpm-approve-builds.sh"
+                    
+                    
                 },
     "lint-staged":  {
                         "*.{ts,tsx,js,jsx}":  [
@@ -142,11 +148,5 @@
                             "ts-jest":  "^29.1.2",
                             "typescript":  "^5",
                             "webpack-bundle-analyzer":  "^4.10.1"
-                        },
-    "pnpm":  {
-                 "onlyBuiltDependencies":  [
-                                               "esbuild",
-                                               "sharp"
-                                           ]
-             }
+                        }
 }

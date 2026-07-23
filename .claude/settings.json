@@ -1,3 +1,67 @@
+지시사{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf \"C:/Users/UserC/AppData/Local/Temp/ai-knowledge-mcp-http-smoke-*\" 2>&1 || true *)",
+      "Bash(codebase-memory-mcp index_repository repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp search_graph name_pattern=\".*\" repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp trace_path symbol=\"*\" repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(codebase-memory-mcp get_architecture repo_path=\"C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\" *)",
+      "Bash(npx -y codebase-memory-mcp --version *)",
+      "Bash(python -c \"import httpx\")",
+      "Bash(python -c \"import httpx; print('httpx', httpx.__version__)\")",
+      "Bash(python -m py_compile app/api/ai_copilot.py app/api/ai.py app/services/ai_core_service.py app/services/ai_memory.py app/services/graphiti_ai_memory.py app/config.py app/models/ai.py)",
+      "Bash(python -m pytest telegram-dashboard-backend/tests/test_ai_copilot_api.py -q)",
+      "Bash(python -m pytest telegram-dashboard-backend/tests/ -q)",
+      "Bash(git status --short)",
+      "Bash(git diff --stat)",
+      "Bash(git log --oneline -5)",
+      "Bash(git add *)",
+      "Bash(git commit -m *",
+      "Bash(git push origin *)",
+      "Bash(docker ps)",
+      "Bash(docker compose ps)",
+      "Bash(npx playwright --version *)",
+      "Bash(npx @upstash/context7-mcp@latest --version *)",
+      "Bash(npx mcp-postgres-server --help *)",
+      "Bash(npx @gongrzhe/server-redis-mcp@1.0.0 --help *)",
+      "Bash(pwsh.exe -ExecutionPolicy Bypass -File ./dev.ps1)",
+      "Bash(pwsh.exe -ExecutionPolicy Bypass -File ./scripts/install_uv_deps.ps1)",
+      "Bash(pwsh.exe -ExecutionPolicy Bypass -File ./scripts/run_smoke_tests.ps1)",
+      "Bash(pnpm dev)",
+      "Bash(python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000)",
+      "Bash(npx playwright test e2e/accounts.spec.ts --project=chromium)",
+      "Bash(npx playwright test e2e/core-flows.spec.ts --project=chromium)",
+      "Bash(npx playwright test e2e/auth.setup.ts --project=chromium)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\UserC\\AppData\\Local\\Temp",
+      "C:\\Backups\\emergency-20260718-211528\\Dev\\TeleMon\\scripts"
+    ]
+  },
+  "superclaude": {
+    "presets": {
+      "fast-dev": {
+        "description": "빠른 개발 모드 - uv 종속성 설치 및 로그 최소화",
+        "commands": [
+          "pwsh.exe -ExecutionPolicy Bypass -File ./scripts/install_uv_deps.ps1",
+          "pwsh.exe -ExecutionPolicy Bypass -File ./dev.ps1"
+        ]
+      },
+      "smoke-test": {
+        "description": "스모크 테스트 - 핵심 3개 테스트만 실행",
+        "commands": [
+          "pwsh.exe -ExecutionPolicy Bypass -File ./scripts/run_smoke_tests.ps1"
+        ]
+      },
+      "ai-mock": {
+        "description": "AI 모킹 모드 - 실제 API 호출 없이 개발",
+        "environment": {
+          "MOCK_AI": "true"
+        }
+      }
+    }
+  }
+}
 {
   "systemPrompt": "You are TeleMon AI assistant. The project is a Telegram management dashboard (Next.js + FastAPI). Follow existing code conventions: use Zustand for state, Tailwind CSS for styling, Framer Motion for animations. All UI text is Korean. Never add emoji unless asked. Never add comments to code.",
   "allowedTools": ["Read", "Edit", "Write", "Bash", "Glob", "Grep", "Task"],

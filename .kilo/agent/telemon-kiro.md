@@ -28,3 +28,4 @@ Rules:
 pm run build before committing
 5. pnpm only, never npm
 6. Package changes require pnpm install --no-frozen-lockfile + lockfile commit
+

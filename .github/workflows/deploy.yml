@@ -1,4 +1,4 @@
-name: Deploy TeleMon
+﻿name: Deploy TeleMon
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -7,6 +7,7 @@ concurrency:
 on:
   push:
     branches: [master]
+    paths-ignore: ['**.md', 'docs/**', 'DOCS/**', 'scripts/**', '.kilo/**', 'telegram-dashboard-backend/**', 'backend/**']
     paths-ignore: ['**.md', 'docs/**', 'DOCS/**', 'scripts/**', '.kilo/**']
   workflow_dispatch:
     inputs:
@@ -48,7 +49,7 @@ jobs:
       - run: pnpm ls --depth=0 2>&1 | head -5
 
   # ============================================
-  # 1a. Frontend — typecheck
+  # 1a. Frontend ??typecheck
   # ============================================
   frontend-typecheck:
     runs-on: ubuntu-latest
@@ -77,13 +78,13 @@ jobs:
         name: pnpm install (on cache miss)
 
       - run: pnpm typecheck
-        name: TypeScript type check (report-only — TEAM_STATUS.md tracks the cleanup)
+        name: TypeScript type check (report-only ??TEAM_STATUS.md tracks the cleanup)
         continue-on-error: true
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
   # ============================================
-  # 1b. Frontend — build
+  # 1b. Frontend ??build
   # ============================================
   frontend-build:
     runs-on: ubuntu-latest
@@ -125,7 +126,7 @@ jobs:
             next-build-${{ runner.os }}-
 
   # ============================================
-  # 1c. Frontend — e2e smoke test
+  # 1c. Frontend ??e2e smoke test
   # ============================================
   frontend-e2e:
     if: github.event_name == 'pull_request'
@@ -246,12 +247,12 @@ jobs:
             set +e
             for i in $(seq 1 6); do
               if curl -sf http://localhost/health > /dev/null 2>&1; then
-                echo "✅ Gateway healthy"
+                echo "??Gateway healthy"
                 exit 0
               fi
               sleep 3
             done
-            echo "❌ Gateway unhealthy — aborting deploy"
+            echo "??Gateway unhealthy ??aborting deploy"
             exit 1
 
       - name: Pull image + restart frontend
@@ -303,6 +304,6 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Frontend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
+            {"text":"${{ job.status == 'success' && '?? || '?? }} [production] Frontend deployed ??${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
           preventFailureOnNoResponse: true
 
