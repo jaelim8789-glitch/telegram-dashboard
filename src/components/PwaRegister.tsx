@@ -5,6 +5,7 @@ import { subscribeToPush } from "@/lib/pushManager";
 import { cacheClear } from "@/lib/cacheStorage";
 import { useOnlineStatus } from "@/lib/offlineDetector";
 import { usePushNotificationTracking } from '@/hooks/usePushNotificationTracking';
+import { useToast } from "@/components/ui/Toast";
 
 interface PwaRegisterProps {
   onUpdateAvailable?: () => void;
@@ -16,6 +17,7 @@ interface PwaRegisterProps {
  * when the app comes back online after being offline.
  */
 export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
+  const { toast } = useToast();
   const { online, wasOffline } = useOnlineStatus();
   const syncingRef = useRef(false);
 
@@ -53,7 +55,7 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
         // New deploys change sw.js's byte content (CACHE_NAME bump etc.),
         // so ask the browser to check for an update on every load.
-        registration.update().catch((e) => console.error("[PwaRegister] SW update 실패", e));
+        registration.update().catch((e) => { console.error("[PwaRegister] SW update 실패", e); toast("error", "서비스워커 업데이트에 실패했습니다"); });
 
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;

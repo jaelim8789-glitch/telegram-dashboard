@@ -7,12 +7,14 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import * as api from "@/lib/api";
 import { MarkdownMessage } from "@/components/ai/MarkdownMessage";
 import OneClickBusinessModal from "@/components/business/OneClickBusinessModal";
+import { useToast } from "@/components/ui/Toast";
 
 /**
  * AI Welcome Card — "안녕하세요 대표님, 오늘 할일"
  * Works only with existing API, no new backend calls.
  */
 export function AiWelcomeCard() {
+  const { toast } = useToast();
   const accounts = useDashboardStore((s) => s.accounts);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
   const account = accounts.find((a) => a.id === selectedAccountId);
@@ -34,7 +36,7 @@ export function AiWelcomeCard() {
         failed: logs.filter((l) => l.status === "failed").length,
         pending: logs.filter((l) => l.status === "pending").length,
       });
-    }).catch((e) => console.error("[AiWelcomeCard] fetchLogs 실패", e));
+    }).catch((e) => { console.error("[AiWelcomeCard] fetchLogs 실패", e); toast("error", "오늘의 발송 통계를 불러오지 못했습니다"); });
   }, [selectedAccountId]);
 
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
