@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-23",
+  "phase": "Launch Prep",
+  "items": [
+    {
+      "id": "ci-fix",
+      "title": "CI post-step cache error 수정",
+      "status": "in_progress",
+      "owner": "Kilo(CTO)",
+      "priority": "🔥 CRITICAL",
+      "eta": "30분"
+    },
+    {
+      "id": "login-test",
+      "title": "텔레그램 로그인 연동 테스트",
+      "status": "blocked",
+      "owner": "사용자",
+      "priority": "🔥 CRITICAL",
+      "eta": "CI 통과 후 5분"
+    },
+    {
+      "id": "perceived-speed",
+      "title": "Agent A: Perceived Speed Top 10",
+      "status": "done",
+      "owner": "Agent A",
+      "priority": "A",
+      "eta": "완료"
+    },
+    {
+      "id": "infra-structure",
+      "title": "Agent B: Infra/Structure 10개",
+      "status": "in_progress",
+      "owner": "Agent B",
+      "priority": "A",
+      "eta": "20분"
+    },
+    {
+      "id": "infra-5",
+      "title": "Infra 5개 (Cloudflare/Depot/CodeRabbit/Highlight/act)",
+      "status": "in_progress",
+      "owner": "Agent 1",
+      "priority": "A",
+      "eta": "20분"
+    },
+    {
+      "id": "local-dev-5",
+      "title": "Local Dev 5개 (Lazygit/pre-commit/direnv/watchexec/mise)",
+      "status": "in_progress",
+      "owner": "Agent 2",
+      "priority": "A",
+      "eta": "20분"
+    },
+    {
+      "id": "kiro-speed",
+      "title": "Kiro: 속도 Top 10 (Ruff/Biome/mkcert 등)",
+      "status": "pending",
+      "owner": "Kiro",
+      "priority": "A",
+      "eta": "30분"
+    },
+    {
+      "id": "open",
+      "title": "🎯 오픈",
+      "status": "pending",
+      "owner": "전체",
+      "priority": "S",
+      "eta": "CI 통과 + 로그인 확인 후"
+    }
+  ]
+}
