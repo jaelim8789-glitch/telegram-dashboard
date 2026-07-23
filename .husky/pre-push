@@ -8,4 +8,12 @@ if [ -n "$UPSTREAM" ]; then
   echo "Run: git pull --rebase origin master"
   exit 1
 fi
+
+echo "==> [pre-push] running CI simulation (build check)..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "Build failed! Push blocked."
+  exit 1
+fi
+
 echo "==> [pre-push] complete. Pushing..."
