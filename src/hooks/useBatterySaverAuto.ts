@@ -13,7 +13,7 @@ export function useBatterySaverAuto() {
 
       getBattery().then((battery: any) => {
         const updateBatteryInfo = () => {
-          setIsLowPowerMode(battery.chargingLevel <= 0.2 && !battery.charging);
+          setIsLowPowerMode(battery.level <= 0.2 && !battery.charging);
         };
 
         updateBatteryInfo();
