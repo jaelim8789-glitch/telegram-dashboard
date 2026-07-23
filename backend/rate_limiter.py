@@ -75,7 +75,7 @@ class RateLimiter:
         "join_group": (1.0, 3.0),         # 1 join / 3 sec
         "fetch_dialogs": (1.0, 2.0),      # 1 fetch / 2 sec
         "auto_reply": (1.0, 1.5),         # 1 reply / 1.5 sec
-        "broadcast": (1.0, 1.0),          # 1 broadcast / sec
+        "broadcast": (5.0, 1.0),          # 5 broadcasts / sec
         "health_check": (5.0, 1.0),       # 5 checks / sec
     }
 

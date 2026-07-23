@@ -215,8 +215,8 @@ async def _init_db() -> None:
         if cfg.db.wal_mode:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
-            conn.execute("PRAGMA busy_timeout=5000")
-            conn.execute("PRAGMA cache_size=-4000")  # 4MB cache
+            conn.execute("PRAGMA busy_timeout=10000")
+            conn.execute("PRAGMA cache_size=-8000")  # 8MB cache
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
@@ -380,5 +380,5 @@ if __name__ == "__main__":
         workers=cfg.server.workers,
         timeout_keep_alive=cfg.server.request_timeout,
         limit_concurrency=100,  # Max concurrent connections
-        limit_max_requests=10000,  # Graceful restart after 10k requests
+        limit_max_requests=5000000,  # Graceful restart after 5M requests (~days of uptime)
     )

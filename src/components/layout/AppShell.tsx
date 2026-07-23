@@ -139,7 +139,7 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
       </div>
 
       {/* ── Mobile Bottom Tab Bar ── */}
-      <MobileCategoryBar />
+      <div className="sm:hidden"><MobileCategoryBar /></div>
     </div>
   );
 }

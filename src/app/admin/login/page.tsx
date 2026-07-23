@@ -20,6 +20,7 @@ const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "
 function TelegramLoginButton({ onSuccess }: { onSuccess: (result: api.TelegramLoginResult) => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [widgetLoaded, setWidgetLoaded] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
 
@@ -48,6 +49,7 @@ function TelegramLoginButton({ onSuccess }: { onSuccess: (result: api.TelegramLo
     script.setAttribute("data-onauth", "onTelegramAuth(user)");
     script.setAttribute("data-request-access", "write");
     script.async = true;
+    script.onload = () => setWidgetLoaded(true);
     widgetRef.current.appendChild(script);
   }, [onSuccess]);
 
@@ -55,7 +57,11 @@ function TelegramLoginButton({ onSuccess }: { onSuccess: (result: api.TelegramLo
 
   return (
     <div className="space-y-3">
-      <div ref={widgetRef} className="flex justify-center min-h-[60px]" />
+      <div ref={widgetRef} className="flex justify-center min-h-[60px]">
+        {!widgetLoaded && (
+          <div className="h-12 w-48 animate-pulse rounded-lg bg-app-card-hover" />
+        )}
+      </div>
       {error && <p className="text-sm text-red-400 text-center">{error}</p>}
       {loading && (
         <div className="flex items-center justify-center gap-2 text-sm text-app-text-muted">
