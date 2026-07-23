@@ -104,7 +104,12 @@ export function AutoReplyTab() {
   const submitLockRef = useRef(false);
 
   const { toast } = useToast();
-  const haptics = useHapticFeedback();
+  let haptics: ReturnType<typeof useHapticFeedback> | null = null;
+  try {
+    haptics = useHapticFeedback();
+  } catch (e) {
+    // @tma.js/sdk-react not available outside Telegram
+  }
 
   const [isMobile, setIsMobile] = useState(false);
   const [actionSheetRuleId, setActionSheetRuleId] = useState<string | null>(null);
@@ -362,11 +367,9 @@ export function AutoReplyTab() {
     recentMessages,
     onTemplateSelect: (template: string) => {
       // 템플릿을 현재 입력 필드에 삽입하는 로직
-      console.log('템플릿 선택:', template);
     },
     onRecentMessageSelect: (message: string) => {
       // 최근 메시지를 현재 입력 필드에 삽입하는 로직
-      console.log('최근 메시지 선택:', message);
     }
   });
 
@@ -420,7 +423,6 @@ export function AutoReplyTab() {
           templates={templates}
           onTemplateSelect={(template) => {
             // 선택된 템플릿을 현재 입력 필드에 삽입
-            console.log('선택된 템플릿:', template);
           }}
           onAddTemplate={(name, content) => {
             // 새 템플릿 추가
@@ -667,7 +669,7 @@ export function AutoReplyTab() {
                   onClick={() => {
                     if (isMobile) {
                       setActionSheetRuleId(rule.id);
-                      haptics.light();
+                      haptics?.light();
                     }
                   }}
                   role={isMobile ? "button" : undefined}
@@ -675,7 +677,7 @@ export function AutoReplyTab() {
                   onKeyDown={(e) => {
                     if (isMobile && e.key === "Enter") {
                       setActionSheetRuleId(rule.id);
-                      haptics.light();
+                      haptics?.light();
                     }
                   }}
                 >
@@ -935,7 +937,7 @@ export function AutoReplyTab() {
             <div className="space-y-1">
               <button
                 type="button"
-                onClick={() => { openEditForm(rule); setActionSheetRuleId(null); haptics.light(); }}
+                onClick={() => { openEditForm(rule); setActionSheetRuleId(null); haptics?.light(); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
               >
                 <Edit className="h-5 w-5 text-app-primary" />
@@ -946,7 +948,7 @@ export function AutoReplyTab() {
               </button>
               <button
                 type="button"
-                onClick={() => { openDuplicateForm(rule); setActionSheetRuleId(null); haptics.light(); }}
+                onClick={() => { openDuplicateForm(rule); setActionSheetRuleId(null); haptics?.light(); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-app-card-hover transition-colors text-left active:scale-[0.98]"
               >
                 <Copy className="h-5 w-5 text-app-info" />

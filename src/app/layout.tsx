@@ -9,6 +9,7 @@ import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LiveChat } from "@/components/ui/LiveChat";
 import { MobileOptimizations } from "@/components/MobileOptimizations";
+import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { PerformanceProvider } from "@/contexts/PerformanceContext";
 import { PerformanceOverlay } from "@/lib/performanceMonitor";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
         <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col bg-app-bg text-app-text font-sans">
+        <NetworkStatus />
         <SplashScreen />
         <GestureTour />
         <ShareTargetHandler />

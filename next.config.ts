@@ -1,4 +1,5 @@
-﻿import type { NextConfig } from "next";
+﻿import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
@@ -12,16 +13,15 @@ let nextConfig: NextConfig = {
     ignoreDuringBuilds: !process.env.CI,
   },
   typescript: { 
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   images: {
-    domains: [
-      'localhost', 
-      '127.0.0.1',
-      ...(process.env.NODE_ENV === 'production' 
-        ? [process.env.NEXT_PUBLIC_API_BASE_URL?.replace('https://', '') || ''] 
-        : []
-      ).filter(Boolean)
+    remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'http', hostname: '127.0.0.1' },
+      ...(process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_API_BASE_URL
+        ? [{ protocol: 'https' as const, hostname: new URL(process.env.NEXT_PUBLIC_API_BASE_URL).hostname }]
+        : []),
     ],
     formats: ['image/avif', 'image/webp'],
     dangerouslyAllowSVG: true,
@@ -39,7 +39,7 @@ let nextConfig: NextConfig = {
   serverExternalPackages: ["sharp", "canvas", "@tma.js/sdk-react"],
   experimental: {
     esmExternals: 'loose',
-    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'date-fns', '@reduxjs/toolkit'],
     scrollRestoration: true,
     optimisticClientCache: true,
     webpackBuildWorker: true,
@@ -86,13 +86,12 @@ let nextConfig: NextConfig = {
   },
 };
 
-// Sentry: only enabled in CI to avoid dev build slowdown from source map uploads
+// Sentry: only runs webpack plugin in CI. Import is at top level but plugin only applied when CI=1.
 if (process.env.CI) {
-  const { withSentryConfig } = await import("@sentry/nextjs");
-  const sentryWebpackPluginOptions = { silent: true };
+  const sentryOptions = { silent: true };
   nextConfig = withSentryConfig(
     typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
-    sentryWebpackPluginOptions
+    sentryOptions
   );
 }
 

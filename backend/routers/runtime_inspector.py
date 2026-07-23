@@ -96,6 +96,11 @@ async def restart_runtime(account_id: str):
         raise HTTPException(status_code=404, detail="Runtime not found")
     await runtime.stop()
     started = await runtime.start()
+
+    # Reload reply macros into the restarted runtime
+    manager = RuntimeManager.get_instance()
+    await manager._load_macros_for_account(account_id, runtime)
+
     if not started:
         # Graceful degradation for unauthenticated/legacy accounts.
         # The caller can re-auth later via send-code → verify-code flow.
