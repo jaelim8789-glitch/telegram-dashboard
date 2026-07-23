@@ -9,9 +9,7 @@ let nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   eslint: { ignoreDuringBuilds: true },
-  typescript: { 
-    ignoreBuildErrors: true,
-  },
+  typescript: { ignoreBuildErrors: true },
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
@@ -34,15 +32,14 @@ let nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["sharp", "canvas", "@tma.js/sdk-react"],
+  typedRoutes: true,
   experimental: {
-    esmExternals: 'loose',
     optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'date-fns', '@reduxjs/toolkit'],
     scrollRestoration: true,
     optimisticClientCache: true,
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     staleTimes: { dynamic: 30, static: 180 },
-    typedRoutes: true,
   },
   async headers() {
     return [
