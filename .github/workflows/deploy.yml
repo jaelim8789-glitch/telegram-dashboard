@@ -303,6 +303,4 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"\${{ "Deploy" }} [production] Frontend deployed ??\${{ "Deploy" }}","username":"TeleMon CI","icon_emoji":":rocket:"}
-              {"text":"Deploy: production frontend ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
 
