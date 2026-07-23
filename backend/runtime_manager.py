@@ -274,7 +274,7 @@ class RuntimeManager:
         """Load reply macros from DB into the runtime's ReplyMacroEngine on startup."""
         try:
             import json
-            conn = sqlite3.connect("data/runtime.db")
+            conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
                 "SELECT * FROM reply_macros WHERE account_id = ? ORDER BY created_at DESC",
