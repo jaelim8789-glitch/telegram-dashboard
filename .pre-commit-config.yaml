@@ -5,5 +5,16 @@ repos:
       - id: check-json
       - id: check-yaml
       - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
       - id: no-commit-to-branch
         args: [--branch, master]
+  - repo: local
+    hooks:
+      - id: build-check
+        name: npm run build (quick check)
+        entry: bash -c 'npm run build 2>&1 | tail -5'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]
