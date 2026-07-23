@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 function getOnlineStatus(): boolean {
   return typeof navigator !== "undefined" ? navigator.onLine : true;
@@ -58,15 +58,17 @@ export function useOnlineStatus() {
     () => null,
   );
 
-  if (online) {
-    const stored = safeSessionGet("telemon:wasOffline") === "true";
-    if (stored) {
-      safeSessionRemove("telemon:wasOffline");
+  useEffect(() => {
+    if (online) {
+      const stored = safeSessionGet("telemon:wasOffline") === "true";
+      if (stored) {
+        safeSessionRemove("telemon:wasOffline");
+      }
+      safeSessionSet("telemon:lastOnline", new Date().toISOString());
+    } else {
+      safeSessionSet("telemon:wasOffline", "true");
     }
-    safeSessionSet("telemon:lastOnline", new Date().toISOString());
-  } else {
-    safeSessionSet("telemon:wasOffline", "true");
-  }
+  }, [online]);
 
   return {
     online,

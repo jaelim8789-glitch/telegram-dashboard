@@ -297,7 +297,7 @@ export default function OneClickBusinessModal({ open, onClose }: OneClickBusines
                               <CardContent>
                                 <div className="space-y-4">
                                   {businessPackage.faq.map((item, index) => (
-                                    <div key={index} className="space-y-2 p-3 border border-app-border rounded-lg">
+                                    <div key={item.q} className="space-y-2 p-3 border border-app-border rounded-lg">
                                       <Label>질문 {index + 1}</Label>
                                       <Input
                                         value={item.q}
@@ -332,7 +332,7 @@ export default function OneClickBusinessModal({ open, onClose }: OneClickBusines
                               <CardContent>
                                 <div className="space-y-4">
                                   {businessPackage.autoReplies.map((item, index) => (
-                                    <div key={index} className="space-y-2 p-3 border border-app-border rounded-lg">
+                                    <div key={item.keyword} className="space-y-2 p-3 border border-app-border rounded-lg">
                                       <Label>키워드</Label>
                                       <Input
                                         value={item.keyword}
@@ -467,7 +467,7 @@ export default function OneClickBusinessModal({ open, onClose }: OneClickBusines
                           <CardContent>
                             <div className="space-y-4">
                               {businessPackage.notices.map((notice, index) => (
-                                <div key={index} className="space-y-2 p-3 border border-app-border rounded-lg">
+                                <div key={notice.title} className="space-y-2 p-3 border border-app-border rounded-lg">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                       <Label>제목</Label>

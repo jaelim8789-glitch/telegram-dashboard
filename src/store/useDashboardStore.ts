@@ -130,6 +130,7 @@ interface DashboardState extends DashboardStateValue {
 const RECENT_SETS_KEY = "telemon-recent-recipient-sets";
 const LAST_TAB_KEY = "telemon-last-tab";
 const runtimeManagerSubscriptions: Set<() => void> = new Set();
+let _subscriptionActive = false;
 
 function getTabCategory(tabId: TabId): TabGroup {
   const tab = TABS.find((t) => t.id === tabId);
@@ -199,6 +200,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       unsub();
     }
     runtimeManagerSubscriptions.clear();
+    _subscriptionActive = false;
     RuntimeManager.getInstance().destroy();
     set({ ...INITIAL_STATE, navView: "chat", navCategory: null, navFeature: null });
   },
@@ -248,9 +250,10 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
           selectedAccountId: manager.selectedAccountId ?? get().selectedAccountId,
         });
       };
-      if (runtimeManagerSubscriptions.size === 0) {
+      if (!_subscriptionActive) {
         const unsub = manager.subscribe(notify);
         runtimeManagerSubscriptions.add(unsub);
+        _subscriptionActive = true;
       }
       // RuntimeManager가 초기화되어 있지 않으면 초기화
       if (!manager.accounts.length) {
