@@ -369,7 +369,8 @@ class BroadcastQueue:
 
             await asyncio.sleep(1)
 
-        broadcast.status = "sent" if fail_count == 0 else "failed" if success_count == 0 else "sent"
+        if broadcast.status != "failed":
+            broadcast.status = "sent" if fail_count == 0 else "failed" if success_count == 0 else "sent"
         broadcast.sent_at = datetime.now(timezone.utc).isoformat()
         self._completed.append(broadcast)
         if len(self._completed) > self._max_completed:

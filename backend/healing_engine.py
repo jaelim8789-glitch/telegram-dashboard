@@ -361,9 +361,9 @@ class HealingEngine:
             cb.record_failure()
             self._update_metrics_on_failure(account_id)
 
-            # 서킷이 열렸으면 복구 큐에 등록
-            if cb.state == CircuitState.OPEN:
-                asyncio.create_task(self._queue_recovery(account_id, "circuit_open"))
+            # 서킷이 열렸으면 복구 큐에 등록 (중복 예방)
+            if cb.state == CircuitState.OPEN and account_id not in self._active_recoveries:
+                self._queue_recovery_sync(account_id, "circuit_open")
 
     def record_success(self, account_id: str) -> None:
         """Record a successful operation."""
@@ -373,6 +373,12 @@ class HealingEngine:
             self._update_metrics_on_success(account_id)
 
     # ── Recovery Queue & Worker ───────────────────────────────────
+
+    def _queue_recovery_sync(self, account_id: str, reason: str) -> None:
+        """Synchronous proxy for _queue_recovery — safe to call from non-async contexts."""
+        if account_id in self._active_recoveries:
+            return
+        self._recovery_queue.put_nowait((account_id, reason))
 
     async def _queue_recovery(self, account_id: str, reason: str) -> None:
         """Queue a recovery operation."""
@@ -425,18 +431,23 @@ class HealingEngine:
                            account_id, result["method"], duration)
                 self.record_success(account_id)
                 await self.mark_heartbeat(account_id)
+                # Reset cumulative failed_recoveries on success
+                metrics = self._metrics.get(account_id)
+                if metrics:
+                    metrics.failed_recoveries = 0
             else:
                 logger.error("[%s] Recovery FAILED — method=%s, duration=%.1fs, error=%s",
                             account_id, result["method"], duration, result.get("error", ""))
 
-                # 3회 연속 복구 실패 → quarantine
-                metrics = self._metrics.get(account_id)
-                if metrics and metrics.failed_recoveries >= 3:
-                    cb = self._circuit_breakers.get(account_id)
-                    if cb:
-                        cb.quarantine()
-                        logger.warning("[%s] QUARANTINED — %d failed recoveries",
-                                      account_id, metrics.failed_recoveries)
+                # 3회 연속 복구 실패 → quarantine (consecutive_failures 기준)
+                cb = self._circuit_breakers.get(account_id)
+                if cb and cb.consecutive_failures >= 3:
+                    cb.quarantine()
+                    logger.warning("[%s] QUARANTINED — %d consecutive failures",
+                                  account_id, cb.consecutive_failures)
+                # Track recovery failure in circuit breaker
+                if cb:
+                    cb.record_failure()
 
         except Exception as e:
             logger.exception("[%s] Recovery exception: %s", account_id, e)
