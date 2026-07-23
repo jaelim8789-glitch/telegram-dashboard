@@ -2,8 +2,8 @@
 // Cache-first for static assets, network-first for API calls.
 // Supports push notifications + IndexedDB offline data layer.
 
-// 캐시 이름을 빌드 해시로 관리하여 자동 갱신
-const CACHE_NAME = `telemon-vLu_g-yG50TcVlfI294h2x`;
+// 캐시 이름을 빌드 해시로 관리하여 자동 갱신 (stamp-sw-buildhash.js가 빌드 시 주입)
+const CACHE_NAME = `telemon-v${self.__BUILD_HASH || 'latest'}`;
 const TEMP_CACHE_NAME = 'telemon-temp-v1';
 const STATIC_ASSETS = [
   "/",
