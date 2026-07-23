@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -e
 echo "=== TeleMon UTF-16 Encoding Check ==="
 echo "Scanning for UTF-16 files..."

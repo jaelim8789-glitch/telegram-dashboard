@@ -1,4 +1,4 @@
-node_modules
+﻿node_modules
 .next
 .git
 .gitattributes
@@ -30,5 +30,4 @@ sessions/
 .backup
 *.log
 tests/
-e2e/
 docs/
