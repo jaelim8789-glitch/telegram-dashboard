@@ -15,7 +15,7 @@ jobs:
         with: { version: 10.8.1 }
       - uses: actions/setup-node@v3
         with: { node-version: 20, cache: "pnpm" }
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile --prefer-offline
       - run: pnpm build
 
   frontend-docker:
@@ -137,3 +137,4 @@ jobs:
   #         url: ${{ secrets.ALERT_WEBHOOK_URL }}
   #         method: POST
   #         data: >-
+
