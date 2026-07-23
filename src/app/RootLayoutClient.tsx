@@ -15,7 +15,7 @@ import { PerformanceProvider } from "@/contexts/PerformanceContext";
 import { initHighlight } from "@/lib/highlight";
 import { PerformanceOverlay } from "@/lib/performanceMonitor";
 
-const THEME_INIT_SCRIPT = 
+const THEME_INIT_SCRIPT = `
   try {
     const theme = localStorage.getItem('theme');
     if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -23,8 +23,8 @@ const THEME_INIT_SCRIPT =
     } else {
       document.documentElement.classList.remove('dark');
     }
-  } catch (e) { }
-;
+  } catch (e) {}
+`;
 
 export default function RootLayoutClient({
   children,
