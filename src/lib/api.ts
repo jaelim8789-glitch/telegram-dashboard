@@ -68,6 +68,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         });
 
         if (!res.ok) {
+          if (res.status === 401) {
+            const refreshed = await tryRefreshToken();
+            if (refreshed) continue;
+          }
           const body = await readErrorBody(res);
           const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
           throw new ApiError(detail, res.status, false);
@@ -76,7 +80,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         if (res.status === 204) return undefined as T;
         return res.json() as Promise<T>;
       } catch (err) {
-        // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry
+        // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry (unless 401 was handled above)
         if (err instanceof ApiError && !err.isNetworkError) {
           throw err;
         }
@@ -112,6 +116,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
               clearTimeout(bgTimeout);
 
               if (!res.ok) {
+                if (res.status === 401) {
+                  const refreshed = await tryRefreshToken();
+                  if (refreshed) continue;
+                }
                 const body = await readErrorBody(res);
                 const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
                 throw new ApiError(detail, res.status, false);
