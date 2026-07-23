@@ -1,4 +1,4 @@
-name: Deploy TeleMon
+﻿name: Deploy TeleMon
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -39,7 +39,7 @@ jobs:
         with: { fetch-depth: 1 }
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -58,7 +58,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -93,7 +93,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -117,6 +117,7 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
       - name: Cache .next build output
+        continue-on-error: true
         uses: actions/cache@v4
         with:
           path: .next
@@ -136,7 +137,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: "pnpm"
@@ -303,4 +304,5 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
+
 
