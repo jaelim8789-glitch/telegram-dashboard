@@ -246,7 +246,7 @@ export function InlineAiChat() {
       if (failed > 0 || scheduled > 0) {
         useDashboardStore.getState().setTabBadge("send", failed + scheduled);
       }
-    }).catch((e) => console.error("[InlineAiChat] fetch agents summary 실패", e)).finally(() => {
+    }).catch((e) => { console.error("[InlineAiChat] fetch agents summary 실패", e); toast("error", "발송 요약 정보를 불러오지 못했습니다"); }).finally(() => {
       if (!cancelled) setSummaryLoading(false);
     });
 
@@ -325,7 +325,7 @@ export function InlineAiChat() {
           description: `${data.exp_gained || 0} EXP를 획득했습니다.`,
           duration: 5000,
         });
-        agentApi.fetchAgents().then(setAgents).catch((e) => console.error("[InlineAiChat] fetchAgents 갱신 실패", e));
+        agentApi.fetchAgents().then(setAgents).catch((e) => { console.error("[InlineAiChat] fetchAgents 갱신 실패", e); toast("error", "Agent 목록 갱신에 실패했습니다"); });
       }
       const msgs = await agentApi.fetchChatMessages(activeChatId!);
       setMessages(msgs);

@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Send, AlertTriangle, CheckCircle2, Clock, Users, Activity } from "lucide-react";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { WidgetErrorBoundary } from "@/components/ui/WidgetErrorBoundary";
+import { useToast } from "@/components/ui/Toast";
 import * as api from "@/lib/api";
 
 /**
  * Mobile Dashboard — 모바일 전용 컴팩트 위젯
  */
 export function MobileDashboard() {
+  const { toast } = useToast();
   const account = useDashboardStore((s) => s.accounts.find((a) => a.id === s.selectedAccountId));
   const [stats, setStats] = useState({ total: 0, sent: 0, failed: 0 });
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export function MobileDashboard() {
       .then((logs) => {
         setStats({ total: logs.length, sent: logs.filter((l) => l.status === "sent").length, failed: logs.filter((l) => l.status === "failed").length });
       })
-      .catch((e) => console.error("[MobileDashboard] logs fetch 실패", e))
+      .catch((e) => { console.error("[MobileDashboard] logs fetch 실패", e); toast("error", "오늘의 발송 통계를 불러오지 못했습니다"); })
       .finally(() => setLoading(false));
   }, []);
 

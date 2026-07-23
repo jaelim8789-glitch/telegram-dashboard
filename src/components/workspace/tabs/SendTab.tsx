@@ -1329,7 +1329,7 @@ export function SendTab() {
         setReplyMacroActive(!!data.is_active);
         setReplyMacroMessage(data.message_content || "");
       })
-      .catch((e) => console.error("[SendTab] reply-macro 설정 fetch 실패", e))
+      .catch((e) => { console.error("[SendTab] reply-macro 설정 fetch 실패", e); toast("error", "랜덤 답장 설정을 불러오지 못했습니다"); })
       .finally(() => setReplyMacroLoading(false));
   }, [selectedAccountId]);
 

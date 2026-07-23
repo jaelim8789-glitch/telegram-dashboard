@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getToken } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -139,6 +140,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
   const lastTypingStatus = useRef(false);
   const token = getToken();
   const authHeaders = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  const { toast } = useToast();
 
   // Load initial messages
   const loadMessages = useCallback(async () => {
@@ -192,14 +194,14 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: true }),
-      }).catch((e) => console.error("[TelegramChatView] typing start fetch 실패", e));
+      }).catch((e) => { console.error("[TelegramChatView] typing start fetch 실패", e); toast("error", "타이핑 상태 전송에 실패했습니다"); });
     }
     typingTimeoutRef.current = setTimeout(() => {
       lastTypingStatus.current = false;
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: false }),
-      }).catch((e) => console.error("[TelegramChatView] typing end fetch 실패", e));
+      }).catch((e) => { console.error("[TelegramChatView] typing end fetch 실패", e); toast("error", "타이핑 상태 전송에 실패했습니다"); });
     }, 2000);
   }, [input, accountId, chatId]);
 
