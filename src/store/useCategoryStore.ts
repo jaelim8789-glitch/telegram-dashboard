@@ -8,7 +8,8 @@ export type CategoryId =
   | "send"
   | "macro"
   | "analytics"
-  | "settings";
+  | "settings"
+  | "ai-chat";
 
 interface CategoryMeta {
   id: CategoryId;
@@ -23,6 +24,7 @@ export const CATEGORIES: CategoryMeta[] = [
   { id: "macro", label: "매크로", tooltip: "자동화 매크로" },
   { id: "analytics", label: "분석", tooltip: "데이터 분석" },
   { id: "settings", label: "설정", tooltip: "시스템 설정" },
+  { id: "ai-chat", label: "AI 채팅", tooltip: "AI 어시스턴트" },
 ];
 
 interface CategoryStore {

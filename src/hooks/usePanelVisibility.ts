@@ -15,6 +15,7 @@ const PANEL_VISIBILITY: Record<CategoryId, PanelVisibility> = {
   macro: { showLeftPanel: true, showCenterPanel: true, showRightPanel: false },
   analytics: { showLeftPanel: false, showCenterPanel: true, showRightPanel: false },
   settings: { showLeftPanel: true, showCenterPanel: true, showRightPanel: false },
+  "ai-chat": { showLeftPanel: false, showCenterPanel: true, showRightPanel: false },
 };
 
 export function usePanelVisibility(): PanelVisibility {

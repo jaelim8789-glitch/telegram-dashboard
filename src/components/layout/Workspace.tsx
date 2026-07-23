@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
@@ -37,6 +37,18 @@ import { computeDiff } from "@/lib/refreshDiff";
 import { AppRatingPrompt } from "@/components/ui/AppRatingPrompt";
 import ProfileSuggestion from "@/components/workspace/ProfileSuggestion";
 import { ConfettiAnimation } from "@/components/ui/ConfettiAnimation";
+
+const AiChatHome = dynamic(() => import("@/components/ai/AiChatHome").then(m => ({ default: m.AiChatHome })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center min-h-[80vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+        <p className="text-sm text-app-text-muted">TeleMon AI 불러오는 중...</p>
+      </div>
+    </div>
+  ),
+});
 
 const InlineAiChat = dynamic(() => import("@/components/ai/InlineAiChat").then(m => ({ default: m.InlineAiChat })), {
   ssr: false,
@@ -102,9 +114,10 @@ const TAB_CONTENT: Record<TabId, React.ComponentType> = {
   telegram: dynamic(() => import("@/components/telegram-chat/TelegramInboxTab").then(m => ({ default: m.TelegramInboxTab })), { loading: TabFallback }),
   pixeloffice: dynamic(() => import("@/components/ai/PixelOffice").then(m => ({ default: m.PixelOffice })), { loading: TabFallback }),
   sendhub: dynamic(() => import("@/components/navigation/categories/SendHub").then(m => ({ default: m.SendHub })), { loading: TabFallback }),
+  aichat: AiChatHome,
 };
 
-// ── Network status hook ──
+// ?? Network status hook ??
 function useNetworkStatus() {
   const [online, setOnline] = useState(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
@@ -124,7 +137,7 @@ function useNetworkStatus() {
   return online;
 }
 
-// ── Reduced motion hook ──
+// ?? Reduced motion hook ??
 function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
 
@@ -139,7 +152,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-// ── Keyboard-aware viewport hook ──
+// ?? Keyboard-aware viewport hook ??
 function useKeyboardAware(): number {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -163,7 +176,7 @@ function useKeyboardAware(): number {
   return keyboardHeight;
 }
 
-// ── Pull-to-refresh hook ──
+// ?? Pull-to-refresh hook ??
 function usePullToRefresh(
   scrollRef: React.RefObject<HTMLDivElement | null>,
   onRefresh: () => void,
@@ -260,7 +273,7 @@ export function Workspace() {
   const navFeature = useDashboardStore((s) => s.navFeature);
   const activeTab = useDashboardStore((s) => s.activeTab);
 
-  // ── Global hooks ──
+  // ?? Global hooks ??
   const { updateAvailable, applyUpdate } = usePwaUpdate();
   useBatterySaver();
   useAutoNightMode();
@@ -362,7 +375,7 @@ export function Workspace() {
     <AppShellLegacy>
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden md:flex-row">
-        {/* ── Network offline strip ── */}
+        {/* ?? Network offline strip ?? */}
         <AnimatePresence>
           {!online && (
             <motion.div
@@ -373,13 +386,13 @@ export function Workspace() {
             >
               <div className="flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] font-medium text-app-danger">
                 <WifiOff className="h-3.5 w-3.5" />
-                오프라인 상태 — 네트워크 연결을 확인해주세요
+                ?ㅽ봽?쇱씤 ?곹깭 ???ㅽ듃?뚰겕 ?곌껐???뺤씤?댁＜?몄슂
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── PWA Update banner (15) ── */}
+        {/* ?? PWA Update banner (15) ?? */}
         <AnimatePresence>
           {updateAvailable && (
             <motion.div
@@ -389,8 +402,8 @@ export function Workspace() {
               className="shrink-0 overflow-hidden bg-app-primary/10 border-b border-app-primary/20"
             >
               <div className="flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] font-medium text-app-primary">
-                <span>🆕 새 버전이 있습니다</span>
-                <button onClick={applyUpdate} className="rounded-lg bg-app-primary px-2.5 py-1 text-[10px] text-white hover:opacity-90 transition-opacity">업데이트</button>
+                <span>?넅 ??踰꾩쟾???덉뒿?덈떎</span>
+                <button onClick={applyUpdate} className="rounded-lg bg-app-primary px-2.5 py-1 text-[10px] text-white hover:opacity-90 transition-opacity">?낅뜲?댄듃</button>
               </div>
             </motion.div>
           )}
@@ -425,8 +438,8 @@ export function Workspace() {
               }
             : {})}
         >
-          {/* ── Pull-to-refresh indicator ── */}
-                  {pull.pulling && (
+          {/* ?? Pull-to-refresh indicator ?? */}
+          {pull.pulling && (
             <motion.div
               className="flex items-center justify-center pb-2"
               animate={{ opacity: pull.pullDist > 30 ? 1 : 0.5 }}
@@ -436,32 +449,27 @@ export function Workspace() {
                 animate={{ scale: pull.pullDist > 50 ? 1.1 : 1 }}
               >
                 {pull.refreshing ? (
-                  <div className="flex items-center gap-1.5">
-                    <svg className="h-4 w-4 animate-spin text-app-primary" viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
-                      <path d="M14 8A6 6 0 0 1 2 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span className="text-xs font-medium text-app-primary">새로고침 중...</span>
-                  </div>
+                  <>
+                    <div className="relative h-4 w-4 overflow-hidden rounded-full">
+                      <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(var(--color-accent), var(--color-gold-deep), var(--color-accent))", animation: "spin 0.8s linear infinite" }} />
+                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
+                    </div>
+                    <span className="text-xs font-medium" style={{ background: "linear-gradient(90deg, var(--color-accent), var(--color-gold-deep))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>?덈줈怨좎묠 以?..</span>
+                  </>
                 ) : (
-                  <div className="flex items-center gap-1.5">
-                    <svg
-                      className="h-4 w-4 text-app-text-muted"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}
-                    >
-                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                      <path d="M8 2v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="text-xs text-app-text-muted">{pull.pullDist > 50 ? "놓으면 새로고침" : "당겨서 새로고침"}</span>
-                  </div>
+                  <>
+                    <div className="relative h-4 w-4 overflow-hidden rounded-full" style={{ transform: `rotate(${Math.min(pull.pullDist * 3, 360)}deg)` }}>
+                      <div className="absolute inset-0 rounded-full opacity-60" style={{ background: "conic-gradient(var(--color-accent), transparent 60%, var(--color-accent))" }} />
+                      <div className="absolute inset-[3px] rounded-full bg-app-bg" />
+                    </div>
+                    <span className="text-xs text-app-text-muted">{pull.pullDist > 50 ? "?볦쑝硫??덈줈怨좎묠" : "?꾨옒濡??밴꺼???덈줈怨좎묠"}</span>
+                  </>
                 )}
               </motion.div>
             </motion.div>
           )}
 
-          {/* ── Refresh success toast ── */}
+          {/* ?? Refresh success toast ?? */}
           <AnimatePresence>
             {pull.toast && (
               <motion.div
@@ -524,3 +532,4 @@ export function Workspace() {
     </AppShellLegacy>
   );
 }
+
