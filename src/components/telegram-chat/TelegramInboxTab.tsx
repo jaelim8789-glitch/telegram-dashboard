@@ -179,7 +179,7 @@ export function TelegramInboxTab() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)]">
+    <div className="flex h-[calc(100dvh-8rem)]">
       {/* Dialog sidebar */}
       <div className={cn(
         "w-72 sm:w-80 border-r border-app-border flex flex-col shrink-0 bg-app-bg",

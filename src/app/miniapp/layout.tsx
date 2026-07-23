@@ -81,9 +81,9 @@ export default function MiniAppLayout({ children }: { children: ReactNode }) {
     <div 
       className="min-h-screen" 
       style={{ 
-        height: '100vh',
-        maxHeight: '100vh',
-        minHeight: 'var(--vh, 100vh)',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        minHeight: 'var(--vh, 100dvh)',
         backgroundColor: "var(--tg-theme-bg-color, #17212b)", 
         color: "var(--tg-theme-text-color, #f5f5f5)",
         fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",

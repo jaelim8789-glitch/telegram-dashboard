@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Prevent background scroll on modals/sheets (iOS Safari fix) */
+.fixed.inset-0 {
+  overscroll-behavior: none;
+}
+
 /* Ties Tailwind's dark: variant to the app's own [data-theme] toggle instead
  * of the OS-only prefers-color-scheme default — without this, a few admin
  * pages using dark: utilities would show a theme independent of (and
