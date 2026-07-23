@@ -43,15 +43,16 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm install --frozen-lockfile --prefer-offline --no-optional --no-optional
         name: Verify lockfile matches package.json
       - run: pnpm ls --depth=0 2>&1 | head -5
 
   # ============================================
-  # 1a. Frontend — typecheck
+  # 1a. Frontend ??typecheck
   # ============================================
   frontend-typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
@@ -73,20 +74,21 @@ jobs:
             node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline --no-optional
         name: pnpm install (on cache miss)
 
       - run: pnpm typecheck
-        name: TypeScript type check (report-only — TEAM_STATUS.md tracks the cleanup)
+        name: TypeScript type check (report-only ??TEAM_STATUS.md tracks the cleanup)
         continue-on-error: true
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
   # ============================================
-  # 1b. Frontend — build
+  # 1b. Frontend ??build
   # ============================================
   frontend-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
@@ -108,7 +110,7 @@ jobs:
             node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline --no-optional
         name: pnpm install (on cache miss)
 
       - run: pnpm build
@@ -125,7 +127,7 @@ jobs:
             next-build-${{ runner.os }}-
 
   # ============================================
-  # 1c. Frontend — e2e smoke test
+  # 1c. Frontend ??e2e smoke test
   # ============================================
   frontend-e2e:
     if: github.event_name == 'pull_request'
@@ -151,7 +153,7 @@ jobs:
             node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline --no-optional
         name: pnpm install (on cache miss)
 
       - name: Cache Playwright browsers
@@ -232,6 +234,7 @@ jobs:
     if: ${{ always() && github.ref == 'refs/heads/master' }}
     needs: [frontend-docker]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: production
     steps:
       - name: Pre-deploy gateway health check
@@ -246,12 +249,12 @@ jobs:
             set +e
             for i in $(seq 1 6); do
               if curl -sf http://localhost/health > /dev/null 2>&1; then
-                echo "✅ Gateway healthy"
+                echo "??Gateway healthy"
                 exit 0
               fi
               sleep 3
             done
-            echo "❌ Gateway unhealthy — aborting deploy"
+            echo "??Gateway unhealthy ??aborting deploy"
             exit 1
 
       - name: Pull image + restart frontend
@@ -303,6 +306,6 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-            {"text":"${{ job.status == 'success' && '✅' || '❌' }} [production] Frontend deployed — ${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
+            {"text":"${{ job.status == 'success' && '?? || '?? }} [production] Frontend deployed ??${{ github.sha }}","username":"TeleMon CI","icon_emoji":":rocket:"}
           preventFailureOnNoResponse: true
 
