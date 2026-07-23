@@ -73,3 +73,16 @@ npm run verify 2>&1 || {
 echo "✅ [pre-push] verify 통과"
 
 echo "🎉 [pre-push] 모든 검사 통과 — push 진행합니다."
+
+# ═══════════════════════════════════════════════
+# 3. 인코딩 체크 (UTF-16 방지)
+# ═══════════════════════════════════════════════
+echo ""
+echo "🔤 [pre-push] 인코딩 체크..."
+dirty=$(git diff --cached --name-only | grep -E '\.tsx$|\.ts$' | xargs file 2>/dev/null | grep -i 'utf-16\|Non-ISO' || true)
+if [ -n "$dirty" ]; then
+  echo "❌ UTF-16 / Non-ISO detected in staged files!"
+  echo "$dirty"
+  exit 1
+fi
+echo "✅ 인코딩 정상"
