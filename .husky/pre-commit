@@ -1,0 +1,5 @@
+﻿#!/bin/sh
+set -e
+echo "==> [pre-commit] running..."
+npx lint-staged 2>&1 || { echo "FAIL"; exit 1; }
+echo "==> [pre-commit] complete"
