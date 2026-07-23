@@ -15,7 +15,7 @@ jobs:
         with: { version: 10.8.1 }
       - uses: actions/setup-node@v3
         with: { node-version: 20, cache: "pnpm" }
-      - run: pnpm install --no-frozen-lockfile --prefer-offline
+      - run: pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
       - run: pnpm approve-builds
       - run: pnpm build
 
@@ -138,5 +138,6 @@ jobs:
   #         url: ${{ secrets.ALERT_WEBHOOK_URL }}
   #         method: POST
   #         data: >-
+
 
 
