@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -12,7 +13,7 @@ interface AutoCompleteSearchProps {
 }
 
 export function AutoCompleteSearch({
-  placeholder = '검색...',
+  placeholder = '검??..',
   suggestions,
   onSelect,
   onInputChange,

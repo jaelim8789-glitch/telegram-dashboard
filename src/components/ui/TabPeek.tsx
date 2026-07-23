@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
@@ -15,7 +16,7 @@ export function TabPeek({ children, previewContent, tabName, className }: TabPee
 
   const handleMouseDown = () => {
     setIsPeeking(true);
-    // 마우스를 뗐을 때 일정 시간 후에 미리보기 종료
+    // 마우?��? ?�을 ???�정 ?�간 ?�에 미리보기 종료
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

@@ -1,3 +1,4 @@
+"use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiCache } from '@/lib/apiCache';
 import { performanceMonitor } from '@/lib/performanceMonitor';
@@ -20,7 +21,7 @@ interface PerformanceProviderProps {
 export function PerformanceProvider({ children }: PerformanceProviderProps) {
   const [isOptimized, setIsOptimized] = useState(true);
 
-  // 컴포넌트 마운트 시 성능 모니터링 시작
+  // 컴포?�트 마운?????�능 모니?�링 ?�작
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       performanceMonitor.startMonitoring();
@@ -31,12 +32,12 @@ export function PerformanceProvider({ children }: PerformanceProviderProps) {
     };
   }, []);
 
-  // 캐시 정리 함수
+  // 캐시 ?�리 ?�수
   const clearCache = () => {
     apiCache.clear();
   };
 
-  // 가비지 컬렉션 유도 (브라우저가 지원하는 경우)
+  // 가비�? 컬렉???�도 (브라?��?가 지?�하??경우)
   const forceGC = () => {
     if ((window as any).gc) {
       (window as any).gc();
@@ -67,7 +68,7 @@ export function usePerformance() {
   return context;
 }
 
-// 성능 최적화 HOC
+// ?�능 최적??HOC
 export function withPerformance<P extends Record<string, any>>(
   Component: React.ComponentType<P>
 ): React.FC<P> {

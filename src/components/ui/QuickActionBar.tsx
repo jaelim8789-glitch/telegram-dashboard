@@ -31,7 +31,7 @@ export function QuickActionBar() {
   const [actions] = useLocalStorage<QuickAction[]>('quick-actions', [
     {
       id: 'send-message',
-      label: '메시지 보내기',
+      label: '메시지 보내�?,
       icon: <Send className="w-4 h-4" />,
       action: () => { window.location.hash = '#/send'; },
       hotkey: 'Ctrl+M',
@@ -39,7 +39,7 @@ export function QuickActionBar() {
     },
     {
       id: 'create-auto-reply',
-      label: '자동 응답 생성',
+      label: '?�동 ?�답 ?�성',
       icon: <Bot className="w-4 h-4" />,
       action: () => { window.location.hash = '#/auto-reply'; },
       hotkey: 'Ctrl+R',
@@ -47,7 +47,7 @@ export function QuickActionBar() {
     },
     {
       id: 'add-account',
-      label: '계정 추가',
+      label: '계정 추�?',
       icon: <Users className="w-4 h-4" />,
       action: () => { window.location.hash = '#/accounts'; },
       hotkey: 'Ctrl+A',
@@ -55,7 +55,7 @@ export function QuickActionBar() {
     },
     {
       id: 'schedule-broadcast',
-      label: '방송 예약',
+      label: '방송 ?�약',
       icon: <Clock className="w-4 h-4" />,
       action: () => { window.location.hash = '#/broadcast'; },
       hotkey: 'Ctrl+S',
@@ -63,7 +63,7 @@ export function QuickActionBar() {
     },
     {
       id: 'ai-assistant',
-      label: 'AI 어시스턴트',
+      label: 'AI ?�시?�턴??,
       icon: <Bot className="w-4 h-4" />,
       action: () => { window.location.hash = '#/ai'; },
       hotkey: 'Ctrl+I',
@@ -79,7 +79,7 @@ export function QuickActionBar() {
     },
     {
       id: 'create-business',
-      label: '비즈니스 생성',
+      label: '비즈?�스 ?�성',
       icon: <Zap className="w-4 h-4" />,
       action: () => {
         const event = new CustomEvent('openOneClickBusinessModal');
@@ -90,7 +90,7 @@ export function QuickActionBar() {
     },
     {
       id: 'search',
-      label: '검색',
+      label: '검??,
       icon: <Search className="w-4 h-4" />,
       action: () => {
         const event = new CustomEvent('openCommandPalette');

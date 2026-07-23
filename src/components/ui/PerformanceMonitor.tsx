@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { performanceMonitor } from '@/lib/performanceMonitor';
 
@@ -20,10 +21,9 @@ export function PerformanceMonitorUI() {
       const currentMetrics = performanceMonitor.getMetrics();
       if (!currentMetrics) return;
 
-      // 현재 성능 지표를 상태에 저장
-      const newMetrics: PerformanceMetric[] = [
+      // ?�재 ?�능 지?��? ?�태???�??      const newMetrics: PerformanceMetric[] = [
         {
-          name: 'DOM 로딩 시간',
+          name: 'DOM 로딩 ?�간',
           value: currentMetrics.domContentLoaded,
           unit: 'ms',
           status: currentMetrics.domContentLoaded > 3000 ? 'critical' : currentMetrics.domContentLoaded > 1000 ? 'warning' : 'good'
@@ -53,7 +53,7 @@ export function PerformanceMonitorUI() {
           status: currentMetrics.largestContentfulPaint > 2500 ? 'critical' : currentMetrics.largestContentfulPaint > 1500 ? 'warning' : 'good'
         },
         {
-          name: 'JS 힙 사용량',
+          name: 'JS ???�용??,
           value: (currentMetrics.jsHeapUsed / 1024 / 1024).toFixed(1),
           unit: 'MB',
           status: (currentMetrics.jsHeapUsed / currentMetrics.jsHeapLimit) > 0.8 ? 'critical' : (currentMetrics.jsHeapUsed / currentMetrics.jsHeapLimit) > 0.6 ? 'warning' : 'good'
@@ -62,14 +62,14 @@ export function PerformanceMonitorUI() {
 
       setMetrics(newMetrics);
 
-      // 성능 이슈 감지
+      // ?�능 ?�슈 감�?
       const perfIssues = performanceMonitor.detectPerformanceIssues();
       setIssues(perfIssues.issues);
     };
 
-    // 1초마다 업데이트
+    // 1초마???�데?�트
     const interval = setInterval(updateMetrics, 1000);
-    updateMetrics(); // 초기 호출
+    updateMetrics(); // 초기 ?�출
 
     return () => clearInterval(interval);
   }, [isVisible]);
@@ -79,17 +79,16 @@ export function PerformanceMonitorUI() {
       <button
         onClick={() => setIsVisible(true)}
         className="fixed bottom-4 right-4 bg-blue-600 text-white p-2 rounded-full shadow-lg z-50"
-        aria-label="성능 모니터링 보기"
+        aria-label="?�능 모니?�링 보기"
       >
-        ⚡
-      </button>
+        ??      </button>
     );
   }
 
   return (
     <div className="fixed bottom-4 right-4 bg-gray-900 text-white p-4 rounded-lg shadow-xl z-50 max-w-md w-full">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-bold">성능 모니터링</h3>
+        <h3 className="font-bold">?�능 모니?�링</h3>
         <button
           onClick={() => setIsVisible(false)}
           className="text-gray-400 hover:text-white"
@@ -113,11 +112,11 @@ export function PerformanceMonitorUI() {
 
         {issues.length > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-700">
-            <h4 className="font-bold text-red-400 mb-2">성능 이슈:</h4>
+            <h4 className="font-bold text-red-400 mb-2">?�능 ?�슈:</h4>
             <ul className="space-y-1 text-xs">
               {issues.map((issue, i) => (
                 <li key={i} className="text-red-300 flex items-start">
-                  <span className="mr-1">•</span>
+                  <span className="mr-1">??/span>
                   <span>{issue}</span>
                 </li>
               ))}
@@ -127,8 +126,7 @@ export function PerformanceMonitorUI() {
       </div>
 
       <div className="mt-3 text-xs text-gray-400">
-        실시간 성능 모니터링 - 개발용
-      </div>
+        ?�시�??�능 모니?�링 - 개발??      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
@@ -31,25 +32,24 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
   const { getCurrentAccountState, updateAccountState } = useAccountStateStore();
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
   
-  // 계정 목록 가져오기 (가상의 데이터 사용)
+  // 계정 목록 가?�오�?(가?�의 ?�이???�용)
   const accounts = useMemo(() => {
-    // 실제 애플리케이션에서는 API 호출을 통해 계정 목록을 가져와야 합니다
-    return [
+    // ?�제 ?�플리�??�션?�서??API ?�출???�해 계정 목록??가?��????�니??    return [
       { id: "acc1", phone: "010-1234-5678", name: "계정 1" },
       { id: "acc2", phone: "010-9876-5432", name: "계정 2" },
       { id: "acc3", phone: "010-1111-2222", name: "계정 3" },
     ];
   }, []);
 
-  // 명령어 목록 정의
+  // 명령??목록 ?�의
   const commands: Command[] = useMemo(() => {
     const baseCommands: Command[] = [
       {
         id: "dashboard",
-        title: "대시보드 보기",
-        description: "계정 상태 및 통계 대시보드로 이동",
+        title: "?�?�보??보기",
+        description: "계정 ?�태 �??�계 ?�?�보?�로 ?�동",
         shortcut: ["d"],
-        category: "네비게이션",
+        category: "?�비게이??,
         action: () => { 
           onTabChange?.("dashboard"); 
           onClose(); 
@@ -58,7 +58,7 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       {
         id: "chat",
         title: "AI 채팅",
-        description: "AI 어시스턴트와 대화 시작",
+        description: "AI ?�시?�턴?��? ?�???�작",
         shortcut: ["c"],
         category: "기능",
         action: () => { 
@@ -69,7 +69,7 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       {
         id: "send",
         title: "메시지 발송",
-        description: "새 메시지 발송 화면으로 이동",
+        description: "??메시지 발송 ?�면?�로 ?�동",
         shortcut: ["s"],
         category: "기능",
         action: () => { 
@@ -79,10 +79,10 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       },
       {
         id: "profile",
-        title: "프로필 설정",
-        description: "계정 및 설정 관리",
+        title: "?�로???�정",
+        description: "계정 �??�정 관�?,
         shortcut: ["p"],
-        category: "설정",
+        category: "?�정",
         action: () => { 
           onTabChange?.("profile"); 
           onClose(); 
@@ -90,8 +90,8 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       },
       {
         id: "refresh",
-        title: "데이터 새로고침",
-        description: "계정 및 그룹 정보 새로고침",
+        title: "?�이???�로고침",
+        description: "계정 �?그룹 ?�보 ?�로고침",
         shortcut: ["r"],
         category: "기능",
         action: () => { 
@@ -101,10 +101,10 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       },
       {
         id: "theme-toggle",
-        title: "테마 전환",
-        description: "라이트/다크 모드 전환",
+        title: "?�마 ?�환",
+        description: "?�이???�크 모드 ?�환",
         shortcut: ["t"],
-        category: "설정",
+        category: "?�정",
         action: () => { 
           const currentTheme = localStorage.getItem("theme") || "dark";
           localStorage.setItem("theme", currentTheme === "dark" ? "light" : "dark");
@@ -114,15 +114,15 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
       }
     ];
 
-    // 계정 전환 명령 추가
+    // 계정 ?�환 명령 추�?
     const accountSwitchCommands: Command[] = accounts.map((account, index) => ({
       id: `switch-${account.id}`,
-      title: `${account.name}(${account.phone})로 전환`,
-      description: "현재 계정 전환",
+      title: `${account.name}(${account.phone})�??�환`,
+      description: "?�재 계정 ?�환",
       shortcut: [`Shift+${index + 1}`],
       category: "계정",
       action: () => {
-        // 계정 상태 업데이트
+        // 계정 ?�태 ?�데?�트
         updateAccountState(account.id, { lastUsedTab: onTabChange ? "send" : "dashboard" });
         onClose();
       }
@@ -131,8 +131,7 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     return [...baseCommands, ...accountSwitchCommands];
   }, [onTabChange, refreshDashboard, accounts, updateAccountState, onClose]);
 
-  // 필터링된 명령어
-  const filteredCommands = useMemo(() => {
+  // ?�터링된 명령??  const filteredCommands = useMemo(() => {
     if (!searchQuery) return commands;
     
     return commands.filter(cmd =>
@@ -142,12 +141,11 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     );
   }, [commands, searchQuery]);
 
-  // 단축키 이벤트 핸들러
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  // ?�축???�벤???�들??  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
-      onClose(); // 기존 팔레트 닫기
-      setIsOpen(true); // 새로운 팔레트 열기
+      onClose(); // 기존 ?�레???�기
+      setIsOpen(true); // ?�로???�레???�기
     }
     
     if (isOpen) {
@@ -176,7 +174,7 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // 팔레트가 열릴 때 포커스 설정
+  // ?�레?��? ?�릴 ???�커???�정
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
@@ -186,14 +184,14 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
     }
   }, [isOpen]);
 
-  // 추가된 UI 요소를 위한 함수
+  // 추�???UI ?�소�??�한 ?�수
   const handleCommandSelect = (command: Command) => {
     command.action();
     onClose();
     setSearchTerm('');
   };
   
-  // 단축키 표시를 위한 함수
+  // ?�축???�시�??�한 ?�수
   const renderShortcut = (shortcut: string[]) => {
     return shortcut.map((key, idx) => (
       <kbd 
@@ -219,14 +217,14 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
           color: "var(--tg-theme-text-color, #f5f5f5)"
         }}
       >
-        {/* 명령 팔레트 헤더 */}
+        {/* 명령 ?�레???�더 */}
         <div className="p-4 pb-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               id="command-palette-search"
               type="text"
-              placeholder="명령 검색..."
+              placeholder="명령 검??.."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -280,15 +278,15 @@ export function CommandPalette({ isOpen, onClose, onTabChange }: CommandPaletteP
             </ul>
           ) : (
             <div className="py-8 text-center">
-              <p className="text-app-text-muted">검색 결과가 없습니다</p>
+              <p className="text-app-text-muted">검??결과가 ?�습?�다</p>
             </div>
           )}
         </div>
         
-        {/* 명령 팔레트 푸터 */}
+        {/* 명령 ?�레???�터 */}
         <div className="border-t p-3 text-xs text-app-text-muted flex justify-between" 
           style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
-          <span>↑↓ 이동 • Enter 선택 • Esc 닫기</span>
+          <span>?�↓ ?�동 ??Enter ?�택 ??Esc ?�기</span>
         </div>
       </div>
     </div>

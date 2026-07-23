@@ -50,3 +50,12 @@ git_log*.txt
 next-env.d.ts
 .tsbuildinfo
 node_modules
+# Added by user request - cleanup patterns
+tmp_*
+tsc_*.txt
+RUN_ME*.bat
+master_result*.txt
+null
+query
+git_log.txt
+tmp_b64*.txt

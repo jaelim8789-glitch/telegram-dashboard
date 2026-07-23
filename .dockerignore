@@ -7,11 +7,15 @@
 report/
 .pnpm-store
 scripts/
+.kilo/
 
 # CRITICAL: Root dirs that shadow src/app for Next.js App Router.
 /app
 /backend
 /telegram-dashboard-backend
+
+# Documentation files
+*.md
 
 .env*
 !.env.example

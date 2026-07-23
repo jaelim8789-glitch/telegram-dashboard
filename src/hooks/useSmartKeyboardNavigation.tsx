@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface NavigationItem {
@@ -13,7 +14,7 @@ interface NavigationState {
   items: NavigationItem[];
   currentIndex: number;
   focusedElement: string | null;
-  navigationMode: boolean; // 현재 키보드 네비게이션 모드 여부
+  navigationMode: boolean; // ?�재 ?�보???�비게이??모드 ?��?
 }
 
 export function useSmartKeyboardNavigation() {
@@ -27,7 +28,7 @@ export function useSmartKeyboardNavigation() {
   const registeredElements = useRef<Map<string, HTMLElement>>(new Map());
   const observer = useRef<MutationObserver | null>(null);
 
-  // 요소 등록
+  // ?�소 ?�록
   const registerElement = useCallback((id: string, element: HTMLElement, label: string, parent?: string) => {
     registeredElements.current.set(id, element);
 
@@ -54,7 +55,7 @@ export function useSmartKeyboardNavigation() {
     });
   }, []);
 
-  // 요소 등록 해제
+  // ?�소 ?�록 ?�제
   const unregisterElement = useCallback((id: string) => {
     registeredElements.current.delete(id);
 
@@ -65,7 +66,7 @@ export function useSmartKeyboardNavigation() {
     }));
   }, []);
 
-  // 포커스 이동
+  // ?�커???�동
   const focusNext = useCallback(() => {
     setState(prev => {
       if (prev.items.length === 0) return prev;
@@ -73,10 +74,10 @@ export function useSmartKeyboardNavigation() {
       let nextIndex = prev.currentIndex + 1;
       if (nextIndex >= prev.items.length) nextIndex = 0;
 
-      // 비활성 요소 건너뛰기
+      // 비활???�소 건너?�기
       while (nextIndex !== prev.currentIndex && prev.items[nextIndex]?.disabled) {
         nextIndex = (nextIndex + 1) % prev.items.length;
-        if (nextIndex === prev.currentIndex) break; // 모든 요소가 비활성인 경우
+        if (nextIndex === prev.currentIndex) break; // 모든 ?�소가 비활?�인 경우
       }
 
       const nextItem = prev.items[nextIndex];
@@ -101,10 +102,10 @@ export function useSmartKeyboardNavigation() {
       let prevIndex = prev.currentIndex - 1;
       if (prevIndex < 0) prevIndex = prev.items.length - 1;
 
-      // 비활성 요소 건너뛰기
+      // 비활???�소 건너?�기
       while (prevIndex !== prev.currentIndex && prev.items[prevIndex]?.disabled) {
         prevIndex = (prevIndex - 1 + prev.items.length) % prev.items.length;
-        if (prevIndex === prev.currentIndex) break; // 모든 요소가 비활성인 경우
+        if (prevIndex === prev.currentIndex) break; // 모든 ?�소가 비활?�인 경우
       }
 
       const prevItem = prev.items[prevIndex];
@@ -122,7 +123,7 @@ export function useSmartKeyboardNavigation() {
     });
   }, []);
 
-  // 특정 요소로 포커스 이동
+  // ?�정 ?�소�??�커???�동
   const focusElement = useCallback((id: string) => {
     setState(prev => {
       const targetIndex = prev.items.findIndex(item => item.id === id);
@@ -143,10 +144,8 @@ export function useSmartKeyboardNavigation() {
     });
   }, []);
 
-  // 키보드 이벤트 핸들러
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Tab 키 감지 - 네비게이션 모드 활성화
-    if (e.key === 'Tab') {
+  // ?�보???�벤???�들??  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Tab ??감�? - ?�비게이??모드 ?�성??    if (e.key === 'Tab') {
       setState(prev => ({
         ...prev,
         navigationMode: true
@@ -154,10 +153,10 @@ export function useSmartKeyboardNavigation() {
       return;
     }
 
-    // 네비게이션 모드에서만 작동
+    // ?�비게이??모드?�서�??�동
     if (!state.navigationMode) return;
 
-    // 방향키로 이동
+    // 방향?�로 ?�동
     if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
       e.preventDefault();
       focusNext();
@@ -203,7 +202,7 @@ export function useSmartKeyboardNavigation() {
         return prev;
       });
     } else if (e.key === 'Escape') {
-      // ESC 키로 네비게이션 모드 종료
+      // ESC ?�로 ?�비게이??모드 종료
       setState(prev => ({
         ...prev,
         navigationMode: false,
@@ -212,7 +211,7 @@ export function useSmartKeyboardNavigation() {
     }
   }, [state.navigationMode, focusNext, focusPrevious]);
 
-  // 요소의 활성화 상태 변경 감지
+  // ?�소???�성???�태 변�?감�?
   const setupMutationObserver = useCallback(() => {
     if (observer.current) {
       observer.current.disconnect();
@@ -243,7 +242,7 @@ export function useSmartKeyboardNavigation() {
       });
     });
 
-    // 문서 전체 감시
+    // 문서 ?�체 감시
     observer.current.observe(document.body, {
       attributes: true,
       subtree: true,
@@ -251,7 +250,7 @@ export function useSmartKeyboardNavigation() {
     });
   }, []);
 
-  // 초기화 및 정리
+  // 초기??�??�리
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     setupMutationObserver();
@@ -264,7 +263,7 @@ export function useSmartKeyboardNavigation() {
     };
   }, [handleKeyDown, setupMutationObserver]);
 
-  // 포커스된 요소 변경 감지
+  // ?�커?�된 ?�소 변�?감�?
   useEffect(() => {
     const handleFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
@@ -296,7 +295,7 @@ export function useSmartKeyboardNavigation() {
   };
 }
 
-// 키보드 네비게이션을 위한 HOC
+// ?�보???�비게이?�을 ?�한 HOC
 export function withKeyboardNavigation<T extends Record<string, any>>(
   WrappedComponent: React.ComponentType<T>,
   idPrefix: string = 'nav'

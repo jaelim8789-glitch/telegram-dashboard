@@ -30,7 +30,7 @@ interface SmartSearchFilterProps {
 
 export function SmartSearchFilter({
   onSearch,
-  placeholder = '검색...',
+  placeholder = '검??..',
   filterOptions = []
 }: SmartSearchFilterProps) {
   const [query, setQuery] = useState('');
@@ -39,21 +39,21 @@ export function SmartSearchFilter({
   const [openFilter, setOpenFilter] = useState(false);
   const [openSuggestions, setOpenSuggestions] = useState(false);
 
-  // 기본 필터 옵션
+  // 기본 ?�터 ?�션
   const defaultFilterOptions: FilterOption[] = [
-    { id: 'status:success', label: '성공', category: 'status', icon: <CheckCircle className="w-4 h-4 text-green-500" /> },
-    { id: 'status:failed', label: '실패', category: 'status', icon: <AlertCircle className="w-4 h-4 text-red-500" /> },
-    { id: 'status:pending', label: '대기중', category: 'status', icon: <Clock className="w-4 h-4 text-yellow-500" /> },
+    { id: 'status:success', label: '?�공', category: 'status', icon: <CheckCircle className="w-4 h-4 text-green-500" /> },
+    { id: 'status:failed', label: '?�패', category: 'status', icon: <AlertCircle className="w-4 h-4 text-red-500" /> },
+    { id: 'status:pending', label: '?�기중', category: 'status', icon: <Clock className="w-4 h-4 text-yellow-500" /> },
     { id: 'type:message', label: '메시지', category: 'type', icon: <MessageCircle className="w-4 h-4" /> },
-    { id: 'type:auto-reply', label: '자동응답', category: 'type', icon: <Bot className="w-4 h-4" /> },
+    { id: 'type:auto-reply', label: '?�동?�답', category: 'type', icon: <Bot className="w-4 h-4" /> },
     { id: 'type:broadcast', label: '방송', category: 'type', icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
   const allFilterOptions = [...defaultFilterOptions, ...filterOptions];
 
-  // 검색 제안 생성
+  // 검???�안 ?�성
   const suggestions = useMemo(() => {
-    // 최근 검색어 기반 제안
+    // 최근 검?�어 기반 ?�안
     const recentQueries = searchHistory
       .filter(item => item.query.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 3)
@@ -64,7 +64,7 @@ export function SmartSearchFilter({
         icon: <Search className="w-4 h-4 text-blue-500" />
       }));
 
-    // 자주 사용하는 필터 제안
+    // ?�주 ?�용?�는 ?�터 ?�안
     const popularFilters = allFilterOptions
       .filter(option => option.label.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 5);
@@ -72,11 +72,10 @@ export function SmartSearchFilter({
     return [...recentQueries, ...popularFilters];
   }, [query, searchHistory, allFilterOptions]);
 
-  // 검색 핸들러
-  const handleSearch = useCallback(() => {
+  // 검???�들??  const handleSearch = useCallback(() => {
     onSearch(query, filters);
 
-    // 검색 기록 업데이트
+    // 검??기록 ?�데?�트
     if (query.trim()) {
       const newHistoryItem: SearchHistoryItem = {
         query: query.trim(),
@@ -86,12 +85,12 @@ export function SmartSearchFilter({
 
       setSearchHistory(prev => [
         newHistoryItem,
-        ...prev.filter(item => item.query !== query.trim()).slice(0, 9) // 최근 10개만 유지
+        ...prev.filter(item => item.query !== query.trim()).slice(0, 9) // 최근 10개만 ?��?
       ]);
     }
   }, [query, filters, onSearch, setSearchHistory]);
 
-  // 필터 추가
+  // ?�터 추�?
   const addFilter = (filterId: string) => {
     if (!filters.includes(filterId)) {
       setFilters(prev => [...prev, filterId]);
@@ -99,21 +98,19 @@ export function SmartSearchFilter({
     }
   };
 
-  // 필터 제거
+  // ?�터 ?�거
   const removeFilter = (filterId: string) => {
     setFilters(prev => prev.filter(id => id !== filterId));
   };
 
-  // Enter 키 이벤트 핸들러
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Enter ???�벤???�들??  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSearch();
     }
   };
 
-  // 최근 검색어 클릭 핸들러
-  const handleRecentSearchClick = (recentQuery: string) => {
+  // 최근 검?�어 ?�릭 ?�들??  const handleRecentSearchClick = (recentQuery: string) => {
     setQuery(recentQuery);
     setTimeout(() => {
       handleSearch();
@@ -123,7 +120,7 @@ export function SmartSearchFilter({
   return (
     <div className="relative">
       <div className="flex items-center gap-2 flex-wrap">
-        {/* 필터 배지 */}
+        {/* ?�터 배�? */}
         {filters.map(filterId => {
           const filter = allFilterOptions.find(opt => opt.id === filterId);
           return filter ? (
@@ -140,7 +137,7 @@ export function SmartSearchFilter({
           ) : null;
         })}
 
-        {/* 검색 입력 필드 */}
+        {/* 검???�력 ?�드 */}
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
@@ -152,7 +149,7 @@ export function SmartSearchFilter({
             className="pl-10 pr-16 py-2"
           />
           
-          {/* 필터 추가 버튼 */}
+          {/* ?�터 추�? 버튼 */}
           <Popover open={openFilter} onOpenChange={setOpenFilter}>
             <PopoverTrigger asChild>
               <Button
@@ -165,10 +162,10 @@ export function SmartSearchFilter({
             </PopoverTrigger>
             <PopoverContent className="p-0 w-64" align="end">
               <Command>
-                <CommandInput placeholder="필터 검색..." />
+                <CommandInput placeholder="?�터 검??.." />
                 <CommandList>
-                  <CommandEmpty>필터를 찾을 수 없습니다.</CommandEmpty>
-                  <CommandGroup heading="상태">
+                  <CommandEmpty>?�터�?찾을 ???�습?�다.</CommandEmpty>
+                  <CommandGroup heading="?�태">
                     {allFilterOptions
                       .filter(opt => opt.category === 'status')
                       .map(option => (
@@ -181,7 +178,7 @@ export function SmartSearchFilter({
                         </CommandItem>
                       ))}
                   </CommandGroup>
-                  <CommandGroup heading="유형">
+                  <CommandGroup heading="?�형">
                     {allFilterOptions
                       .filter(opt => opt.category === 'type')
                       .map(option => (
@@ -200,17 +197,16 @@ export function SmartSearchFilter({
           </Popover>
         </div>
 
-        {/* 검색 버튼 */}
+        {/* 검??버튼 */}
         <Button onClick={handleSearch} className="whitespace-nowrap">
-          검색
-        </Button>
+          검??        </Button>
       </div>
 
-      {/* 검색 제안 팝오버 */}
+      {/* 검???�안 ?�오�?*/}
       {openSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg p-2">
           <div className="space-y-1">
-            <div className="px-2 py-1 text-xs font-medium text-muted-foreground">최근 검색</div>
+            <div className="px-2 py-1 text-xs font-medium text-muted-foreground">최근 검??/div>
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.id}

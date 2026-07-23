@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Copy, Eye, EyeOff, Key, Loader2, QrCode, RotateCcw, Send, Shield, User, X } from "lucide-react";
@@ -33,9 +34,9 @@ export function AccountRegisterTab() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0); // 모바일 멀티스텝 상태
-  const [showSteps, setShowSteps] = useState(false); // 모바일에서 단계 표시 여부
-  const [submitting, setSubmitting] = useState(false); // 제출 상태
+  const [currentStep, setCurrentStep] = useState(0); // 모바??멀?�스???�태
+  const [showSteps, setShowSteps] = useState(false); // 모바?�에???�계 ?�시 ?��?
+  const [submitting, setSubmitting] = useState(false); // ?�출 ?�태
   
   const [formData, setFormData] = useState({
     name: "",
@@ -59,7 +60,7 @@ export function AccountRegisterTab() {
 
   const { toast } = useToast();
 
-  // 패스워드 강도 검사
+  // ?�스?�드 강도 검??
   const calculatePasswordStrength = useCallback((password: string) => {
     let strength = 0;
     if (password.length >= 8) strength += 1;
@@ -69,18 +70,18 @@ export function AccountRegisterTab() {
     if (/[^A-Za-z0-9]/.test(password)) strength += 1;
     
     const hints = [];
-    if (password.length < 8) hints.push("8자 이상");
-    if (!/[A-Z]/.test(password)) hints.push("대문자 포함");
-    if (!/[a-z]/.test(password)) hints.push("소문자 포함");
-    if (!/[0-9]/.test(password)) hints.push("숫자 포함");
-    if (!/[^A-Za-z0-9]/.test(password)) hints.push("특수문자 포함");
+    if (password.length < 8) hints.push("8???�상");
+    if (!/[A-Z]/.test(password)) hints.push("?�문자 ?�함");
+    if (!/[a-z]/.test(password)) hints.push("?�문???�함");
+    if (!/[0-9]/.test(password)) hints.push("?�자 ?�함");
+    if (!/[^A-Za-z0-9]/.test(password)) hints.push("?�수문자 ?�함");
     
     setPasswordStrength(strength);
     setPasswordHint(hints.join(", "));
     return strength;
   }, []);
 
-  // 폼 데이터 변경 핸들러
+  // ???�이??변�??�들??
   const handleInputChange = useCallback((field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
@@ -89,42 +90,42 @@ export function AccountRegisterTab() {
     }
   }, [calculatePasswordStrength]);
 
-  // QR 코드 생성
+  // QR 코드 ?�성
   const generateQrCode = useCallback(async () => {
     if (!formData.telegramSession) {
-      toast("error", "Telegram 세션을 입력해주세요.");
+      toast("error", "Telegram ?�션???�력?�주?�요.");
       return;
     }
     
     setQrLoading(true);
     try {
-      // 실제 QR 코드 생성 로직은 프론트엔드에서 불가능하므로 모의 데이터
+      // ?�제 QR 코드 ?�성 로직?� ?�론?�엔?�에??불�??�하므�?모의 ?�이??
       setQrData(`QR_CODE_DATA:${formData.telegramSession.substring(0, 10)}`);
       setQrModalOpen(true);
     } catch (error) {
-      toast("error", "QR 코드 생성에 실패했습니다.");
+      toast("error", "QR 코드 ?�성???�패?�습?�다.");
     } finally {
       setQrLoading(false);
     }
   }, [formData.telegramSession, toast]);
 
-  // 폼 제출
+  // ???�출
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      setSubmitError("이름을 입력해주세요.");
+      setSubmitError("?�름???�력?�주?�요.");
       return;
     }
     
     if (!formData.telegramSession.trim()) {
-      setSubmitError("Telegram 세션을 입력해주세요.");
+      setSubmitError("Telegram ?�션???�력?�주?�요.");
       return;
     }
     
     if (formData.smtpPassword && formData.smtpPassword.length > 0) {
       if (passwordStrength < 3) {
-        setSubmitError("SMTP 비밀번호가 너무 약합니다. 더 강력한 비밀번호를 사용해주세요.");
+        setSubmitError("SMTP 비�?번호가 ?�무 ?�합?�다. ??강력??비�?번호�??�용?�주?�요.");
         return;
       }
     }
@@ -138,10 +139,10 @@ export function AccountRegisterTab() {
       });
       
       selectAccount(newAccount.id);
-      setSubmitSuccess("계정이 성공적으로 등록되었습니다!");
+      setSubmitSuccess("계정???�공?�으�??�록?�었?�니??");
       setSubmitError(null);
       
-      // 폼 초기화
+      // ??초기??
       setFormData({
         name: "",
         phone: "",
@@ -160,32 +161,32 @@ export function AccountRegisterTab() {
       
       setTimeout(() => setSubmitSuccess(null), 5000);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "계정 등록에 실패했습니다.");
+      setSubmitError(error instanceof Error ? error.message : "계정 ?�록???�패?�습?�다.");
     } finally {
       setSubmitting(false);
     }
   }, [formData, passwordStrength, registerAccount, selectAccount]);
 
-  // 계정 삭제
+  // 계정 ??��
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
     
     removeAccount(deleteTarget);
     setDeleteConfirmOpen(false);
     setDeleteTarget(null);
-    toast("success", "계정이 삭제되었습니다.");
+    toast("success", "계정????��?�었?�니??");
   }, [deleteTarget, removeAccount, toast]);
 
-  // 계정 테스트
+  // 계정 ?�스??
   const handleTestAccount = useCallback(async (accountId: string) => {
-    // 더미 테스트 로직
-    toast("info", "계정 테스트를 시작합니다...");
+    // ?��? ?�스??로직
+    toast("info", "계정 ?�스?��? ?�작?�니??..");
     setTimeout(() => {
-      toast("success", "계정 연결 테스트가 성공적으로 완료되었습니다!");
+      toast("success", "계정 ?�결 ?�스?��? ?�공?�으�??�료?�었?�니??");
     }, 2000);
   }, [toast]);
 
-  // AI 분석 기능 추가
+  // AI 분석 기능 추�?
   const analyzeAccountConfig = useCallback(() => {
     const spamScore: SpamScoreResult = computeSpamScore(formData.name + ' ' + formData.notes);
     const toneAnalysis: ToneAnalysis = analyzeTone(formData.notes);
@@ -199,8 +200,8 @@ export function AccountRegisterTab() {
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
       } as unknown as Account,
-      [], // 그룹 데이터 없음
-      [], // 로그 데이터 없음
+      [], // 그룹 ?�이???�음
+      [], // 로그 ?�이???�음
       formData.notes
     );
 
@@ -216,9 +217,9 @@ export function AccountRegisterTab() {
     return analyzeAccountConfig();
   }, [analyzeAccountConfig]);
 
-  // 모바일 멀티스텝 네비게이션
+  // 모바??멀?�스???�비게이??
   const steps = [
-    { id: 0, name: "기본 정보", icon: User },
+    { id: 0, name: "기본 ?�보", icon: User },
     { id: 1, name: "Telegram", icon: Send },
     { id: 2, name: "SMTP", icon: Key },
     { id: 3, name: "보안", icon: Shield },
@@ -238,11 +239,11 @@ export function AccountRegisterTab() {
 
   if (!hasApiKey) {
     return (
-      <Panel title="계정 등록" description="계정을 등록하려면 API 키가 필요합니다.">
+      <Panel title="계정 ?�록" description="계정???�록?�려�?API ?��? ?�요?�니??">
         <EmptyState 
           icon={Key} 
-          title="API 키가 없습니다" 
-          description="봇 메뉴에서 '🔑 내 API 키'를 통해 발급받은 후 다시 시도해주세요." 
+          title="API ?��? ?�습?�다" 
+          description="�?메뉴?�서 '?�� ??API ??�??�해 발급받�? ???�시 ?�도?�주?�요." 
         />
       </Panel>
     );
@@ -250,17 +251,17 @@ export function AccountRegisterTab() {
 
   return (
     <div className="space-y-4 pb-20">
-      {/* ── AI Security Insights Panel ── */}
+      {/* ?�?� AI Security Insights Panel ?�?� */}
       {configAnalysis && (
         <Panel 
-          title="AI 보안 인사이트" 
-          description="계정 구성에서 감지된 보안 패턴"
+          title="AI 보안 ?�사?�트" 
+          description="계정 구성?�서 감�???보안 ?�턴"
         >
           <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
             {/* Spam Score */}
             <div className="rounded-lg border border-app-border bg-app-card p-2.5">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-[10px] font-medium text-app-text-muted">이름/노트 스팸 점수</span>
+                <span className="text-[10px] font-medium text-app-text-muted">?�름/?�트 ?�팸 ?�수</span>
                 <span className={cn(
                   "text-xs font-bold tabular-nums",
                   configAnalysis.spamScore.score >= 70 ? "text-app-danger" : 
@@ -282,7 +283,7 @@ export function AccountRegisterTab() {
               {configAnalysis.spamScore.reasons.length > 0 && (
                 <ul className="space-y-0.5">
                     {configAnalysis.spamScore.reasons.slice(0, 2).map((r, i) => (
-                    <li key={`${r}-${i}`} className="text-[10px] text-app-text-subtle">• {r}</li>
+                    <li key={`${r}-${i}`} className="text-[10px] text-app-text-subtle">??{r}</li>
                   ))}
                 </ul>
               )}
@@ -290,7 +291,7 @@ export function AccountRegisterTab() {
 
             {/* Tone Analysis */}
             <div className="rounded-lg border border-app-border bg-app-card p-2.5">
-              <div className="mb-1 text-[10px] font-medium text-app-text-muted">노트 톤 분석</div>
+              <div className="mb-1 text-[10px] font-medium text-app-text-muted">?�트 ??분석</div>
               <div className="mb-1 flex flex-wrap items-center gap-1">
                 {configAnalysis.toneAnalysis.primaryTone && (
                   <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold", 
@@ -313,7 +314,7 @@ export function AccountRegisterTab() {
 
             {/* Risk Analysis */}
             <div className="rounded-lg border border-app-border bg-app-card p-2.5">
-              <div className="mb-1 text-[10px] font-medium text-app-text-muted">보안 리스크</div>
+              <div className="mb-1 text-[10px] font-medium text-app-text-muted">보안 리스??/div>
               <div className={cn(
                 "inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
                 configAnalysis.riskAnalysis.level === "danger" ? "bg-app-danger text-white" :
@@ -332,22 +333,22 @@ export function AccountRegisterTab() {
         </Panel>
       )}
 
-      {/* ── Multi-step Form for Mobile ── */}
+      {/* ?�?� Multi-step Form for Mobile ?�?� */}
       <Panel
         title={
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-app-primary" />
-            <span>계정 등록</span>
+            <span>계정 ?�록</span>
           </div>
         }
-        description="새로운 계정을 등록하세요"
+        description="?�로??계정???�록?�세??
         action={
           <button
             onClick={() => setShowSteps(!showSteps)}
             className="md:hidden flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text transition-colors"
           >
             <div className="h-2 w-2 rounded-full bg-app-primary" />
-            단계
+            ?�계
           </button>
         }
       >
@@ -391,18 +392,18 @@ export function AccountRegisterTab() {
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
-                <Field label="계정 이름 *">
+                <Field label="계정 ?�름 *">
                   <input
                     type="text"
                     autoFocus
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="내 텔레그램 계정"
+                    placeholder="???�레그램 계정"
                     className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 min-h-[44px]"
                   />
                 </Field>
 
-                <Field label="전화번호">
+                <Field label="?�화번호">
                   <input
                     type="tel"
                     value={formData.phone}
@@ -416,7 +417,7 @@ export function AccountRegisterTab() {
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="이 계정에 대한 추가 정보를 입력하세요..."
+                    placeholder="??계정???�??추�? ?�보�??�력?�세??.."
                     rows={3}
                     className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 resize-none min-h-[88px]"
                   />
@@ -433,7 +434,7 @@ export function AccountRegisterTab() {
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
-                <Field label="Telegram 세션 *">
+                <Field label="Telegram ?�션 *">
                   <Textarea
                     autoFocus
                     value={formData.telegramSession}
@@ -467,7 +468,7 @@ export function AccountRegisterTab() {
                     ) : (
                       <>
                         <QrCode className="h-4 w-4 mr-2" />
-                        QR 생성
+                        QR ?�성
                       </>
                     )}
                   </Button>
@@ -495,7 +496,7 @@ export function AccountRegisterTab() {
                 className="space-y-4"
               >
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="SMTP 호스트">
+                  <Field label="SMTP ?�스??>
                     <input
                       type="text"
                       autoFocus
@@ -506,7 +507,7 @@ export function AccountRegisterTab() {
                     />
                   </Field>
 
-                  <Field label="SMTP 포트">
+                  <Field label="SMTP ?�트">
                     <input
                       type="number"
                       value={formData.smtpPort}
@@ -517,7 +518,7 @@ export function AccountRegisterTab() {
                   </Field>
                 </div>
 
-                <Field label="SMTP 사용자">
+                <Field label="SMTP ?�용??>
                   <input
                     type="email"
                     value={formData.smtpUser}
@@ -527,13 +528,13 @@ export function AccountRegisterTab() {
                   />
                 </Field>
 
-                <Field label="SMTP 비밀번호">
+                <Field label="SMTP 비�?번호">
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={formData.smtpPassword}
                       onChange={(e) => handleInputChange('smtpPassword', e.target.value)}
-                      placeholder="앱 비밀번호"
+                      placeholder="??비�?번호"
                       className="w-full rounded-xl border border-app-border bg-app-card px-3 py-2.5 pr-10 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15 min-h-[44px]"
                     />
                     <button
@@ -550,7 +551,7 @@ export function AccountRegisterTab() {
                   {formData.smtpPassword && (
                     <div className="mt-2">
                       <div className="flex justify-between text-xs text-app-text-subtle mb-1">
-                        <span>비밀번호 강도</span>
+                        <span>비�?번호 강도</span>
                         <span>{passwordStrength}/5</span>
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-app-bg">
@@ -565,14 +566,14 @@ export function AccountRegisterTab() {
                       </div>
                       {passwordHint && (
                         <p className="mt-1 text-xs text-app-text-subtle">
-                          개선 팁: {passwordHint}
+                          개선 ?? {passwordHint}
                         </p>
                       )}
                     </div>
                   )}
                 </Field>
 
-                <Field label="보내는 이 주소">
+                <Field label="보내????주소">
                   <input
                     type="email"
                     value={formData.smtpFrom}
@@ -593,7 +594,7 @@ export function AccountRegisterTab() {
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
-                <Field label="API 키">
+                <Field label="API ??>
                   <input
                     type="password"
                     autoFocus
@@ -604,7 +605,7 @@ export function AccountRegisterTab() {
                   />
                 </Field>
 
-                <Field label="웹훅 URL">
+                <Field label="?�훅 URL">
                   <input
                     type="url"
                     value={formData.webhookUrl}
@@ -615,11 +616,11 @@ export function AccountRegisterTab() {
                 </Field>
 
                 <div className="rounded-xl border border-app-border bg-app-card/30 p-3">
-                  <h4 className="text-sm font-medium text-app-text mb-2">보안 팁</h4>
+                  <h4 className="text-sm font-medium text-app-text mb-2">보안 ??/h4>
                   <ul className="space-y-1 text-xs text-app-text-subtle">
-                    <li>• 비밀번호는 최소 8자리 이상 사용하세요</li>
-                    <li>• 특수문자, 숫자, 대소문자를 조합하세요</li>
-                    <li>• 중요한 계정에는 앱 비밀번호를 사용하세요</li>
+                    <li>??비�?번호??최소 8?�리 ?�상 ?�용?�세??/li>
+                    <li>???�수문자, ?�자, ?�?�문?��? 조합?�세??/li>
+                    <li>??중요??계정?�는 ??비�?번호�??�용?�세??/li>
                   </ul>
                 </div>
               </motion.div>
@@ -634,7 +635,7 @@ export function AccountRegisterTab() {
                 disabled={currentStep === 0 || submitting}
                 className="flex-1 min-h-[44px]"
               >
-                이전
+                ?�전
               </Button>
               
               {currentStep < steps.length - 1 ? (
@@ -645,7 +646,7 @@ export function AccountRegisterTab() {
                   disabled={submitting}
                   className="flex-1 min-h-[44px]"
                 >
-                  다음
+                  ?�음
                 </Button>
               ) : (
                 <Button
@@ -654,7 +655,7 @@ export function AccountRegisterTab() {
                   disabled={submitting}
                   className="flex-1 min-h-[44px]"
                 >
-                  {submitting ? '등록 중...' : '등록'}
+                  {submitting ? '?�록 �?..' : '?�록'}
                 </Button>
               )}
             </div>
@@ -676,19 +677,19 @@ export function AccountRegisterTab() {
         </form>
       </Panel>
 
-      {/* ── Existing Accounts Panel ── */}
+      {/* ?�?� Existing Accounts Panel ?�?� */}
       {accounts.length > 0 && (
         <Panel
-          title="등록된 계정"
-          description={`${accounts.length}개의 계정이 등록되어 있습니다`}
+          title="?�록??계정"
+          description={`${accounts.length}개의 계정???�록?�어 ?�습?�다`}
           action={
             <button
               onClick={() => {
                 accounts.forEach(acc => {
                   // Test each account
-                  toast("info", `${acc.name} 계정 테스트 시작...`);
+                  toast("info", `${acc.name} 계정 ?�스???�작...`);
                   setTimeout(() => {
-                    toast("success", `${acc.name} 계정 연결 확인 완료!`);
+                    toast("success", `${acc.name} 계정 ?�결 ?�인 ?�료!`);
                   }, 2000);
                 });
               }}
@@ -696,7 +697,7 @@ export function AccountRegisterTab() {
               disabled={submitting}
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              전체 테스트
+              ?�체 ?�스??
             </button>
           }
         >
@@ -721,7 +722,7 @@ export function AccountRegisterTab() {
                         tone={acc.status === "active" ? "success" : "warning"}
                         className="shrink-0"
                       >
-                        {acc.status === "active" ? "활성" : "비활성"}
+                        {acc.status === "active" ? "?�성" : "비활??}
                       </Badge>
                     </div>
                     
@@ -731,7 +732,7 @@ export function AccountRegisterTab() {
                     
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="rounded-lg bg-app-card-hover px-2 py-1 text-[10px] text-app-text-muted">
-                        오늘 {acc.todaySent}회 발송
+                        ?�늘 {acc.todaySent}??발송
                       </span>
                       <span className="rounded-lg bg-app-card-hover px-2 py-1 text-[10px] text-app-text-muted">
                         그룹 {acc.groupCount}
@@ -748,7 +749,7 @@ export function AccountRegisterTab() {
                           ? "bg-app-primary text-white"
                           : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
                       )}
-                      aria-label="계정 선택"
+                      aria-label="계정 ?�택"
                       disabled={submitting}
                     >
                       <CheckCircle2 className="h-4 w-4" />
@@ -758,7 +759,7 @@ export function AccountRegisterTab() {
                       <button
                         onClick={() => handleTestAccount(acc.id)}
                         className="flex items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors min-h-[44px] min-w-[44px]"
-                        aria-label="계정 테스트"
+                        aria-label="계정 ?�스??
                         disabled={submitting}
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
@@ -770,7 +771,7 @@ export function AccountRegisterTab() {
                           setDeleteConfirmOpen(true);
                         }}
                         className="flex items-center justify-center rounded-lg text-app-danger hover:bg-app-danger-muted hover:text-app-danger transition-colors min-h-[44px] min-w-[44px]"
-                        aria-label="계정 삭제"
+                        aria-label="계정 ??��"
                         disabled={submitting}
                       >
                         <X className="h-3.5 w-3.5" />
@@ -798,7 +799,7 @@ export function AccountRegisterTab() {
             </div>
           </div>
           <p className="text-sm text-app-text-subtle text-center">
-            이 QR 코드를 텔레그램 앱에서 스캔하여 로그인하세요
+            ??QR 코드�??�레그램 ?�에???�캔?�여 로그?�하?�요
           </p>
         </div>
       </Modal>
@@ -806,9 +807,9 @@ export function AccountRegisterTab() {
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteConfirmOpen}
-        title="계정 삭제"
-        description="이 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
-        confirmLabel="삭제" cancelLabel="취소" variant="danger"
+        title="계정 ??��"
+        description="??계정????��?�시겠습?�까? ???�업?� ?�돌�????�습?�다."
+        confirmLabel="??��" cancelLabel="취소" variant="danger"
         onConfirm={handleDelete}
         onCancel={() => {
           setDeleteConfirmOpen(false);

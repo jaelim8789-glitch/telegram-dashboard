@@ -32,7 +32,7 @@ const LandingImage = ({
           observer.disconnect();
         }
       },
-      { threshold: 0.1 } // 10%가 보일 때 로드 시작
+      { threshold: 0.1 } // 10%가 보일 ??로드 ?�작
     );
 
     if (imgRef.current) {
@@ -60,11 +60,11 @@ const LandingImage = ({
           unoptimized={false}
         />
       ) : (
-        // Placeholder로 빠르게 로드되는 이미지 또는 배경 표시
+        // Placeholder�?빠르�?로드?�는 ?��?지 ?�는 배경 ?�시
         <div className="bg-gray-800 w-full h-full animate-pulse" />
       )}
       
-      {/* 로딩 완료 시 실제 이미지 표시 */}
+      {/* 로딩 ?�료 ???�제 ?��?지 ?�시 */}
       {isLoaded && isInView ? null : (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>

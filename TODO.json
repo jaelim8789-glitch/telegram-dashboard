@@ -1,6 +1,6 @@
 {
   "date": "2026-07-23",
-  "phase": "Launch Prep",
+  "phase": "Final Testing",
   "items": [
     {
       "id": "ci-fix",
@@ -17,14 +17,6 @@
       "owner": "사용자",
       "priority": "🔥 CRITICAL",
       "eta": "CI 통과 후 5분"
-    },
-    {
-      "id": "perceived-speed",
-      "title": "Agent A: Perceived Speed Top 10",
-      "status": "done",
-      "owner": "Agent A",
-      "priority": "A",
-      "eta": "완료"
     },
     {
       "id": "infra-structure",

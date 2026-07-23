@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { AlertTriangle, Ban, CheckCircle2, Clock, Edit3, Plug, RefreshCw, ShieldAlert, Star, Trash2, WifiOff, Layers, X } from "lucide-react";
 import { getAccountDisplayName, getAccountInitials, type Account, type AccountHealthState } from "@/types";
@@ -7,21 +8,21 @@ import { getAccountLabel, setAccountLabel } from "@/lib/accountLabels";
 import { useAccountBelongingGroups, useToggleAccountInGroup, useAccountGroups } from "@/lib/accountGroups";
 
 const STATUS_STYLE: Record<Account["status"], { dot: string; label: string }> = {
-  active: { dot: "bg-app-success", label: "활성" },
-  inactive: { dot: "bg-app-text-subtle", label: "비활성" },
-  banned: { dot: "bg-app-danger", label: "차단됨" },
-  suspended: { dot: "bg-app-warning", label: "정지됨" },
+  active: { dot: "bg-app-success", label: "?�성" },
+  inactive: { dot: "bg-app-text-subtle", label: "비활?? },
+  banned: { dot: "bg-app-danger", label: "차단?? },
+  suspended: { dot: "bg-app-warning", label: "?��??? },
 };
 
 const HEALTH_ICON: Record<AccountHealthState, { icon: typeof AlertTriangle; color: string; title: string }> = {
-  healthy: { icon: CheckCircle2, color: "text-app-success", title: "정상" },
-  unauthorized: { icon: Plug, color: "text-app-warning", title: "세션 만료 - 재인증 필요" },
-  banned: { icon: Ban, color: "text-app-danger", title: "차단됨" },
-  restricted: { icon: ShieldAlert, color: "text-app-danger", title: "그룹 발송 제한 - 텔레그램 제재 의심" },
-  rate_limited: { icon: Clock, color: "text-app-warning", title: "제한 초과" },
-  error: { icon: ShieldAlert, color: "text-app-danger", title: "발송 오류" },
-  unknown: { icon: AlertTriangle, color: "text-app-text-muted", title: "상태 미확인" },
-  not_configured: { icon: WifiOff, color: "text-app-text-subtle", title: "세션 없음 - 등록 필요" },
+  healthy: { icon: CheckCircle2, color: "text-app-success", title: "?�상" },
+  unauthorized: { icon: Plug, color: "text-app-warning", title: "?�션 만료 - ?�인�??�요" },
+  banned: { icon: Ban, color: "text-app-danger", title: "차단?? },
+  restricted: { icon: ShieldAlert, color: "text-app-danger", title: "그룹 발송 ?�한 - ?�레그램 ?�재 ?�심" },
+  rate_limited: { icon: Clock, color: "text-app-warning", title: "?�한 초과" },
+  error: { icon: ShieldAlert, color: "text-app-danger", title: "발송 ?�류" },
+  unknown: { icon: AlertTriangle, color: "text-app-text-muted", title: "?�태 미확?? },
+  not_configured: { icon: WifiOff, color: "text-app-text-subtle", title: "?�션 ?�음 - ?�록 ?�요" },
 };
 
 interface AccountCardProps {
@@ -71,10 +72,10 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
     return () => document.removeEventListener("keydown", handleKey);
   }, [groupPickerOpen]);
 
-  // ── Account label ──
+  // ?�?� Account label ?�?�
   const [label, setLabel] = useState<string>(() => getAccountLabel(account.id) ?? "");
 
-  // ── Account groups ──
+  // ?�?� Account groups ?�?�
   const belongingGroups = useAccountBelongingGroups(account.id);
   const allGroups = useAccountGroups();
   const toggleGroup = useToggleAccountInGroup();
@@ -82,7 +83,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
   function handleEditLabel(e: React.MouseEvent) {
     e.stopPropagation();
     const current = getAccountLabel(account.id) ?? "";
-    const newLabel = window.prompt("계정 별칭을 입력하세요 (비우면 삭제)", current);
+    const newLabel = window.prompt("계정 별칭???�력?�세??(비우�???��)", current);
     if (newLabel === null) return; // cancelled
     setAccountLabel(account.id, newLabel.trim());
     setLabel(newLabel.trim());
@@ -125,7 +126,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
               type="button"
               onClick={handleEditLabel}
               className="shrink-0 flex min-h-11 min-w-11 items-center justify-center rounded text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-primary hover:bg-app-card-hover transition-all sm:min-h-5 sm:min-w-5"
-              title="별칭 편집"
+              title="별칭 ?�집"
             >
               <Edit3 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
             </button>
@@ -150,7 +151,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           {lastError && onClearError && (
             <button
               type="button"
-              title="오류 확인함 (지우기)"
+              title="?�류 ?�인??(지?�기)"
               onClick={handleClearError}
               disabled={clearingError}
               className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full text-app-text-subtle opacity-0 group-hover:opacity-100 hover:text-app-danger hover:bg-app-danger-muted transition-all disabled:opacity-50"
@@ -161,11 +162,11 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot, selected && "animate-pulse")} />
           <span className="text-[11px] text-app-text-muted">{status.label}</span>
         </div>
-        {/* Group assignment — visible on hover */}
+        {/* Group assignment ??visible on hover */}
         <div className="relative">
           <button
             type="button"
-            title="그룹 관리"
+            title="그룹 관�?
             onClick={(e) => { e.stopPropagation(); setGroupPickerOpen(!groupPickerOpen); }}
             className={cn(
               "flex min-h-11 min-w-11 items-center justify-center rounded-md transition-all hover:bg-app-card-hover sm:min-h-[28px] sm:min-w-[28px]",
@@ -180,9 +181,9 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
               <div className="fixed inset-0 z-30" onClick={() => setGroupPickerOpen(false)} />
               {/* On mobile (< 640px) use a fixed bottom sheet; on desktop use absolute dropdown */}
               <div className="fixed inset-x-4 bottom-4 z-40 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:w-48 rounded-xl border border-app-border bg-app-surface p-1.5 shadow-xl">
-                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">그룹 지정</p>
+                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">그룹 지??/p>
                 {allGroups.length === 0 && (
-                  <p className="px-2 py-2 text-[11px] text-app-text-muted italic">그룹이 없습니다</p>
+                  <p className="px-2 py-2 text-[11px] text-app-text-muted italic">그룹???�습?�다</p>
                 )}
                 {allGroups.map((g) => {
                   const isInGroup = belongingGroups.some((bg) => bg.id === g.id);
@@ -199,7 +200,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
                       />
                       <span className="flex-1 text-left truncate">{g.name}</span>
                       {isInGroup && (
-                        <span className="text-app-primary text-[10px] font-medium">✓</span>
+                        <span className="text-app-primary text-[10px] font-medium">??/span>
                       )}
                     </button>
                   );
@@ -212,7 +213,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
         {onToggleFavorite && (
           <button
             type="button"
-            title={isFavorite ? "즐겨찾기 제거" : "즐겨찾기 추가"}
+            title={isFavorite ? "즐겨찾기 ?�거" : "즐겨찾기 추�?"}
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(account.id); }}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-md transition-all hover:bg-app-card-hover sm:min-h-6 sm:min-w-6"
           >
@@ -222,7 +223,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
         {account.status === "suspended" && onResume && (
           <button
             type="button"
-            title="재개 (suspended → active)"
+            title="?�개 (suspended ??active)"
             onClick={handleResume}
             disabled={resuming}
             className={cn(
@@ -234,7 +235,7 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
           </button>
         )}
         <button
-          type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} disabled={deleting}
+          type="button" title="??��" onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} disabled={deleting}
           className={cn(
             "flex min-h-11 min-w-11 items-center justify-center rounded-md text-app-text-muted transition-all hover:bg-app-danger-muted hover:text-app-danger disabled:opacity-50 sm:min-h-6 sm:min-w-6",
             selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -245,9 +246,9 @@ export function AccountCard({ account, selected, health, lastError, isFavorite, 
       </div>
       <ConfirmDialog
         open={confirmOpen}
-        title={`${getAccountDisplayName(account)} 계정을 삭제할까요?`}
+        title={`${getAccountDisplayName(account)} 계정????��?�까??`}
         variant="danger"
-        confirmLabel="삭제"
+        confirmLabel="??��"
         cancelLabel="취소"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}

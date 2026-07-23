@@ -61,7 +61,7 @@ export function MobileOfflineCapability() {
   if (!isOnline) {
     return (
       <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center p-2 z-50">
-        <span className="text-sm font-medium">오프라인 모드 - 일부 기능이 제한될 수 있습니다</span>
+        <span className="text-sm font-medium">?�프?�인 모드 - ?��? 기능???�한?????�습?�다</span>
       </div>
     );
   }
@@ -69,7 +69,7 @@ export function MobileOfflineCapability() {
   if (swError || dbError) {
     return (
       <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center p-2 z-50">
-        <span className="text-sm font-medium">오프라인 캐시 초기화에 실패했습니다</span>
+        <span className="text-sm font-medium">?�프?�인 캐시 초기?�에 ?�패?�습?�다</span>
       </div>
     );
   }

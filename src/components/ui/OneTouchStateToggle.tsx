@@ -1,3 +1,4 @@
+"use client";
 import { useState } from 'react';
 import { Bot, Bell, Moon, Sun, MonitorCog } from 'lucide-react';
 import { Button } from './Button';
@@ -48,7 +49,7 @@ export function OneTouchStateToggle({ states, className }: OneTouchStateTogglePr
               : "bg-app-card-hover hover:bg-app-card-hover/80",
             "min-w-[50px]"
           )}
-          aria-label={`${state.name} ${activeStates[state.id] ? '끄기' : '켜기'}`}
+          aria-label={`${state.name} ${activeStates[state.id] ? '?�기' : '켜기'}`}
         >
           <state.icon 
             className={cn(
