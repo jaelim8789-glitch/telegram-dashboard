@@ -11,9 +11,8 @@ import { LiveChat } from "@/components/ui/LiveChat";
 import { MobileOptimizations } from "@/components/MobileOptimizations";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { PerformanceProvider } from "@/contexts/PerformanceContext";
+import { useEffect } from "react";
 import { initHighlight } from "@/lib/highlight";
-
-initHighlight();
 import { PerformanceOverlay } from "@/lib/performanceMonitor";
 
 export const metadata: Metadata = {
@@ -38,6 +37,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  useEffect(() => {
+    initHighlight();
+  }, []);
+
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
