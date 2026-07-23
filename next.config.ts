@@ -1,5 +1,4 @@
-﻿import { withSentryConfig } from "@sentry/nextjs";
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
@@ -85,14 +84,5 @@ let nextConfig: NextConfig = {
     return config;
   },
 };
-
-// Sentry: only runs webpack plugin in CI. Import is at top level but plugin only applied when CI=1.
-if (process.env.CI) {
-  const sentryOptions = { silent: true };
-  nextConfig = withSentryConfig(
-    typeof nextConfig === "function" ? nextConfig : () => Promise.resolve(nextConfig),
-    sentryOptions
-  );
-}
 
 export default nextConfig;
