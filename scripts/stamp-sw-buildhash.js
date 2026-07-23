@@ -1,6 +1,6 @@
-﻿// Stamps public/sw.js's CACHE_NAME with the current Next.js build ID so every
+// Stamps public/sw.js's CACHE_NAME with the current Next.js build ID so every
 // deploy gets a distinct cache name. Without this, self.__BUILD_HASH is never
-// set by anything, so CACHE_NAME stays "telemon-vlatest" forever ??the service
+// set by anything, so CACHE_NAME stays "telemon-vlatest" forever ? the service
 // worker never invalidates its cache across deploys, serving stale JS chunks
 // alongside fresh HTML and causing mismatched/blank UI after a deploy.
 const fs = require("fs");
@@ -9,22 +9,24 @@ const path = require("path");
 const buildIdPath = path.join(__dirname, "..", ".next", "BUILD_ID");
 const swPath = path.join(__dirname, "..", "public", "sw.js");
 
-const buildId = fs.readFileSync(buildIdPath, "utf8").trim();
+let buildId;
+try {
+  buildId = fs.readFileSync(buildIdPath, "utf8").trim();
+} catch {
+  console.warn("stamp-sw-buildhash: BUILD_ID not found at " + buildIdPath + " ? skipping stamp, using 'latest'");
+  buildId = "latest";
+}
+
 const sw = fs.readFileSync(swPath, "utf8");
 
-const stamped = sw
-  .replace(
-    /const CACHE_NAME = `telemon-v\$\{self\.__BUILD_HASH \|\| 'latest'\}`;/,
-    `const CACHE_NAME = \`telemon-v${buildId}\`;`,
-  )
-  .replace(
-    /const CACHE_NAME = `telemon-v[a-zA-Z0-9_]+`;/,
-    `const CACHE_NAME = \`telemon-v${buildId}\`;`,
-  );
+const stamped = sw.replace(
+  /const CACHE_NAME = \	elemon-v\$\{self\.__BUILD_HASH \|\| 'latest'\}\;/,
+  "const CACHE_NAME = \	elemon-v" + buildId + "\;"
+);
 
 if (stamped === sw) {
-  console.warn("stamp-sw-buildhash: CACHE_NAME pattern not found in public/sw.js ??warning: could not stamp");
+  console.warn("stamp-sw-buildhash: CACHE_NAME pattern not found in public/sw.js ? warning: could not stamp");
 }
 
 fs.writeFileSync(swPath, stamped);
-console.log(`stamp-sw-buildhash: CACHE_NAME -> telemon-v${buildId}`);
+console.log("stamp-sw-buildhash: CACHE_NAME -> telemon-v" + buildId);
