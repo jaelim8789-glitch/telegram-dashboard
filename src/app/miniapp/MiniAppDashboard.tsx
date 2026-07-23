@@ -116,7 +116,7 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
       {state.error && (
         <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
           <CircleAlert className="h-8 w-8 mx-auto mb-2" style={{ color: "var(--tg-theme-destructive-text-color, #ec3942)" }} />
-          <button onClick={() => fetchData()} className="rounded-xl px-5 py-2 text-sm font-semibold text-white active:scale-95" style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }}>다시 시도</button>
+          <button onClick={() => fetchData()} className="rounded-xl px-5 min-h-11 py-3 text-sm font-semibold text-white active:scale-95" style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }}>다시 시도</button>
         </div>
       )}
 

@@ -23,7 +23,7 @@ interface ModalProps {
   children?: ReactNode;
   footer?: ReactNode;
   size?: keyof typeof SIZE_STYLE;
-  /** Set while an in-flight action (e.g. a confirm submit) is pending — disables
+  /** Set while an in-flight action (e.g. a confirm submit) is pending ??disables
    * the backdrop/Escape/close-button dismissal so users can't lose the pending
    * action's context. Defaults to false. */
   preventClose?: boolean;
@@ -159,7 +159,7 @@ export function Modal({
                     type="button"
                     onClick={onClose}
                     aria-label="닫기"
-                    className="focus-ring flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+                    className="focus-ring min-h-11 min-w-11 flex shrink-0 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
                   >
                     <X className="h-4 w-4" aria-hidden="true" />
                   </button>

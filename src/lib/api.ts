@@ -39,6 +39,8 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const REQUEST_TIMEOUT_MS = 60000;
+/** Default timeout for standalone fetch calls (10s) */
+const DEFAULT_FETCH_TIMEOUT = 10000;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 
@@ -307,6 +309,7 @@ async function tryRefreshToken(): Promise<boolean> {
         method: "POST",
         headers: { "Authorization": `Bearer ${currentToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({}),
+        signal: AbortSignal.timeout(DEFAULT_FETCH_TIMEOUT),
       });
       if (!res.ok) {
         clearAll();

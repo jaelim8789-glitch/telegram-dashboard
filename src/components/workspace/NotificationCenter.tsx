@@ -41,7 +41,7 @@ function NotificationItem({ notification, onDismiss }: { notification: Notificat
               className="mt-2 rounded-lg border border-app-border px-2.5 py-1 text-[10px] font-medium text-app-text hover:bg-app-card-hover transition-colors">{notification.action.label}</button>
           )}
         </div>
-        <button type="button" onClick={() => onDismiss(notification.id)} className="mt-0.5 shrink-0 rounded-full p-0.5 text-app-text-muted hover:text-app-text transition-colors"><X className="h-3.5 w-3.5" /></button>
+        <button type="button" onClick={() => onDismiss(notification.id)} className="mt-0.5 shrink-0 rounded-full p-0.5 min-h-11 min-w-11 flex items-center justify-center text-app-text-muted hover:text-app-text transition-colors"><X className="h-3.5 w-3.5" /></button>
       </div>
     </motion.div>
   );
@@ -65,7 +65,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
             <div className="mx-auto mb-1 mt-2 h-1 w-10 rounded-full bg-app-border" />
             <div className="flex items-center justify-between px-5 py-3">
               <div className="flex items-center gap-2"><Bell className="h-4 w-4 text-app-text" /><h2 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>알림</h2></div>
-              <button type="button" onClick={onClose} className="rounded-full p-1.5 text-app-text-muted hover:bg-app-card-hover transition-colors"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={onClose} className="rounded-full p-1.5 min-h-11 min-w-11 flex items-center justify-center text-app-text-muted hover:bg-app-card-hover transition-colors"><X className="h-4 w-4" /></button>
             </div>
             <div className="h-px mx-5 bg-gradient-to-r from-transparent via-[var(--color-accent-border)] to-transparent opacity-30" />
             {sorted.length > 0 && (

@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 프론트엔드 변경 감지
+  frontend-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect frontend changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'src/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'pnpm-lock.yaml'
+              - 'yarn.lock'
+              - 'next.config.ts'
+              - 'tsconfig.json'
+              - 'eslint.config.mjs'
+              - 'postcss.config.mjs'
+              - 'public/**'
+              - 'styles/**'
+
+  # 백엔드 변경 감지
+  backend-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect backend changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'app/**'
+              - 'backend/**'
+              - 'telegram-dashboard-backend/**'
+              - 'requirements.txt'
+              - 'Dockerfile'
+              - 'docker-compose*.yml'
+              - 'alembic/**'
+              - 'alembic.ini'
+
+  # 프론트엔드 테스트 (프론트엔드 변경 시에만 실행)
+  frontend-tests:
+    needs: frontend-changes
+    if: ${{ needs.frontend-changes.outputs.changed == 'true' || needs.backend-changes.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Run type checking
+        run: pnpm typecheck
+      
+      - name: Run linting
+        run: pnpm lint
+      
+      - name: Run build
+        run: pnpm build
+
+  # 백엔드 테스트 (백엔드 변경 시에만 실행)
+  backend-tests:
+    needs: [frontend-changes, backend-changes]
+    if: ${{ needs.backend-changes.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd telegram-dashboard-backend
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        run: |
+          cd telegram-dashboard-backend
+          python -m pytest tests/ -v

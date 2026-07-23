@@ -41,21 +41,21 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="이전 페이지"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         {getPageNumbers().map((page, idx) =>
           page === "..." ? (
-            <span key={`ellipsis-${idx}`} className="flex h-8 w-8 items-center justify-center text-xs text-app-text-muted">
+            <span key={`ellipsis-${idx}`} className="flex min-h-11 min-w-11 items-center justify-center text-xs text-app-text-muted">
               ...
             </span>
           ) : (
             <button
               key={page}
               onClick={() => onPageChange(page as number)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
+              className={`flex min-h-11 min-w-11 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                 currentPage === page
                   ? "bg-violet-500 text-white"
                   : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
@@ -68,7 +68,7 @@ export function AccountPagination({ currentPage, totalPages, totalItems, pageSiz
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="다음 페이지"
         >
           <ChevronRight className="h-4 w-4" />

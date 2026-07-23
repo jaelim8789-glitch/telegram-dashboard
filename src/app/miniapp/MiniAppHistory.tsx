@@ -90,7 +90,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
         <h2 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--tg-theme-text-color)" }}>
           <Clock className="h-4 w-4" /> 발송 내역
         </h2>
-        <button onClick={fetchHistory} className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
+        <button onClick={fetchHistory} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
@@ -145,7 +145,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
                 </div>
                 {e.status === "failed" && (
                   <button onClick={() => handleRetry(e.id)} disabled={retrying === e.id}
-                    className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90 disabled:opacity-50"
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90 disabled:opacity-50"
                     style={{ backgroundColor: "rgba(239,68,68,0.15)" }}>
                     {retrying === e.id ? <Loader2 className="h-4 w-4 animate-spin text-red-500" /> : <RotateCcw className="h-4 w-4 text-red-500" />}
                   </button>

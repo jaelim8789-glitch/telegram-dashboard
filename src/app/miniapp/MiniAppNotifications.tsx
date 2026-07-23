@@ -113,7 +113,7 @@ export const MiniAppNotifications = memo(function MiniAppNotifications() {
                     <p className="text-[10px] mt-0.5" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{n.message}</p>
                     <p className="text-[9px] mt-0.5" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{relativeTime(n.time)}</p>
                   </div>
-                  <button onClick={() => dismiss(n.id)} className="flex h-7 w-7 items-center justify-center rounded-full active:scale-90 shrink-0">
+                  <button onClick={() => dismiss(n.id)} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90 shrink-0">
                     <X className="h-3.5 w-3.5" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
                   </button>
                 </motion.div>
