@@ -3,12 +3,24 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { securityLogger } from '../logging/securityLogger';
 import { apiSecurityManager } from './ApiSecurity';
 
+export interface SystemUsage {
+  cpuPercent: number;
+  memoryPercent: number;
+  heapUsed: number;
+  heapTotal: number;
+  heapUsedPercent: number;
+  rssMb: number;
+  concurrentRequests: number;
+  queueLength: number;
+}
+
 export interface ResourceLimits {
   cpuPercent: number; // CPU 사용률 제한 (%)
   memoryPercent: number; // 메모리 사용률 제한 (%)
   maxConcurrentRequests: number; // 최대 동시 요청 수
   maxHeapUsedBytes: number; // 최대 힙 사용량 (바이트)
   maxRssBytes: number; // 최대 RSS (Resident Set Size) 바이트
+  maxQueueSize: number; // 최대 요청 큐 크기
 }
 
 export interface LoadSheddingConfig {
@@ -27,6 +39,7 @@ export class ResourceProtection {
   private startTime: number = Date.now();
   private requestQueue: Array<() => void> = [];
   private isProcessingQueue: boolean = false;
+  private lastCpuUsage: number = 0;
 
   constructor(limits?: Partial<ResourceLimits>, config?: Partial<LoadSheddingConfig>) {
     this.resourceLimits = {
@@ -35,6 +48,7 @@ export class ResourceProtection {
       maxConcurrentRequests: limits?.maxConcurrentRequests || 100,
       maxHeapUsedBytes: limits?.maxHeapUsedBytes || 512 * 1024 * 1024, // 512MB
       maxRssBytes: limits?.maxRssBytes || 1024 * 1024 * 1024, // 1GB
+      maxQueueSize: limits?.maxQueueSize || 1000, // 기본 큐 크기 제한 추가
       ...limits
     };
 
@@ -127,12 +141,40 @@ export class ResourceProtection {
 
   // 요청 큐에 추가
   enqueueRequest(req: NextApiRequest, res: NextApiResponse, next: () => void): void {
+    // 큐 크기 제한을 두어 과도한 대기 요청 방지
+    if (this.requestQueue.length >= this.resourceLimits.maxQueueSize) {
+      // 큐가 가득 찼을 경우 즉시 응답
+      res.status(503).json({
+        error: 'Service temporarily unavailable due to high load',
+        retryAfter: this.loadSheddingConfig.backoffTime / 1000
+      });
+
+      // 로그 기록
+      securityLogger.logSystemAnomaly('queue-full-rejection', 'high', {
+        queueLength: this.requestQueue.length,
+        maxQueueSize: this.resourceLimits.maxQueueSize,
+        cpuPercent: this.getSystemUsage().cpuPercent,
+        memoryPercent: this.getSystemUsage().memoryPercent
+      });
+      return;
+    }
+
     this.requestQueue.push(() => {
       if (this.startRequest()) {
         next();
       } else {
-        // 여전히 과부하 상태면 다시 큐에 추가
-        this.requestQueue.push(() => this.handleRequest(req, res, next));
+        // 여전히 과부하 상태면 다시 큐에 추가하지 않고 응답
+        res.status(this.loadSheddingConfig.responseCode).json({
+          error: 'Service temporarily unavailable due to high load',
+          retryAfter: this.loadSheddingConfig.backoffTime / 1000
+        });
+
+        // 로그 기록
+        securityLogger.logSystemAnomaly('high-load-rejection', 'high', {
+          concurrentRequests: this.concurrentRequests,
+          cpuPercent: this.getSystemUsage().cpuPercent,
+          memoryPercent: this.getSystemUsage().memoryPercent
+        });
       }
     });
     
@@ -147,11 +189,15 @@ export class ResourceProtection {
 
     this.isProcessingQueue = true;
     
-    // 처리 가능한 만큼 큐에서 요청 처리
-    while (this.requestQueue.length > 0 && this.canAcceptRequest()) {
+    // 처리 가능한 만큼 큐에서 요청 처리 (최대 10개씩 처리하여 과도한 처리 방지)
+    const maxProcessPerCycle = 10;
+    let processedCount = 0;
+    
+    while (this.requestQueue.length > 0 && this.canAcceptRequest() && processedCount < maxProcessPerCycle) {
       const requestHandler = this.requestQueue.shift();
       if (requestHandler && this.startRequest()) {
         requestHandler();
+        processedCount++;
       }
     }
 

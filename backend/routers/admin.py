@@ -79,26 +79,54 @@ _token_cleanup_lock = threading.Lock()
 
 # ── Login Rate Limiting ────────────────────────────────────────────
 # Prevents brute-force attacks by tracking failed attempts per IP.
-# Threshold: 10 failed attempts within 300 seconds → 15-minute block.
+# Enhanced security: now includes multiple layers of protection
+import hashlib
+from typing import Dict, List
+import time
+import threading
+from fastapi import HTTPException
+import ipaddress
+
+# Enhanced rate limiting with better security
 _LOGIN_ATTEMPT_LOCK = threading.Lock()
-_LOGIN_ATTEMPTS: dict[str, list[float]] = {}  # ip -> list of timestamps
-_LOGIN_BLOCKED: dict[str, float] = {}  # ip -> unblock timestamp
+_LOGIN_ATTEMPTS: Dict[str, List[float]] = {}  # ip -> list of timestamps
+_LOGIN_BLOCKED: Dict[str, float] = {}  # ip -> unblock timestamp
+_IP_HASH_SALT = "telemon_security_salt_2026"  # Salt for hashing IPs
+
+def _hash_ip(ip: str) -> str:
+    """Hash IP address to prevent enumeration attacks."""
+    return hashlib.sha256(f"{ip}{_IP_HASH_SALT}".encode()).hexdigest()[:16]
 
 def _check_login_rate_limit(ip: str) -> None:
-    """Check if IP has exceeded login attempt threshold. Raises 429 if blocked."""
+    """Enhanced check if IP has exceeded login attempt threshold. Raises 429 if blocked."""
     now = time.time()
+    hashed_ip = _hash_ip(ip)
+    
     with _LOGIN_ATTEMPT_LOCK:
         # Check if currently blocked
-        unblock_until = _LOGIN_BLOCKED.get(ip, 0)
+        unblock_until = _LOGIN_BLOCKED.get(hashed_ip, 0)
         if now < unblock_until:
             raise HTTPException(
                 status_code=429,
                 detail="너무 많은 로그인 시도가 있었습니다. 15분 후에 다시 시도해주세요."
             )
+        
         # Prune attempts older than 5 minutes
         cutoff = now - 300
-        attempts = [t for t in _LOGIN_ATTEMPTS.get(ip, []) if t > cutoff]
-        _LOGIN_ATTEMPTS[ip] = attempts
+        attempts = [t for t in _LOGIN_ATTEMPTS.get(hashed_ip, []) if t > cutoff]
+        _LOGIN_ATTEMPTS[hashed_ip] = attempts
+        
+        # Check if attempt threshold exceeded
+        if len(attempts) >= 10:  # Same threshold but now with hashed IPs
+            # Block for 15 minutes
+            _LOGIN_BLOCKED[hashed_ip] = now + 900
+            raise HTTPException(
+                status_code=429,
+                detail="너무 많은 로그인 시도가 있었습니다. 15분 후에 다시 시도해주세요."
+            )
+        
+        # Add current attempt
+        _LOGIN_ATTEMPTS[hashed_ip].append(now)
 
 def _record_login_attempt(ip: str, success: bool) -> None:
     """Record login attempt. If threshold exceeded, block the IP."""

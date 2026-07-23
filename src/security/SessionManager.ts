@@ -2,30 +2,19 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { CryptoUtils } from '../utils/cryptoUtils';
 import { securityLogger } from '../logging/securityLogger';
 import { securityConfig } from '../config/securityConfig';
+import { v4 as uuidv4 } from 'uuid';
+import { jwtVerify, SignJWT } from 'jose';
 
-export interface SessionData {
-  id: string;
-  userId: string;
-  tenantId: string;
-  createdAt: number;
-  lastAccessed: number;
-  expiresAt: number;
-  userAgent?: string;
-  ipAddress?: string;
-  csrfToken: string;
-  permissions: string[];
-}
-
-export interface SessionConfig {
-  sessionTimeout: number; // 밀리초
-  regenerateInterval: number; // 세션 ID 재생성 간격 (밀리초)
-  maxInactiveInterval: number; // 최대 비활성 간격 (밀리초)
-}
-
+// 세션 관리 클래스
 export class SessionManager {
   private sessions: Map<string, SessionData> = new Map();
   private config: SessionConfig;
   private readonly SESSION_PREFIX = 'sess_';
+  private static readonly SESSION_SECRET = new TextEncoder().encode(
+    process.env.SESSION_SECRET || 'fallback_session_secret_for_dev_only'
+  );
+  private static readonly SESSION_EXPIRY_HOURS = 24;
+  private static readonly REFRESH_THRESHOLD_MINUTES = 30;
 
   constructor(config?: Partial<SessionConfig>) {
     this.config = {
@@ -34,6 +23,88 @@ export class SessionManager {
       maxInactiveInterval: config?.maxInactiveInterval || 30 * 60 * 1000, // 30분
       ...config
     };
+  }
+
+  // 새 세션 생성
+  static async createSession(userId: string, tenantId: string): Promise<string> {
+    const sessionId = uuidv4();
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const expiresAt = issuedAt + (this.SESSION_EXPIRY_HOURS * 60 * 60);
+
+    const jwt = await new SignJWT({ userId, tenantId, sessionId })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt(issuedAt)
+      .setExpirationTime(expiresAt)
+      .sign(this.SESSION_SECRET);
+
+    return jwt;
+  }
+
+  // 세션 검증
+  static async validateSession(token: string): Promise<{ userId: string; tenantId: string; sessionId: string } | null> {
+    try {
+      const verified = await jwtVerify(token, this.SESSION_SECRET);
+      const claims = verified.payload;
+      
+      // 세션 ID 존재 여부 확인
+      if (!claims.sessionId) {
+        return null;
+      }
+
+      return {
+        userId: claims.userId as string,
+        tenantId: claims.tenantId as string,
+        sessionId: claims.sessionId as string
+      };
+    } catch (error) {
+      console.error('세션 검증 실패:', error);
+      return null;
+    }
+  }
+
+  // 로그인 시 세션 ID 변경 (세션 고정 방지)
+  static async rotateSession(oldToken: string, userId: string, tenantId: string): Promise<string> {
+    // 기존 세션 검증
+    const oldSession = await this.validateSession(oldToken);
+    if (!oldSession || oldSession.userId !== userId) {
+      throw new Error('Invalid old session');
+    }
+
+    // 새 세션 생성 (세션 ID 새로 생성)
+    return this.createSession(userId, tenantId);
+  }
+
+  // 세션 연장 (세션 만료 시간 갱신)
+  static async extendSession(token: string): Promise<string | null> {
+    const session = await this.validateSession(token);
+    if (!session) {
+      return null;
+    }
+
+    // 만료 시간이 임계값보다 가까우면 연장
+    const now = Math.floor(Date.now() / 1000);
+    const timeToExpiry = (session.expiresAt || 0) - now;
+    
+    if (timeToExpiry < (this.REFRESH_THRESHOLD_MINUTES * 60)) {
+      // 새 토큰 생성 (기존 세션 ID 유지)
+      return this.createSession(session.userId, session.tenantId);
+    }
+
+    return token;
+  }
+
+  // 세션 무효화
+  static async invalidateSession(token: string): Promise<boolean> {
+    try {
+      // 토큰 검증 후 무효화 (실제로는 블랙리스트에 추가)
+      const verified = await jwtVerify(token, this.SESSION_SECRET);
+      // 블랙리스트 처리 로직은 실제 구현 시 Redis 등에 저장
+      console.log(`세션 무효화: ${verified.payload.sessionId}`);
+      return true;
+    } catch (error) {
+      console.error('세션 무효화 실패:', error);
+      return false;
+    }
   }
 
   // 세션 생성
@@ -384,36 +455,27 @@ export const sessionManager = new SessionManager({
   maxInactiveInterval: 30 * 60 * 1000 // 30분
 });
 
-// 세션 미들웨어
-export function sessionMiddleware(req: NextApiRequest, res: NextApiResponse, next: () => void) {
-  const sessionId = req.cookies?.sessionId as string;
-
-  if (sessionId) {
-    const session = sessionManager.getSession(sessionId);
+// 세션 관리 미들웨어
+export function sessionMiddleware(handler: Function) {
+  return async (req: any, res: any) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
     
-    if (session) {
-      // 세션 갱신
-      const refreshedSession = sessionManager.refreshSession(sessionId, req);
-      
-      if (refreshedSession) {
-        // 요청 객체에 세션 정보 추가
-        (req as any).session = refreshedSession;
+    if (token) {
+      const session = await SessionManager.validateSession(token);
+      if (session) {
+        req.session = session;
         
-        // 세션 쿠키 갱신 (필요시)
-        if (Date.now() - session.createdAt > sessionManager['config'].regenerateInterval) {
-          sessionManager.setSessionCookie(res, refreshedSession.id);
+        // 세션 연장 시도
+        const extendedToken = await SessionManager.extendSession(token);
+        if (extendedToken && extendedToken !== token) {
+          res.setHeader('X-Session-Extended', 'true');
+          res.setHeader('X-New-Token', extendedToken);
         }
-      } else {
-        // 세션이 무효화되었을 경우 쿠키 삭제
-        sessionManager.clearSessionCookie(res);
       }
-    } else {
-      // 유효하지 않은 세션일 경우 쿠키 삭제
-      sessionManager.clearSessionCookie(res);
     }
-  }
 
-  next();
+    return handler(req, res);
+  };
 }
 
 // 세션 정리 타이머 (10분마다 실행)

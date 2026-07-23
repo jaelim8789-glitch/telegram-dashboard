@@ -183,14 +183,14 @@ class AutonomousGrowthManager {
       return;
     }
 
-    // 루프 실행 시간 추적
-    const loopStartTime = Date.now();
-    const MAX_LOOP_DURATION = 24 * 60 * 60 * 1000; // 24시간
+    // 최대 실행 시간 체크 추가
+    const startTime = Date.now();
+    const MAX_EXECUTION_TIME = 30 * 60 * 1000; // 30분
 
     try {
-      // 최대 루프 실행 시간 초과 시 종료
-      if (Date.now() - loopStartTime > MAX_LOOP_DURATION) {
-        console.warn(`Loop ${loopId} exceeded maximum duration, stopping.`);
+      // 최대 실행 시간 초과 시 루프 종료
+      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+        console.warn(`Loop ${loopId} exceeded maximum execution time, stopping.`);
         await this.stopLoop(loopId);
         return;
       }
