@@ -1,5 +1,12 @@
-﻿#!/bin/sh
+#!/bin/sh
 set -e
+
+# BOM check
+if head -1 .husky/pre-push | grep -q $'\xef\xbb\xbf'; then
+  echo "ERROR: pre-push has BOM. Run: sed -i '1s/^\xEF\xBB\xBF//' .husky/pre-push"
+  exit 1
+fi
+
 echo "==> [pre-push] running..."
 
 # Check for UTF-16 encoded files that could cause issues
