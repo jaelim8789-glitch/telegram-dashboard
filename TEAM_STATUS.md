@@ -1,4 +1,4 @@
-# TeleMon V3  현황 & 실행
+# TeleMon V3  현황 & 실행완료 후: git add -A && git commit -m "docs: security check + health check + contributing" && git push origin HEAD
 
 > 마지막 갱신: 2026-07-22 13:41 KST
 
