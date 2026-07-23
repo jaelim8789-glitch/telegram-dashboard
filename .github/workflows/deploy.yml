@@ -1,4 +1,4 @@
-name: Deploy TeleMon
+﻿name: Deploy TeleMon
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -24,7 +24,6 @@ env:
   FRONTEND_IMAGE: ${{ github.repository_owner }}/telemon-frontend
   BACKEND_IMAGE: ${{ github.repository_owner }}/telemon-backend
   NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
-  NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
   NEXT_TELEMETRY_DISABLED: "1"
   PLAYWRIGHT_WORKERS: 2
 
@@ -69,9 +68,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            node-modules-
+            node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -104,9 +103,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            node-modules-
+            node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -118,12 +117,13 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: ${{ env.NEXT_PUBLIC_API_BASE_URL }}
 
       - name: Cache .next build output
+        continue-on-error: true
         uses: actions/cache@v4
         with:
           path: .next
-          key: next-build-${{ github.sha }}
+          key: next-build-${{ github.sha }}-${{ runner.os }}
           restore-keys: |
-            next-build-
+            next-build-${{ runner.os }}-
 
   # ============================================
   # 1c. Frontend ??e2e smoke test
@@ -147,9 +147,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
           restore-keys: |
-            node-modules-
+            node-modules-${{ runner.os }}-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -219,14 +219,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
-          timeout-minutes: 15
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             NEXT_PUBLIC_API_BASE_URL=${{ env.NEXT_PUBLIC_API_BASE_URL }}
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://telemon.online' }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
-          timeout-minutes: 15
 
   # ============================================
   # 2. Deploy frontend production (pull-only)
@@ -306,3 +304,5 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
+
+
