@@ -62,14 +62,16 @@ export function useTheme() {
     applyTheme(theme);
   }, [theme]);
 
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)");
     const handler = () => {
-      if (theme === "system") applyTheme("system");
+      if (themeRef.current === "system") applyTheme("system");
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, []);
 
   return { theme, setTheme, cycleTheme, resolvedTheme };
 }

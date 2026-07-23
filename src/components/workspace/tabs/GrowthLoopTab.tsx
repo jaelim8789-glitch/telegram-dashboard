@@ -60,7 +60,7 @@ export function GrowthLoopTab() {
   useEffect(() => {
     const t = setInterval(() => { loadLoops(); }, 10000);
     return () => clearInterval(t);
-  }, [loops.length]);
+  }, []);
 
   async function loadLoops() {
     try {

@@ -53,22 +53,32 @@ export function PixelClickGame({ onClose }: { onClose: () => void }) {
     setChars([]);
   };
 
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const spawnerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (!started || gameOver) return;
-    if (timeLeft <= 0) {
-      setGameOver(true);
-      if (score > bestScore) {
-        setBestScore(score);
-        localStorage.setItem("clickgame_best", score.toString());
-      }
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft((t) => t - 1);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          setGameOver(true);
+          setScore((s) => {
+            setBestScore((b) => {
+              if (s > b) { localStorage.setItem("clickgame_best", s.toString()); return s; }
+              return b;
+            });
+            return s;
+          });
+          return 0;
+        }
+        return t - 1;
+      });
     }, 1000);
-    const spawner = setInterval(spawnChar, Math.max(200, 800 - score * 5));
-    return () => { clearInterval(timer); clearInterval(spawner); };
-  }, [started, gameOver, timeLeft, spawnChar, score, bestScore]);
+    spawnerRef.current = setInterval(spawnChar, 800);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (spawnerRef.current) clearInterval(spawnerRef.current);
+    };
+  }, [started, gameOver]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
