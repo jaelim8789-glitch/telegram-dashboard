@@ -68,9 +68,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            node-modules-${{ runner.os }}-
+            node-modules-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -103,9 +103,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            node-modules-${{ runner.os }}-
+            node-modules-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -120,9 +120,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .next
-          key: next-build-${{ github.sha }}-${{ runner.os }}
+          key: next-build-${{ github.sha }}-
           restore-keys: |
-            next-build-${{ runner.os }}-
+            next-build-
 
   # ============================================
   # 1c. Frontend ??e2e smoke test
@@ -146,9 +146,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: node-modules-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          key: nm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            node-modules-${{ runner.os }}-
+            node-modules-
 
       - if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -159,9 +159,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ hashFiles('pnpm-lock.yaml') }}-${{ runner.os }}
+          key: pw-${{ hashFiles('pnpm-lock.yaml') }}-
           restore-keys: |
-            pw-${{ runner.os }}-
+            pw-
 
       - if: steps.cache-pw.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
@@ -210,6 +210,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push frontend image (BuildKit cache)
+        timeout-minutes: 15
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -224,6 +225,7 @@ jobs:
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://telemon.online' }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
+          timeout-minutes: 15
 
   # ============================================
   # 2. Deploy frontend production (pull-only)
@@ -303,4 +305,11 @@ jobs:
           url: ${{ secrets.ALERT_WEBHOOK_URL }}
           method: POST
           data: >-
-
+            {
+              "text": "${{ github.event.head_commit.url ??
+                            github.event.pull_request._links.commits.href ??
+                            github.event.repository.url ~ '/commits/' ~ github.sha }} (${{ github.job }})",
+              "channel": "#deployments",
+              "username": "github-actions[bot]",
+              "icon_emoji": ":octocat:"
+            }

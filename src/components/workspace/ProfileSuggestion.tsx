@@ -12,7 +12,7 @@ export default function ProfileSuggestion({ onApply }: ProfileSuggestionProps) {
   const [dismissed, setDismissed] = useState(false);
   const [dismissedToday, setDismissedToday] = useState(false);
 
-  if (dismissed || dismissedToday) return null;
+  if (!timeContext || dismissed || dismissedToday) return null;
 
   const labelByTime: Record<string, string> = {
     morning: "아침",
