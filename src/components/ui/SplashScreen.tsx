@@ -4,9 +4,17 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function SplashScreen() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (sessionStorage.getItem('telemon_splash_seen')) return false;
+      } catch (e) { /* noop */ }
+    }
+    return true;
+  });
 
   useEffect(() => {
+    try { sessionStorage.setItem('telemon_splash_seen', 'true'); } catch (e) { /* noop */ }
     const isStandalone =
       typeof window !== "undefined" &&
       (window.matchMedia("(display-mode: standalone)").matches ||

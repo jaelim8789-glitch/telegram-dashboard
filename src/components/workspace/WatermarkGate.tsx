@@ -80,7 +80,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
     setReferralLoading(true);
     getMyReferralCode()
       .then((r) => { if (r?.code) setReferralCode(r.code); })
-      .catch((e) => console.error("[WatermarkGate] getMyReferralCode 실패", e))
+      .catch((e) => { console.error("[WatermarkGate] getMyReferralCode 실패", e); toast("error", "추천인 코드를 불러오지 못했습니다"); })
       .finally(() => setReferralLoading(false));
   }, [token]);
 
@@ -92,7 +92,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
         if (d?.referred_users) setReferralInflow(d.referred_users.length);
         else setReferralInflow(0);
       })
-      .catch((e) => console.error("[WatermarkGate] getReferralDashboard 실패", e));
+      .catch((e) => { console.error("[WatermarkGate] getReferralDashboard 실패", e); toast("error", "추천 통계를 불러오지 못했습니다"); });
   }, [token, watermarkOn, isFree]);
 
   // First referral success toast
@@ -139,7 +139,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
         toast("success", "추천인 코드가 생성되었습니다!");
         onReferralReady?.(r.code);
         // Refresh inflow stats
-        getReferralDashboard().then((d) => setReferralInflow(d?.referred_users?.length ?? 0)).catch((e) => console.error("[WatermarkGate] referral inflow refresh 실패", e));
+        getReferralDashboard().then((d) => setReferralInflow(d?.referred_users?.length ?? 0)).catch((e) => { console.error("[WatermarkGate] referral inflow refresh 실패", e); toast("error", "추천 통계 갱신에 실패했습니다"); });
       }
     } catch {
       toast("error", "추천인 코드 생성에 실패했습니다");

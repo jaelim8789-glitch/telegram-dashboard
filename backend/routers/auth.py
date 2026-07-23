@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from ..models import AuthMe
 from ..runtime_manager import RuntimeManager
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -17,6 +20,7 @@ async def send_code(account_id: str):
         result = await manager.send_code(account_id)
         return result
     except Exception as e:
+        logger.error("[send_code] account=%s: %s", account_id, e, exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -30,6 +34,7 @@ async def verify_code(account_id: str, body: dict):
         result = await manager.verify_code(account_id, code)
         return result
     except Exception as e:
+        logger.error("[verify_code] account=%s: %s", account_id, e, exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -43,6 +48,7 @@ async def verify_2fa(account_id: str, body: dict):
         result = await manager.verify_2fa(account_id, password)
         return result
     except Exception as e:
+        logger.error("[verify_2fa] account=%s: %s", account_id, e, exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -53,6 +59,7 @@ async def get_auth_status(account_id: str):
         result = await manager.get_auth_status(account_id)
         return result
     except Exception as e:
+        logger.error("[get_auth_status] account=%s: %s", account_id, e, exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -63,6 +70,7 @@ async def re_auth(account_id: str):
         result = await manager.re_auth(account_id)
         return result
     except Exception as e:
+        logger.error("[re_auth] account=%s: %s", account_id, e, exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
