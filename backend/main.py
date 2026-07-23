@@ -22,6 +22,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from .runtime_manager import RuntimeManager
@@ -108,6 +109,9 @@ app = FastAPI(
     version=cfg.app_version,
     lifespan=lifespan,
 )
+
+# Gzip — compress JSON responses >1KB (70-80% bandwidth reduction)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS — allow the Next.js frontend on any origin
 app.add_middleware(
@@ -261,6 +265,12 @@ async def _init_db() -> None:
                 updated_at TEXT DEFAULT ''
             )
         """)
+        # Performance indexes (avoid full table scans on filtered queries)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_auto_reply_account ON auto_reply_rules(account_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_reply_macros_account ON reply_macros(account_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_broadcasts_account ON broadcasts(account_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_broadcasts_status ON broadcasts(status)")
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS broadcasts (
                 id TEXT PRIMARY KEY,
