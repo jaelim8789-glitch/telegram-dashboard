@@ -30,6 +30,22 @@ const eslintConfig = [
     },
   },
   {
+    // Import order: external → internal → relative
+    rules: {
+      "import/order": ["error", {
+        "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"]],
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true },
+        "pathGroups": [
+          { "pattern": "@/**", "group": "internal", "position": "before" },
+          { "pattern": "react", "group": "external", "position": "before" },
+          { "pattern": "next/**", "group": "external", "position": "before" }
+        ],
+        "pathGroupsExcludedImportTypes": ["builtin"]
+      }],
+    },
+  },
+  {
     plugins: {
       local: {
         rules: { "no-forbidden-props": noForbiddenProps },
