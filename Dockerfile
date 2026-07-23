@@ -12,7 +12,7 @@ RUN corepack enable && corepack prepare pnpm@10.8.1 --activate
 
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline
+    pnpm install --no-frozen-lockfile --prefer-offline
 
 COPY . .
 
