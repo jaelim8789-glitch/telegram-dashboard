@@ -1,4 +1,4 @@
-import { memo, type ButtonHTMLAttributes } from "react";
+﻿import { memo, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -7,20 +7,34 @@ type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
-  /** Defaults to "md", which matches the original (pre-`size`-prop) button
-   * exactly — existing call sites render unchanged. */
   size?: Size;
-  /** Shows a spinner and sets aria-busy; implies disabled. Button stays the
-   * same width/height so surrounding layout doesn't jump. */
   loading?: boolean;
 }
 
 const VARIANT_STYLE: Record<Variant, string> = {
-  primary: "bg-app-primary text-white shadow-sm shadow-app-primary/20 hover:bg-app-primary-hover",
+  primary:
+    "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white " +
+    "shadow-[0_0_20px_rgba(139,92,246,0.25)] " +
+    "hover:shadow-[0_0_28px_rgba(139,92,246,0.40)] " +
+    "hover:from-[#9D6FF7] hover:to-[#7C3AED] " +
+    "border border-[rgba(139,92,246,0.30)]",
   secondary:
-    "bg-app-card text-app-text border border-app-border hover:border-app-border-strong hover:bg-app-card-hover",
-  ghost: "text-app-text-muted hover:bg-app-card hover:text-app-text",
-  danger: "bg-app-danger-muted text-app-danger border border-app-danger/20 hover:bg-app-danger/20",
+    "bg-[rgba(10,10,15,0.88)] text-[#e5e5ec] " +
+    "border border-[rgba(139,92,246,0.15)] " +
+    "backdrop-blur-xl saturate-[1.2] " +
+    "shadow-[0_2px_12px_rgba(0,0,0,0.04)] " +
+    "hover:border-[rgba(139,92,246,0.40)] " +
+    "hover:bg-[rgba(139,92,246,0.06)] " +
+    "hover:shadow-[0_4px_20px_rgba(139,92,246,0.08)]",
+  ghost:
+    "text-[#686880] bg-transparent " +
+    "hover:bg-[rgba(139,92,246,0.08)] hover:text-[#e5e5ec]",
+  danger:
+    "bg-[rgba(239,68,68,0.10)] text-[#ef4444] " +
+    "border border-[rgba(239,68,68,0.20)] " +
+    "hover:bg-[rgba(239,68,68,0.18)] " +
+    "hover:border-[rgba(239,68,68,0.35)] " +
+    "backdrop-blur-xl saturate-[1.2]",
 };
 
 const SIZE_STYLE: Record<Size, string> = {
@@ -46,7 +60,7 @@ export const Button = memo(function Button({
       aria-busy={loading || undefined}
       className={cn(
         "focus-ring inline-flex items-center justify-center gap-1.5 font-medium",
-        "transition-all duration-150 ease-out",
+        "transition-all duration-200 ease-out",
         "active:scale-[0.97] active:duration-75",
         "hover:-translate-y-[0.5px]",
         "disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 disabled:active:scale-100",

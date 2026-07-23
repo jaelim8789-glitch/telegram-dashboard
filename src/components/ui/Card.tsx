@@ -1,5 +1,7 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/cn";
+﻿import { cn } from "@/lib/cn";
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+
+/* ── Core Card surface ── */
 
 interface CardProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -7,14 +9,15 @@ interface CardProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   interactive?: boolean;
 }
 
-/** A generic surface for grid items (e.g. selectable group cards). Renders as a
- * <button> when `interactive` (default), or a plain <div> for static content. */
 export function Card({ children, selected, interactive = true, className, ...props }: CardProps) {
   const base = cn(
-    "rounded-2xl border p-3 text-left transition-all duration-150",
+    "rounded-[24px] border p-4 text-left transition-all duration-200",
+    "bg-[rgba(10,10,15,0.75)] backdrop-blur-xl saturate-[1.2]",
+    "shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_0_0_1px_rgba(139,92,246,0.04)]",
+    "hover:shadow-[0_12px_40px_rgba(139,92,246,0.08),inset_0_0_0_1px_rgba(139,92,246,0.08)]",
     selected
-      ? "border-app-primary/50 bg-app-primary-muted"
-      : "border-app-border bg-app-card hover:border-app-border-strong hover:bg-app-card-hover",
+      ? "border-[rgba(139,92,246,0.40)] shadow-[0_0_24px_rgba(139,92,246,0.10),inset_0_0_0_1px_rgba(139,92,246,0.12)]"
+      : "border-[rgba(139,92,246,0.12)] hover:border-[rgba(139,92,246,0.30)]",
     className
   );
 
@@ -28,3 +31,27 @@ export function Card({ children, selected, interactive = true, className, ...pro
     </button>
   );
 }
+
+/* ── Card sub-components ── */
+
+function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex flex-col gap-1.5 pb-3", className)} {...props}>{children}</div>;
+}
+
+function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return <h3 className={cn("text-base font-semibold text-[#e5e5ec] tracking-tight", className)} {...props}>{children}</h3>;
+}
+
+function CardDescription({ className, children, ...props }: HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn("text-sm text-[#686880]", className)} {...props}>{children}</p>;
+}
+
+function CardContent({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("", className)} {...props}>{children}</div>;
+}
+
+function CardFooter({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex items-center pt-4 border-t border-[rgba(139,92,246,0.08)]", className)} {...props}>{children}</div>;
+}
+
+export { CardHeader, CardTitle, CardDescription, CardContent, CardFooter };

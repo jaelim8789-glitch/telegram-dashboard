@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --no-frozen-lockfile --prefer-offline
 
-COPY . .
+COPY --chown=nextjs:nodejs . .
 
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_SITE_URL

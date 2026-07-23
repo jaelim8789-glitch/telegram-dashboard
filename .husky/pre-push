@@ -1,6 +1,17 @@
 #!/bin/sh
 set -e
 echo "==> [pre-push] running..."
+
+# Check for UTF-16 encoded files that could cause issues
+echo "==> [pre-push] checking for UTF-16 files..."
+UTF16_FILES=$(git diff --cached --name-only --diff-filter=ACM | xargs -r file 2>/dev/null | grep -i "UTF-16" | cut -d: -f1)
+if [ -n "$UTF16_FILES" ]; then
+  echo "ERROR: UTF-16 encoded files detected:"
+  echo "$UTF16_FILES"
+  echo "Convert these files to UTF-8 encoding before pushing."
+  exit 1
+fi
+
 UPSTREAM=$(git log HEAD..origin/master --oneline 2>/dev/null || true)
 if [ -n "$UPSTREAM" ]; then
   echo "WARNING: upstream has new commits:"

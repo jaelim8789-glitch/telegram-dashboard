@@ -1,4 +1,4 @@
-﻿node_modules
+node_modules
 .next
 .git
 .gitattributes
@@ -17,8 +17,8 @@ scripts/
 # Documentation files
 *.md
 
-.env*
-!.env.example
+.env
+*.local
 npm-debug.log*
 test-results
 playwright-report
@@ -29,3 +29,6 @@ sessions/
 *.session
 .backup
 *.log
+tests/
+e2e/
+docs/
