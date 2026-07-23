@@ -49,7 +49,7 @@ export function OneTouchStateToggle({ states, className }: OneTouchStateTogglePr
               : "bg-app-card-hover hover:bg-app-card-hover/80",
             "min-w-[50px]"
           )}
-          aria-label={`${state.name} ${activeStates[state.id] ? '?�기' : '켜기'}`}
+          aria-label={`${state.name} ${activeStates[state.id] ? '?ê¸°' : 'ì¼ê¸°'}`}
         >
           <state.icon 
             className={cn(
@@ -60,7 +60,7 @@ export function OneTouchStateToggle({ states, className }: OneTouchStateTogglePr
             )} 
           />
           <span className="text-[10px] mt-1 text-app-text truncate max-w-[50px]">
-            {activeStates[state.id] ? '켜짐' : '꺼짐'}
+            {activeStates[state.id] ? 'ì¼ì§' : 'êº¼ì§'}
           </span>
         </button>
       ))}

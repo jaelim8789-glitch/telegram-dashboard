@@ -50,7 +50,7 @@ export function QuickAccountSwitcher({
     }
   };
 
-  // 최근 ?�용??계정 ?�으�??�렬
+  // ìµê·¼ ?¬ì©??ê³ì  ?ì¼ë¡??ë ¬
   const sortedAccounts = [...accounts].sort((a, b) => {
     if (!a.lastUsed && !b.lastUsed) return 0;
     if (!a.lastUsed) return 1;
@@ -63,7 +63,7 @@ export function QuickAccountSwitcher({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>
           <User className="h-5 w-5" />
-          <h3 className="font-semibold">계정 ?�환</h3>
+          <h3 className="font-semibold">ê³ì  ?í</h3>
         </div>
         {onRefresh && (
           <button
@@ -144,7 +144,7 @@ export function QuickAccountSwitcher({
 
       {accounts.length === 0 && (
         <div className="py-4 text-center text-sm text-app-text-muted">
-          ?�록??계정???�습?�다
+          ?±ë¡??ê³ì ???ìµ?ë¤
         </div>
       )}
     </div>

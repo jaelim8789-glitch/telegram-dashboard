@@ -16,7 +16,7 @@ export function TabPeek({ children, previewContent, tabName, className }: TabPee
 
   const handleMouseDown = () => {
     setIsPeeking(true);
-    // 마우?��? ?�을 ???�정 ?�간 ?�에 미리보기 종료
+    // ë§ì°?¤ë? ?ì ???¼ì  ?ê° ?ì ë¯¸ë¦¬ë³´ê¸° ì¢ë£
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -87,7 +87,7 @@ export function TabPeek({ children, previewContent, tabName, className }: TabPee
             )}
           >
             <div className="p-3 border-b border-app-border bg-app-surface/50">
-              <h3 className="text-sm font-semibold text-app-text">{tabName} 미리보기</h3>
+              <h3 className="text-sm font-semibold text-app-text">{tabName} ë¯¸ë¦¬ë³´ê¸°</h3>
             </div>
             <div className="p-3 max-h-32 overflow-y-auto">
               {previewContent}

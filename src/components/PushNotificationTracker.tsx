@@ -9,7 +9,7 @@ export function PushNotificationTracker() {
   const { metrics, getDeliveryRate, getOpenRate, getClickRate } = usePushNotificationTracking();
   const [isVisible, setIsVisible] = useState(false);
 
-  // 개발 ?�경?�서�??�시
+  // ê°ë° ?ê²½?ìë§??ì
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       setIsVisible(true);
@@ -23,40 +23,40 @@ export function PushNotificationTracker() {
   return (
     <Panel className="fixed bottom-4 right-4 z-50 w-80 bg-black/80 backdrop-blur-sm border-app-border">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-app-text">?�시 ?�림 ?�계</h3>
+        <h3 className="font-semibold text-app-text">?¸ì ?ë¦¼ ?µê³</h3>
         <Badge tone="neutral" className="text-xs">
-          개발??
+          ê°ë°??
         </Badge>
       </div>
       
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�송:</span>
+          <span className="text-app-text-muted">?ì¡:</span>
           <span className="text-app-text">{metrics.sent}</span>
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�달:</span>
+          <span className="text-app-text-muted">?ë¬:</span>
           <span className="text-app-text">{metrics.delivered} ({getDeliveryRate().toFixed(1)}%)</span>
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�람:</span>
+          <span className="text-app-text-muted">?´ë:</span>
           <span className="text-app-text">{metrics.opened} ({getOpenRate().toFixed(1)}%)</span>
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�릭:</span>
+          <span className="text-app-text-muted">?´ë¦­:</span>
           <span className="text-app-text">{metrics.clicked} ({getClickRate().toFixed(1)}%)</span>
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�류:</span>
+          <span className="text-app-text-muted">?¤ë¥:</span>
           <span className="text-red-500">{metrics.error}</span>
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-app-text-muted">?�신 거�?:</span>
+          <span className="text-app-text-muted">?ì  ê±°ë?:</span>
           <span className="text-yellow-500">{metrics.unsubscribe}</span>
         </div>
       </div>
