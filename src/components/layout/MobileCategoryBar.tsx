@@ -12,7 +12,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCategoryStore, type CategoryId, CATEGORIES } from "@/store/useCategoryStore";
-import { cn } from "@/lib/cn";
 
 const CATEGORY_ICONS: Record<CategoryId, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
@@ -37,10 +36,10 @@ export function MobileCategoryBar() {
 
   return (
     <nav
-      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-app-border bg-app-surface/95 backdrop-blur-xl"
+      className="mobile-bottom-bar fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 pt-2"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       role="navigation"
-      aria-label="모바일 카테고리 탐색"
+      aria-label="Mobile category navigation"
     >
       {CATEGORIES.map((cat) => {
         const Icon = CATEGORY_ICONS[cat.id];
@@ -50,32 +49,39 @@ export function MobileCategoryBar() {
             key={cat.id}
             whileTap={{ scale: 0.9 }}
             onClick={() => handleNavigate(cat.id)}
-            className={cn(
-              "flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] py-1.5 px-2 transition-colors relative",
-              isActive
-                ? "text-app-primary"
-                : "text-app-text-muted hover:text-app-text",
-            )}
+            className="flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] py-1 px-2 relative transition-colors"
             title={cat.label}
             aria-label={cat.label}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon
-              className={cn(
-                "h-5 w-5 transition-transform",
-                isActive && "scale-110",
-              )}
-            />
-            {/* Active indicator dot */}
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200${
+                isActive
+                  ? " text-[#8B5CF6] bg-[rgba(139,92,246,0.15)]"
+                  : " text-[#686880] hover:text-[#e5e5ec]"
+              }`}
+            >
+              <Icon
+                className={`h-5 w-5 transition-transform duration-200${
+                  isActive ? " scale-110" : ""
+                }`}
+              />
+            </div>
+            {/* Active indicator ? subtle purple glow top edge */}
             {isActive && (
               <motion.span
                 layoutId="mobile-category-indicator"
-                className="absolute -top-0.5 h-1 w-4 rounded-full"
-                style={{ backgroundColor: "#8B5CF6" }}
+                className="absolute top-0 h-0.5 w-8 rounded-full"
+                style={{
+                  backgroundColor: "#8B5CF6",
+                  boxShadow: "0 0 8px rgba(139,92,246,0.5)",
+                }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="text-[9px] font-medium leading-none">{cat.label}</span>
+            <span className="text-[8px] font-medium leading-none tracking-wider text-[#686880]">
+              {cat.label}
+            </span>
           </motion.button>
         );
       })}

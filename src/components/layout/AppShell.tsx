@@ -1,18 +1,18 @@
-ï»¿"use client";
+"use client";
 
 /**
- * AppShell â€” TeleMon VS Code-style 3-column layout
+ * AppShell ? Premium glass 3-column AI OS layout
  *
  * Desktop (sm:):
- * â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
- * â”‚ Category â”‚ Left Panel   â”‚  Center Panel   â”‚ Right Panel     â”‚
- * â”‚ Sidebar  â”‚ (300px)      â”‚  (flex-1)       â”‚ (350px)         â”‚
- * â”‚ (64px)   â”‚              â”‚                 â”‚                 â”‚
- * â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+ * ¦£¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¨¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¨¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¤
+ * ¦¢ Sidebar    ¦¢       Main Content          ¦¢ AI Panel     ¦¢
+ * ¦¢ (64px)     ¦¢    (glass cards, KPIs)      ¦¢ (320px)      ¦¢
+ * ¦¢ glass dark ¦¢       premium               ¦¢ glass dark   ¦¢
+ * ¦¢ purple     ¦¢       dashboard             ¦¢ purple       ¦¢
+ * ¦¢ border-right¦¢                           ¦¢ border-left  ¦¢
+ * ¦¦¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦ª¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦ª¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¥
  *
- * Mobile (max-sm:): 1 panel + bottom MobileCategoryBar
- *
- * Nicegram mode: 3 panels all visible (DialogList + ChatView + AiAssistantPanel)
+ * Mobile (max-sm:): single panel + glass bottom bar with safe-area
  */
 
 import { type ReactNode, useState, useCallback } from "react";
@@ -21,7 +21,6 @@ import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { MobileCategoryBar } from "@/components/layout/MobileCategoryBar";
 import { useCategoryStore } from "@/store/useCategoryStore";
 import { usePanelVisibility } from "@/hooks/usePanelVisibility";
-import { cn } from "@/lib/cn";
 import { NicegramDialogList } from "@/components/nicegram/DialogList";
 import { NicegramChatView } from "@/components/nicegram/ChatView";
 import { AiAssistantPanel } from "@/components/nicegram/AiAssistantPanel";
@@ -38,16 +37,14 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
   const activeCategory = useCategoryStore((s) => s.activeCategory);
   const { showLeftPanel, showRightPanel } = usePanelVisibility();
 
-  // â”€â”€ Nicegram mode state â”€â”€
+  // ¦¡¦¡ Nicegram mode state ¦¡¦¡
   const [ngActiveChatId, setNgActiveChatId] = useState<number | null>(null);
   const [ngChatTitle, setNgChatTitle] = useState<string>("");
   const isNicegram = activeCategory === "nicegram";
 
   const handleSelectChat = useCallback((chatId: number) => {
     setNgActiveChatId(chatId);
-    // In real implementation, load chat title from API
-    // For now, set a placeholder
-    setNgChatTitle(`ëŒ€í™”ë°© #${chatId}`);
+    setNgChatTitle(Chat #);
   }, []);
 
   const handleBack = useCallback(() => {
@@ -56,19 +53,30 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
   }, []);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-app-bg">
-      {/* â”€â”€ Category Icon Sidebar (desktop only) â”€â”€ */}
-      <CategorySidebar />
+    <div className="flex h-dvh overflow-hidden" style={{ backgroundColor: "#0a0a0f" }}>
+      {/* ¦¡¦¡ Ambient background glow (purple radial, top-right) ¦¡¦¡ */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 70% 10%, rgba(139,92,246,0.06) 0%, transparent 70%)," +
+            "radial-gradient(ellipse 60% 40% at 10% 80%, rgba(59,130,246,0.04) 0%, transparent 60%)",
+        }}
+      />
 
-      {/* â”€â”€ Main content area â”€â”€ */}
-      <div className="flex flex-1 min-w-0 overflow-hidden">
+      {/* ¦¡¦¡ Category Icon Sidebar (desktop only) ¦¡¦¡ */}
+      <div className="relative z-10">
+        <CategorySidebar />
+      </div>
+
+      {/* ¦¡¦¡ Main content area ¦¡¦¡ */}
+      <div className="relative z-10 flex flex-1 min-w-0 overflow-hidden">
         {/* Left Panel */}
         {isNicegram ? (
-          /* Nicegram: DialogList (300px) */
           <aside
-            className="hidden sm:flex w-[300px] shrink-0 flex-col border-r border-app-border bg-app-surface overflow-hidden"
+            className="hidden sm:flex w-[300px] shrink-0 flex-col overflow-hidden glass-panel"
             role="complementary"
-            aria-label="ì±„íŒ…ë°© ëª©ë¡"
+            aria-label="Chat list"
           >
             <NicegramDialogList
               activeChatId={ngActiveChatId}
@@ -76,11 +84,10 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
             />
           </aside>
         ) : showLeftPanel && leftPanel ? (
-          /* Generic: left panel */
           <aside
-            className="hidden sm:flex w-[300px] shrink-0 flex-col border-r border-app-border bg-app-surface overflow-hidden"
+            className="hidden sm:flex w-[300px] shrink-0 flex-col overflow-hidden glass-panel"
             role="complementary"
-            aria-label="ì™¼ìª½ íŒ¨ë„"
+            aria-label="Left panel"
           >
             {leftPanel}
           </aside>
@@ -89,7 +96,6 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
         {/* Center Panel (main content) */}
         <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
           {isNicegram && ngActiveChatId ? (
-            /* Nicegram: ChatView */
             <NicegramChatView
               accountId="0"
               chatId={ngActiveChatId}
@@ -97,15 +103,14 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
               onBack={handleBack}
             />
           ) : (
-            /* Generic: page content */
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeCategory}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="flex-1 overflow-y-auto"
+                initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="flex-1 overflow-y-auto px-6 py-6"
                 style={{
                   paddingBottom: "env(safe-area-inset-bottom, 0px)",
                 }}
@@ -116,30 +121,30 @@ export function AppShell({ children, leftPanel, rightPanel }: AppShellProps) {
           )}
         </main>
 
-        {/* Right Panel */}
+        {/* Right Panel ? glass with purple left border */}
         {isNicegram ? (
-          /* Nicegram: AiAssistantPanel (350px) */
           <aside
-            className="hidden sm:flex w-[350px] shrink-0 flex-col border-l border-app-border bg-app-surface overflow-hidden"
+            className="hidden sm:flex w-[320px] shrink-0 flex-col overflow-hidden glass-panel"
             role="complementary"
-            aria-label="AI ë¹„ì„œ"
+            aria-label="AI Assistant"
           >
             <AiAssistantPanel chatTitle={ngChatTitle || undefined} />
           </aside>
         ) : showRightPanel && rightPanel ? (
-          /* Generic: right panel */
           <aside
-            className="hidden sm:flex w-[350px] shrink-0 flex-col border-l border-app-border bg-app-surface overflow-hidden"
+            className="hidden sm:flex w-[320px] shrink-0 flex-col overflow-hidden glass-panel"
             role="complementary"
-            aria-label="ì˜¤ë¥¸ìª½ íŒ¨ë„"
+            aria-label="Right panel"
           >
             {rightPanel}
           </aside>
         ) : null}
       </div>
 
-      {/* â”€â”€ Mobile Bottom Tab Bar â”€â”€ */}
-      <div className="sm:hidden"><MobileCategoryBar /></div>
+      {/* ¦¡¦¡ Mobile Bottom Tab Bar (glass) ¦¡¦¡ */}
+      <div className="relative z-20 sm:hidden">
+        <MobileCategoryBar />
+      </div>
     </div>
   );
 }
