@@ -16,7 +16,7 @@ function cacheKey(chatId: string) {
 
 function readCache(chatId: string): WhisperData | null {
   try {
-    const raw = sessionStorage.getItem(cacheKey(chatId));
+    const raw = localStorage.getItem(cacheKey(chatId));
     if (!raw) return null;
     return JSON.parse(raw) as WhisperData;
   } catch {
@@ -26,7 +26,7 @@ function readCache(chatId: string): WhisperData | null {
 
 function writeCache(chatId: string, data: WhisperData) {
   try {
-    sessionStorage.setItem(cacheKey(chatId), JSON.stringify(data));
+    localStorage.setItem(cacheKey(chatId), JSON.stringify(data));
   } catch {}
 }
 

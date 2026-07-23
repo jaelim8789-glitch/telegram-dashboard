@@ -7,6 +7,7 @@ import {
   useEdgesState,
   addEdge,
   type Node,
+  type Edge,
   type Connection,
   type NodeChange,
   type EdgeChange,
@@ -45,20 +46,19 @@ function MacroEditorInner() {
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      onEdgesChangeRaw(changes as EdgeChange[]);
+      onEdgesChangeRaw(changes);
     },
     [onEdgesChangeRaw]
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      const { sourceId, targetId } = connection;
-      setEdges((eds: EdgeBase[]) =>
+      setEdges((eds: Edge[]) =>
         addEdge(
           {
-            id: `${sourceId}-${targetId}`,
-            source: sourceId,
-            target: targetId,
+            id: `${connection.source}-${connection.target}`,
+            source: connection.source!,
+            target: connection.target!,
             animated: true,
             style: { stroke: "url(#edgeGradient)", strokeWidth: 2 },
           },
