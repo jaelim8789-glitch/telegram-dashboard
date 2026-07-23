@@ -18,10 +18,6 @@ export { shadowSystemPrompt } from "./shadow-prompt";
 // Chat API
 export {
   chat as aiChat,
-  listAiChatSessions,
-  deleteAiChatSession,
-  getAiChatHistory,
-  buildMessagesWithPrompt,
 } from "./ai-chat";
 
 export type {
