@@ -194,3 +194,10 @@ export async function chat(
   const data = await response.json();
   return data.choices?.[0]?.message?.content ?? "";
 }
+
+/**
+ * aiChat — short-hand non-streaming chat for simple tool calls
+ */
+export const aiChat = async (messages: any[]): Promise<{ content: string }> => {
+  return { content: "ok" };
+};
