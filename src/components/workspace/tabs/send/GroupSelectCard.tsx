@@ -6,9 +6,9 @@ import { cn } from "@/lib/cn";
 import { type Group, type GroupType } from "@/types";
 
 const TYPE_LABEL: Record<GroupType, string> = {
-  group: "그룹",
-  megagroup: "?�퍼그룹",
-  channel: "채널",
+  group: "ê·¸ë£¹",
+  megagroup: "?í¼ê·¸ë£¹",
+  channel: "ì±ë",
 };
 
 interface GroupSelectCardProps {
@@ -55,7 +55,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
       role="button"
       tabIndex={0}
       aria-selected={selected}
-      aria-label={`${group.title}${selected ? ', ?�택?? : ''}`}
+      aria-label={`${group.title}${selected ? ', ? í?? : ''}`}
       onClick={() => onToggleSelect(group.id)}
       onKeyDown={(e) => e.key === "Enter" && onToggleSelect(group.id)}
       onTouchStart={handleTouchStart}
@@ -83,7 +83,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
               {group.participantsCount != null ? (
                 <span className="inline-flex items-center gap-0.5">
                   <Users className="h-2.5 w-2.5" />
-                  {group.participantsCount.toLocaleString()}�?
+                  {group.participantsCount.toLocaleString()}ëª?
                 </span>
               ) : "-"}
             </div>
@@ -93,7 +93,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            title={isFavorite ? "즐겨찾기 ?�제" : "즐겨찾기 추�?"}
+            title={isFavorite ? "ì¦ê²¨ì°¾ê¸° ?´ì " : "ì¦ê²¨ì°¾ê¸° ì¶ê?"}
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(group.id);
@@ -120,7 +120,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
 
       <div className="flex flex-wrap items-center gap-1">
         <Badge tone="neutral">{TYPE_LABEL[group.type]}</Badge>
-        {isRecent && <Badge tone="info">최근 ?�용</Badge>}
+        {isRecent && <Badge tone="info">ìµê·¼ ?¬ì©</Badge>}
         {tags.map((tag) => (
           <Badge key={tag} tone="success">
             {tag}
@@ -128,7 +128,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
         ))}
         <button
           type="button"
-          title="?�그 추�?"
+          title="?ê·¸ ì¶ê?"
           onClick={(e) => {
             e.stopPropagation();
             onAddTag(group.id);
