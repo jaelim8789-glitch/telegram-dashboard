@@ -1,13 +1,10 @@
-#!/usr/bin/env bash
-set -e
-echo "=== Setup direnv ==="
-if ! command -v direnv &>/dev/null; then
-  echo "Installing direnv..."
-  case "$(uname -s)" in
-    Linux) sudo apt install direnv 2>/dev/null || sudo pacman -S direnv 2>/dev/null || echo "See: https://direnv.net/docs/installation.html" ;;
-    Darwin) brew install direnv ;;
-    *) echo "Install manually: winget install direnv" && exit 1 ;;
-  esac
+#!/bin/bash
+if [[ "$OSTYPE" == "msys" ]]; then
+  winget install direnv 2>/dev/null || echo "Install manually: winget install direnv"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  brew install direnv
+else
+  sudo apt install direnv -y 2>/dev/null || sudo dnf install direnv -y 2>/dev/null
 fi
-direnv allow
-echo "direnv allowed — .envrc will auto-load on cd"
+direnv allow 2>/dev/null || true
+echo "direnv installed and allowed. Add 'eval \"$(direnv hook zsh)\"' to your .zshrc"

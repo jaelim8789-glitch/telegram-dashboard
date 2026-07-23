@@ -1,11 +1,11 @@
-#!/usr/bin/env bash
-set -e
-echo "=== Setup mise ==="
-if ! command -v mise &>/dev/null; then
-  echo "Installing mise..."
+#!/bin/bash
+if [[ "$OSTYPE" == "msys" ]]; then
+  winget install jdx.mise 2>/dev/null || echo "Install manually: winget install jdx.mise"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  brew install mise
+else
   curl https://mise.run | sh
-  eval "$(~/.local/bin/mise activate bash)"
 fi
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc 2>/dev/null || true
 mise install
-echo "Node: $(mise exec -- node --version)"
-echo "Python: $(mise exec -- python --version)"
+echo "mise installed. Tools: $(mise ls)"

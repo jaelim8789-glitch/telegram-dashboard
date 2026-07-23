@@ -1,14 +1,15 @@
-#!/usr/bin/env bash
-set -e
-echo "=== Setup Lazygit ==="
-if ! command -v lazygit &>/dev/null; then
-  echo "Installing lazygit..."
-  case "$(uname -s)" in
-    Linux) sudo pacman -S lazygit 2>/dev/null || sudo apt install lazygit 2>/dev/null || echo "See: https://github.com/jesseduffield/lazygit#installation" ;;
-    Darwin) brew install lazygit ;;
-    *) echo "Install manually: winget install lazygit" && exit 1 ;;
-  esac
+#!/bin/bash
+# Lazygit install
+echo "Installing Lazygit..."
+if [[ "$OSTYPE" == "msys" ]]; then
+  winget install lazygit 2>/dev/null || echo "Install manually: winget install lazygit"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  brew install lazygit
+else
+  LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*"')
+  curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+  tar xf lazygit.tar.gz lazygit
+  sudo install lazygit /usr/local/bin
+  rm lazygit.tar.gz lazygit
 fi
-lazygit --version
-git config --global alias.lg '!lazygit'
-echo "Alias 'git lg' → lazygit"
+echo "Lazygit installed. Run 'lazygit' to start."
