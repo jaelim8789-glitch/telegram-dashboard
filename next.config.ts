@@ -2,7 +2,7 @@
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
-  output: process.env.CI ? "standalone" : process.env.CAPACITOR ? "export" : undefined,
+  output: process.env.CAPACITOR ? "export" : "standalone",
   poweredByHeader: false,
   generateEtags: true,
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || undefined,
