@@ -268,12 +268,12 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); startEditMacro(macro); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90"
+                          className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
                           style={{ color: "var(--tg-theme-hint-color, #708499)" }} aria-label="수정">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteMacro(macro.id); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90"
+                          className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
                           style={{ color: "var(--tg-theme-destructive-text-color, #ec3942)" }} aria-label="삭제">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -312,7 +312,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                   <span className="text-sm font-medium" style={{ color: "var(--tg-theme-text-color)" }}>
                     {editingMacro ? "매크로 수정" : "새 매크로"}
                   </span>
-                  <button onClick={cancelForm} className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90"
+                  <button onClick={cancelForm} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
                     aria-label="닫기"><X className="h-4 w-4" /></button>
                 </div>
 
