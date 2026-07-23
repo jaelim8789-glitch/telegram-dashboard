@@ -1,3 +1,4 @@
+"use client";
 import { memo, useRef, useCallback } from "react";
 import { Check, Megaphone, Plus, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -6,7 +7,7 @@ import { type Group, type GroupType } from "@/types";
 
 const TYPE_LABEL: Record<GroupType, string> = {
   group: "그룹",
-  megagroup: "슈퍼그룹",
+  megagroup: "?�퍼그룹",
   channel: "채널",
 };
 
@@ -54,7 +55,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
       role="button"
       tabIndex={0}
       aria-selected={selected}
-      aria-label={`${group.title}${selected ? ', 선택됨' : ''}`}
+      aria-label={`${group.title}${selected ? ', ?�택?? : ''}`}
       onClick={() => onToggleSelect(group.id)}
       onKeyDown={(e) => e.key === "Enter" && onToggleSelect(group.id)}
       onTouchStart={handleTouchStart}
@@ -82,7 +83,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
               {group.participantsCount != null ? (
                 <span className="inline-flex items-center gap-0.5">
                   <Users className="h-2.5 w-2.5" />
-                  {group.participantsCount.toLocaleString()}명
+                  {group.participantsCount.toLocaleString()}�?
                 </span>
               ) : "-"}
             </div>
@@ -92,7 +93,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            title={isFavorite ? "즐겨찾기 ?�제" : "즐겨찾기 추�?"}
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(group.id);
@@ -119,7 +120,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
 
       <div className="flex flex-wrap items-center gap-1">
         <Badge tone="neutral">{TYPE_LABEL[group.type]}</Badge>
-        {isRecent && <Badge tone="info">최근 사용</Badge>}
+        {isRecent && <Badge tone="info">최근 ?�용</Badge>}
         {tags.map((tag) => (
           <Badge key={tag} tone="success">
             {tag}
@@ -127,7 +128,7 @@ export const GroupSelectCard = memo(function GroupSelectCard({
         ))}
         <button
           type="button"
-          title="태그 추가"
+          title="?�그 추�?"
           onClick={(e) => {
             e.stopPropagation();
             onAddTag(group.id);

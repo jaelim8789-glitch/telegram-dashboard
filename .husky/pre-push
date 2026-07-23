@@ -1,4 +1,4 @@
-﻿#!/bin/sh
+#!/bin/sh
 set -e
 echo "==> [pre-push] running..."
 UPSTREAM=$(git log HEAD..origin/master --oneline 2>/dev/null || true)

@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface VirtualizedListProps<T> {
@@ -18,22 +19,21 @@ export function VirtualizedList<T>({
   const [scrollTop, setScrollTop] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // 가시 영역에 보여야 할 아이템들의 인덱스 계산
+  // 가???�역??보여?????�이?�들???�덱??계산
   const startIndex = Math.floor(scrollTop / itemHeight);
   const visibleCount = Math.ceil(containerHeight / itemHeight);
-  const endIndex = Math.min(startIndex + visibleCount + 5, items.length); // 버퍼를 위해 +5
+  const endIndex = Math.min(startIndex + visibleCount + 5, items.length); // 버퍼�??�해 +5
   
-  // 실제 렌더링할 아이템들 추출
+  // ?�제 ?�더링할 ?�이?�들 추출
   const visibleItems = items.slice(startIndex, endIndex);
   
-  // 스크롤 핸들러
-  const handleScroll = useCallback(() => {
+  // ?�크�??�들??  const handleScroll = useCallback(() => {
     if (containerRef.current) {
       setScrollTop(containerRef.current.scrollTop);
     }
   }, []);
   
-  // 스크롤 시뮬레이션 높이
+  // ?�크�??��??�이???�이
   const spacerStyle = {
     height: `${items.length * itemHeight}px`,
     position: 'relative' as const,

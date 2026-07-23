@@ -1,12 +1,13 @@
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
 
 interface LayoutContainerProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  fallback?: React.ReactNode; // 로딩 중 대체 UI
-  ssrOnly?: boolean; // SSR 전용 여부
-  aspectRatio?: string; // 가로세로 비율 (예: "16/9", "1/1")
+  fallback?: React.ReactNode; // 로딩 �??��?UI
+  ssrOnly?: boolean; // SSR ?�용 ?��?
+  aspectRatio?: string; // 가로세�?비율 (?? "16/9", "1/1")
 }
 
 export function LayoutContainer({ 
@@ -26,7 +27,7 @@ export function LayoutContainer({
     }
   }, [ssrOnly]);
 
-  // 가로세로 비율을 위한 스타일 설정
+  // 가로세�?비율???�한 ?��????�정
   const containerStyle: React.CSSProperties = {
     ...style,
     ...(aspectRatio && {
@@ -46,8 +47,7 @@ export function LayoutContainer({
     })
   };
 
-  // SSR 및 초기 렌더링을 위한 플레이스홀더
-  if (!isMounted && fallback) {
+  // SSR �?초기 ?�더링을 ?�한 ?�레?�스?�??  if (!isMounted && fallback) {
     return <div className={className} style={containerStyle}>{fallback}</div>;
   }
 
@@ -65,7 +65,7 @@ export function LayoutContainer({
 }
 
 interface AspectRatioBoxProps {
-  ratio: number; // 너비/높이 비율 (예: 16/9 = 1.77)
+  ratio: number; // ?�비/?�이 비율 (?? 16/9 = 1.77)
   children: React.ReactNode;
   className?: string;
 }
@@ -118,7 +118,7 @@ export function AspectRatioBox({ ratio, children, className }: AspectRatioBoxPro
   );
 }
 
-// 고정된 크기의 박스 (CLS 방지)
+// 고정???�기??박스 (CLS 방�?)
 interface FixedSizeBoxProps {
   width: number | string;
   height: number | string;

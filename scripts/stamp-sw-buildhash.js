@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 
 const buildIdPath = path.join(__dirname, "..", ".next", "BUILD_ID");
@@ -13,13 +13,14 @@ try {
 }
 
 const sw = fs.readFileSync(swPath, "utf8");
-const regex = new RegExp('const CACHE_NAME = ' + String.fromCharCode(96) + 'telemon-v\\$\\{self\\.__BUILD_HASH \\|\\| \\x27latest\\x27\\}' + String.fromCharCode(96));
-const replacement = 'const CACHE_NAME = ' + String.fromCharCode(96) + 'telemon-v' + buildId + String.fromCharCode(96);
-const stamped = sw.replace(regex, replacement);
+// Updated regex to match the current format in sw.js
+const regex = /const CACHE_NAME = `telemon-v[a-zA-Z0-9_-]+`;/;
+const replacement = `const CACHE_NAME = \`telemon-v${buildId}\`;`;
 
-if (stamped === sw) {
+if (!sw.match(regex)) {
   console.warn("stamp-sw-buildhash: CACHE_NAME pattern not found — could not stamp");
+} else {
+  const stamped = sw.replace(regex, replacement);
+  fs.writeFileSync(swPath, stamped);
+  console.log("stamp-sw-buildhash: CACHE_NAME -> telemon-v" + buildId);
 }
-
-fs.writeFileSync(swPath, stamped);
-console.log("stamp-sw-buildhash: CACHE_NAME -> telemon-v" + buildId);

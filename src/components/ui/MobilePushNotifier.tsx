@@ -53,7 +53,7 @@ export function MobilePushNotifier() {
   if (notifError) {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-red-500 text-white text-center p-2 z-50 text-xs">
-        푸시 알림 설정에 실패했습니다
+        ?�시 ?�림 ?�정???�패?�습?�다
       </div>
     );
   }

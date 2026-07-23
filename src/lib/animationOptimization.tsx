@@ -1,5 +1,5 @@
-// 애니메이션 최적화 클래스
-class AnimationOptimizer {
+"use client";
+// ?�니메이??최적???�래??class AnimationOptimizer {
   private static instance: AnimationOptimizer;
   private animationFrames: Map<string, number> = new Map();
   private gpuAcceleratedElements: Set<string> = new Set();
@@ -17,11 +17,11 @@ class AnimationOptimizer {
     return AnimationOptimizer.instance;
   }
 
-  // GPU 가속 요소 식별
+  // GPU 가???�소 ?�별
   public enableGpuAcceleration(element: HTMLElement, properties: string[] = ['transform', 'opacity']): void {
     const elementId = this.getElementId(element);
     
-    // GPU 가속을 위한 CSS 속성 설정
+    // GPU 가?�을 ?�한 CSS ?�성 ?�정
     const translateZ = 'translateZ(0)';
     const willChange = properties.join(',');
     
@@ -31,7 +31,7 @@ class AnimationOptimizer {
     this.gpuAcceleratedElements.add(elementId);
   }
 
-  // GPU 가속 비활성화
+  // GPU 가??비활?�화
   public disableGpuAcceleration(element: HTMLElement): void {
     const elementId = this.getElementId(element);
     
@@ -40,8 +40,7 @@ class AnimationOptimizer {
     this.gpuAcceleratedElements.delete(elementId);
   }
 
-  // 애니메이션 프레임 최적화
-  public animate(
+  // ?�니메이???�레??최적??  public animate(
     element: HTMLElement,
     keyframes: PropertyIndexedKeyframes,
     options: KeyframeAnimationOptions,
@@ -49,25 +48,23 @@ class AnimationOptimizer {
   ): Promise<void> {
     const elementId = this.getElementId(element);
     
-    // 애니메이션 캐시 확인
+    // ?�니메이??캐시 ?�인
     const cacheKey = this.generateCacheKey(elementId, keyframes, options);
     const cached = this.animationCache.get(cacheKey);
     
     if (cached && cached.isValid) {
-      // 캐시된 애니메이션 재사용
-      return this.playCachedAnimation(element, cached);
+      // 캐시???�니메이???�사??      return this.playCachedAnimation(element, cached);
     }
     
-    // GPU 가속 활성화
-    this.enableGpuAcceleration(element);
+    // GPU 가???�성??    this.enableGpuAcceleration(element);
     
-    // 애니메이션 시작 전 FPS 모니터링
+    // ?�니메이???�작 ??FPS 모니?�링
     this.fpsMonitor.startTracking();
     
     return new Promise((resolve) => {
       const animation = element.animate(keyframes, options);
       
-      // 프레임별 콜백 처리
+      // ?�레?�별 콜백 처리
       if (onFrame) {
         let startTime: number | null = null;
         
@@ -88,16 +85,15 @@ class AnimationOptimizer {
       }
       
       animation.onfinish = () => {
-        // 애니메이션 종료 후 GPU 가속 비활성화 (필요시)
+        // ?�니메이??종료 ??GPU 가??비활?�화 (?�요??
         if (!this.shouldKeepGpuAcceleration(elementId)) {
           this.disableGpuAcceleration(element);
         }
         
-        // FPS 모니터링 종료
+        // FPS 모니?�링 종료
         const fpsData = this.fpsMonitor.stopTracking();
         
-        // 애니메이션 캐시 저장
-        this.animationCache.set(cacheKey, {
+        // ?�니메이??캐시 ?�??        this.animationCache.set(cacheKey, {
           keyframes,
           options,
           fpsData,
@@ -115,8 +111,7 @@ class AnimationOptimizer {
     });
   }
 
-  // CSS 애니메이션 최적화
-  public optimizeCssAnimation(
+  // CSS ?�니메이??최적??  public optimizeCssAnimation(
     element: HTMLElement,
     animationName: string,
     duration: number,
@@ -124,11 +119,11 @@ class AnimationOptimizer {
   ): void {
     const elementId = this.getElementId(element);
     
-    // GPU 가속을 위한 CSS 클래스 추가
+    // GPU 가?�을 ?�한 CSS ?�래??추�?
     element.style.transform = 'translateZ(0)';
     element.style.willChange = 'transform, opacity';
     
-    // 애니메이션 CSS 생성
+    // ?�니메이??CSS ?�성
     const style = document.createElement('style');
     style.textContent = `
       @keyframes ${animationName}-optimized {
@@ -146,7 +141,7 @@ class AnimationOptimizer {
     document.head.appendChild(style);
     element.classList.add(`${animationName}-optimized`);
     
-    // 애니메이션 종료 후 정리
+    // ?�니메이??종료 ???�리
     setTimeout(() => {
       element.classList.remove(`${animationName}-optimized`);
       document.head.removeChild(style);
@@ -154,8 +149,7 @@ class AnimationOptimizer {
     }, duration);
   }
 
-  // 프레임 손실 방지 애니메이션
-  public createFpsSafeAnimation(
+  // ?�레???�실 방�? ?�니메이??  public createFpsSafeAnimation(
     element: HTMLElement,
     updateFn: (progress: number) => void,
     duration: number,
@@ -170,7 +164,7 @@ class AnimationOptimizer {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // FPS 제한
+      // FPS ?�한
       if (currentTime - lastFrameTime >= interval) {
         updateFn(progress);
         lastFrameTime = currentTime;
@@ -185,11 +179,11 @@ class AnimationOptimizer {
     
     this.animationFrames.set(elementId, requestAnimationFrame(animate));
     
-    // 정지 함수 반환
+    // ?��? ?�수 반환
     return () => this.stopAnimation(elementId);
   }
 
-  // 애니메이션 중지
+  // ?�니메이??중�?
   public stopAnimation(elementId: string): void {
     const frameId = this.animationFrames.get(elementId);
     if (frameId) {
@@ -198,7 +192,7 @@ class AnimationOptimizer {
     }
   }
 
-  // 요소별 애니메이션 정리
+  // ?�소�??�니메이???�리
   private cleanupAnimation(elementId: string): void {
     const frameId = this.animationFrames.get(elementId);
     if (frameId) {
@@ -207,7 +201,7 @@ class AnimationOptimizer {
     }
   }
 
-  // 요소 ID 생성
+  // ?�소 ID ?�성
   private getElementId(element: HTMLElement): string {
     if (!element.id) {
       element.id = `animated-element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -215,31 +209,30 @@ class AnimationOptimizer {
     return element.id;
   }
 
-  // 캐시 키 생성
+  // 캐시 ???�성
   private generateCacheKey(elementId: string, keyframes: any, options: any): string {
     return `${elementId}_${JSON.stringify(keyframes)}_${JSON.stringify(options)}`;
   }
 
-  // 캐시된 애니메이션 재생
+  // 캐시???�니메이???�생
   private playCachedAnimation(element: HTMLElement, cached: AnimationCacheEntry): Promise<void> {
-    // 캐시 유효성 확인
-    if (Date.now() - cached.timestamp > 5 * 60 * 1000) { // 5분 이상 지난 캐시는 무효화
-      cached.isValid = false;
+    // 캐시 ?�효???�인
+    if (Date.now() - cached.timestamp > 5 * 60 * 1000) { // 5�??�상 지??캐시??무효??      cached.isValid = false;
       this.animationCache.delete(this.generateCacheKey('', {}, {}));
       return this.animate(element, cached.keyframes, cached.options);
     }
     
-    // 캐시된 설정으로 애니메이션 실행
+    // 캐시???�정?�로 ?�니메이???�행
     return this.animate(element, cached.keyframes, cached.options);
   }
 
-  // GPU 가속 유지 여부 확인
+  // GPU 가???��? ?��? ?�인
   private shouldKeepGpuAcceleration(elementId: string): boolean {
-    // 특정 조건에 따라 GPU 가속 유지 여부 결정
+    // ?�정 조건???�라 GPU 가???��? ?��? 결정
     return this.gpuAcceleratedElements.has(elementId);
   }
 
-  // 애니메이션 성능 모니터링
+  // ?�니메이???�능 모니?�링
   public getAnimationPerformance(): AnimationPerformanceData {
     return {
       activeAnimations: this.animationFrames.size,
@@ -250,26 +243,26 @@ class AnimationOptimizer {
     };
   }
 
-  // 캐시 히트율 계산
+  // 캐시 ?�트??계산
   private calculateCacheHitRate(): number {
-    // 간단한 캐시 히트율 계산 (실제 구현에서는 더 복잡한 로직 필요)
+    // 간단??캐시 ?�트??계산 (?�제 구현?�서????복잡??로직 ?�요)
     const total = this.animationCache.size;
     const valid = Array.from(this.animationCache.values()).filter(c => c.isValid).length;
     return total > 0 ? (valid / total) * 100 : 0;
   }
 
-  // 모든 애니메이션 정리
+  // 모든 ?�니메이???�리
   public cleanupAll(): void {
-    // 모든 애니메이션 프레임 정리
+    // 모든 ?�니메이???�레???�리
     for (const [elementId, frameId] of this.animationFrames) {
       cancelAnimationFrame(frameId);
     }
     this.animationFrames.clear();
     
-    // GPU 가속 요소 정리
+    // GPU 가???�소 ?�리
     this.gpuAcceleratedElements.clear();
     
-    // 애니메이션 캐시 정리
+    // ?�니메이??캐시 ?�리
     this.animationCache.clear();
   }
 }
@@ -297,8 +290,7 @@ interface FpsData {
   frameDrops: number;
 }
 
-// FPS 모니터링 클래스
-class FpsMonitor {
+// FPS 모니?�링 ?�래??class FpsMonitor {
   private frameTimes: number[] = [];
   private startTime: number | null = null;
   private frameCount: number = 0;
@@ -326,7 +318,7 @@ class FpsMonitor {
     this.frameCount++;
     this.lastFrameTime = now;
 
-    // 60fps 기준으로 프레임 드랍 계산 (16.67ms 이상 걸리면 드랍)
+    // 60fps 기�??�로 ?�레???�랍 계산 (16.67ms ?�상 걸리�??�랍)
     if (delta > 16.67) {
       this.drops++;
     }
@@ -362,8 +354,7 @@ class FpsMonitor {
   }
 }
 
-// 애니메이션 최적화 훅
-import { useState, useEffect, useCallback, useRef } from 'react';
+// ?�니메이??최적????import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useAnimationOptimizer() {
   const [optimizer] = useState(() => AnimationOptimizer.getInstance());
@@ -376,7 +367,7 @@ export function useAnimationOptimizer() {
   });
   const animationRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  // 애니메이션 성능 데이터 업데이트
+  // ?�니메이???�능 ?�이???�데?�트
   useEffect(() => {
     const updatePerformance = () => {
       setPerformanceData(optimizer.getAnimationPerformance());
@@ -442,7 +433,7 @@ export function useAnimationOptimizer() {
   };
 }
 
-// 애니메이션 최적화 컴포넌트
+// ?�니메이??최적??컴포?�트
 export function OptimizedAnimationComponent({
   children,
   animationKeyframes,
@@ -468,7 +459,7 @@ export function OptimizedAnimationComponent({
   return React.cloneElement(children, {
     ref: (el: HTMLElement) => {
       elementRef.current = el;
-      // 원래 ref가 있다면 연결
+      // ?�래 ref가 ?�다�??�결
       if (typeof children.ref === 'function') {
         children.ref(el);
       }
@@ -476,7 +467,7 @@ export function OptimizedAnimationComponent({
   });
 }
 
-// GPU 가속 컴포넌트
+// GPU 가??컴포?�트
 export function GpuAccelerated({
   children,
   properties = ['transform', 'opacity'],
@@ -504,7 +495,7 @@ export function GpuAccelerated({
   return React.cloneElement(children, {
     ref: (el: HTMLElement) => {
       elementRef.current = el;
-      // 원래 ref가 있다면 연결
+      // ?�래 ref가 ?�다�??�결
       if (typeof children.ref === 'function') {
         children.ref(el);
       }
@@ -512,7 +503,7 @@ export function GpuAccelerated({
   });
 }
 
-// 애니메이션 최적화 컨텍스트
+// ?�니메이??최적??컨텍?�트
 import { createContext, useContext } from 'react';
 
 interface AnimationOptimizationContextType {
@@ -547,8 +538,7 @@ export function useAnimationOptimization() {
   return context;
 }
 
-// 애니메이션 훅
-export function useOptimizedAnimation(
+// ?�니메이????export function useOptimizedAnimation(
   keyframes: PropertyIndexedKeyframes,
   options: KeyframeAnimationOptions,
   dependencies: React.DependencyList = []
@@ -560,13 +550,11 @@ export function useOptimizedAnimation(
     if (elementRef.current && keyframes) {
       animate(elementRef.current, keyframes, options);
     }
-  }, dependencies); // dependencies가 변경될 때마다 애니메이션 재실행
-
+  }, dependencies); // dependencies가 변경될 ?�마???�니메이???�실??
   return elementRef;
 }
 
-// 프레임 손실 방지 훅
-export function useFpsSafeAnimation(
+// ?�레???�실 방�? ??export function useFpsSafeAnimation(
   updateFn: (progress: number) => void,
   duration: number,
   targetFps: number = 60,
@@ -584,17 +572,16 @@ export function useFpsSafeAnimation(
   return elementRef;
 }
 
-// 서버 사이드 애니메이션 최적화 유틸리티
+// ?�버 ?�이???�니메이??최적???�틸리티
 export const serverSideAnimationOptimization = {
-  // 서버에서는 애니메이션 미적용
-  animate: (_element: HTMLElement, _keyframes: PropertyIndexedKeyframes, _options: KeyframeAnimationOptions) => {
-    // 서버 사이드에서는 애니메이션을 적용하지 않음
+  // ?�버?�서???�니메이??미적??  animate: (_element: HTMLElement, _keyframes: PropertyIndexedKeyframes, _options: KeyframeAnimationOptions) => {
+    // ?�버 ?�이?�에?�는 ?�니메이?�을 ?�용?��? ?�음
     return Promise.resolve();
   },
   
-  // 서버 사이드를 위한 애니메이션 정보 미리 계산
+  // ?�버 ?�이?��? ?�한 ?�니메이???�보 미리 계산
   precomputeAnimation: (keyframes: PropertyIndexedKeyframes, options: KeyframeAnimationOptions) => {
-    // 애니메이션 정보를 미리 계산하여 클라이언트에 전달
+    // ?�니메이???�보�?미리 계산?�여 ?�라?�언?�에 ?�달
     return {
       duration: options.duration || 1000,
       easing: options.easing || 'ease',
@@ -603,9 +590,9 @@ export const serverSideAnimationOptimization = {
   }
 };
 
-// 애니메이션 최적화 유틸리티
+// ?�니메이??최적???�틸리티
 export const AnimationOptimizationUtils = {
-  // 일반적인 애니메이션 속성
+  // ?�반?�인 ?�니메이???�성
   commonAnimatedProperties: [
     'transform',
     'opacity',
@@ -617,14 +604,13 @@ export const AnimationOptimizationUtils = {
     'bottom'
   ],
 
-  // GPU 가속이 가능한 속성
+  // GPU 가?�이 가?�한 ?�성
   gpuAcceleratedProperties: [
     'transform',
     'opacity'
   ],
 
-  // 애니메이션 성능 테스트
-  testAnimationPerformance: (element: HTMLElement, keyframes: PropertyIndexedKeyframes, options: KeyframeAnimationOptions): Promise<FpsData> => {
+  // ?�니메이???�능 ?�스??  testAnimationPerformance: (element: HTMLElement, keyframes: PropertyIndexedKeyframes, options: KeyframeAnimationOptions): Promise<FpsData> => {
     return new Promise((resolve) => {
       const optimizer = AnimationOptimizer.getInstance();
       const fpsMonitor = new FpsMonitor();
@@ -639,16 +625,16 @@ export const AnimationOptimizationUtils = {
     });
   },
 
-  // 애니메이션 최적화 권장 사항
+  // ?�니메이??최적??권장 ?�항
   getOptimizationRecommendations: (properties: string[]): string[] => {
     const recommendations: string[] = [];
     
     if (properties.some(prop => !AnimationOptimizationUtils.gpuAcceleratedProperties.includes(prop))) {
-      recommendations.push('GPU 가속이 가능한 속성(transform, opacity) 사용 권장');
+      recommendations.push('GPU 가?�이 가?�한 ?�성(transform, opacity) ?�용 권장');
     }
     
     if (properties.length > 3) {
-      recommendations.push('애니메이션 속성 수를 최소화하여 성능 향상');
+      recommendations.push('?�니메이???�성 ?��? 최소?�하???�능 ?�상');
     }
     
     return recommendations;

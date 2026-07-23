@@ -40,56 +40,51 @@ export function SmartNotificationCenter() {
   const [notifications, setNotifications] = useLocalStorage<Notification[]>('notifications', [
     {
       id: '1',
-      title: '계정 등록 완료',
-      message: '새로운 Telegram 계정이 성공적으로 등록되었습니다.',
+      title: '계정 ?�록 ?�료',
+      message: '?�로??Telegram 계정???�공?�으�??�록?�었?�니??',
       type: 'success',
       category: 'account',
-      timestamp: Date.now() - 300000, // 5분 전
-      read: false,
+      timestamp: Date.now() - 300000, // 5�???      read: false,
       priority: 'medium'
     },
     {
       id: '2',
-      title: '메시지 전송 실패',
-      message: '일부 메시지 전송에 실패했습니다. 다시 시도해주세요.',
+      title: '메시지 ?�송 ?�패',
+      message: '?��? 메시지 ?�송???�패?�습?�다. ?�시 ?�도?�주?�요.',
       type: 'error',
       category: 'message',
-      timestamp: Date.now() - 1800000, // 30분 전
-      read: false,
+      timestamp: Date.now() - 1800000, // 30�???      read: false,
       priority: 'high',
       action: {
-        label: '재시도',
-        callback: () => console.log('재시도 클릭')
+        label: '?�시??,
+        callback: () => console.log('?�시???�릭')
       }
     },
     {
       id: '3',
-      title: 'AI 응답 규칙 업데이트',
-      message: 'AI 응답 규칙이 자동으로 최적화되었습니다.',
+      title: 'AI ?�답 규칙 ?�데?�트',
+      message: 'AI ?�답 규칙???�동?�로 최적?�되?�습?�다.',
       type: 'info',
       category: 'ai',
-      timestamp: Date.now() - 3600000, // 1시간 전
-      read: true,
+      timestamp: Date.now() - 3600000, // 1?�간 ??      read: true,
       priority: 'low'
     },
     {
       id: '4',
-      title: '신규 자동 응답 도착',
-      message: '새로운 자동 응답 메시지가 도착했습니다.',
+      title: '?�규 ?�동 ?�답 ?�착',
+      message: '?�로???�동 ?�답 메시지가 ?�착?�습?�다.',
       type: 'info',
       category: 'message',
-      timestamp: Date.now() - 7200000, // 2시간 전
-      read: true,
+      timestamp: Date.now() - 7200000, // 2?�간 ??      read: true,
       priority: 'medium'
     },
     {
       id: '5',
-      title: '계정 활동 경고',
-      message: '계정이 장시간 비활성 상태입니다. 확인이 필요합니다.',
+      title: '계정 ?�동 경고',
+      message: '계정???�시�?비활???�태?�니?? ?�인???�요?�니??',
       type: 'warning',
       category: 'account',
-      timestamp: Date.now() - 86400000, // 하루 전
-      read: false,
+      timestamp: Date.now() - 86400000, // ?�루 ??      read: false,
       priority: 'high'
     }
   ]);
@@ -178,22 +173,22 @@ export function SmartNotificationCenter() {
           <Card className="border-0 shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">알림 센터</CardTitle>
+                <CardTitle className="text-lg">?�림 ?�터</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={markAllAsRead}
                   disabled={unreadCount === 0}
                 >
-                  모두 읽음
+                  모두 ?�음
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="all" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-                  <TabsTrigger value="all">전체</TabsTrigger>
-                  <TabsTrigger value="unread">읽지 않음</TabsTrigger>
+                  <TabsTrigger value="all">?�체</TabsTrigger>
+                  <TabsTrigger value="unread">?��? ?�음</TabsTrigger>
                   <TabsTrigger value="message">메시지</TabsTrigger>
                   <TabsTrigger value="account">계정</TabsTrigger>
                   <TabsTrigger value="ai">AI</TabsTrigger>
@@ -205,7 +200,7 @@ export function SmartNotificationCenter() {
                       {categoryNotifications.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           <Bell className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-                          <p>표시할 알림이 없습니다</p>
+                          <p>?�시???�림???�습?�다</p>
                         </div>
                       ) : (
                         categoryNotifications.map(notification => (
@@ -225,7 +220,7 @@ export function SmartNotificationCenter() {
                                     <h4 className="font-medium truncate">{notification.title}</h4>
                                     {!notification.read && (
                                       <Badge variant="secondary" className="text-xs">
-                                        새 알림
+                                        ???�림
                                       </Badge>
                                     )}
                                   </div>

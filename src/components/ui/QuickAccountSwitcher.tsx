@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { User, Monitor, Smartphone, RotateCcw, CircleDot, Circle } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -49,7 +50,7 @@ export function QuickAccountSwitcher({
     }
   };
 
-  // 최근 사용한 계정 순으로 정렬
+  // 최근 ?�용??계정 ?�으�??�렬
   const sortedAccounts = [...accounts].sort((a, b) => {
     if (!a.lastUsed && !b.lastUsed) return 0;
     if (!a.lastUsed) return 1;
@@ -62,7 +63,7 @@ export function QuickAccountSwitcher({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>
           <User className="h-5 w-5" />
-          <h3 className="font-semibold">계정 전환</h3>
+          <h3 className="font-semibold">계정 ?�환</h3>
         </div>
         {onRefresh && (
           <button
@@ -143,7 +144,7 @@ export function QuickAccountSwitcher({
 
       {accounts.length === 0 && (
         <div className="py-4 text-center text-sm text-app-text-muted">
-          등록된 계정이 없습니다
+          ?�록??계정???�습?�다
         </div>
       )}
     </div>

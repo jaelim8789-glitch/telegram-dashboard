@@ -4,19 +4,19 @@ import { useEffect } from 'react';
 
 export function MobileFontOptimizer() {
   useEffect(() => {
-    // 폰트 로딩 전략 최적화
+    // ?�트 로딩 ?�략 최적??
     const optimizeFontLoading = () => {
-      // 모바일 환경에서 폰트 로딩 최적화
+      // 모바???�경?�서 ?�트 로딩 최적??
       if (window.matchMedia('(max-width: 768px)').matches) {
-        // 폰트 디스플레이 전략 설정
+        // ?�트 ?�스?�레???�략 ?�정
         const fontLinks = document.querySelectorAll('link[rel="stylesheet"][href*="font"]');
         
         fontLinks.forEach(link => {
-          // 폰트 로딩 전략을 swap으로 설정하여 텍스트 표시 지연 최소화
+          // ?�트 로딩 ?�략??swap?�로 ?�정?�여 ?�스???�시 지??최소??
           link.setAttribute('data-font-display', 'swap');
         });
 
-        // 폰트 로딩 완료 시 처리
+        // ?�트 로딩 ?�료 ??처리
         if ('fonts' in document) {
           (document as any).fonts.ready.then(() => {
             document.documentElement.classList.add('fonts-loaded');
@@ -25,7 +25,7 @@ export function MobileFontOptimizer() {
       }
     };
 
-    // DOM 로드 후 실행
+    // DOM 로드 ???�행
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', optimizeFontLoading);
     } else {

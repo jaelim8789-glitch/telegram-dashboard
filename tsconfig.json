@@ -22,7 +22,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    // ?源낅뮟 筌ㅼ뮇????온????쇱젟
+    // Additional strict checks
     "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,

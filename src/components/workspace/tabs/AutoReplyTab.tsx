@@ -391,26 +391,30 @@ export function AutoReplyTab() {
               {enabled ? "자동 응답 켜짐" : "자동 응답 꺼짐"}
             </span>
             <span className="text-xs text-app-text-muted">
-              {enabled 
-                ? "등록된 규칙이 메시지에 자동으로 응답하고 있습니다" 
-                : "등록된 규칙이 메시지에 자동으로 응답하지 않습니다"}
+              {account.status !== 'active' && !enabled
+                ? "계정 인증이 완료되지 않았습니다. 먼저 계정 등록에서 Telegram 인증을 완료해주세요"
+                : enabled 
+                  ? "등록된 규칙이 메시지에 자동으로 응답하고 있습니다" 
+                  : "등록된 규칙이 메시지에 자동으로 응답하지 않습니다"}
             </span>
           </div>
-          <Button
-            variant={enabled ? "outline-destructive" as any : "outline-success" as any}
-            size="sm"
-            onClick={() => handleToggleMaster(enabled)}
-            disabled={toggling}
-            className="whitespace-nowrap"
-          >
-            {toggling ? (
-              <span>처리중...</span>
-            ) : enabled ? (
-              <span>끄기</span>
-            ) : (
-              <span>켜기</span>
-            )}
-          </Button>
+          <div className="relative" title={account.status !== 'active' && !enabled ? '먼저 계정 인증을 완료해주세요' : ''}>
+            <Button
+              variant={enabled ? "outline-destructive" as any : "outline-success" as any}
+              size="sm"
+              onClick={() => handleToggleMaster(!enabled)}
+              disabled={toggling || (account.status !== "active" && !enabled)}
+              className="whitespace-nowrap"
+            >
+              {toggling ? (
+                <span>처리중...</span>
+              ) : enabled ? (
+                <span>끄기</span>
+              ) : (
+                <span>켜기</span>
+              )}
+            </Button>
+          </div>
         </div>
         {toggleError && (
           <div className="mt-2 rounded-lg bg-app-danger-muted px-3 py-2 text-xs text-app-danger">{toggleError}</div>

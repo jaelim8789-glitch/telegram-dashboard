@@ -1,3 +1,4 @@
+"use client";
 import { Smile, Hash, Star, Clock, X, MessageSquare, Heart, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
@@ -25,11 +26,11 @@ export function SmartKeyboardToolbar({
 }: SmartKeyboardToolbarProps) {
   const [activeTab, setActiveTab] = useState<'templates' | 'emojis' | 'special' | 'recent'>('templates');
 
-  // 자주 사용하는 이모지 목록
-  const commonEmojis = ['😀', '😂', '😍', '👍', '❤️', '🔥', '😊', '🎉', '👏', '🙌', '👌', '🙏', '💯', '✨', '💡'];
+  // ?�주 ?�용?�는 ?�모지 목록
+  const commonEmojis = ['??', '?��', '?��', '?��', '?�️', '?��', '?��', '?��', '?��', '?��', '?��', '?��', '?��', '??, '?��'];
   
-  // 특수문자 목록
-  const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '※', '○', '●', '■', '▲', '▼'];
+  // ?�수문자 목록
+  const specialChars = ['@', '#', '$', '%', '&', '*', '+', '=', '|', '??, '??, '??, '??, '??, '??];
 
   if (!isVisible) return null;
 
@@ -52,7 +53,7 @@ export function SmartKeyboardToolbar({
             )}
           >
             <MessageSquare className="h-3 w-3" />
-            템플릿
+            ?�플�?
           </button>
           <button
             type="button"
@@ -65,7 +66,7 @@ export function SmartKeyboardToolbar({
             )}
           >
             <Smile className="h-3 w-3" />
-            이모지
+            ?�모지
           </button>
           <button
             type="button"
@@ -78,7 +79,7 @@ export function SmartKeyboardToolbar({
             )}
           >
             <Hash className="h-3 w-3" />
-            특수문자
+            ?�수문자
           </button>
           <button
             type="button"
@@ -98,7 +99,7 @@ export function SmartKeyboardToolbar({
           type="button"
           onClick={onClose}
           className="p-1 rounded-full hover:bg-app-card-hover"
-          aria-label="툴바 닫기"
+          aria-label="?�바 ?�기"
         >
           <X className="h-4 w-4 text-app-text-muted" />
         </button>
