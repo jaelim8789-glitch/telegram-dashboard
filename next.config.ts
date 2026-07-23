@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
@@ -19,13 +19,7 @@ let nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        source: "/sw.js",
-        headers: [
-          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
-        ],
-      },
-            { protocol: "http", hostname: "localhost" },
+      { protocol: "http", hostname: "localhost" },
       { protocol: "http", hostname: "127.0.0.1" },
       ...(process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_API_BASE_URL
         ? [{ protocol: "https" as const, hostname: new URL(process.env.NEXT_PUBLIC_API_BASE_URL).hostname }]
@@ -50,6 +44,12 @@ let nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           { key: "Content-Security-Policy", value: [
@@ -68,7 +68,7 @@ let nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=()", "accelerometer=()", "camera=()", "gyroscope=()", "magnetometer=()", "microphone=()", "payment=()", "usb=()"},
+          { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=(), accelerometer=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"},
           { key: "X-DNS-Prefetch-Control", value: "on" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
