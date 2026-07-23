@@ -17,7 +17,7 @@ interface TimelineEvent {
 }
 
 interface ActivityTimelineProps {
-  events: TimelineEvent[];
+  events?: TimelineEvent[];
   className?: string;
   maxHeight?: number;
 }
@@ -27,30 +27,12 @@ interface ActivityTimelineProps {
 const EVENT_META: Record<TimelineEvent["type"], {
   icon: typeof Send; dot: string; bg: string; gradient: string;
 }> = {
-  sent: {
-    icon: CheckCircle2, dot: "bg-accent", bg: "bg-accent/10",
-    gradient: "from-accent/20 to-transparent",
-  },
-  failed: {
-    icon: XCircle, dot: "bg-app-danger", bg: "bg-app-danger/10",
-    gradient: "from-app-danger/20 to-transparent",
-  },
-  warning: {
-    icon: AlertTriangle, dot: "bg-app-warning", bg: "bg-app-warning/10",
-    gradient: "from-app-warning/20 to-transparent",
-  },
-  registered: {
-    icon: UserPlus, dot: "bg-cyan", bg: "bg-cyan-muted",
-    gradient: "from-cyan/20 to-transparent",
-  },
-  banned: {
-    icon: Ban, dot: "bg-app-danger", bg: "bg-app-danger/10",
-    gradient: "from-app-danger/20 to-transparent",
-  },
-  info: {
-    icon: Send, dot: "bg-app-text-subtle", bg: "bg-app-card-hover",
-    gradient: "from-app-text-subtle/10 to-transparent",
-  },
+  sent: { icon: CheckCircle2, dot: "bg-accent", bg: "bg-accent/10", gradient: "from-accent/20 to-transparent" },
+  failed: { icon: XCircle, dot: "bg-app-danger", bg: "bg-app-danger/10", gradient: "from-app-danger/20 to-transparent" },
+  warning: { icon: AlertTriangle, dot: "bg-app-warning", bg: "bg-app-warning/10", gradient: "from-app-warning/20 to-transparent" },
+  registered: { icon: UserPlus, dot: "bg-cyan", bg: "bg-[rgba(0,212,255,0.1)]", gradient: "from-[rgba(0,212,255,0.2)] to-transparent" },
+  banned: { icon: Ban, dot: "bg-app-danger", bg: "bg-app-danger/10", gradient: "from-app-danger/20 to-transparent" },
+  info: { icon: Send, dot: "bg-app-text-subtle", bg: "bg-app-card-hover", gradient: "from-app-text-subtle/10 to-transparent" },
 };
 
 // ─── Time Format ──────────────────────────────────────────────────
@@ -60,7 +42,6 @@ function formatTime(ts: string): string {
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const mins = Math.floor(diff / 60000);
-
   if (mins < 1) return "just now";
   if (mins < 60) return ${mins}m ago;
   const hours = Math.floor(mins / 60);
@@ -94,7 +75,6 @@ export const ActivityTimeline = memo(function ActivityTimeline({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-
     let ticking = false;
     const handler = () => { ticking = true; };
     el.addEventListener("scroll", handler, { passive: true });
@@ -121,13 +101,9 @@ export const ActivityTimeline = memo(function ActivityTimeline({
       </div>
 
       {/* Timeline */}
-      <div
-        ref={scrollRef}
-        className="overflow-y-auto overscroll-contain"
-        style={{ maxHeight }}
-      >
+      <div ref={scrollRef} className="overflow-y-auto overscroll-contain" style={{ maxHeight }}>
         <div className="relative px-4 py-3">
-          {/* Timeline line */}
+          {/* Vertical timeline line */}
           <div className="absolute left-[26px] top-4 bottom-4 w-px bg-gradient-to-b from-accent/40 via-accent/20 to-transparent" />
 
           <div className="space-y-0">
@@ -135,16 +111,14 @@ export const ActivityTimeline = memo(function ActivityTimeline({
               const meta = EVENT_META[event.type];
               const Icon = meta.icon;
               const isLast = idx === events.length - 1;
-
               return (
                 <div key={event.id} className="group relative flex gap-3 pb-4 last:pb-0">
-                  {/* Timeline dot */}
+                  {/* Dot */}
                   <div className="relative z-10 flex shrink-0 flex-col items-center">
                     <div className={cn(
                       "flex h-[18px] w-[18px] items-center justify-center rounded-full",
-                      "ring-[3px] ring-[#0a0a0f] transition-all duration-300",
-                      meta.bg,
-                      "group-hover:scale-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.4)]",
+                      "ring-[3px] ring-bg transition-all duration-300",
+                      meta.bg, "group-hover:scale-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.4)]",
                     )}>
                       <Icon className="h-2.5 w-2.5 text-app-text" />
                     </div>
@@ -153,7 +127,7 @@ export const ActivityTimeline = memo(function ActivityTimeline({
                     )}
                   </div>
 
-                  {/* Event content */}
+                  {/* Content */}
                   <div className="flex-1 min-w-0 pb-1">
                     <div className="flex items-center gap-1.5">
                       <span className={cn(
@@ -183,7 +157,7 @@ export const ActivityTimeline = memo(function ActivityTimeline({
       </div>
 
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0a0a0f] to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-bg to-transparent" />
     </div>
   );
 });

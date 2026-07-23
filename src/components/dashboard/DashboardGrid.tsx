@@ -81,14 +81,8 @@ function KPICard({ card, index }: { card: KPICard; index: number }) {
       )}
       style={{ animationDelay: ${index * 80}ms }}
     >
-      {/* Gradient border overlay */}
-      <div className="pointer-events-none absolute inset-0 rounded-2xl p-[1px]">
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent/20 via-transparent to-accent-secondary/10" />
-      </div>
-
-      {/* Inner content */}
       <div className="relative z-10 p-4 sm:p-5">
-        {/* Header row */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium tracking-wide text-app-text-muted uppercase">
             {card.label}
