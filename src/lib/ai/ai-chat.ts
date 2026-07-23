@@ -26,11 +26,29 @@ export interface StreamCallbacks {
  * DeepSeek API로 스트리밍 채팅 요청을 보냅니다.
  * 시스템 프롬프트는 자동으로 주입됩니다.
  */
+const AI_MOCK = typeof process !== "undefined" && process.env.NEXT_PUBLIC_AI_MOCK === "true";
+
+const MOCK_RESPONSE = "네, 알겠습니다. 해당 내용을 처리했습니다. (Mock AI 응답 — NEXT_PUBLIC_AI_MOCK=true)";
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function streamChat(
   messages: Omit<ChatMessage, "role" | "content">[],
   callbacks: StreamCallbacks,
   options?: { signal?: AbortSignal },
 ): Promise<void> {
+  if (AI_MOCK) {
+    for (const char of MOCK_RESPONSE) {
+      if (options?.signal?.aborted) return;
+      callbacks.onToken(char);
+      await delay(30);
+    }
+    callbacks.onDone(MOCK_RESPONSE);
+    return;
+  }
+
   const apiKey = getDeepSeekApiKey();
   if (!apiKey) {
     callbacks.onError(new Error("API 키가 설정되지 않았습니다. 관리자에게 문의하세요."));
@@ -138,6 +156,10 @@ export async function chat(
   messages: Omit<ChatMessage, "role" | "content">[],
   options?: { signal?: AbortSignal },
 ): Promise<string> {
+  if (AI_MOCK) {
+    await delay(500);
+    return MOCK_RESPONSE;
+  }
   const apiKey = getDeepSeekApiKey();
   if (!apiKey) {
     throw new Error("API 키가 설정되지 않았습니다.");
