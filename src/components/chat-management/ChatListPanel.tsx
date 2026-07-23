@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Star, X, CheckCheck, VolumeX, Archive, MessageSquareCheck, Pin } from "lucide-react";
+import { Search, Star, X, CheckCheck, VolumeX, Archive, MessageSquareCheck, Pin, SearchX } from "lucide-react";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ChatRoom, ChatType } from "./mockData";
@@ -25,6 +25,22 @@ const TABS: { key: ChatType | "all"; label: string }[] = [
   { key: "group", label: "그룹" },
   { key: "channel", label: "채널" },
 ];
+
+function Skeleton() {
+  return (
+    <div className="animate-pulse space-y-3 p-3">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-app-card-hover skeleton-shimmer" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-24 rounded bg-app-card-hover skeleton-shimmer" />
+            <div className="h-2.5 w-40 rounded bg-app-card-hover skeleton-shimmer" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function formatRelativeTime(date: Date): string {
   const now = Date.now();
@@ -71,7 +87,7 @@ function RoomItem({
         role="option"
         aria-selected={activeRoomId === room.id}
         onClick={() => onSelectRoom(room.id)}
-        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] ${
           activeRoomId === room.id
             ? "border-l-2 border-violet-500 bg-violet-500/10"
             : "border-l-2 border-transparent hover:bg-white/[0.02]"
@@ -83,12 +99,12 @@ function RoomItem({
             <span className="truncate text-sm font-medium text-app-text">
               {room.name}
             </span>
-            <span className="shrink-0 text-[10px] text-app-text-subtle">
+            <span className="shrink-0 text-[10px] font-normal text-app-text-subtle tabular-nums">
               {formatRelativeTime(room.lastMessageTime)}
             </span>
           </div>
           <div className="flex items-center justify-between gap-1">
-            <span className="truncate text-xs text-app-text-muted">
+            <span className="truncate text-xs font-normal text-app-text-muted">
               {room.lastMessage}
             </span>
             {room.unreadCount > 0 && (
@@ -96,7 +112,7 @@ function RoomItem({
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white"
+                className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white tabular-nums"
               >
                 {room.unreadCount > 99 ? "99+" : room.unreadCount}
               </motion.span>
@@ -109,11 +125,11 @@ function RoomItem({
           e.stopPropagation();
           onToggleFavorite(room.id);
         }}
-        className="absolute right-2 top-3 p-0.5"
+        className="absolute right-2 top-3 p-0.5 transition-transform hover:scale-[1.15] active:scale-[0.9]"
         aria-label={room.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
       >
         <Star
-          className={`h-3.5 w-3.5 transition-all ${
+          className={`h-4 w-4 transition-all ${
             room.isFavorite
               ? "fill-yellow-400 text-yellow-400 opacity-100"
               : "text-app-text-subtle opacity-0 group-hover:opacity-100 hover:!opacity-100"
@@ -135,8 +151,14 @@ export function ChatListPanel({
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [roomMenu, setRoomMenu] = useState<RoomContextMenuState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const pinned = useMemo(() => rooms.filter((r) => r.isPinned), [rooms]);
 
@@ -211,7 +233,7 @@ export function ChatListPanel({
   const SearchBar = (
     <div className="border-b border-violet-500/20 p-3">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-app-text-subtle" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-subtle" />
         <input
           ref={searchInputRef}
           type="text"
@@ -225,9 +247,9 @@ export function ChatListPanel({
           <button
             onClick={handleClearSearch}
             aria-label="검색 초기화"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-app-text-muted transition-all hover:scale-110 hover:text-app-text"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         )}
         {isSearching && search && (
@@ -247,7 +269,7 @@ export function ChatListPanel({
           role="tab"
           aria-selected={tab === t.key}
           onClick={() => setTab(t.key)}
-          className={`relative flex-1 py-2.5 text-xs font-medium transition-colors ${
+          className={`relative flex-1 py-2.5 text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] ${
             tab === t.key
               ? "text-white"
               : "text-app-text-muted hover:text-app-text-secondary"
@@ -276,16 +298,19 @@ export function ChatListPanel({
       {TabsRow}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin" role="listbox" aria-label="채팅방 목록">
-        {filtered.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-4">
-            <p className="text-sm text-app-text-muted">검색 결과가 없습니다</p>
+        {isLoading ? (
+          <Skeleton />
+        ) : filtered.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
+            <SearchX className="h-8 w-8 text-app-text-subtle" />
+            <p className="text-sm font-normal text-app-text-muted">검색 결과가 없습니다</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
             {pinned.length > 0 && !search && (
               <>
                 <div className="px-3 pt-2 pb-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-app-text-subtle">
+                  <span className="text-[10px] font-normal uppercase tracking-wider text-app-text-subtle">
                     고정됨
                   </span>
                 </div>
@@ -323,30 +348,30 @@ export function ChatListPanel({
         >
           <button
             onClick={() => handlePinFromMenu(roomMenu.roomId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10 rounded-t-xl"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10 rounded-t-xl"
           >
-            <Pin className="h-3.5 w-3.5 text-app-text-muted" />
+            <Pin className="h-4 w-4 text-app-text-muted" />
             {roomMenuTarget?.isPinned ? "고정 해제" : "상단 고정"}
           </button>
           <button
             onClick={() => handleMarkRead(roomMenu.roomId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10"
           >
-            <MessageSquareCheck className="h-3.5 w-3.5 text-app-text-muted" />
+            <MessageSquareCheck className="h-4 w-4 text-app-text-muted" />
             읽음으로 표시
           </button>
           <button
             onClick={() => handleMute(roomMenu.roomId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10"
           >
-            <VolumeX className="h-3.5 w-3.5 text-app-text-muted" />
+            <VolumeX className="h-4 w-4 text-app-text-muted" />
             음소거
           </button>
           <button
             onClick={() => handleArchive(roomMenu.roomId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text-muted transition-colors hover:bg-violet-500/10 rounded-b-xl"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-normal text-app-text-muted transition-all hover:scale-[1.02] hover:bg-violet-500/10 rounded-b-xl"
           >
-            <Archive className="h-3.5 w-3.5" />
+            <Archive className="h-4 w-4" />
             보관
           </button>
         </div>

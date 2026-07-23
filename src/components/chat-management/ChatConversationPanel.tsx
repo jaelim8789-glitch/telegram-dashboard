@@ -17,6 +17,7 @@ import {
   Forward,
   CheckSquare,
   Square,
+  Heart,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -72,7 +73,7 @@ function DateDivider({ date }: { date: Date }) {
   return (
     <div className="my-4 flex items-center gap-2">
       <div className="h-px flex-1 bg-violet-500/10" />
-      <span className="shrink-0 text-[10px] text-app-text-muted">
+      <span className="shrink-0 text-[10px] font-normal text-app-text-muted">
         {formatDateDivider(date)}
       </span>
       <div className="h-px flex-1 bg-violet-500/10" />
@@ -83,7 +84,7 @@ function DateDivider({ date }: { date: Date }) {
 function TimeGapLabel({ time }: { time: string }) {
   return (
     <div className="my-2 text-center">
-      <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-app-text-muted">
+      <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-normal text-app-text-muted">
         {time}
       </span>
     </div>
@@ -135,7 +136,7 @@ function formatMessageContent(content: string) {
           href={matched}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline decoration-white/30 underline-offset-2 transition-colors hover:decoration-white/60"
+          className="font-medium underline decoration-white/30 underline-offset-2 transition-colors hover:decoration-white/60"
           onClick={(e) => e.stopPropagation()}
         >
           {matched}
@@ -396,10 +397,10 @@ export function ChatConversationPanel({
     return (
       <div className="flex flex-1 items-center justify-center bg-app-bg">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10">
             <MessagesSquare className="h-8 w-8 text-violet-400" />
           </div>
-          <p className="text-sm text-app-text-muted">대화를 선택해주세요</p>
+          <p className="text-sm font-normal text-app-text-muted">대화를 선택해주세요</p>
         </div>
       </div>
     );
@@ -482,7 +483,7 @@ export function ChatConversationPanel({
               e.stopPropagation();
               toggleSelectMessage(msg.id);
             }}
-            className="mt-3 shrink-0 self-start"
+            className="mt-3 shrink-0 self-start transition-transform hover:scale-110 active:scale-90"
           >
             {isSelected ? (
               <CheckSquare className="h-4 w-4 text-violet-400" />
@@ -500,13 +501,13 @@ export function ChatConversationPanel({
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-[10px] font-bold text-white">
                 {msg.senderName[0]}
               </div>
-              <span className="text-[11px] font-medium text-app-text-muted">
+              <span className="text-[11px] font-normal text-app-text-muted">
                 {msg.senderName}
               </span>
             </div>
           )}
           <div
-            className={`relative cursor-context-menu select-text px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+            className={`relative cursor-context-menu select-text px-3.5 py-2 text-sm font-medium leading-relaxed whitespace-pre-wrap break-words ${
               isMe
                 ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white rounded-2xl rounded-br-sm ml-auto"
                 : "bg-[#1a1a24] text-app-text rounded-2xl rounded-bl-sm"
@@ -514,13 +515,13 @@ export function ChatConversationPanel({
           >
             {renderContent()}
             {msg.reaction === "heart" && (
-              <span className="absolute -bottom-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-app-card text-[10px] shadow-sm">
-                ❤️
+              <span className="absolute -bottom-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-app-card shadow-sm">
+                <Heart className="h-3 w-3 fill-red-400 text-red-400" />
               </span>
             )}
           </div>
           <span
-            className={`mt-0.5 flex items-center gap-1 px-1 text-[10px] text-app-text-subtle ${
+            className={`mt-0.5 flex items-center gap-1 px-1 text-[10px] font-normal text-app-text-subtle ${
               isMe ? "justify-end" : "justify-start"
             }`}
           >
@@ -548,7 +549,7 @@ export function ChatConversationPanel({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-semibold text-app-text">
+              <span className="truncate text-sm font-bold tracking-tight text-app-text">
                 {room.name}
               </span>
               {room.isOnline !== undefined && (
@@ -561,22 +562,22 @@ export function ChatConversationPanel({
                 />
               )}
               {isTyping && (
-                <span className="shrink-0 text-[10px] text-green-400 animate-pulse">
+                <span className="shrink-0 text-[10px] font-normal text-green-400 animate-pulse">
                   입력 중...
                 </span>
               )}
               {!room.isOnline && room.lastSeen && !isTyping && (
-                <span className="shrink-0 text-[10px] text-app-text-subtle">
+                <span className="shrink-0 text-[10px] font-normal text-app-text-subtle">
                   {formatLastSeen(room.lastSeen)}
                 </span>
               )}
             </div>
             <div className="flex items-center gap-1.5">
               {room.isOnline && (
-                <span className="text-[11px] text-green-400">온라인</span>
+                <span className="text-[11px] font-medium text-green-400">온라인</span>
               )}
               {room.subscriberCount != null && (
-                <span className="text-[11px] text-app-text-muted">
+                <span className="text-[11px] font-normal text-app-text-muted tabular-nums">
                   구독자 {room.subscriberCount.toLocaleString()}명
                 </span>
               )}
@@ -589,7 +590,7 @@ export function ChatConversationPanel({
             <button
               onClick={toggleSelectMode}
               aria-label="메시지 선택 모드"
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] ${
                 selectMode
                   ? "bg-violet-500/20 text-violet-400"
                   : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
@@ -601,7 +602,7 @@ export function ChatConversationPanel({
           <button
             onClick={handleToggleConvSearch}
             aria-label="대화 내 검색"
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] ${
               showConvSearch
                 ? "bg-violet-500/20 text-violet-400"
                 : "text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
@@ -614,7 +615,7 @@ export function ChatConversationPanel({
 
       {showConvSearch && (
         <div className="flex items-center gap-1.5 border-b border-violet-500/20 px-4 py-2">
-          <Search className="h-3.5 w-3.5 shrink-0 text-app-text-muted" />
+          <Search className="h-4 w-4 shrink-0 text-app-text-muted" />
           <input
             ref={convSearchRef}
             type="text"
@@ -625,11 +626,11 @@ export function ChatConversationPanel({
               setConvSearchIdx(0);
             }}
             onKeyDown={handleConvSearchKeyDown}
-            className="flex-1 bg-transparent text-xs text-app-text outline-none placeholder:text-app-text-subtle"
+            className="flex-1 bg-transparent text-xs font-medium text-app-text outline-none placeholder:text-app-text-subtle"
           />
           {convSearch && (
             <>
-              <span className="text-[10px] text-app-text-subtle">
+              <span className="text-[10px] font-normal text-app-text-subtle tabular-nums">
                 {matchedIds.length > 0
                   ? `${highlightedIdx + 1}/${matchedIds.length}`
                   : "0/0"}
@@ -637,16 +638,16 @@ export function ChatConversationPanel({
               <button
                 onClick={handleConvSearchUp}
                 disabled={matchedIds.length === 0}
-                className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text disabled:opacity-30"
+                className="rounded p-0.5 text-app-text-muted transition-all hover:scale-110 hover:text-app-text disabled:opacity-30"
               >
-                <ChevronUp className="h-3.5 w-3.5" />
+                <ChevronUp className="h-4 w-4" />
               </button>
               <button
                 onClick={handleConvSearchDown}
                 disabled={matchedIds.length === 0}
-                className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text disabled:opacity-30"
+                className="rounded p-0.5 text-app-text-muted transition-all hover:scale-110 hover:text-app-text disabled:opacity-30"
               >
-                <ChevronDown className="h-3.5 w-3.5" />
+                <ChevronDown className="h-4 w-4" />
               </button>
             </>
           )}
@@ -655,16 +656,16 @@ export function ChatConversationPanel({
               setShowConvSearch(false);
               setConvSearch("");
             }}
-            className="rounded p-0.5 text-app-text-muted transition-colors hover:text-app-text"
+            className="rounded p-0.5 text-app-text-muted transition-all hover:scale-110 hover:text-app-text"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {selectMode && (
         <div className="flex items-center justify-between border-b border-violet-500/20 bg-violet-500/5 px-4 py-2">
-          <span className="text-xs text-app-text-muted">
+          <span className="text-xs font-medium text-app-text-muted tabular-nums">
             {selectedIds.size}개 선택됨
           </span>
           <div className="flex items-center gap-1">
@@ -673,16 +674,16 @@ export function ChatConversationPanel({
                 setSelectedIds(new Set());
                 setSelectMode(false);
               }}
-              className="rounded-lg px-2.5 py-1 text-xs text-app-text-muted transition-colors hover:text-app-text"
+              className="rounded-lg px-2.5 py-1 text-xs font-medium text-app-text-muted transition-all hover:scale-[1.02] active:scale-[0.98] hover:text-app-text"
             >
               취소
             </button>
             <button
               onClick={handleBatchDelete}
               disabled={selectedIds.size === 0}
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-app-danger transition-colors hover:bg-red-500/10 disabled:opacity-30"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-app-danger transition-all hover:scale-[1.02] active:scale-[0.98] hover:bg-red-500/10 disabled:opacity-30"
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-4 w-4" />
               삭제
             </button>
           </div>
@@ -705,9 +706,9 @@ export function ChatConversationPanel({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               onClick={scrollToBottom}
-              className="sticky bottom-2 mx-auto flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-violet-500/30 transition-transform hover:scale-105 active:scale-95"
+              className="sticky bottom-2 mx-auto flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-violet-500/30 transition-all hover:scale-105 active:scale-95"
             >
-              <ArrowDown className="h-3 w-3" />
+              <ArrowDown className="h-4 w-4" />
               최신 메시지
             </motion.button>
           )}
@@ -718,7 +719,7 @@ export function ChatConversationPanel({
         <div className="flex items-center gap-2">
           <button
             aria-label="파일 첨부"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-app-text-muted transition-all hover:scale-[1.02] active:scale-[0.98] hover:bg-app-card-hover hover:text-app-text"
           >
             <Paperclip className="h-4 w-4" />
           </button>
@@ -729,14 +730,14 @@ export function ChatConversationPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 rounded-full border border-violet-500/20 bg-app-card px-4 py-2.5 text-sm text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15"
+            className="flex-1 rounded-full border border-violet-500/20 bg-app-card px-4 py-2.5 text-sm font-medium text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15"
           />
           <motion.button
             onClick={handleSend}
             disabled={!input.trim()}
             animate={sendAnim ? { scale: [1, 0.85, 1.1, 1] } : {}}
             transition={{ duration: 0.4 }}
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white transition-all hover:scale-[1.02] active:scale-[0.98] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
             {sendAnim && (
@@ -758,30 +759,30 @@ export function ChatConversationPanel({
         >
           <button
             onClick={() => handleCopy(contextMessage)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10 rounded-t-xl"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10 rounded-t-xl"
           >
-            <Copy className="h-3.5 w-3.5 text-app-text-muted" />
+            <Copy className="h-4 w-4 text-app-text-muted" />
             복사
           </button>
           <button
             onClick={() => handleReply(contextMessage)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10"
           >
-            <Reply className="h-3.5 w-3.5 text-app-text-muted" />
+            <Reply className="h-4 w-4 text-app-text-muted" />
             답장
           </button>
           <button
             onClick={() => handleForwardClick(contextMessage.id)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-text transition-colors hover:bg-violet-500/10"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-text transition-all hover:scale-[1.02] hover:bg-violet-500/10"
           >
-            <Forward className="h-3.5 w-3.5 text-app-text-muted" />
+            <Forward className="h-4 w-4 text-app-text-muted" />
             전달
           </button>
           <button
             onClick={() => handleDelete(contextMessage.id)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-app-danger transition-colors hover:bg-red-500/10 rounded-b-xl"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-app-danger transition-all hover:scale-[1.02] hover:bg-red-500/10 rounded-b-xl"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
             삭제
           </button>
         </div>
@@ -807,8 +808,8 @@ export function ChatConversationPanel({
               className="fixed left-1/2 top-1/2 z-50 w-[300px] max-h-[400px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-violet-500/30 bg-app-card shadow-2xl shadow-black/50"
             >
               <div className="border-b border-violet-500/20 px-4 py-3">
-                <h3 className="text-sm font-semibold text-app-text">메시지 전달</h3>
-                <p className="mt-0.5 text-[11px] text-app-text-muted">
+                <h3 className="text-sm font-bold tracking-tight text-app-text">메시지 전달</h3>
+                <p className="mt-0.5 text-[11px] font-normal text-app-text-muted">
                   전달할 대화방을 선택하세요
                 </p>
               </div>
@@ -817,14 +818,14 @@ export function ChatConversationPanel({
                   <button
                     key={r.id}
                     onClick={() => handleForwardToTarget(r.id)}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-violet-500/10"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] hover:bg-violet-500/10"
                   >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-xs font-bold text-white">
                       {r.name[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-app-text">{r.name}</p>
-                      <p className="text-[10px] text-app-text-subtle">
+                      <p className="truncate text-sm font-medium text-app-text">{r.name}</p>
+                      <p className="text-[10px] font-normal text-app-text-subtle">
                         {r.type === "personal" ? "개인" : r.type === "group" ? "그룹" : "채널"}
                       </p>
                     </div>

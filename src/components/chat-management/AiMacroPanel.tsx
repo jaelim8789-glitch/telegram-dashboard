@@ -21,10 +21,10 @@ function MacroToggle({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-3 border-b border-app-border/50">
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-app-border/50 transition-shadow hover:shadow-lg hover:shadow-purple-500/5">
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-app-text">{macro.label}</div>
-        <div className="text-xs text-app-text-subtle">{macro.description}</div>
+        <div className="text-sm font-medium text-app-text">{macro.label}</div>
+        <div className="text-xs font-normal text-app-text-subtle">{macro.description}</div>
       </div>
       <button
         type="button"
@@ -32,7 +32,7 @@ function MacroToggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150",
+          "relative h-5 w-9 shrink-0 rounded-full transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]",
           "focus:outline-none focus:ring-2 focus:ring-violet-500/40",
           checked ? "bg-violet-500" : "bg-white/10"
         )}
@@ -87,9 +87,9 @@ export function AiMacroPanel({ macros, onToggle }: AiMacroPanelProps) {
       <div className="border-b border-violet-500/20 px-4 py-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-violet-400" />
-          <h2 className="text-sm font-semibold text-app-text">AI 매크로</h2>
+          <h2 className="text-sm font-bold tracking-tight text-app-text">AI 매크로</h2>
         </div>
-        <p className="mt-0.5 text-[11px] text-app-text-muted">
+        <p className="mt-0.5 text-[11px] font-normal text-app-text-muted">
           수신 메시지 자동 처리 설정
         </p>
       </div>
@@ -106,7 +106,7 @@ export function AiMacroPanel({ macros, onToggle }: AiMacroPanelProps) {
       </div>
 
       <div className="border-t border-violet-500/20 p-3">
-        <p className="text-[10px] text-app-text-subtle">
+        <p className="text-[10px] font-normal text-app-text-subtle">
           AI 매크로는 텔레그램 봇을 통해 자동 실행됩니다
         </p>
       </div>

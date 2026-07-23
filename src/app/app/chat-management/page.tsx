@@ -128,7 +128,7 @@ export default function ChatManagementPage() {
           <button
             onClick={handleBackToList}
             aria-label="채팅 목록으로 돌아가기"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-all hover:scale-[1.02] active:scale-[0.98] hover:bg-app-card-hover hover:text-app-text"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
@@ -138,7 +138,7 @@ export default function ChatManagementPage() {
           <button
             onClick={() => setMobileMacroOpen(true)}
             aria-label="AI 매크로 열기"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-violet-400 transition-colors hover:bg-violet-500/10"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-violet-400 transition-all hover:scale-[1.02] active:scale-[0.98] hover:bg-violet-500/10"
           >
             <Sparkles className="h-4 w-4" />
           </button>
@@ -179,7 +179,7 @@ export default function ChatManagementPage() {
                 <button
                   onClick={() => setMobileMacroOpen(false)}
                   aria-label="AI 매크로 닫기"
-                  className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-app-card text-app-text-muted transition-colors hover:text-app-text"
+                  className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-app-card text-app-text-muted transition-all hover:scale-110 hover:text-app-text"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
