@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * AiAssistantPanel — Premium glass AI sidebar panel
@@ -134,8 +134,8 @@ function ChatBubble({ message }: { message: Message }) {
   };
 
   return (
-    <div className={lex  animate-fade-in}>
-      <div className={max-w-[88%] }>
+    <div className="flex animate-fade-in">
+      <div className="max-w-[88%]">
         {/* Bubble */}
         <div className="relative group">
           {/* AI message — glass with purple border */}
@@ -205,8 +205,7 @@ function WelcomeScreen({ onPrompt, chatTitle }: { onPrompt: (text: string) => vo
       </h4>
       <p className="text-xs text-white/40 leading-relaxed max-w-[260px] mb-8">
         {chatTitle
-          ? 선택한 대화방의 맥락을 분석하여 최적의 답변을 추천해드립니다.
-          : "AI에게 질문하거나 명령을 입력하세요. 필요한 정보를 분석하고 답변을 생성합니다."}
+          ? "선택한 대화방의 맥락을 분석하여 최적의 답변을 추천해드립니다."
       </p>
 
       {/* Suggested prompts */}
