@@ -30,16 +30,16 @@ export function middleware(request: NextRequest) {
   // Check auth token
   const token = request.cookies.get(TOKEN_COOKIE)?.value;
   if (!token) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/admin/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Basic JWT expiry check (decode without verification ??just for UX redirect)
+  // Basic JWT expiry check (decode without verification for UX redirect)
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (payload.exp && Date.now() >= payload.exp * 1000) {
-      const loginUrl = new URL("/login", request.url);
+      const loginUrl = new URL("/admin/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       loginUrl.searchParams.set("expired", "1");
       return NextResponse.redirect(loginUrl);
