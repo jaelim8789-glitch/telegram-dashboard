@@ -3,7 +3,7 @@
   private static instance: ResourcePreloader;
   private preloadedResources: Map<string, { status: 'pending' | 'loaded' | 'error'; resource: any }> = new Map();
   private preloadQueue: Array<{ url: string; type: ResourceType; priority: number }> = [];
-  private ongoingRequests: Map<string, Promise<any>> = new Map();
+  private ongoingRequests: Map<string, Promise<unknown>> = new Map();
   private readonly maxConcurrentRequests: number = 6;
   private activeRequests: number = 0;
 
@@ -48,7 +48,7 @@
   }
 
   // ë¦¬ì????ì ?°ë¥¸ ë¡ë
-  private async loadResource(url: string, type: ResourceType): Promise<any> {
+  private async loadResource(url: string, type: ResourceType): Promise<unknown> {
     if (this.activeRequests >= this.maxConcurrentRequests) {
       // ìµë? ?ì ?ì²­ ??ì´ê³¼ ???ê¸?      await new Promise(resolve => setTimeout(resolve, 100));
       return this.loadResource(url, type);
@@ -118,7 +118,7 @@
   }
 
   // ?°í¸ ë¡ë
-  private loadFont(src: string): Promise<any> {
+  private loadFont(src: string): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const fontFace = new FontFace('temp', `url(${src})`, { display: 'swap' });
       fontFace.load().then(() => {
@@ -151,7 +151,7 @@
   }
 
   // JSON ë¡ë
-  private loadJson(url: string): Promise<any> {
+  private loadJson(url: string): Promise<unknown> {
     return fetch(url).then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

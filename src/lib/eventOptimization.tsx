@@ -14,14 +14,14 @@ class EventOptimizer {
   }
 
   // ?ë°?´ì± ?¨ì
-  public debounce<T extends (...args: any[]) => any>(
+  public debounce<T extends (...args: unknown[]) => any>(
     func: T,
     delay: number,
     key?: string
   ): T {
     const identifier = key || func.toString();
     
-    return ((...args: any[]) => {
+    return ((...args: unknown[]) => {
       const existing = this.debouncedFunctions.get(identifier);
       if (existing && existing.timeoutId) {
         clearTimeout(existing.timeoutId);
@@ -40,14 +40,14 @@ class EventOptimizer {
   }
 
   // ?°ë¡?ë§??¨ì
-  public throttle<T extends (...args: any[]) => any>(
+  public throttle<T extends (...args: unknown[]) => any>(
     func: T,
     limit: number,
     key?: string
   ): T {
     const identifier = key || func.toString();
     
-    return ((...args: any[]) => {
+    return ((...args: unknown[]) => {
       const now = Date.now();
       const existing = this.throttledFunctions.get(identifier);
       
@@ -59,7 +59,7 @@ class EventOptimizer {
   }
 
   // ì¦ì ?¤í ê°?¥í ?ë°?´ì± (leading edge)
-  public debounceLeading<T extends (...args: any[]) => any>(
+  public debounceLeading<T extends (...args: unknown[]) => any>(
     func: T,
     delay: number,
     key?: string
@@ -68,7 +68,7 @@ class EventOptimizer {
     let timeoutId: NodeJS.Timeout | null = null;
     let lastExecuted = 0;
     
-    return ((...args: any[]) => {
+    return ((...args: unknown[]) => {
       const now = Date.now();
       
       if (now - lastExecuted >= delay) {
@@ -89,7 +89,7 @@ class EventOptimizer {
   }
 
   // ?°ë¡?ë§?+ ?ë°?´ì± ì¡°í©
-  public throttleDebounce<T extends (...args: any[]) => any>(
+  public throttleDebounce<T extends (...args: unknown[]) => any>(
     func: T,
     throttleMs: number,
     debounceMs: number,
@@ -291,7 +291,7 @@ class EventOptimizer {
 // ?´ë²¤??ìµì ????
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export function useThrottledCallback<T extends (...args: any[]) => any>(
+export function useThrottledCallback<T extends (...args: unknown[]) => any>(
   callback: T,
   delay: number
 ): T {
@@ -309,7 +309,7 @@ export function useThrottledCallback<T extends (...args: any[]) => any>(
   }, [delay]) as T;
 }
 
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => any>(
   callback: T,
   delay: number
 ): T {
@@ -369,7 +369,7 @@ export function useEventOptimization() {
   const optimizerRef = useRef(EventOptimizer.getInstance());
   const callbacksRef = useRef(new Map<string, Function>());
 
-  const debounce = useCallback(<T extends (...args: any[]) => any>(
+  const debounce = useCallback(<T extends (...args: unknown[]) => any>(
     func: T,
     delay: number,
     key?: string
@@ -377,7 +377,7 @@ export function useEventOptimization() {
     return optimizerRef.current.debounce(func, delay, key);
   }, []);
 
-  const throttle = useCallback(<T extends (...args: any[]) => any>(
+  const throttle = useCallback(<T extends (...args: unknown[]) => any>(
     func: T,
     limit: number,
     key?: string
@@ -385,7 +385,7 @@ export function useEventOptimization() {
     return optimizerRef.current.throttle(func, limit, key);
   }, []);
 
-  const debounceLeading = useCallback(<T extends (...args: any[]) => any>(
+  const debounceLeading = useCallback(<T extends (...args: unknown[]) => any>(
     func: T,
     delay: number,
     key?: string
@@ -393,7 +393,7 @@ export function useEventOptimization() {
     return optimizerRef.current.debounceLeading(func, delay, key);
   }, []);
 
-  const throttleDebounce = useCallback(<T extends (...args: any[]) => any>(
+  const throttleDebounce = useCallback(<T extends (...args: unknown[]) => any>(
     func: T,
     throttleMs: number,
     debounceMs: number,
@@ -428,7 +428,7 @@ export function useEventOptimization() {
 }
 
 // ?ë°?´ì¤ ??
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: unknown[]) => any>(
   func: T,
   delay: number,
   key?: string
@@ -438,7 +438,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
 }
 
 // ?°ë¡? ??
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => any>(
   func: T,
   limit: number,
   key?: string
@@ -533,10 +533,10 @@ export function OptimizedEventComponent({
 import { createContext, useContext } from 'react';
 
 interface EventOptimizationContextType {
-  debounce: <T extends (...args: any[]) => any>(func: T, delay: number, key?: string) => T;
-  throttle: <T extends (...args: any[]) => any>(func: T, limit: number, key?: string) => T;
-  debounceLeading: <T extends (...args: any[]) => any>(func: T, delay: number, key?: string) => T;
-  throttleDebounce: <T extends (...args: any[]) => any>(func: T, throttleMs: number, debounceMs: number, key?: string) => T;
+  debounce: <T extends (...args: unknown[]) => any>(func: T, delay: number, key?: string) => T;
+  throttle: <T extends (...args: unknown[]) => any>(func: T, limit: number, key?: string) => T;
+  debounceLeading: <T extends (...args: unknown[]) => any>(func: T, delay: number, key?: string) => T;
+  throttleDebounce: <T extends (...args: unknown[]) => any>(func: T, throttleMs: number, debounceMs: number, key?: string) => T;
   addOptimizedListener: (element: HTMLElement, event: string, handler: EventListener, options?: { debounce?: number; throttle?: number; passive?: boolean }) => () => void;
   optimizeScrollHandler: (handler: EventListener, options?: { debounce?: number; throttle?: number; passive?: boolean; useRAF?: boolean }) => EventListener;
   optimizeMouseMoveHandler: (handler: EventListener, options?: { throttle?: number; sampleRate?: number }) => EventListener;

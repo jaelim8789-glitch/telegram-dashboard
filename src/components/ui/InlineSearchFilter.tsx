@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 
-export function InlineSearchFilter({ data, onFilter, placeholder = "검색..." }: { data: any[]; onFilter: (filtered: any[]) => void; placeholder?: string }) {
+export function InlineSearchFilter({ data, onFilter, placeholder = "검색..." }: { data: unknown[]; onFilter: (filtered: unknown[]) => void; placeholder?: string }) {
   const [query, setQuery] = useState("");
   const debounce = useRef<ReturnType<typeof setTimeout>>();
 
