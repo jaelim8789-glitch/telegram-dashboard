@@ -10,7 +10,7 @@ env:
   VPS_HOST: 130.94.30.112
 
 jobs:
-  frontend-build:
+  frontend-docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,21 +21,6 @@ jobs:
       - run: corepack enable && pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
       - run: pnpm approve-builds
       - run: pnpm build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: next-build
-          path: .next/
-          retention-days: 1
-
-  frontend-docker:
-    needs: frontend-build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: next-build
-          path: .next/
 
       - name: Check for unmerged commits
         run: |
