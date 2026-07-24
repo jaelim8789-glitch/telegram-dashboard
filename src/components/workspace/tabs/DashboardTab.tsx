@@ -29,11 +29,11 @@ import { BroadcastListSection } from "@/components/workspace/tabs/dashboard/Broa
 import { exportCSV, exportJSON } from "@/lib/exportUtils";
 
 const STATUS_TONE: Record<BroadcastStatus, { tone: "neutral" | "success" | "warning" | "danger" | "info"; label: string }> = {
-  pending: { tone: "neutral", label: "대기 중" },
-  sending: { tone: "info", label: "발송 중" },
-  sent: { tone: "success", label: "완료" },
-  failed: { tone: "danger", label: "실패" },
-  cancelled: { tone: "warning", label: "취소됨" },
+  pending: { tone: "neutral", label: "?��?�? },
+  sending: { tone: "info", label: "발송 �? },
+  sent: { tone: "success", label: "?�료" },
+  failed: { tone: "danger", label: "?�패" },
+  cancelled: { tone: "warning", label: "취소?? },
 };
 
 import { formatRelativeTime, formatCompact } from "@/lib/formatTime";
@@ -88,7 +88,7 @@ function AttentionItem({
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────
+// ?�?� Main Dashboard ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export function DashboardTab() {
   const accounts = useDashboardStore((s) => s.accounts);
@@ -136,14 +136,14 @@ export function DashboardTab() {
   };
 
   const WIDGET_LABELS: Record<string, string> = {
-    dailyDigest: "오늘의 활동", realtimeMetrics: "실시간 메트릭", usageChart: "사용량 차트",
-    usageProgress: "사용량 한도", attention: "운영 주의 사항", recentFailures: "최근 발송 실패",
-    middlePanels: "예약/반복/건강 패널", recentActivity: "최근 활동", accountOverview: "계정 현황",
-    failureIntelligence: "실패 분석", healthTrend: "계정 건강 트렌드", healthScore: "계정 건강 점수",
-    banPredictor: "계정 차단 예측",
+    dailyDigest: "?�늘???�동", realtimeMetrics: "?�시�?메트�?, usageChart: "?�용??차트",
+    usageProgress: "?�용???�도", attention: "?�영 주의 ?�항", recentFailures: "최근 발송 ?�패",
+    middlePanels: "?�약/반복/건강 ?�널", recentActivity: "최근 ?�동", accountOverview: "계정 ?�황",
+    failureIntelligence: "?�패 분석", healthTrend: "계정 건강 ?�렌??, healthScore: "계정 건강 ?�수",
+    banPredictor: "계정 차단 ?�측",
   };
 
-  // ── Widget visibility ──
+  // ?�?� Widget visibility ?�?�
   const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem("telemon-dashboard-widgets");
@@ -152,7 +152,7 @@ export function DashboardTab() {
   });
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
 
-  // ── Mobile widget simplification ──
+  // ?�?� Mobile widget simplification ?�?�
   function useWidgetSimplification() {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
@@ -167,7 +167,7 @@ export function DashboardTab() {
   const CORE_WIDGETS = new Set(["dailyDigest", "realtimeMetrics", "healthScore", "usageChart", "usageProgress"]);
   const [mobileCollapsedWidgets, setMobileCollapsedWidgets] = useState<Set<string>>(new Set());
 
-  // ── Dashboard profiles ──
+  // ?�?� Dashboard profiles ?�?�
   interface DashboardProfile {
     name: string;
     widgetVisibility: Record<string, boolean>;
@@ -188,7 +188,7 @@ export function DashboardTab() {
     try {
       const saved = localStorage.getItem("telemon-dashboard-current-profile");
       if (saved) return saved;
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
     return DEFAULT_PROFILE_NAME;
   });
 
@@ -198,7 +198,7 @@ export function DashboardTab() {
   const profilePanelRef = useRef<HTMLDivElement>(null);
 
   const persistProfiles = (next: DashboardProfile[]) => {
-    try { localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
     setProfiles(next);
   };
 
@@ -207,18 +207,18 @@ export function DashboardTab() {
     const next = [...profiles.filter((p) => p.name !== name), entry];
     persistProfiles(next);
     setCurrentProfile(name);
-    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch {}
+    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
   };
 
   const switchProfile = (name: string) => {
     const profile = profiles.find((p) => p.name === name);
     if (!profile) return;
     setWidgetVisibility(profile.widgetVisibility);
-    try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(profile.widgetVisibility)); } catch {}
+    try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(profile.widgetVisibility)); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
     setWidgetOrder(profile.widgetOrder);
-    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(profile.widgetOrder)); } catch {}
+    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(profile.widgetOrder)); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
     setCurrentProfile(name);
-    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch {}
+    try { localStorage.setItem("telemon-dashboard-current-profile", name); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
   };
 
   const deleteProfile = (name: string) => {
@@ -235,12 +235,12 @@ export function DashboardTab() {
   const toggleWidget = (key: string) => {
     setWidgetVisibility((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(next)); } catch {}
+      try { localStorage.setItem("telemon-dashboard-widgets", JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
       return next;
     });
   };
 
-  // ── Export handlers ──
+  // ?�?� Export handlers ?�?�
   const handleExportCSV = () => {
     const headers = ["message", "status", "account", "recipients", "error", "created_at"];
     const rows = logs.map((b) => {
@@ -263,7 +263,7 @@ export function DashboardTab() {
     setShowExportDropdown(false);
   };
 
-  // ── Click-outside ──
+  // ?�?� Click-outside ?�?�
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
@@ -277,7 +277,7 @@ export function DashboardTab() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Widget order (drag-reorderable) ──
+  // ?�?� Widget order (drag-reorderable) ?�?�
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("telemon-dashboard-widget-order");
@@ -290,7 +290,7 @@ export function DashboardTab() {
   });
 
   const persistOrder = (order: string[]) => {
-    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(order)); } catch {}
+    try { localStorage.setItem("telemon-dashboard-widget-order", JSON.stringify(order)); } catch (e) { console.warn('Unhandled error in DashboardTab', e) }
     setWidgetOrder(order);
   };
 
@@ -440,9 +440,9 @@ export function DashboardTab() {
     if (healthCritical.length > 0) {
       items.push({
         id: "auth",
-        title: `인증/차단 계정 ${healthCritical.length}개`,
-        detail: "발송 중단 전에 재인증 또는 상태 점검이 필요합니다.",
-        cta: "계정 확인",
+        title: `?�증/차단 계정 ${healthCritical.length}�?,
+        detail: "발송 중단 ?�에 ?�인�??�는 ?�태 ?��????�요?�니??",
+        cta: "계정 ?�인",
         tone: "danger",
         action: () => setTab("register"),
       });
@@ -451,9 +451,9 @@ export function DashboardTab() {
     if (recentFailures.length > 0) {
       items.push({
         id: "failures",
-        title: `최근 실패 발송 ${recentFailures.length}건`,
-        detail: recentFailures[0]?.message || "실패 원인을 확인하고 재시도하세요.",
-        cta: "로그 열기",
+        title: `최근 ?�패 발송 ${recentFailures.length}�?,
+        detail: recentFailures[0]?.message || "?�패 ?�인???�인?�고 ?�시?�하?�요.",
+        cta: "로그 ?�기",
         tone: "warning",
         action: () => setTab("log"),
       });
@@ -462,8 +462,8 @@ export function DashboardTab() {
     if ((summary?.success_rate ?? 100) < 85) {
       items.push({
         id: "performance",
-        title: `성공률 ${summary?.success_rate?.toFixed(1) ?? "0.0"}%`,
-        detail: "최근 성과가 낮습니다. 시간대와 계정별 실패 원인을 바로 확인하세요.",
+        title: `?�공�?${summary?.success_rate?.toFixed(1) ?? "0.0"}%`,
+        detail: "최근 ?�과가 ??��?�다. ?�간?�?� 계정�??�패 ?�인??바로 ?�인?�세??",
         cta: "분석 보기",
         tone: "warning",
         action: () => setTab("deliveryanalytics"),
@@ -473,9 +473,9 @@ export function DashboardTab() {
     if (memoryTopPosts.length > 0) {
       items.push({
         id: "reuse",
-        title: "고성과 문구 재활용 가능",
-        detail: `Top 글 ${memoryTopPosts[0].success_rate}% 성과를 참고해 재작성할 수 있습니다.`,
-        cta: "AI로 재작성",
+        title: "고성�?문구 ?�활??가??,
+        detail: `Top 글 ${memoryTopPosts[0].success_rate}% ?�과�?참고???�작?�할 ???�습?�다.`,
+        cta: "AI�??�작??,
         tone: "success",
         action: () => setTab("aibroadcast"),
       });
@@ -484,9 +484,9 @@ export function DashboardTab() {
     if (upcoming.length === 0 && activeAccounts.length > 0) {
       items.push({
         id: "schedule",
-        title: "다음 발송 예약 없음",
-        detail: "모바일에서는 미리 1건 예약해두면 운영 누락을 줄일 수 있습니다.",
-        cta: "발송 준비",
+        title: "?�음 발송 ?�약 ?�음",
+        detail: "모바?�에?�는 미리 1�??�약?�두�??�영 ?�락??줄일 ???�습?�다.",
+        cta: "발송 준�?,
         tone: "info",
         action: () => setTab("send"),
       });
@@ -498,7 +498,7 @@ export function DashboardTab() {
   // Skeleton loading state
   if (accountsLoading && accounts.length === 0) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="대시보드 로딩 중">
+      <div className="space-y-4" aria-busy="true" aria-label="?�?�보??로딩 �?>
         <Skeleton className="h-8 w-48 rounded-xl" />
         <Skeleton className="h-12 w-full rounded-xl" />
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -514,16 +514,16 @@ export function DashboardTab() {
   // Error state only when accounts API fails with no cached data
   if (accountsError && accounts.length === 0) {
     return (
-      <Panel title="시스템 상태">
+      <Panel title="?�스???�태">
         <div className="flex flex-col items-center justify-center py-12 text-center" role="alert">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-danger-muted">
             <XCircle className="h-8 w-8 text-app-danger" aria-hidden="true" />
           </div>
-          <p className="text-sm font-semibold text-app-danger">서버에 연결할 수 없습니다</p>
+          <p className="text-sm font-semibold text-app-danger">?�버???�결?????�습?�다</p>
           <p className="mt-1 text-xs text-app-text-muted max-w-xs">{accountsError}</p>
           <button onClick={loadAll}
             className="mt-4 flex items-center gap-1.5 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors focus-ring">
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> 다시 시도
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> ?�시 ?�도
           </button>
         </div>
       </Panel>
@@ -537,80 +537,80 @@ export function DashboardTab() {
 
   return (
     <div className="flex flex-col gap-5 pb-8">
-      {/* ── Header Section ───────────────────────────────────── */}
+      {/* ?�?� Header Section ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-app-text">운영 대시보드</h1>
+            <h1 className="text-base font-bold text-app-text">?�영 ?�?�보??/h1>
             {hasAnyAttention && (
               <span className="inline-flex items-center justify-center rounded-full bg-app-danger-muted px-2 py-0.5 text-[10px] font-bold text-app-danger tabular-nums">
                 {totalAttention}
               </span>
             )}
           </div>
-          <p className="text-xs text-app-text-muted">실시간 운영 현황</p>
+          <p className="text-xs text-app-text-muted">?�시�??�영 ?�황</p>
         </div>
         <div className="flex items-center gap-2">
           {accounts.length === 0 && (
             <button onClick={() => setTab("register")}
               className="flex items-center gap-1.5 rounded-xl bg-app-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-app-primary-hover transition-colors focus-ring">
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> 계정 추가
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> 계정 추�?
             </button>
           )}
           <div className="relative" ref={exportDropdownRef}>
-            <button onClick={() => setShowExportDropdown(!showExportDropdown)} aria-label="내보내기"
+            <button onClick={() => setShowExportDropdown(!showExportDropdown)} aria-label="?�보?�기"
               className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring">
-              <Download className="h-3.5 w-3.5" aria-hidden="true" /> 내보내기
+              <Download className="h-3.5 w-3.5" aria-hidden="true" /> ?�보?�기
             </button>
             {showExportDropdown && (
               <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-app-border bg-app-surface p-1 shadow-xl">
                 <button onClick={handleExportCSV}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors">
-                  CSV 내보내기 (로그)
+                  CSV ?�보?�기 (로그)
                 </button>
                 <button onClick={handleExportJSON}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors">
-                  JSON 내보내기 (전체)
+                  JSON ?�보?�기 (?�체)
                 </button>
               </div>
             )}
           </div>
-          <button onClick={loadAll} aria-label="새로고침"
+          <button onClick={loadAll} aria-label="?�로고침"
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring">
             <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} aria-hidden="true" />
           </button>
         </div>
       </header>
 
-      {/* ── Daily Digest ──────────────────────────── */}
+      {/* ?�?� Daily Digest ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <div key="dailyDigest" style={{ order: widgetIdx("dailyDigest") }}>
         {widgetVisibility.dailyDigest && (
           <DailyDigest accounts={accounts} logs={logs} />
         )}
       </div>
 
-      {/* ── Onboarding Wizard (0 accounts) ──────────── */}
+      {/* ?�?� Onboarding Wizard (0 accounts) ?�?�?�?�?�?�?�?�?�?�?�?� */}
       {accounts.length > 0 && (
         <div className="order-1 sm:order-none">
-          <Panel title="🏢 AI 사무실">
+          <Panel title="?�� AI ?�무??>
             <PixelOfficeWidget onExpand={() => useDashboardStore.getState().setActiveTab("pixeloffice")} />
           </Panel>
         </div>
       )}
 
-      {/* ── Onboarding Wizard (0 accounts) ──────────── */}
+      {/* ?�?� Onboarding Wizard (0 accounts) ?�?�?�?�?�?�?�?�?�?�?�?� */}
       {accounts.length === 0 && !accountsLoading && (
-        <Panel title="🚀 TeleMon 시작하기" className="border-app-primary/20 bg-app-primary-muted/5">
+        <Panel title="?? TeleMon ?�작?�기" className="border-app-primary/20 bg-app-primary-muted/5">
           <div className="space-y-4 py-4">
             <p className="text-sm text-app-text-secondary">
-              TeleMon에 오신 것을 환영합니다! 시작하려면 Telegram 계정을 연결하세요.
+              TeleMon???�신 것을 ?�영?�니?? ?�작?�려�?Telegram 계정???�결?�세??
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                { step: 1, title: "계정 연결", desc: "Telegram 계정을 TeleMon에 연결하세요", icon: Link, action: "계정 등록하기", tab: "register" as const },
-                { step: 2, title: "그룹 선택", desc: "관리할 그룹과 채널을 선택하세요", icon: Users, action: "그룹 관리", tab: "group" as const },
-                { step: 3, title: "첫 메시지 발송", desc: "AI의 도움을 받아 첫 발송을 시작하세요", icon: Send, action: "발송하기", tab: "send" as const },
+                { step: 1, title: "계정 ?�결", desc: "Telegram 계정??TeleMon???�결?�세??, icon: Link, action: "계정 ?�록?�기", tab: "register" as const },
+                { step: 2, title: "그룹 ?�택", desc: "관리할 그룹�?채널???�택?�세??, icon: Users, action: "그룹 관�?, tab: "group" as const },
+                { step: 3, title: "�?메시지 발송", desc: "AI???��???받아 �?발송???�작?�세??, icon: Send, action: "발송?�기", tab: "send" as const },
               ].map((item) => (
                 <div key={item.step} className="flex flex-col items-center text-center rounded-xl border border-app-border bg-app-card p-4 hover:border-app-primary/30 transition-colors cursor-pointer"
                   onClick={() => setTab(item.tab)}
@@ -621,14 +621,14 @@ export function DashboardTab() {
                   <span className="text-[10px] font-bold text-app-primary mb-1">STEP {item.step}</span>
                   <h4 className="text-sm font-semibold text-app-text">{item.title}</h4>
                   <p className="text-xs text-app-text-muted mt-1 mb-3">{item.desc}</p>
-                  <span className="text-xs font-medium text-app-primary">{item.action} →</span>
+                  <span className="text-xs font-medium text-app-primary">{item.action} ??/span>
                 </div>
               ))}
             </div>
 
             <div className="flex items-center gap-2 text-xs text-app-text-muted border-t border-app-border pt-3">
               <AlertCircle className="h-3.5 w-3.5" />
-              도움이 필요하시면 {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@telemon.io"} 으로 문의하세요
+              ?��????�요?�시�?{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@telemon.io"} ?�로 문의?�세??
             </div>
           </div>
         </Panel>
@@ -639,23 +639,23 @@ export function DashboardTab() {
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-app-text">
               <Zap className="h-4 w-4 text-app-primary" aria-hidden="true" />
-              모바일 운영 우선순위
+              모바???�영 ?�선?�위
             </div>
-            <p className="mt-1 text-[11px] text-app-text-muted">지금 바로 처리해야 할 작업만 추려서 보여줍니다.</p>
+            <p className="mt-1 text-[11px] text-app-text-muted">지�?바로 처리?�야 ???�업�?추려??보여줍니??</p>
           </div>
           <button
             type="button"
             onClick={() => setTab(priorityQueue[0]?.id === "auth" ? "register" : "log")}
             className="rounded-xl border border-app-border px-2.5 py-1.5 text-[10px] text-app-text-muted hover:bg-app-card-hover hover:text-app-text transition-colors"
           >
-            빠른 이동
+            빠른 ?�동
           </button>
         </div>
 
         <div className="mt-4 space-y-2">
           {priorityQueue.length === 0 ? (
             <div className="rounded-xl border border-app-border bg-app-bg px-3 py-3 text-xs text-app-text-muted">
-              처리 우선순위가 높은 이슈가 없습니다. 지금은 발송 예약이나 AI 문구 개선을 진행하기 좋은 상태입니다.
+              처리 ?�선?�위가 ?��? ?�슈가 ?�습?�다. 지금�? 발송 ?�약?�나 AI 문구 개선??진행?�기 좋�? ?�태?�니??
             </div>
           ) : (
             priorityQueue.map((item) => (
@@ -692,30 +692,30 @@ export function DashboardTab() {
               TeleMon AI Memory
             </div>
             <p className="mt-1 text-[11px] text-app-text-muted">
-              AI가 참고하는 이번달, 지난주, 작년 성과와 반응 좋은 글입니다.
+              AI가 참고?�는 ?�번?? 지?�주, ?�년 ?�과?� 반응 좋�? 글?�니??
             </p>
           </div>
           <div className="text-[11px] text-app-text-subtle">
-            {telemonMemory?.generated_at ? `${formatRelativeTime(telemonMemory.generated_at)} 업데이트` : "데이터 준비 중"}
+            {telemonMemory?.generated_at ? `${formatRelativeTime(telemonMemory.generated_at)} ?�데?�트` : "?�이??준�?�?}
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
           {[
-            { label: "이번달", value: memoryPeriods?.this_month },
-            { label: "지난주", value: memoryPeriods?.last_week },
-            { label: "작년", value: memoryPeriods?.last_year },
+            { label: "?�번??, value: memoryPeriods?.this_month },
+            { label: "지?�주", value: memoryPeriods?.last_week },
+            { label: "?�년", value: memoryPeriods?.last_year },
           ].map((item) => (
             <div key={item.label} className="rounded-xl border border-app-border bg-app-bg p-3">
               <div className="text-[11px] font-medium text-app-text-muted">{item.label}</div>
               <div className="mt-2 text-lg font-bold tabular-nums text-app-text">{item.value?.attempted ?? 0}</div>
-              <div className="text-[11px] text-app-text-subtle">발송 시도</div>
+              <div className="text-[11px] text-app-text-subtle">발송 ?�도</div>
               <div className="mt-2 flex items-center justify-between text-[11px]">
-                <span className="text-app-text-muted">성공</span>
+                <span className="text-app-text-muted">?�공</span>
                 <span className="font-medium text-app-text">{item.value?.successful ?? 0}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-[11px]">
-                <span className="text-app-text-muted">성공률</span>
+                <span className="text-app-text-muted">?�공�?/span>
                 <span className="font-medium text-app-primary">{item.value?.success_rate ?? 0}%</span>
               </div>
             </div>
@@ -725,10 +725,10 @@ export function DashboardTab() {
         <div className="mt-4 rounded-xl border border-app-border bg-app-bg p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-app-text">
             <TrendingUp className="h-4 w-4 text-app-success" aria-hidden="true" />
-            반응 좋았던 글 TOP 3
+            반응 좋았??글 TOP 3
           </div>
           {memoryTopPosts.length === 0 ? (
-            <p className="mt-3 text-xs text-app-text-muted">아직 참고할 고성과 발송 데이터가 부족합니다. 최근 180일 내 시도 3건 이상인 브로드캐스트부터 메모리에 쌓입니다.</p>
+            <p className="mt-3 text-xs text-app-text-muted">?�직 참고??고성�?발송 ?�이?��? 부족합?�다. 최근 180?????�도 3�??�상??브로?�캐?�트부??메모리에 ?�입?�다.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {memoryTopPosts.map((post, index) => (
@@ -737,14 +737,14 @@ export function DashboardTab() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 text-[11px] text-app-text-muted">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-app-primary/10 font-semibold text-app-primary">{index + 1}</span>
-                        <span>시도 {post.attempted}건</span>
-                        <span>성공 {post.successful}건</span>
+                        <span>?�도 {post.attempted}�?/span>
+                        <span>?�공 {post.successful}�?/span>
                       </div>
                       <p className="mt-1 text-xs leading-relaxed text-app-text">{post.message_preview}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-sm font-bold text-app-success">{post.success_rate}%</div>
-                      <div className="text-[10px] text-app-text-subtle">성공률</div>
+                      <div className="text-[10px] text-app-text-subtle">?�공�?/div>
                     </div>
                   </div>
                 </div>
@@ -754,41 +754,41 @@ export function DashboardTab() {
         </div>
       </section>
 
-      {/* ── Real-time Metrics Row ──────────────── */}
+      {/* ?�?� Real-time Metrics Row ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <div key="realtimeMetrics" style={{ order: widgetIdx("realtimeMetrics") }}>
       {widgetVisibility.realtimeMetrics && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
               <Gauge className="h-3.5 w-3.5 text-app-info" aria-hidden="true" />
-              발송 속도
+              발송 ?�도
             </div>
             <div className="mt-1 text-lg font-bold tabular-nums text-app-text">
               {formatCompact(sentCount)}
-              <span className="text-xs font-normal text-app-text-muted">/30일</span>
+              <span className="text-xs font-normal text-app-text-muted">/30??/span>
             </div>
             <div className="text-[10px] text-app-text-subtle">
               {failedCount > 0
-                ? <span className="text-app-danger">{((failedCount / Math.max(sentCount + failedCount, 1)) * 100).toFixed(1)}% 실패율</span>
-                : "실패 없음"}
+                ? <span className="text-app-danger">{((failedCount / Math.max(sentCount + failedCount, 1)) * 100).toFixed(1)}% ?�패??/span>
+                : "?�패 ?�음"}
             </div>
           </div>
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
               <Timer className="h-3.5 w-3.5 text-app-warning" aria-hidden="true" />
-              대기열
+              ?�기열
             </div>
             <div className="mt-1 text-lg font-bold tabular-nums text-app-text">
               {logs.filter(l => l.status === "pending").length}
             </div>
             <div className="text-[10px] text-app-text-subtle">
-              {upcoming.length > 0 ? `${upcoming.length}건 예약됨` : "대기 중 없음"}
+              {upcoming.length > 0 ? `${upcoming.length}�??�약?? : "?��?�??�음"}
             </div>
           </div>
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
               <Zap className="h-3.5 w-3.5 text-app-primary" aria-hidden="true" />
-              성공률
+              ?�공�?
             </div>
             <div className={cn("mt-1 text-lg font-bold tabular-nums",
               (summary?.success_rate ?? 100) >= 90 ? "text-app-success" :
@@ -797,7 +797,7 @@ export function DashboardTab() {
               {summary ? `${summary.success_rate.toFixed(1)}%` : "-"}
             </div>
             <div className="text-[10px] text-app-text-subtle">
-              {summary ? `${summary.successful}/${summary.total_attempted}건` : "데이터 없음"}
+              {summary ? `${summary.successful}/${summary.total_attempted}�? : "?�이???�음"}
             </div>
           </div>
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
@@ -810,56 +810,56 @@ export function DashboardTab() {
               <span className="text-xs font-normal text-app-text-muted">/{accounts.length}</span>
             </div>
             <div className="text-[10px] text-app-text-subtle">
-              {healthCritical.length > 0 ? `${healthCritical.length}개 주의 필요` : "모든 계정 정상"}
+              {healthCritical.length > 0 ? `${healthCritical.length}�?주의 ?�요` : "모든 계정 ?�상"}
             </div>
           </div>
           <div className="rounded-xl border border-app-border bg-gradient-to-br from-app-card to-app-bg p-3">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
               <Layers className="h-3.5 w-3.5 text-app-text-muted" aria-hidden="true" />
-              반복 스케줄
+              반복 ?��?�?
             </div>
             <div className="mt-1 text-lg font-bold tabular-nums text-app-text">{recurring.length}</div>
             <div className="text-[10px] text-app-text-subtle">
               {erroredRecurring.length > 0
-                ? `${erroredRecurring.length}개 오류`
-                : `${recurring.filter(r => getRecurringState(r) === "active").length}개 활성`}
+                ? `${erroredRecurring.length}�??�류`
+                : `${recurring.filter(r => getRecurringState(r) === "active").length}�??�성`}
             </div>
           </div>
         </div>
       )}
       </div>
 
-      {/* ── Account Health Score ──────────────── */}
+      {/* ?�?� Account Health Score ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <div key="healthScore" style={{ order: widgetIdx("healthScore") }}>
       {widgetVisibility.healthScore && (
         <HealthScoreSection healthScores={healthScores} />
       )}
       </div>
 
-      {/* ── Operational Summary Hierarchy ───────── */}
+      {/* ?�?� Operational Summary Hierarchy ?�?�?�?�?�?�?�?�?� */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="rounded-xl border border-app-border bg-app-card p-3">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
             <CheckCircle2 className="h-3.5 w-3.5 text-app-success" aria-hidden="true" />
-            정상 계정
+            ?�상 계정
           </div>
           <div className="mt-1 text-lg font-bold tabular-nums text-app-success">
             {healthyCount}
             <span className="text-xs font-normal text-app-text-muted">/{accounts.length}</span>
           </div>
           {inactiveAccounts.length > 0 && (
-            <div className="text-[10px] text-app-text-subtle">{inactiveAccounts.length}개 비활성</div>
+            <div className="text-[10px] text-app-text-subtle">{inactiveAccounts.length}�?비활??/div>
           )}
         </div>
         <div className="rounded-xl border border-app-border bg-app-card p-3">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
             <AlertTriangle className={cn("h-3.5 w-3.5", totalAttention > 0 ? "text-app-danger" : "text-app-text-subtle")} aria-hidden="true" />
-            주의 필요
+            주의 ?�요
           </div>
           <div className={cn("mt-1 text-lg font-bold tabular-nums", totalAttention > 0 ? "text-app-danger" : "text-app-text")}>
             {totalAttention}
           </div>
-          {healthCritical.length > 0 && <div className="text-[10px] text-app-danger">{healthCritical.length}개 인증/차단</div>}
+          {healthCritical.length > 0 && <div className="text-[10px] text-app-danger">{healthCritical.length}�??�증/차단</div>}
         </div>
         <div className="rounded-xl border border-app-border bg-app-card p-3">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
@@ -867,7 +867,7 @@ export function DashboardTab() {
             발송
           </div>
           <div className="mt-1 text-lg font-bold tabular-nums text-app-text">{formatCompact(sentCount)}</div>
-          <div className="text-[10px] text-app-text-subtle">{failedCount > 0 ? `${formatCompact(failedCount)}건 실패` : "실패 없음"}</div>
+          <div className="text-[10px] text-app-text-subtle">{failedCount > 0 ? `${formatCompact(failedCount)}�??�패` : "?�패 ?�음"}</div>
         </div>
         <div className="rounded-xl border border-app-border bg-app-card p-3">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-muted">
@@ -876,21 +876,21 @@ export function DashboardTab() {
           </div>
           <div className="mt-1 text-lg font-bold tabular-nums text-app-text">{recurring.length}</div>
           <div className="text-[10px] text-app-text-subtle">
-            {erroredRecurring.length > 0 ? `${erroredRecurring.length}개 오류` :
-             pausedRecurring.length > 0 ? `${pausedRecurring.length}개 일시 정지` :
-             "정상"}
+            {erroredRecurring.length > 0 ? `${erroredRecurring.length}�??�류` :
+             pausedRecurring.length > 0 ? `${pausedRecurring.length}�??�시 ?��?` :
+             "?�상"}
           </div>
         </div>
       </div>
 
       <div key="attention" style={{ order: widgetIdx("attention") }}>
-      {/* ── Operational Attention Queue ─────────── */}
+      {/* ?�?� Operational Attention Queue ?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.attention && hasAnyAttention && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
           <div className="flex items-center gap-2 border-b border-app-border bg-app-card px-4 py-2">
             <AlertTriangle className="h-3.5 w-3.5 text-app-danger" aria-hidden="true" />
-            <span className="text-xs font-semibold text-app-text">운영 주의 사항</span>
-            <span className="ml-auto text-[11px] text-app-text-muted">{totalAttention}건</span>
+            <span className="text-xs font-semibold text-app-text">?�영 주의 ?�항</span>
+            <span className="ml-auto text-[11px] text-app-text-muted">{totalAttention}�?/span>
           </div>
           <div className="divide-y divide-app-border">
             {healthCritical.filter(h => h.status === "unauthorized").map(h => {
@@ -899,8 +899,8 @@ export function DashboardTab() {
                 <AttentionItem key={"unauth-" + h.accountId}
                   icon={<ShieldAlert className="h-3.5 w-3.5 text-app-warning" />}
                   label={acct?.name?.trim() || h.phone}
-                  detail="인증 필요 — 세션이 만료되었거나 인증되지 않았습니다"
-                  actionLabel="재인증"
+                  detail="?�증 ?�요 ???�션??만료?�었거나 ?�증?��? ?�았?�니??
+                  actionLabel="?�인�?
                   tone="warning"
                   action={() => setTab("register")}
                 />
@@ -912,8 +912,8 @@ export function DashboardTab() {
                 <AttentionItem key={"banned-" + h.accountId}
                   icon={<Ban className="h-3.5 w-3.5 text-app-danger" />}
                   label={acct?.name?.trim() || h.phone}
-                  detail="Telegram 계정이 차단되었습니다"
-                  actionLabel="계정 관리"
+                  detail="Telegram 계정??차단?�었?�니??
+                  actionLabel="계정 관�?
                   tone="danger"
                   action={() => setTab("register")}
                 />
@@ -925,8 +925,8 @@ export function DashboardTab() {
                 <AttentionItem key={"noconfig-" + h.accountId}
                   icon={<ShieldOff className="h-3.5 w-3.5 text-app-text-muted" />}
                   label={acct?.name?.trim() || h.phone}
-                  detail="세션이 구성되지 않았습니다"
-                  actionLabel="설정하기"
+                  detail="?�션??구성?��? ?�았?�니??
+                  actionLabel="?�정?�기"
                   tone="muted"
                   action={() => setTab("register")}
                 />
@@ -938,7 +938,7 @@ export function DashboardTab() {
                 <AttentionItem key={"ratelimit-" + h.accountId}
                   icon={<Clock className="h-3.5 w-3.5 text-app-warning" />}
                   label={acct?.name?.trim() || h.phone}
-                  detail="속도 제한 — 너무 많은 요청으로 일시 제한됨"
+                  detail="?�도 ?�한 ???�무 많�? ?�청?�로 ?�시 ?�한??
                   actionLabel="로그 보기"
                   tone="warning"
                   action={() => setTab("log")}
@@ -951,8 +951,8 @@ export function DashboardTab() {
                 <AttentionItem key={"error-" + h.accountId}
                   icon={<AlertTriangle className="h-3.5 w-3.5 text-app-danger" />}
                   label={acct?.name?.trim() || h.phone}
-                  detail={h.lastError ?? "알 수 없는 오류"}
-                  actionLabel="계정 관리"
+                  detail={h.lastError ?? "?????�는 ?�류"}
+                  actionLabel="계정 관�?
                   tone="danger"
                   action={() => setTab("register")}
                 />
@@ -961,9 +961,9 @@ export function DashboardTab() {
             {errors.health && bannedAccounts.length > 0 && (
               <AttentionItem key="banned-fallback"
                 icon={<Ban className="h-3.5 w-3.5 text-app-danger" />}
-                label={`차단된 계정 ${bannedAccounts.length}개`}
+                label={`차단??계정 ${bannedAccounts.length}�?}
                 detail={bannedAccounts.map(a => a.name?.trim() || a.phone).join(", ")}
-                actionLabel="계정 관리"
+                actionLabel="계정 관�?
                 tone="danger"
                 action={() => setTab("register")}
               />
@@ -971,9 +971,9 @@ export function DashboardTab() {
             {erroredRecurring.length > 0 && (
               <AttentionItem key="recurring-error"
                 icon={<AlertTriangle className="h-3.5 w-3.5 text-app-danger" />}
-                label={`반복 스케줄 오류 ${erroredRecurring.length}개`}
+                label={`반복 ?��?�??�류 ${erroredRecurring.length}�?}
                 detail={erroredRecurring.map(b => b.message).join(", ")}
-                actionLabel="스케줄러"
+                actionLabel="?��?줄러"
                 tone="danger"
                 action={() => setTab("scheduler")}
               />
@@ -981,9 +981,9 @@ export function DashboardTab() {
             {pausedRecurring.length > 0 && (
               <AttentionItem key="recurring-paused"
                 icon={<PauseCircle className="h-3.5 w-3.5 text-app-warning" />}
-                label={`일시 정지된 반복 ${pausedRecurring.length}개`}
+                label={`?�시 ?��???반복 ${pausedRecurring.length}�?}
                 detail={pausedRecurring.map(b => b.message).join(", ")}
-                actionLabel="스케줄러"
+                actionLabel="?��?줄러"
                 tone="warning"
                 action={() => setTab("scheduler")}
               />
@@ -991,7 +991,7 @@ export function DashboardTab() {
             {nonRetryableFailures.length > 0 && (
               <AttentionItem key="nonretryable-failures"
                 icon={<Bug className="h-3.5 w-3.5 text-app-danger" />}
-                label={`재시도 불가 실패 ${nonRetryableFailures.length}건`}
+                label={`?�시??불�? ?�패 ${nonRetryableFailures.length}�?}
                 detail={nonRetryableFailures.map(f => f.message).join(", ")}
                 actionLabel="로그 보기"
                 tone="danger"
@@ -1007,21 +1007,21 @@ export function DashboardTab() {
         <div className="flex items-center gap-2.5 rounded-2xl border border-app-success/20 bg-app-success-muted/20 px-4 py-3">
           <CheckCircle2 className="h-5 w-5 text-app-success shrink-0" aria-hidden="true" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-app-success">모든 시스템 정상</p>
-            <p className="text-[11px] text-app-text-muted">{activeAccounts.length}개 계정 활성 · {recurring.length}개 반복 스케줄</p>
+            <p className="text-xs font-medium text-app-success">모든 ?�스???�상</p>
+            <p className="text-[11px] text-app-text-muted">{activeAccounts.length}�?계정 ?�성 · {recurring.length}�?반복 ?��?�?/p>
           </div>
         </div>
       )}
       </div>
 
       <div key="recentFailures" style={{ order: widgetIdx("recentFailures") }}>
-      {/* ── Recent Failures with retryable classification ── */}
+      {/* ?�?� Recent Failures with retryable classification ?�?� */}
       {widgetVisibility.recentFailures && recentFailures.length > 0 && (
         <div className="rounded-2xl border border-app-border overflow-hidden">
           <div className="flex items-center gap-2 border-b border-app-border bg-app-card px-4 py-2">
             <AlertTriangle className="h-3.5 w-3.5 text-app-danger" aria-hidden="true" />
-            <span className="text-xs font-medium text-app-text">최근 발송 실패</span>
-            <span className="ml-auto text-[11px] text-app-text-muted">{recentFailures.length}건</span>
+            <span className="text-xs font-medium text-app-text">최근 발송 ?�패</span>
+            <span className="ml-auto text-[11px] text-app-text-muted">{recentFailures.length}�?/span>
           </div>
           <div className="divide-y divide-app-border">
             {recentFailures.map(f => {
@@ -1029,15 +1029,15 @@ export function DashboardTab() {
               const acctLabel = acct ? (acct.name?.trim() || acct.phone) : f.accountId.slice(0, 8);
               const fi = f.failureInfo;
               const { summary: failureSummary, action: recoveryTarget, retryable } = failureInfoSummary(fi);
-              const displayError = failureSummary || f.errorMessage || "알 수 없는 오류";
+              const displayError = failureSummary || f.errorMessage || "?????�는 ?�류";
               const recoveryTab: TabId = (recoveryTarget === "register" ? "register" : "log") as TabId;
               return (
                 <div key={f.id} className="flex items-center justify-between px-4 py-2">
                   <div className="min-w-0 flex-1 pr-2">
                     <div className="flex items-center gap-1.5">
                       <p className="truncate text-xs text-app-text">{f.message}</p>
-                      {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">재시도 가능</Badge>}
-                      {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">재시도 불가</Badge>}
+                      {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">?�시??가??/Badge>}
+                      {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">?�시??불�?</Badge>}
                       {retryable === "conditional" && <Badge tone="info" className="shrink-0 text-[9px] px-1 py-0">조건부</Badge>}
                     </div>
                     <p className="flex flex-wrap gap-x-1.5 text-[11px] text-app-text-muted">
@@ -1050,7 +1050,7 @@ export function DashboardTab() {
                   </div>
                   <button onClick={() => setTab(recoveryTab)}
                     className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-                    {recoveryTab === "register" ? "계정 관리" : "로그 보기"} <ArrowRight className="h-3 w-3" />
+                    {recoveryTab === "register" ? "계정 관�? : "로그 보기"} <ArrowRight className="h-3 w-3" />
                   </button>
                 </div>
               );
@@ -1058,14 +1058,14 @@ export function DashboardTab() {
           </div>
           <button onClick={() => setTab("log")}
             className="flex w-full items-center justify-center gap-1 border-t border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring">
-            전체 로그 보기 <ArrowRight className="h-3 w-3" />
+            ?�체 로그 보기 <ArrowRight className="h-3 w-3" />
           </button>
         </div>
       )}
       </div>
 
       <div key="usageChart" style={{ order: Math.min(widgetIdx("usageChart"), widgetIdx("usageProgress")) }}>
-      {/* ── Usage Chart & Usage Progress (side by side) ── */}
+      {/* ?�?� Usage Chart & Usage Progress (side by side) ?�?� */}
       {priorityVisible.progress && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {widgetVisibility.usageChart ? (
@@ -1092,7 +1092,7 @@ export function DashboardTab() {
       )}
       </div>
 
-      {/* ── Widget Customization & Profiles ─────────────────── */}
+      {/* ?�?� Widget Customization & Profiles ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <button
@@ -1100,11 +1100,11 @@ export function DashboardTab() {
             className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
           >
             <Settings className="h-3.5 w-3.5" aria-hidden="true" />
-            위젯 설정
+            ?�젯 ?�정
           </button>
           {showWidgetSettings && (
             <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
-              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">위젯 순서 및 표시</p>
+              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">?�젯 ?�서 �??�시</p>
               {widgetKeys.map((w, i) => (
                 <div
                   key={w.key}
@@ -1125,7 +1125,7 @@ export function DashboardTab() {
                   onDragEnd={() => { dragWidgetRef.current = null; }}
                   className="flex items-center gap-1 rounded-lg px-1 py-1 text-xs text-app-text hover:bg-app-card-hover transition-colors group cursor-grab active:cursor-grabbing"
                 >
-                  <span className="text-[10px] text-app-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0">⠿</span>
+                  <span className="text-[10px] text-app-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0">??/span>
                   <button
                     onClick={() => toggleWidget(w.key)}
                     className="flex items-center gap-2 flex-1 px-1"
@@ -1142,14 +1142,14 @@ export function DashboardTab() {
                       onClick={(e) => { e.stopPropagation(); moveWidget(w.key, -1); }}
                       disabled={i === 0}
                       className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
-                      title="위로 이동"
-                    >↑</button>
+                      title="?�로 ?�동"
+                    >??/button>
                     <button
                       onClick={(e) => { e.stopPropagation(); moveWidget(w.key, 1); }}
                       disabled={i === widgetKeys.length - 1}
                       className="flex h-5 w-5 items-center justify-center rounded text-app-text-subtle hover:text-app-text hover:bg-app-card-hover disabled:opacity-20"
-                      title="아래로 이동"
-                    >↓</button>
+                      title="?�래�??�동"
+                    >??/button>
                   </div>
                 </div>
               ))}
@@ -1162,12 +1162,12 @@ export function DashboardTab() {
             className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3 py-1.5 text-xs font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
           >
             <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-            프로필
+            ?�로??
           </button>
           {showProfilePanel && (
             <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-xl border border-app-border bg-app-surface p-2 shadow-xl">
               <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-app-text-muted">
-                현재 프로필: {currentProfile}
+                ?�재 ?�로?? {currentProfile}
               </p>
               <div className="space-y-0.5">
                 {profiles.map((p) => (
@@ -1182,7 +1182,7 @@ export function DashboardTab() {
                       <button
                         onClick={() => deleteProfile(p.name)}
                         className="shrink-0 rounded px-1 py-0.5 text-[10px] text-app-text-muted hover:text-app-danger transition-colors"
-                        title="삭제"
+                        title="??��"
                       >×</button>
                     )}
                   </div>
@@ -1193,7 +1193,7 @@ export function DashboardTab() {
                   onClick={() => setProfilePrompt("")}
                   className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-app-text-muted hover:bg-app-card-hover transition-colors"
                 >
-                  <Plus className="h-3 w-3" /> 새 프로필로 저장
+                  <Plus className="h-3 w-3" /> ???�로?�로 ?�??
                 </button>
               </div>
               {profilePrompt !== null && (
@@ -1203,14 +1203,14 @@ export function DashboardTab() {
                       autoFocus
                       value={profilePrompt}
                       onChange={(e) => setProfilePrompt(e.target.value)}
-                      placeholder="프로필 이름 입력..."
+                      placeholder="?�로???�름 ?�력..."
                       className="w-full rounded-lg border border-app-border bg-app-bg px-2 py-1.5 text-xs text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary"
                     />
                     <div className="mt-1.5 flex justify-end gap-1">
                       <button type="button" onClick={() => setProfilePrompt(null)}
                         className="rounded-lg px-2 py-1 text-[11px] text-app-text-muted hover:bg-app-card-hover transition-colors">취소</button>
                       <button type="submit"
-                        className="rounded-lg bg-app-primary px-2 py-1 text-[11px] text-white hover:bg-app-primary-hover transition-colors">저장</button>
+                        className="rounded-lg bg-app-primary px-2 py-1 text-[11px] text-white hover:bg-app-primary-hover transition-colors">?�??/button>
                     </div>
                   </form>
                 </div>
@@ -1220,11 +1220,11 @@ export function DashboardTab() {
         </div>
       </div>
 
-      {/* ── Quick Actions ─────────────────────────────────────── */}
+      {/* ?�?� Quick Actions ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setTab("send")}
-          className="flex items-center gap-1.5 rounded-xl bg-app-primary px-3.5 py-2 text-xs font-medium text-white shadow-sm shadow-app-primary/20 hover:bg-app-primary-hover transition-colors focus-ring" aria-label="새 발송">
-          <Plus className="h-3.5 w-3.5" aria-hidden="true" /> 새 발송
+          className="flex items-center gap-1.5 rounded-xl bg-app-primary px-3.5 py-2 text-xs font-medium text-white shadow-sm shadow-app-primary/20 hover:bg-app-primary-hover transition-colors focus-ring" aria-label="??발송">
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" /> ??발송
         </button>
         <button onClick={() => setTab("groupsearch")}
           className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3.5 py-2 text-xs font-medium text-app-text hover:border-app-border-strong hover:shadow-sm transition-colors focus-ring">
@@ -1232,11 +1232,11 @@ export function DashboardTab() {
         </button>
         <button onClick={() => setTab("scheduler")}
           className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3.5 py-2 text-xs font-medium text-app-text hover:border-app-border-strong hover:shadow-sm transition-colors focus-ring">
-          <Clock className="h-3.5 w-3.5" aria-hidden="true" /> 반복 스케줄러
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" /> 반복 ?��?줄러
         </button>
         <button onClick={() => setTab("deliveryanalytics")}
           className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3.5 py-2 text-xs font-medium text-app-text hover:border-app-border-strong hover:shadow-sm transition-colors focus-ring">
-          <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" /> 전달 분석
+          <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" /> ?�달 분석
         </button>
         <button onClick={() => setTab("log")}
           className="flex items-center gap-1.5 rounded-xl border border-app-border bg-app-card px-3.5 py-2 text-xs font-medium text-app-text hover:border-app-border-strong hover:shadow-sm transition-colors focus-ring">
@@ -1244,16 +1244,16 @@ export function DashboardTab() {
         </button>
         <button onClick={() => setTab("register")}
           className="flex items-center gap-1.5 rounded-xl border border-app-primary/30 bg-app-primary-muted/20 px-3.5 py-2 text-xs font-medium text-app-primary hover:bg-app-primary-muted/30 transition-colors focus-ring">
-          <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> 계정 관리
+          <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> 계정 관�?
         </button>
       </div>
 
       <div key="middlePanels" style={{ order: widgetIdx("middlePanels") }}>
-      {/* ── Middle Section: 3 columns ────────────────────────── */}
+      {/* ?�?� Middle Section: 3 columns ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.middlePanels && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel
-            title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" aria-hidden="true" /> 예약된 발송</div>}
+            title={<div className="flex items-center gap-2"><Clock className="h-4 w-4 text-app-info" aria-hidden="true" /> ?�약??발송</div>}
             className="lg:col-span-1"
           >
             {dataLoading ? (
@@ -1264,7 +1264,7 @@ export function DashboardTab() {
             ) : upcoming.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <Clock className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-                <p className="text-xs text-app-text-muted">예약된 발송이 없습니다</p>
+                <p className="text-xs text-app-text-muted">?�약??발송???�습?�다</p>
               </div>
             ) : (
               <div className="space-y-1.5">
@@ -1274,10 +1274,10 @@ export function DashboardTab() {
                       <p className="truncate text-xs font-medium text-app-text">{b.message}</p>
                       <p className="text-[11px] text-app-text-subtle">
                         {new Date(`${b.scheduledAt}Z`).toLocaleString("ko-KR", { hour12: false })}
-                        {" · "}{b.recipients.length}개 대상
+                        {" · "}{b.recipients.length}�??�??
                       </p>
                     </div>
-                    <Badge tone="info">예약</Badge>
+                    <Badge tone="info">?�약</Badge>
                   </div>
                 ))}
               </div>
@@ -1290,7 +1290,7 @@ export function DashboardTab() {
             accounts={accounts}
             dataLoading={dataLoading}
             emptyIcon={<RefreshCw className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />}
-            emptyMessage="반복 발송 일정이 없습니다"
+            emptyMessage="반복 발송 ?�정???�습?�다"
             onViewAll={setTab}
             viewAllTab="scheduler"
           />
@@ -1305,10 +1305,10 @@ export function DashboardTab() {
       </div>
 
       <div key="recentActivity" style={{ order: widgetIdx("recentActivity") }}>
-      {/* ── Recent Activity ──────────────────── */}
+      {/* ?�?� Recent Activity ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.recentActivity && (
         <Panel
-          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 활동</div>}
+          title={<div className="flex items-center gap-2"><Activity className="h-4 w-4 text-app-primary" aria-hidden="true" /> 최근 ?�동</div>}
           className="w-full"
         >
           {dataLoading && recentLogs.length === 0 ? (
@@ -1318,14 +1318,14 @@ export function DashboardTab() {
           ) : accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Users className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
-              <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
+              <p className="text-sm font-medium text-app-text">?�결??계정???�습?�다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정 ?�록 ??��????계정??추�??�세??/p>
             </div>
           ) : recentLogs.length === 0 && !dataLoading ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <MessageSquare className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-sm font-medium text-app-text">아직 활동 기록이 없습니다</p>
-              <p className="mt-1 text-xs text-app-text-muted">계정을 연결하고 메시지를 발송하면 여기에 표시됩니다</p>
+              <p className="text-sm font-medium text-app-text">?�직 ?�동 기록???�습?�다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정???�결?�고 메시지�?발송?�면 ?�기???�시?�니??/p>
             </div>
           ) : (
             <div className="divide-y divide-app-border">
@@ -1339,8 +1339,8 @@ export function DashboardTab() {
                     <div className="min-w-0 flex-1 pr-3">
                       <div className="flex items-center gap-1.5">
                         <p className="truncate text-app-text">{b.message}</p>
-                        {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">재시도 가능</Badge>}
-                        {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">재시도 불가</Badge>}
+                        {retryable === "retryable" && <Badge tone="warning" className="shrink-0 text-[9px] px-1 py-0">?�시??가??/Badge>}
+                        {retryable === "not_retryable" && <Badge tone="danger" className="shrink-0 text-[9px] px-1 py-0">?�시??불�?</Badge>}
                         {isRecur && <Badge tone="info" className="shrink-0 text-[9px] px-1 py-0">반복</Badge>}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-1 text-xs text-app-text-muted">
@@ -1350,8 +1350,8 @@ export function DashboardTab() {
                     </div>
                     <button onClick={() => setTab(isFailed ? "log" : isRecur ? "scheduler" : "send")}
                       className="shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover transition-colors focus-ring"
-                      aria-label={isFailed ? "로그 보기" : isRecur ? "스케줄러 보기" : "발송 보기"}>
-                      {isFailed ? "로그 보기" : isRecur ? "스케줄러" : "발송 보기"}
+                      aria-label={isFailed ? "로그 보기" : isRecur ? "?��?줄러 보기" : "발송 보기"}>
+                      {isFailed ? "로그 보기" : isRecur ? "?��?줄러" : "발송 보기"}
                     </button>
                   </div>
                 );
@@ -1359,24 +1359,24 @@ export function DashboardTab() {
             </div>
           )}
           {errors.logs && logs.length > 0 && (
-            <p className="mt-2 text-[11px] text-app-warning">로그 데이터를 불러오는 중 일부 오류가 발생했습니다</p>
+            <p className="mt-2 text-[11px] text-app-warning">로그 ?�이?��? 불러?�는 �??��? ?�류가 발생?�습?�다</p>
           )}
         </Panel>
       )}
       </div>
 
       <div key="accountOverview" style={{ order: widgetIdx("accountOverview") }}>
-      {/* ── Account Overview Table ──────────────────────────── */}
+      {/* ?�?� Account Overview Table ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.accountOverview && (
         <Panel
-          title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 현황</div>}
-          description="연결된 모든 Telegram 계정의 상태와 주요 지표"
+          title={<div className="flex items-center gap-2"><Users className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 ?�황</div>}
+          description="?�결??모든 Telegram 계정???�태?� 주요 지??
         >
           {accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Users className="mb-2 h-8 w-8 text-app-text-subtle" aria-hidden="true" />
-              <p className="text-sm font-medium text-app-text">연결된 계정이 없습니다</p>
-              <p className="mt-1 text-xs text-app-text-muted">계정 등록 탭에서 새 계정을 추가하세요</p>
+              <p className="text-sm font-medium text-app-text">?�결??계정???�습?�다</p>
+              <p className="mt-1 text-xs text-app-text-muted">계정 ?�록 ??��????계정??추�??�세??/p>
             </div>
           ) : (
             <div className="relative">
@@ -1386,11 +1386,11 @@ export function DashboardTab() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>계정</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead className="hidden sm:table-cell">자동 응답</TableHead>
-                      <TableHead className="text-right">오늘</TableHead>
+                      <TableHead>?�태</TableHead>
+                      <TableHead className="hidden sm:table-cell">?�동 ?�답</TableHead>
+                      <TableHead className="text-right">?�늘</TableHead>
                       <TableHead className="text-right hidden sm:table-cell">그룹</TableHead>
-                      <TableHead className="hidden md:table-cell">최근 활동</TableHead>
+                      <TableHead className="hidden md:table-cell">최근 ?�동</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1417,7 +1417,7 @@ export function DashboardTab() {
                                 a.status === "active" && hasHealthIssue && "bg-app-warning",
                                 a.status === "inactive" && "bg-app-text-subtle",
                                 a.status === "banned" && "bg-app-danger")} />
-                              {a.status === "active" ? (hasHealthIssue ? "주의" : "활성") : a.status === "inactive" ? "비활성" : "차단"}
+                              {a.status === "active" ? (hasHealthIssue ? "주의" : "?�성") : a.status === "inactive" ? "비활?? : "차단"}
                             </span>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
@@ -1447,11 +1447,11 @@ export function DashboardTab() {
       </div>
 
       <div key="healthTrend" style={{ order: widgetIdx("healthTrend") }}>
-      {/* ── Health Trend ──────────────────────────────────────── */}
+      {/* ?�?� Health Trend ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.healthTrend && healthItems.length > 0 && (
         <Panel
-          title={<div className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 건강 트렌드</div>}
-          description="각 계정의 최근 발송 성공률 및 건강 상태"
+          title={<div className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-app-primary" aria-hidden="true" /> 계정 건강 ?�렌??/div>}
+          description="�?계정??최근 발송 ?�공�?�?건강 ?�태"
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {healthItems.map((h) => {
@@ -1459,13 +1459,13 @@ export function DashboardTab() {
               const totalAttempts = h.recentSuccessCount + h.recentFailureCount;
               const successRate = totalAttempts > 0 ? (h.recentSuccessCount / totalAttempts) * 100 : 0;
               const statusLabel: Record<string, { label: string; tone: string }> = {
-                healthy: { label: "정상", tone: "text-app-success" },
-                unauthorized: { label: "인증 필요", tone: "text-app-warning" },
+                healthy: { label: "?�상", tone: "text-app-success" },
+                unauthorized: { label: "?�증 ?�요", tone: "text-app-warning" },
                 banned: { label: "차단", tone: "text-app-danger" },
-                rate_limited: { label: "제한", tone: "text-app-warning" },
-                error: { label: "오류", tone: "text-app-danger" },
-                not_configured: { label: "미설정", tone: "text-app-text-muted" },
-                unknown: { label: "알 수 없음", tone: "text-app-text-muted" },
+                rate_limited: { label: "?�한", tone: "text-app-warning" },
+                error: { label: "?�류", tone: "text-app-danger" },
+                not_configured: { label: "미설??, tone: "text-app-text-muted" },
+                unknown: { label: "?????�음", tone: "text-app-text-muted" },
               };
               const statusInfo = statusLabel[h.status] ?? { label: h.status, tone: "text-app-text-muted" };
               const barColor = successRate >= 90 ? "bg-app-success" : successRate >= 70 ? "bg-app-warning" : "bg-app-danger";
@@ -1488,11 +1488,11 @@ export function DashboardTab() {
                       <div className="mt-1 flex items-center justify-between text-[10px] text-app-text-muted">
                         <span className="flex items-center gap-1">
                           <TrendingUp className="h-3 w-3 text-app-success" />
-                          {h.recentSuccessCount}건
+                          {h.recentSuccessCount}�?
                         </span>
                         <span className="flex items-center gap-1">
                           <TrendingDown className="h-3 w-3 text-app-danger" />
-                          {h.recentFailureCount}건
+                          {h.recentFailureCount}�?
                         </span>
                         <span className="font-medium">{successRate.toFixed(0)}%</span>
                       </div>
@@ -1503,7 +1503,7 @@ export function DashboardTab() {
                     </div>
                   )}
                   {h.lastActivity && (
-                    <p className="mt-1 text-[9px] text-app-text-subtle">마지막 활동: {formatRelativeTime(h.lastActivity)}</p>
+                    <p className="mt-1 text-[9px] text-app-text-subtle">마�?�??�동: {formatRelativeTime(h.lastActivity)}</p>
                   )}
                 </div>
               );
@@ -1519,7 +1519,7 @@ export function DashboardTab() {
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-app-text">
               <ShieldAlert className="h-4 w-4 text-app-danger" aria-hidden="true" />
-              계정 차단 예측
+              계정 차단 ?�측
             </div>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1555,7 +1555,7 @@ export function DashboardTab() {
                   )}
                   {(bp.riskLevel === "critical" || bp.riskLevel === "high") && bp.estimatedDaysLeft !== undefined && (
                     <p className="mt-0.5 text-[10px] text-app-danger">
-                      예상 {bp.estimatedDaysLeft}일 내 차단
+                      ?�상 {bp.estimatedDaysLeft}????차단
                     </p>
                   )}
                 </div>
@@ -1567,11 +1567,11 @@ export function DashboardTab() {
       </div>
 
       <div key="failureIntelligence" style={{ order: widgetIdx("failureIntelligence") }}>
-      {/* ── Failure Intelligence ─────────────────────────────── */}
+      {/* ?�?� Failure Intelligence ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� */}
       {widgetVisibility.failureIntelligence && failureTypes.length > 0 && (
         <Panel
-          title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-danger" aria-hidden="true" /> 실패 분석</div>}
-          description="주요 실패 유형 및 영향"
+          title={<div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-app-danger" aria-hidden="true" /> ?�패 분석</div>}
+          description="주요 ?�패 ?�형 �??�향"
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {failureTypes.map((f) => (
@@ -1587,8 +1587,8 @@ export function DashboardTab() {
                     style={{ width: `${Math.min(f.percentage, 100)}%` }} />
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-[11px] text-app-text-muted">
-                  <span>{f.count}건</span>
-                  <span>{f.affected_accounts}개 계정</span>
+                  <span>{f.count}�?/span>
+                  <span>{f.affected_accounts}�?계정</span>
                 </div>
               </div>
             ))}
@@ -1597,20 +1597,20 @@ export function DashboardTab() {
       )}
       </div>
 
-      {/* ── API errors banner — non-blocking ── */}
+      {/* ?�?� API errors banner ??non-blocking ?�?� */}
       {(errors.logs || errors.upcoming || errors.recurring || errors.overview) && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-app-warning/20 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>일부 데이터를 불러오지 못했습니다.</span>
-          <button onClick={loadAll} className="ml-auto underline hover:no-underline focus-ring">다시 시도</button>
+          <span>?��? ?�이?��? 불러?��? 못했?�니??</span>
+          <button onClick={loadAll} className="ml-auto underline hover:no-underline focus-ring">?�시 ?�도</button>
         </div>
       )}
 
       {errors.health && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-app-warning/20 bg-app-warning-muted/20 px-3 py-2 text-[11px] text-app-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>계정 상태 정보를 불러올 수 없습니다.</span>
-          <button onClick={loadHealth} className="ml-auto underline hover:no-underline focus-ring">다시 시도</button>
+          <span>계정 ?�태 ?�보�?불러?????�습?�다.</span>
+          <button onClick={loadHealth} className="ml-auto underline hover:no-underline focus-ring">?�시 ?�도</button>
         </div>
       )}
     </div>

@@ -39,7 +39,7 @@ interface GrowthLoop {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  idle: "대기", running: "실행 중", paused: "일시 중지", completed: "완료", failed: "실패",
+  idle: "?��?, running: "?�행 �?, paused: "?�시 중�?", completed: "?�료", failed: "?�패",
 };
 const STATUS_COLORS: Record<string, string> = {
   idle: "bg-app-border", running: "bg-app-primary animate-pulse", paused: "bg-app-warning", completed: "bg-app-success", failed: "bg-app-danger",
@@ -66,7 +66,7 @@ export function GrowthLoopTab() {
     try {
       const res = await fetch(`${BASE}/api/growth-loop/status`, { headers: await api.authHeaders() });
       if (res.ok) setLoops(await res.json());
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in GrowthLoopTab', e) }
     finally { setLoading(false); }
   }
 
@@ -85,10 +85,10 @@ export function GrowthLoopTab() {
         setLoops((prev) => [loop, ...prev]);
         setGoal("");
       } else {
-        const err = await res.json().catch(() => ({ detail: "시작 실패" }));
-        setError(err.detail || "시작 실패");
+        const err = await res.json().catch(() => ({ detail: "?�작 ?�패" }));
+        setError(err.detail || "?�작 ?�패");
       }
-    } catch { setError("네트워크 오류"); }
+    } catch { setError("?�트?�크 ?�류"); }
     finally { setStarting(false); }
   }
 
@@ -108,7 +108,7 @@ export function GrowthLoopTab() {
           setLoops((prev) => prev.map((l) => l.id === id ? updated : l));
         }
       }
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in GrowthLoopTab', e) }
     finally { setActioning(null); }
   }
 
@@ -122,18 +122,18 @@ export function GrowthLoopTab() {
           <TrendingUp className="h-5 w-5 text-app-primary" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-app-text">자율 성장 루프</h2>
-          <p className="text-[10px] text-app-text-muted">목표만 설정하면 AI가 자동으로 Analyze→Generate→Send→Repeat</p>
+          <h2 className="text-sm font-bold text-app-text">?�율 ?�장 루프</h2>
+          <p className="text-[10px] text-app-text-muted">목표�??�정?�면 AI가 ?�동?�로 Analyze?�Generate?�Send?�Repeat</p>
         </div>
       </div>
 
       {/* Start Panel */}
-      <Panel title="🎯 새 성장 루프" className="border-app-primary/20">
+      <Panel title="?�� ???�장 루프" className="border-app-primary/20">
         <div className="space-y-3">
           <textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder="달성하고 싶은 목표를 입력하세요. 예: 회원 1000명 만들기, 일일 발송 50건 달성, 전환율 15% 만들기..."
+            placeholder="?�성?�고 ?��? 목표�??�력?�세?? ?? ?�원 1000�?만들�? ?�일 발송 50�??�성, ?�환??15% 만들�?.."
             rows={3}
             disabled={starting}
             className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 resize-none"
@@ -151,7 +151,7 @@ export function GrowthLoopTab() {
             </div>
           </div>
           <Button variant="primary" onClick={startLoop} loading={starting} disabled={!goal.trim() || starting} className="w-full">
-            <Zap className="h-4 w-4" /> 자율 성장 시작하기
+            <Zap className="h-4 w-4" /> ?�율 ?�장 ?�작?�기
           </Button>
         </div>
       </Panel>
@@ -165,7 +165,7 @@ export function GrowthLoopTab() {
 
       {/* Active Loops */}
       {activeLoops.length > 0 && (
-        <Panel title={`⚡ 활성 루프 (${activeLoops.length})`}>
+        <Panel title={`???�성 루프 (${activeLoops.length})`}>
           <div className="space-y-3">
             {activeLoops.map((loop) => (
               <LoopCard key={loop.id} loop={loop} actioning={actioning} onAction={action} />
@@ -177,10 +177,10 @@ export function GrowthLoopTab() {
       {/* All Loops */}
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-app-text-muted py-4">
-          <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
+          <Loader2 className="h-4 w-4 animate-spin" /> 불러?�는 �?..
         </div>
       ) : loops.filter((l) => !activeLoops.includes(l)).length > 0 && (
-        <Panel title="📋 이전 루프">
+        <Panel title="?�� ?�전 루프">
           <div className="space-y-3">
             {loops.filter((l) => !activeLoops.includes(l)).map((loop) => (
               <LoopCard key={loop.id} loop={loop} actioning={actioning} onAction={action} />
@@ -194,10 +194,10 @@ export function GrowthLoopTab() {
           <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-app-primary/5">
             <Brain className="h-10 w-10 text-app-primary/30" />
           </div>
-          <p className="text-sm font-medium text-app-text">자율 성장 루프</p>
+          <p className="text-sm font-medium text-app-text">?�율 ?�장 루프</p>
           <p className="text-xs text-app-text-muted max-w-xs">
-            목표만 입력하면 AI가 자동으로<br />
-            콘텐츠 생성 → 발송 → 분석 → 개선을 반복합니다
+            목표�??�력?�면 AI가 ?�동?�로<br />
+            콘텐�??�성 ??발송 ??분석 ??개선??반복?�니??
           </p>
         </div>
       )}
@@ -235,23 +235,23 @@ function LoopCard({ loop, actioning, onAction }: { loop: GrowthLoop; actioning: 
             {/* Metrics row */}
             <div className="flex gap-3 mt-2 text-[10px]">
               <span className="text-app-text-muted">
-                <span className="font-medium text-app-text">{m.cycles_completed || loop.current_cycle}</span> 사이클
+                <span className="font-medium text-app-text">{m.cycles_completed || loop.current_cycle}</span> ?�이??
               </span>
               <span className="text-app-text-muted">
-                도달 <span className="font-medium text-app-text">{m.total_reached?.toLocaleString() || 0}</span>명
+                ?�달 <span className="font-medium text-app-text">{m.total_reached?.toLocaleString() || 0}</span>�?
               </span>
               <span className="text-app-text-muted">
-                성공률 <span className="font-medium text-app-success">{m.avg_success_rate || 0}%</span>
+                ?�공�?<span className="font-medium text-app-success">{m.avg_success_rate || 0}%</span>
               </span>
             </div>
 
             {/* Latest cycle preview */}
             {latestCycle && (
               <div className="mt-2 rounded-lg border border-app-border/50 bg-app-bg/50 p-2">
-                <p className="text-[9px] text-app-text-muted">최근 사이클 #{latestCycle.cycle_number}</p>
+                <p className="text-[9px] text-app-text-muted">최근 ?�이??#{latestCycle.cycle_number}</p>
                 <p className="text-[10px] text-app-text mt-0.5 line-clamp-2">{latestCycle.content_generated}</p>
                 <div className="flex gap-2 mt-1 text-[9px] text-app-text-muted">
-                  <span>{latestCycle.sent_count}건 발송</span>
+                  <span>{latestCycle.sent_count}�?발송</span>
                   <span>{latestCycle.success_rate}%</span>
                   <span>{latestCycle.engagement_count} 참여</span>
                 </div>
@@ -264,23 +264,23 @@ function LoopCard({ loop, actioning, onAction }: { loop: GrowthLoop; actioning: 
             {(loop.status === "running") && (
               <button onClick={() => onAction(loop.id, "pause")} disabled={actioning === loop.id}
                 className="p-1.5 rounded-lg hover:bg-app-warning/10 text-app-warning transition-colors"
-                title="일시 중지">
+                title="?�시 중�?">
                 {actioning === loop.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pause className="h-3.5 w-3.5" />}
               </button>
             )}
             {loop.status === "paused" && (
               <button onClick={() => onAction(loop.id, "resume")} disabled={actioning === loop.id}
                 className="p-1.5 rounded-lg hover:bg-app-primary/10 text-app-primary transition-colors"
-                title="재개">
+                title="?�개">
                 {actioning === loop.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
               </button>
             )}
             <button onClick={() => setExpanded(!expanded)}
-              className="p-1.5 rounded-lg hover:bg-app-card-hover text-app-text-muted transition-colors" title="상세">
+              className="p-1.5 rounded-lg hover:bg-app-card-hover text-app-text-muted transition-colors" title="?�세">
               <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-90")} />
             </button>
             <button onClick={() => onAction(loop.id, "delete")} disabled={actioning === loop.id}
-              className="p-1.5 rounded-lg hover:bg-app-danger/10 text-app-text-muted hover:text-app-danger transition-colors" title="삭제">
+              className="p-1.5 rounded-lg hover:bg-app-danger/10 text-app-text-muted hover:text-app-danger transition-colors" title="??��">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -293,19 +293,19 @@ function LoopCard({ loop, actioning, onAction }: { loop: GrowthLoop; actioning: 
           {loop.cycles.map((c) => (
             <div key={c.cycle_number} className="rounded-lg border border-app-border/50 bg-app-bg/30 p-2">
               <div className="flex items-center justify-between text-[10px]">
-                <span className="font-medium text-app-text">사이클 #{c.cycle_number}</span>
+                <span className="font-medium text-app-text">?�이??#{c.cycle_number}</span>
                 <span className={cn(c.success_rate >= 90 ? "text-app-success" : c.success_rate >= 70 ? "text-app-warning" : "text-app-danger")}>
                   {c.success_rate}%
                 </span>
               </div>
               <p className="text-[10px] text-app-text-subtle mt-1 line-clamp-2">{c.content_generated}</p>
               {c.analysis && (
-                <p className="text-[9px] text-app-text-muted mt-1">📊 {c.analysis}</p>
+                <p className="text-[9px] text-app-text-muted mt-1">?�� {c.analysis}</p>
               )}
               {c.suggestions.length > 0 && (
                 <div className="mt-1 space-y-0.5">
                   {c.suggestions.slice(0, 3).map((s, i) => (
-                    <p key={`suggestion-${i}`} className="text-[9px] text-app-text-muted ml-2">💡 {s}</p>
+                    <p key={`suggestion-${i}`} className="text-[9px] text-app-text-muted ml-2">?�� {s}</p>
                   ))}
                 </div>
               )}

@@ -35,7 +35,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Basic JWT expiry check (decode without verification — just for UX redirect)
+  // Basic JWT expiry check (decode without verification ??just for UX redirect)
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (payload.exp && Date.now() >= payload.exp * 1000) {
@@ -44,9 +44,7 @@ export function middleware(request: NextRequest) {
       loginUrl.searchParams.set("expired", "1");
       return NextResponse.redirect(loginUrl);
     }
-  } catch {
-    // Malformed token — still allow (client-side auth will catch it)
-  }
+  } catch (e) { console.warn('Unhandled error in middleware', e) }
 
   return NextResponse.next();
 }

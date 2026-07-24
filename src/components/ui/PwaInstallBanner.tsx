@@ -38,7 +38,7 @@ export function usePwaInstall() {
   const dismiss = useCallback(() => {
     try {
       localStorage.setItem(DISMISSED_KEY, String(Date.now() + DISMISS_DURATION_MS));
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in PwaInstallBanner', e) }
     setDeferredPrompt(null);
   }, []);
 
@@ -91,10 +91,9 @@ export function PwaInstallBanner() {
               <Download className="h-5 w-5 text-app-accent" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-app-text">앱으로 설치하기</p>
+              <p className="text-sm font-semibold text-app-text">?�으�??�치?�기</p>
               <p className="mt-0.5 text-xs text-app-text-subtle">
-                TeleMon을 홈화면에 추가하세요
-              </p>
+                TeleMon???�화면에 추�??�세??              </p>
             </div>
           </div>
           <div className="mt-3 flex gap-2">
@@ -107,8 +106,7 @@ export function PwaInstallBanner() {
               className="flex-1 rounded-lg border border-app-border bg-app-card px-4 py-2.5 text-xs font-semibold text-app-text-muted"
               style={{ minHeight: 44 }}
             >
-              다음에
-            </button>
+              ?�음??            </button>
             <button
               type="button"
               onClick={() => {
@@ -120,7 +118,7 @@ export function PwaInstallBanner() {
               className="flex-1 rounded-lg bg-app-accent px-4 py-2.5 text-xs font-semibold text-white"
               style={{ minHeight: 44 }}
             >
-              설치
+              ?�치
             </button>
           </div>
         </motion.div>

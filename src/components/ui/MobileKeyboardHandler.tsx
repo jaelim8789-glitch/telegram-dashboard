@@ -33,7 +33,7 @@ export function MobileKeyboardHandler() {
           if (rect.top < 100) {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        } catch {}
+        } catch (e) { console.warn('Unhandled error in MobileKeyboardHandler', e) }
       }, 300);
     }
 

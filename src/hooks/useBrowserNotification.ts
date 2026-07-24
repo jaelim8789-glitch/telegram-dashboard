@@ -44,9 +44,7 @@ export function useBrowserNotification() {
         writePref(DENIED_KEY, true);
         toast("info", "ë¸Œë¼?°ì? ?Œë¦¼??ì°¨ë‹¨?˜ì—ˆ?µë‹ˆ??");
       }
-    } catch {
-      // permission request can fail silently
-    }
+    } catch (e) { console.warn('Unhandled error in useBrowserNotification', e) }
   }, [isSupported, toast]);
 
   const notify = useCallback(
@@ -64,9 +62,7 @@ export function useBrowserNotification() {
           if (typeof n.close === "function") n.close();
         };
         setTimeout(() => { if (typeof n.close === "function") n.close(); }, 8000);
-      } catch {
-        // firefox/safari may restrict
-      }
+      } catch (e) { console.warn('Unhandled error in useBrowserNotification', e) }
     },
     [isSupported, permission, disabled]
   );

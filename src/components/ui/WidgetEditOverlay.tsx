@@ -6,14 +6,14 @@ import { Edit3, Grid, X, Move } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const WIDGET_OPTIONS = [
-  { id: "daily-digest", label: "일일 요약", default: true },
-  { id: "realtime-metrics", label: "실시간 메트릭", default: true },
+  { id: "daily-digest", label: "?�일 ?�약", default: true },
+  { id: "realtime-metrics", label: "?�시�?메트�?, default: true },
   { id: "health-score", label: "계정 건강", default: true },
-  { id: "usage-chart", label: "사용량 차트", default: true },
-  { id: "usage-progress", label: "목표 진행률", default: false },
+  { id: "usage-chart", label: "?�용??차트", default: true },
+  { id: "usage-progress", label: "목표 진행�?, default: false },
   { id: "recent-broadcasts", label: "최근 발송", default: true },
-  { id: "recurring", label: "정기 발송", default: false },
-  { id: "timeline", label: "타임라인", default: false },
+  { id: "recurring", label: "?�기 발송", default: false },
+  { id: "timeline", label: "?�?�라??, default: false },
 ];
 
 const STORAGE_KEY = "telemon-widget-order";
@@ -21,7 +21,7 @@ const STORAGE_KEY = "telemon-widget-order";
 function loadOrder(): string[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
 }
-function saveOrder(ids: string[]) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)); } catch {} }
+function saveOrder(ids: string[]) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)); } catch (e) { console.warn('Unhandled error in WidgetEditOverlay', e) } }
 
 export function WidgetEditOverlay({ onClose }: { onClose: () => void }) {
   const [widgets, setWidgets] = useState(() => {
@@ -54,7 +54,7 @@ export function WidgetEditOverlay({ onClose }: { onClose: () => void }) {
         className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-app-card pb-8 px-5 pt-4 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-app-border" />
-        <h3 className="text-sm font-semibold text-app-text mb-4 flex items-center gap-2"><Grid className="h-4 w-4" /> 위젯 편집</h3>
+        <h3 className="text-sm font-semibold text-app-text mb-4 flex items-center gap-2"><Grid className="h-4 w-4" /> ?�젯 ?�집</h3>
         <div className="space-y-2">
           {WIDGET_OPTIONS.map(wo => {
             const enabled = widgets.includes(wo.id);
@@ -72,14 +72,14 @@ export function WidgetEditOverlay({ onClose }: { onClose: () => void }) {
                 </div>
                 <button onClick={() => toggleWidget(wo.id)}
                   className={cn("h-6 w-12 rounded-full transition-colors", enabled ? "bg-app-primary" : "bg-app-border")}
-                  aria-label={enabled ? "위젯 숨기기" : "위젯 표시"}>
+                  aria-label={enabled ? "?�젯 ?�기�? : "?�젯 ?�시"}>
                   <div className={cn("h-5 w-5 rounded-full bg-white shadow transition-transform", enabled ? "translate-x-6" : "translate-x-0.5")} />
                 </button>
               </div>
             );
           })}
         </div>
-        <button onClick={onClose} className="mt-4 w-full rounded-xl bg-app-primary py-3 text-sm font-semibold text-white active:scale-[0.98]">완료</button>
+        <button onClick={onClose} className="mt-4 w-full rounded-xl bg-app-primary py-3 text-sm font-semibold text-white active:scale-[0.98]">?�료</button>
       </motion.div>
     </motion.div>
   );
@@ -87,7 +87,7 @@ export function WidgetEditOverlay({ onClose }: { onClose: () => void }) {
 
 export function WidgetEditFab({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex h-9 w-9 items-center justify-center rounded-full bg-app-card border border-app-border text-app-text-muted hover:text-app-text hover:border-app-primary/30 active:scale-90 transition-all shadow-lg" aria-label="위젯 편집">
+    <button onClick={onClick} className="flex h-9 w-9 items-center justify-center rounded-full bg-app-card border border-app-border text-app-text-muted hover:text-app-text hover:border-app-primary/30 active:scale-90 transition-all shadow-lg" aria-label="?�젯 ?�집">
       <Edit3 className="h-4 w-4" />
     </button>
   );

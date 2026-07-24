@@ -38,7 +38,7 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
     // A new service worker taking control (self.clients.claim() in sw.js)
     // means a new deploy has activated for this tab. Reload once so the
     // page picks up the fresh JS/HTML instead of running on stale code
-    // indefinitely — without this, users only get the new build after a
+    // indefinitely ??without this, users only get the new build after a
     // manual hard refresh or clearing site data.
     let reloaded = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -55,7 +55,7 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
         // New deploys change sw.js's byte content (CACHE_NAME bump etc.),
         // so ask the browser to check for an update on every load.
-        registration.update().catch((e) => { console.error("[PwaRegister] SW update 실패", e); toast("error", "서비스워커 업데이트에 실패했습니다"); });
+        registration.update().catch((e) => { console.error("[PwaRegister] SW update ?�패", e); toast("error", "?�비?�워�??�데?�트???�패?�습?�다"); });
 
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
@@ -71,9 +71,7 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
         if (registration.active && "pushManager" in registration) {
           subscribeToPush(registration);
         }
-      } catch {
-        // SW registration may fail in some environments
-      }
+      } catch (e) { console.warn('Unhandled error in PwaRegister', e) }
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -81,11 +79,11 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
   const { trackDelivered, trackOpened, trackClicked, trackError } = usePushNotificationTracking();
 
-  // 푸시 알림 이벤트 등록
+  // ?�시 ?�림 ?�벤???�록
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        // 푸시 메시지 수신 이벤트
+        // ?�시 메시지 ?�신 ?�벤??
         registration.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const { notificationId } = event.data;
@@ -93,12 +91,12 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
           }
         }) as EventListener);
 
-        // 알림 클릭 이벤트
+        // ?�림 ?�릭 ?�벤??
         navigator.serviceWorker.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
             const { notificationId } = event.data;
             trackOpened(notificationId);
-            // 클릭 이벤트는 사용자가 알림을 실제로 클릭했을 때 발생
+            // ?�릭 ?�벤?�는 ?�용?��? ?�림???�제�??�릭?�을 ??발생
             if (event.data.action === 'CLICK_ACTION') {
               trackClicked(notificationId);
             }

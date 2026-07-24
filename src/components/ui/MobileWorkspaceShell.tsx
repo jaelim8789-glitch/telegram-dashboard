@@ -12,10 +12,10 @@ import { cn } from "@/lib/cn";
 import type { TabId } from "@/types";
 
 const QUICK_ACTIONS = [
-  { id: "send", label: "발송", icon: "✉️" },
-  { id: "register", label: "계정등록", icon: "➕" },
-  { id: "log", label: "로그", icon: "📋" },
-  { id: "myai", label: "AI", icon: "🤖" },
+  { id: "send", label: "발송", icon: "?�️" },
+  { id: "register", label: "계정?�록", icon: "?? },
+  { id: "log", label: "로그", icon: "?��" },
+  { id: "myai", label: "AI", icon: "?��" },
 ];
 
 const MOBILE_TAB_ORDER = ["dashboard", "send", "group", "myai", "profile"];
@@ -57,7 +57,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
     const measure = async () => {
       if (cancelled) return;
       const t = Date.now();
-      try { await fetch("/api/health", { method: "HEAD" }); setLatency(Date.now() - t); } catch {}
+      try { await fetch("/api/health", { method: "HEAD" }); setLatency(Date.now() - t); } catch (e) { console.warn('Unhandled error in MobileWorkspaceShell', e) }
     };
     measure(); const i = setInterval(measure, 30000);
     return () => { cancelled = true; clearInterval(i); };
@@ -74,7 +74,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
       <div className={cn("h-[3px] shrink-0 transition-colors duration-300", online ? "bg-emerald-500" : "bg-red-500")} />
 
       <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-app-border/50 shrink-0" style={{ scrollbarWidth: "none" }}>
-        <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">자주 사용</span>
+        <span className="text-[10px] font-medium text-app-text-muted shrink-0 mr-1">?�주 ?�용</span>
         {QUICK_ACTIONS.map(qa => (
           <button key={qa.id} onClick={() => { recordWidgetClick(qa.id); setActiveTab(qa.id as TabId); }}
             className="flex shrink-0 items-center gap-1 rounded-full border border-app-border bg-app-card-hover px-3 py-1.5 text-[11px] text-app-text hover:border-app-primary/30 active:scale-95 transition-all">
@@ -84,7 +84,7 @@ export function MobileWorkspaceShell({ children, tabId }: { children: React.Reac
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}
-        role="region" aria-label="대시보드 컨텐츠" data-content-scroll-container>
+        role="region" aria-label="?�?�보??컨텐�? data-content-scroll-container>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={tabId}

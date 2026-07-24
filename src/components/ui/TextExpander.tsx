@@ -7,12 +7,12 @@ interface Shortcut { key: string; expansion: string; }
 interface ShortcutStore { shortcuts: Shortcut[]; add: (k: string, e: string) => void; remove: (k: string) => void; }
 const STORAGE_KEY = "telemon-shortcuts";
 function load(): Shortcut[] { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } }
-function save(s: Shortcut[]) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }
+function save(s: Shortcut[]) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) { console.warn('Unhandled error in TextExpander', e) } }
 
 const DEFAULTS: Shortcut[] = [
-  { key: "/hi", expansion: "안녕하세요! TeleMon입니다." },
-  { key: "/evt", expansion: "[이벤트 안내] 지금 바로 확인해보세요!" },
-  { key: "/thx", expansion: "감사합니다. 좋은 하루 되세요!" },
+  { key: "/hi", expansion: "?�녕?�세?? TeleMon?�니??" },
+  { key: "/evt", expansion: "[?�벤???�내] 지�?바로 ?�인?�보?�요!" },
+  { key: "/thx", expansion: "감사?�니?? 좋�? ?�루 ?�세??" },
 ];
 
 export const useShortcutStore = create<ShortcutStore>((set) => ({
@@ -44,18 +44,18 @@ export function ShortcutEditor() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-app-text">단축키</p>
+      <p className="text-xs font-semibold text-app-text">?�축??/p>
       {shortcuts.map(s => (
         <div key={s.key} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-app-card-hover">
           <code className="text-xs font-mono text-app-primary bg-app-primary/10 px-1.5 py-0.5 rounded shrink-0">{s.key}</code>
           <span className="text-xs text-app-text-muted truncate flex-1">{s.expansion}</span>
-          <button onClick={() => remove(s.key)} className="text-[10px] text-app-text-muted hover:text-app-danger">삭제</button>
+          <button onClick={() => remove(s.key)} className="text-[10px] text-app-text-muted hover:text-app-danger">??��</button>
         </div>
       ))}
       <div className="flex gap-2">
-        <input value={key} onChange={e => setKey(e.target.value)} placeholder="/키워드" className="flex-1 rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text outline-none" />
-        <input value={exp} onChange={e => setExp(e.target.value)} placeholder="확장 문구" className="flex-[2] rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text outline-none" />
-        <button onClick={handleAdd} className="rounded-lg bg-app-primary px-3 py-2 text-xs font-semibold text-white active:scale-95">추가</button>
+        <input value={key} onChange={e => setKey(e.target.value)} placeholder="/?�워?? className="flex-1 rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text outline-none" />
+        <input value={exp} onChange={e => setExp(e.target.value)} placeholder="?�장 문구" className="flex-[2] rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text outline-none" />
+        <button onClick={handleAdd} className="rounded-lg bg-app-primary px-3 py-2 text-xs font-semibold text-white active:scale-95">추�?</button>
       </div>
     </div>
   );

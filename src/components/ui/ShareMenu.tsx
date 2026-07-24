@@ -19,17 +19,17 @@ export function ShareMenu({ targetRef, filename = "widget.png", shareTitle, clas
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const handleDownload = useCallback(async () => { setBusy(true); try { const blob = await captureElement(targetRef); downloadImage(blob, filename); onAction?.("download"); } catch {} finally { setBusy(false); setOpen(false); } }, [targetRef, filename, onAction]);
+  const handleDownload = useCallback(async () => { setBusy(true); try { const blob = await captureElement(targetRef); downloadImage(blob, filename); onAction?.("download"); } catch (e) { console.warn('Unhandled error in ShareMenu', e) } finally { setBusy(false); setOpen(false); } }, [targetRef, filename, onAction]);
 
-  const handleShare = useCallback(async () => { setBusy(true); try { const blob = await captureElement(targetRef); await shareImage(blob, shareTitle); onAction?.("share"); } catch {} finally { setBusy(false); setOpen(false); } }, [targetRef, shareTitle, onAction]);
+  const handleShare = useCallback(async () => { setBusy(true); try { const blob = await captureElement(targetRef); await shareImage(blob, shareTitle); onAction?.("share"); } catch (e) { console.warn('Unhandled error in ShareMenu', e) } finally { setBusy(false); setOpen(false); } }, [targetRef, shareTitle, onAction]);
 
   return (
     <div className={cn("relative", className)} ref={menuRef}>
-      <button type="button" onClick={() => setOpen(!open)} disabled={busy} aria-label="위젯 공유" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring disabled:opacity-50"><Share2 className="h-3.5 w-3.5" />{busy ? "처리 중…" : "공유"}</button>
+      <button type="button" onClick={() => setOpen(!open)} disabled={busy} aria-label="?�젯 공유" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors focus-ring disabled:opacity-50"><Share2 className="h-3.5 w-3.5" />{busy ? "처리 중�? : "공유"}</button>
       {open && (
         <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-xl border border-app-border bg-app-surface p-1 shadow-xl">
-          <button type="button" onClick={handleDownload} disabled={busy} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-50"><Download className="h-3.5 w-3.5" />이미지로 저장</button>
-          <button type="button" onClick={handleShare} disabled={busy} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-50"><Share2 className="h-3.5 w-3.5" />공유하기</button>
+          <button type="button" onClick={handleDownload} disabled={busy} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-50"><Download className="h-3.5 w-3.5" />?��?지�??�??/button>
+          <button type="button" onClick={handleShare} disabled={busy} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-app-text hover:bg-app-card-hover transition-colors disabled:opacity-50"><Share2 className="h-3.5 w-3.5" />공유?�기</button>
         </div>
       )}
     </div>

@@ -59,7 +59,7 @@ export function useOfflineQueue() {
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
       queue.push({ id: crypto.randomUUID(), type, payload, createdAt: Date.now() });
       localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-    } catch { }
+    } catch (e) { console.warn('Unhandled error in OfflineActionQueue', e) }
   }
   return { enqueue, queueSize: (JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]") as QueuedAction[]).length };
 }
