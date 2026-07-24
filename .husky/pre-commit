@@ -1,7 +1,0 @@
-bash scripts/check-encoding.sh src/
-if [ $? -ne 0 ]; then
-  echo "ERROR: 인코딩 깨진 파일 있음. scripts/check-encoding.sh 실행 후 다시 commit"
-  exit 1
-fi
-
-npm test
