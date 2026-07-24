@@ -39,9 +39,7 @@ export function saveSendDraft(draft: SendDraft): void {
       draft: { ...draft, savedAt: new Date().toISOString() },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // localStorage full or unavailable – silently ignore.
-  }
+  } catch (e) { console.warn('Unhandled error in sendDraft', e) }
 }
 
 export function loadSendDraft(): SendDraft | null {
@@ -51,14 +49,14 @@ export function loadSendDraft(): SendDraft | null {
     const parsed = JSON.parse(raw) as PersistedPayload;
     if (!parsed || parsed.version !== VERSION || !parsed.draft) return null;
     const d = parsed.draft;
-    // Validate shape – discard if critical fields are missing or wrong type.
+    // Validate shape ??discard if critical fields are missing or wrong type.
     if (typeof d.message !== "string") return null;
     if (!Array.isArray(d.selectedGroupIds)) return null;
     if (typeof d.isScheduled !== "boolean") return null;
     if (typeof d.isRecurring !== "boolean") return null;
     return d;
   } catch {
-    // Malformed JSON – clear and return null.
+    // Malformed JSON ??clear and return null.
     clearSendDraft();
     return null;
   }
@@ -67,7 +65,5 @@ export function loadSendDraft(): SendDraft | null {
 export function clearSendDraft(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Silently ignore.
-  }
+  } catch (e) { console.warn('Unhandled error in sendDraft', e) }
 }

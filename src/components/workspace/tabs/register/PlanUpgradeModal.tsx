@@ -11,7 +11,7 @@ import * as api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 
 type Step = "select" | "payment" | "completed" | "error";
 
@@ -45,9 +45,9 @@ interface PlanUpgradeModalProps {
   currentAccountCount?: number;
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 
-const POLL_INTERVAL = 5000; // 5ì´ˆ
+const POLL_INTERVAL = 5000; // 5ì´?
 const PAYMENT_TIMEOUT_MINUTES = 60;
 
 function formatAddress(addr: string): string {
@@ -75,7 +75,7 @@ function getExplorerUrl(currency: string, address: string): string {
   return base ? `${base}/${address}` : "#";
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 
 export function PlanUpgradeModal({
   open,
@@ -95,7 +95,7 @@ export function PlanUpgradeModal({
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(PAYMENT_TIMEOUT_MINUTES * 60);
   const [paymentStatus, setPaymentStatus] = useState<string>("created");
-  const [statusMessage, setStatusMessage] = useState("ê²°ì œ ëŒ€ê¸° ì¤‘");
+  const [statusMessage, setStatusMessage] = useState("ê²°ì œ ?€ê¸?ì¤?);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -104,7 +104,7 @@ export function PlanUpgradeModal({
     ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(invoice.pay_address)}`
     : "";
 
-  /* â”€â”€ Reset state when modal opens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Reset state when modal opens ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   useEffect(() => {
     if (!open) return;
     setStep("select");
@@ -112,7 +112,7 @@ export function PlanUpgradeModal({
     setInvoice(null);
     setCopied(false);
     setPaymentStatus("created");
-    setStatusMessage("ê²°ì œ ëŒ€ê¸° ì¤‘");
+    setStatusMessage("ê²°ì œ ?€ê¸?ì¤?);
     setError(null);
     setLoading(true);
     setTimeLeft(PAYMENT_TIMEOUT_MINUTES * 60);
@@ -122,7 +122,7 @@ export function PlanUpgradeModal({
       .then((data: { plans: PlanInfo[] }) =>
         setPlans(data.plans.filter((p) => p.id !== "free")),
       )
-      .catch(() => setError("ìš”ê¸ˆì œ ì •ë³´ë¥¼ ë¶ˆëŸ¬ì˜¤ì§€ ëª»í–ˆìŠµë‹ˆë‹¤."))
+      .catch(() => setError("?”ê¸ˆ???•ë³´ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??"))
       .finally(() => setLoading(false));
 
     return () => {
@@ -131,7 +131,7 @@ export function PlanUpgradeModal({
     };
   }, [open]);
 
-  /* â”€â”€ Timer countdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Timer countdown ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   useEffect(() => {
     if (step !== "payment") return;
     timeLeftRef.current = PAYMENT_TIMEOUT_MINUTES * 60;
@@ -142,7 +142,7 @@ export function PlanUpgradeModal({
       if (timeLeftRef.current <= 0) {
         if (timerRef.current) clearInterval(timerRef.current);
         setStep("error");
-        setStatusMessage("ê²°ì œ ì‹œê°„ì´ ë§Œë£Œë˜ì—ˆìŠµë‹ˆë‹¤.");
+        setStatusMessage("ê²°ì œ ?œê°„??ë§Œë£Œ?˜ì—ˆ?µë‹ˆ??");
       }
     }, 1000);
     return () => {
@@ -150,7 +150,7 @@ export function PlanUpgradeModal({
     };
   }, [step]);
 
-  /* â”€â”€ Payment status polling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Payment status polling ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   useEffect(() => {
     if (step !== "payment" || !invoice) return;
     pollRef.current = setInterval(async () => {
@@ -164,40 +164,38 @@ export function PlanUpgradeModal({
         setPaymentStatus(data.status);
 
         if (data.status === "finished" || data.status === "confirmed") {
-          setStatusMessage("ê²°ì œ í™•ì¸ë¨! ì—…ê·¸ë ˆì´ë“œ ì ìš© ì¤‘...");
+          setStatusMessage("ê²°ì œ ?•ì¸?? ?…ê·¸?ˆì´???ìš© ì¤?..");
           if (pollRef.current) clearInterval(pollRef.current);
           if (timerRef.current) clearInterval(timerRef.current);
           // Short delay for success animation
           setTimeout(() => setStep("completed"), 1500);
         } else if (data.status === "partially_paid") {
-          setStatusMessage("ì¼ë¶€ ê¸ˆì•¡ì´ ì…ê¸ˆë˜ì—ˆìŠµë‹ˆë‹¤. ë‚˜ë¨¸ì§€ë¥¼ ë³´ë‚´ì£¼ì„¸ìš”.");
+          setStatusMessage("?¼ë? ê¸ˆì•¡???…ê¸ˆ?˜ì—ˆ?µë‹ˆ?? ?˜ë¨¸ì§€ë¥?ë³´ë‚´ì£¼ì„¸??");
         } else if (data.status === "expired") {
-          setStatusMessage("ê²°ì œ ì‹œê°„ì´ ë§Œë£Œë˜ì—ˆìŠµë‹ˆë‹¤.");
+          setStatusMessage("ê²°ì œ ?œê°„??ë§Œë£Œ?˜ì—ˆ?µë‹ˆ??");
           if (pollRef.current) clearInterval(pollRef.current);
           if (timerRef.current) clearInterval(timerRef.current);
           setStep("error");
         } else if (data.status === "failed") {
-          setStatusMessage("ê²°ì œì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.");
+          setStatusMessage("ê²°ì œ???¤íŒ¨?ˆìŠµ?ˆë‹¤.");
           if (pollRef.current) clearInterval(pollRef.current);
           if (timerRef.current) clearInterval(timerRef.current);
           setStep("error");
         } else {
           setStatusMessage(
             data.status === "created"
-              ? "ì…ê¸ˆ ëŒ€ê¸° ì¤‘..."
-              : "ì…ê¸ˆ í™•ì¸ ì¤‘...",
+              ? "?…ê¸ˆ ?€ê¸?ì¤?.."
+              : "?…ê¸ˆ ?•ì¸ ì¤?..",
           );
         }
-      } catch {
-        // Network error â€” retry on next interval
-      }
+      } catch (e) { console.warn('Unhandled error in PlanUpgradeModal', e) }
     }, POLL_INTERVAL);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [step, invoice]);
 
-  /* â”€â”€ Create invoice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Create invoice ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   const handleCreateInvoice = useCallback(
     async (planId: string) => {
       setSelectedPlanId(planId);
@@ -217,17 +215,17 @@ export function PlanUpgradeModal({
               plan: planId,
               amount: plan.price_usdt,
               currency: "USDT",
-              description: `TeleMon ${plan.name} â€” ${plan.billing_label}ê°„`,
+              description: `TeleMon ${plan.name} ??${plan.billing_label}ê°?,
             }),
           },
         );
 
         if (!res.ok) {
           const contentType = res.headers.get("content-type");
-          let errMsg = "ê²°ì œ ì¸ë³´ì´ìŠ¤ ìƒì„±ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.";
-          if (res.status === 401) errMsg = "ë¡œê·¸ì¸ì´ í•„ìš”í•©ë‹ˆë‹¤. ë¡œê·¸ì¸ í›„ ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.";
-          else if (res.status === 429) errMsg = "ìš”ì²­ì´ ë„ˆë¬´ ë§ìŠµë‹ˆë‹¤. ì ì‹œ í›„ ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.";
-          else try { const err = await res.json(); errMsg = err.detail || errMsg; } catch {}
+          let errMsg = "ê²°ì œ ?¸ë³´?´ìŠ¤ ?ì„±???¤íŒ¨?ˆìŠµ?ˆë‹¤.";
+          if (res.status === 401) errMsg = "ë¡œê·¸?¸ì´ ?„ìš”?©ë‹ˆ?? ë¡œê·¸?????¤ì‹œ ?œë„?´ì£¼?¸ìš”.";
+          else if (res.status === 429) errMsg = "?”ì²­???ˆë¬´ ë§ìŠµ?ˆë‹¤. ? ì‹œ ???¤ì‹œ ?œë„?´ì£¼?¸ìš”.";
+          else try { const err = await res.json(); errMsg = err.detail || errMsg; } catch (e) { console.warn('Unhandled error in PlanUpgradeModal', e) }
           throw new Error(errMsg);
         }
 
@@ -249,7 +247,7 @@ export function PlanUpgradeModal({
         setTimeLeft(PAYMENT_TIMEOUT_MINUTES * 60);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "ì•Œ ìˆ˜ ì—†ëŠ” ì˜¤ë¥˜",
+          err instanceof Error ? err.message : "?????†ëŠ” ?¤ë¥˜",
         );
       } finally {
         setCreating(false);
@@ -258,7 +256,7 @@ export function PlanUpgradeModal({
     [plans],
   );
 
-  /* â”€â”€ Copy address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Copy address ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   const handleCopy = useCallback(async () => {
     if (!invoice) return;
     try {
@@ -278,7 +276,7 @@ export function PlanUpgradeModal({
     }
   }, [invoice]);
 
-  /* â”€â”€ Format time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Format time ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
@@ -288,7 +286,7 @@ export function PlanUpgradeModal({
   const progress = 1 - timeLeft / (PAYMENT_TIMEOUT_MINUTES * 60);
   const isExpired = timeLeft <= 0;
 
-  /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ?€?€ Render ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
   return (
     <AnimatePresence>
       {open && (
@@ -307,16 +305,16 @@ export function PlanUpgradeModal({
             className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-app-border bg-app-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* â”€â”€ Close â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ?€?€ Close ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */}
             <button
               onClick={onClose}
               className="absolute right-4 top-4 rounded-lg p-1.5 text-app-text-muted hover:bg-app-border hover:text-app-text transition-colors"
-              aria-label="ë‹«ê¸°"
+              aria-label="?«ê¸°"
             >
               <X className="h-5 w-5" />
             </button>
 
-            {/* â”€â”€ STEP: Plan Selection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ?€?€ STEP: Plan Selection ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */}
             {step === "select" && (
               <>
                 <div className="mb-6 flex items-center gap-3">
@@ -325,10 +323,10 @@ export function PlanUpgradeModal({
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-app-text">
-                      ìš”ê¸ˆì œ ì—…ê·¸ë ˆì´ë“œ
+                      ?”ê¸ˆ???…ê·¸?ˆì´??
                     </h2>
                     <p className="text-sm text-app-text-muted">
-                      í˜„ì¬ ê³„ì • {currentAccountCount}ê°œ ì‚¬ìš© ì¤‘ Â· í•œë„ ì´ˆê³¼
+                      ?„ì¬ ê³„ì • {currentAccountCount}ê°??¬ìš© ì¤?Â· ?œë„ ì´ˆê³¼
                     </p>
                   </div>
                 </div>
@@ -343,7 +341,7 @@ export function PlanUpgradeModal({
                   <div className="flex items-center justify-center py-16">
                     <Loader2 className="h-6 w-6 animate-spin text-app-primary" />
                     <span className="ml-3 text-sm text-app-text-muted">
-                      ìš”ê¸ˆì œ ì •ë³´ ë¶ˆëŸ¬ì˜¤ëŠ” ì¤‘...
+                      ?”ê¸ˆ???•ë³´ ë¶ˆëŸ¬?¤ëŠ” ì¤?..
                     </span>
                   </div>
                 ) : (
@@ -379,12 +377,12 @@ export function PlanUpgradeModal({
                           </div>
                           {plan.id === "pro" && (
                             <p className="text-xs text-app-text-muted mt-0.5">
-                              10ê°œ ê³„ì • Â· 50,000íšŒ/ì›” ë°œì†¡ Â· ìë™ ì˜ˆì•½
+                              10ê°?ê³„ì • Â· 50,000????ë°œì†¡ Â· ?ë™ ?ˆì•½
                             </p>
                           )}
                           {plan.id === "team" && (
                             <p className="text-xs text-app-text-muted mt-0.5">
-                              25ê°œ ê³„ì • Â· 200,000íšŒ/ì›” Â· ìš°ì„  ì§€ì›
+                              25ê°?ê³„ì • Â· 200,000????Â· ?°ì„  ì§€??
                             </p>
                           )}
                         </div>
@@ -398,8 +396,8 @@ export function PlanUpgradeModal({
                           }}
                         >
                           {creating && selectedPlanId === plan.id
-                            ? "ìƒì„± ì¤‘..."
-                            : "ì„ íƒ"}
+                            ? "?ì„± ì¤?.."
+                            : "? íƒ"}
                         </Button>
                       </motion.div>
                     ))}
@@ -408,14 +406,14 @@ export function PlanUpgradeModal({
 
                 {!loading && (
                   <p className="mt-5 text-center text-[11px] text-app-text-subtle">
-                    ê²°ì œëŠ” NOWPaymentsë¥¼ í†µí•´ ì•ˆì „í•˜ê²Œ ì²˜ë¦¬ë©ë‹ˆë‹¤ Â· USDT, BTC,
-                    ETH ë“± ì§€ì›
+                    ê²°ì œ??NOWPaymentsë¥??µí•´ ?ˆì „?˜ê²Œ ì²˜ë¦¬?©ë‹ˆ??Â· USDT, BTC,
+                    ETH ??ì§€??
                   </p>
                 )}
               </>
             )}
 
-            {/* â”€â”€ STEP: Payment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ?€?€ STEP: Payment ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */}
             {step === "payment" && invoice && (
               <div className="space-y-5">
                 {/* Header */}
@@ -423,13 +421,13 @@ export function PlanUpgradeModal({
                   <button
                     onClick={() => setStep("select")}
                     className="rounded-lg p-1.5 text-app-text-muted hover:bg-app-border transition-colors"
-                    aria-label="ë’¤ë¡œ"
+                    aria-label="?¤ë¡œ"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
                   <Wallet className="h-5 w-5 text-app-primary" />
                   <h2 className="text-lg font-semibold text-app-text">
-                    ì•”í˜¸í™”í ê²°ì œ
+                    ?”í˜¸?”í ê²°ì œ
                   </h2>
                 </div>
 
@@ -455,7 +453,7 @@ export function PlanUpgradeModal({
                               : "text-app-text",
                         )}
                       >
-                        {isExpired ? "ë§Œë£Œë¨" : formatTime(timeLeft)}
+                        {isExpired ? "ë§Œë£Œ?? : formatTime(timeLeft)}
                       </span>
                     </div>
                     <div className="text-right text-sm">
@@ -500,7 +498,7 @@ export function PlanUpgradeModal({
                 {/* Crypto Amount */}
                 <div className="rounded-xl border border-app-border bg-app-card-hover p-4 text-center">
                   <p className="text-xs text-app-text-muted mb-1">
-                    ë³´ë‚´ì‹¤ ê¸ˆì•¡
+                    ë³´ë‚´??ê¸ˆì•¡
                   </p>
                   <p className="text-2xl font-bold text-app-text tracking-tight">
                     {formatCryptoAmount(
@@ -509,14 +507,14 @@ export function PlanUpgradeModal({
                     )}
                   </p>
                   <p className="text-xs text-app-text-muted mt-1">
-                    â‰ˆ ${invoice.price_amount.toFixed(2)} USD
+                    ??${invoice.price_amount.toFixed(2)} USD
                   </p>
                 </div>
 
                 {/* Wallet Address */}
                 <div>
                   <p className="mb-1.5 text-xs font-medium text-app-text-muted">
-                    ì…ê¸ˆ ì£¼ì†Œ
+                    ?…ê¸ˆ ì£¼ì†Œ
                   </p>
                   <div className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card-hover px-3 py-2.5">
                     <code className="flex-1 truncate text-xs font-mono text-app-text select-all">
@@ -529,7 +527,7 @@ export function PlanUpgradeModal({
                       {copied ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-app-success" />
-                          <span className="text-app-success">ë³µì‚¬ë¨</span>
+                          <span className="text-app-success">ë³µì‚¬??/span>
                         </>
                       ) : (
                         <>
@@ -540,7 +538,7 @@ export function PlanUpgradeModal({
                     </button>
                   </div>
                   <p className="mt-1 text-[10px] text-app-text-subtle">
-                    ì •í™•íˆ ì´ ì£¼ì†Œë¡œ ìœ„ ê¸ˆì•¡ì„ ë³´ë‚´ì£¼ì„¸ìš”
+                    ?•í™•????ì£¼ì†Œë¡???ê¸ˆì•¡??ë³´ë‚´ì£¼ì„¸??
                   </p>
                 </div>
 
@@ -556,23 +554,23 @@ export function PlanUpgradeModal({
                     className="inline-flex items-center gap-1 text-xs text-app-primary hover:underline"
                   >
                     <ExternalLink className="h-3 w-3" />
-                    ë¸”ë¡ì²´ì¸ íƒìƒ‰ê¸°ì—ì„œ í™•ì¸
+                    ë¸”ë¡ì²´ì¸ ?ìƒ‰ê¸°ì—???•ì¸
                   </a>
                 </div>
 
                 {/* NOWPayments Alternative */}
                 <div className="rounded-xl border border-dashed border-app-border bg-app-card/30 px-4 py-3">
                   <p className="text-xs text-app-text-muted text-center">
-                    ë‹¤ë¥¸ ë°©ë²•ìœ¼ë¡œ ê²°ì œí•˜ë ¤ë©´{" "}
+                    ?¤ë¥¸ ë°©ë²•?¼ë¡œ ê²°ì œ?˜ë ¤ë©?" "}
                     <a
                       href={invoice.invoice_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-app-primary hover:underline"
                     >
-                      NOWPayments í˜ì´ì§€
+                      NOWPayments ?˜ì´ì§€
                     </a>
-                    ì—ì„œ ì‹ ìš©ì¹´ë“œ ë“±ìœ¼ë¡œ ê²°ì œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+                    ?ì„œ ? ìš©ì¹´ë“œ ?±ìœ¼ë¡?ê²°ì œ?????ˆìŠµ?ˆë‹¤.
                   </p>
                 </div>
 
@@ -592,26 +590,26 @@ export function PlanUpgradeModal({
               </div>
             )}
 
-            {/* â”€â”€ STEP: Payment Error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ?€?€ STEP: Payment Error ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */}
             {step === "error" && (
               <div className="flex flex-col items-center py-8 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-danger-muted">
                   <TriangleAlert className="h-8 w-8 text-app-danger" />
                 </div>
                 <h2 className="text-lg font-semibold text-app-text">
-                  ê²°ì œ ì‹¤íŒ¨
+                  ê²°ì œ ?¤íŒ¨
                 </h2>
                 <p className="mt-1 text-sm text-app-text-muted">
                   {paymentStatus === "expired"
-                    ? "ê²°ì œ ì‹œê°„ì´ ë§Œë£Œë˜ì—ˆìŠµë‹ˆë‹¤."
-                    : "ê²°ì œ ì²˜ë¦¬ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤."}
+                    ? "ê²°ì œ ?œê°„??ë§Œë£Œ?˜ì—ˆ?µë‹ˆ??"
+                    : "ê²°ì œ ì²˜ë¦¬ ì¤??¤ë¥˜ê°€ ë°œìƒ?ˆìŠµ?ˆë‹¤."}
                 </p>
                 <p className="mt-1 text-xs text-app-text-subtle">
-                  ìƒíƒœ: {paymentStatus}
+                  ?íƒœ: {paymentStatus}
                 </p>
                 <div className="mt-6 flex gap-3">
                   <Button variant="secondary" onClick={onClose}>
-                    ë‹«ê¸°
+                    ?«ê¸°
                   </Button>
                   <Button
                     variant="primary"
@@ -620,13 +618,13 @@ export function PlanUpgradeModal({
                       setInvoice(null);
                     }}
                   >
-                    ë‹¤ì‹œ ì‹œë„
+                    ?¤ì‹œ ?œë„
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* â”€â”€ STEP: Completed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ?€?€ STEP: Completed ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */}
             {step === "completed" && (
               <div className="flex flex-col items-center py-8 text-center">
                 <motion.div
@@ -644,7 +642,7 @@ export function PlanUpgradeModal({
                   transition={{ delay: 0.3 }}
                   className="text-xl font-bold text-app-text"
                 >
-                  ğŸ‰ ì—…ê·¸ë ˆì´ë“œ ì™„ë£Œ!
+                  ?‰ ?…ê·¸?ˆì´???„ë£Œ!
                 </motion.h2>
 
                 <motion.p
@@ -653,8 +651,8 @@ export function PlanUpgradeModal({
                   transition={{ delay: 0.5 }}
                   className="mt-2 text-sm text-app-text-muted max-w-xs"
                 >
-                  ê²°ì œê°€ í™•ì¸ë˜ì–´ ìš”ê¸ˆì œê°€ ì—…ê·¸ë ˆì´ë“œë˜ì—ˆìŠµë‹ˆë‹¤.
-                  ì´ì œ ë” ë§ì€ ê³„ì •ì„ ë“±ë¡í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+                  ê²°ì œê°€ ?•ì¸?˜ì–´ ?”ê¸ˆ?œê? ?…ê·¸?ˆì´?œë˜?ˆìŠµ?ˆë‹¤.
+                  ?´ì œ ??ë§ì? ê³„ì •???±ë¡?????ˆìŠµ?ˆë‹¤.
                 </motion.p>
 
                 <motion.div
@@ -665,7 +663,7 @@ export function PlanUpgradeModal({
                 >
                   <Button variant="primary" onClick={onClose}>
                     <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                    í™•ì¸
+                    ?•ì¸
                   </Button>
                 </motion.div>
               </div>

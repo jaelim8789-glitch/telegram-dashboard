@@ -35,8 +35,8 @@ export function HealthAlertBanner() {
         );
         if (newUnauthorized.length > 0) {
           notify({
-            title: "⚠️ 계정 인증 필요",
-            body: `${newUnauthorized.length}개 계정의 세션이 만료되었습니다.`,
+            title: "?�️ 계정 ?�증 ?�요",
+            body: `${newUnauthorized.length}�?계정???�션??만료?�었?�니??`,
             tag: "account-unauthorized",
           });
         }
@@ -47,23 +47,21 @@ export function HealthAlertBanner() {
         );
         if (newBanned.length > 0) {
           notify({
-            title: "🚫 계정 차단됨",
-            body: `${newBanned.length}개 계정이 Telegram에 차단되었습니다.`,
+            title: "?�� 계정 차단??,
+            body: `${newBanned.length}�?계정??Telegram??차단?�었?�니??`,
             tag: "account-banned",
           });
         }
 
         prevUnauthorizedRef.current = unauthorized;
         prevBannedRef.current = banned;
-      } catch {
-        // Silently ignore poll errors
-      }
+      } catch (e) { console.warn('Unhandled error in HealthAlertBanner', e) }
     }
 
     // Initial check after 5 seconds
     const initTimer = setTimeout(checkHealth, 5000);
 
-    // Then every 60 seconds — only if browser notifications are supported
+    // Then every 60 seconds ??only if browser notifications are supported
     if (typeof window !== "undefined" && "Notification" in window) {
       pollRef.current = setInterval(checkHealth, 60000);
     }
@@ -74,5 +72,5 @@ export function HealthAlertBanner() {
     };
   }, [isSupported, notify]);
 
-  return null; // Invisible — alerts are delivered via browser notifications
+  return null; // Invisible ??alerts are delivered via browser notifications
 }

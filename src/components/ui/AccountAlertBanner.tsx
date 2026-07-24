@@ -16,9 +16,9 @@ export function AccountAlertBanner() {
       try {
         const list = await api.fetchAccounts();
         const issues = list.filter((a: any) => a.status === "error" || a.status === "banned" || a.status === "limited")
-          .map((a: any) => ({ id: a.id, phone: a.phone, issue: a.status === "banned" ? "차단됨" : a.status === "limited" ? "제한됨" : "오류" }));
+          .map((a: any) => ({ id: a.id, phone: a.phone, issue: a.status === "banned" ? "차단?? : a.status === "limited" ? "?�한?? : "?�류" }));
         setAlerts(issues);
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in AccountAlertBanner', e) }
     };
     check();
     const interval = setInterval(check, 30000);
@@ -35,8 +35,8 @@ export function AccountAlertBanner() {
           <div className="flex items-center justify-between px-4 py-2">
             <div className="flex items-center gap-2 min-w-0">
               <AlertTriangle className="h-4 w-4 text-white shrink-0" />
-              <span className="text-xs text-white truncate">{visible[0].phone} — {visible[0].issue}</span>
-              {visible.length > 1 && <span className="text-[10px] text-white/70 shrink-0">외 {visible.length - 1}개</span>}
+              <span className="text-xs text-white truncate">{visible[0].phone} ??{visible[0].issue}</span>
+              {visible.length > 1 && <span className="text-[10px] text-white/70 shrink-0">??{visible.length - 1}�?/span>}
             </div>
             <button onClick={() => setDismissed(prev => [...prev, ...visible.map(v => v.id)])} className="text-white/70 hover:text-white shrink-0"><X className="h-4 w-4" /></button>
           </div>

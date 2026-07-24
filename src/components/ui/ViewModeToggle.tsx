@@ -8,7 +8,7 @@ interface ViewModeState { viewModes: Record<string, ViewMode>; setViewMode: (key
 
 export const useViewModeStore = create<ViewModeState>((set, get) => ({
   viewModes: {},
-  setViewMode: (key, mode) => { try { localStorage.setItem(`viewmode-${key}`, mode); } catch {} set(s => ({ viewModes: { ...s.viewModes, [key]: mode } })); },
+  setViewMode: (key, mode) => { try { localStorage.setItem(`viewmode-${key}`, mode); } catch (e) { console.warn('Unhandled error in ViewModeToggle', e) } set(s => ({ viewModes: { ...s.viewModes, [key]: mode } })); },
   getViewMode: (key) => get().viewModes[key] || "card",
 }));
 
@@ -16,9 +16,9 @@ export function ViewModeToggle({ viewKey, className }: { viewKey: string; classN
   const current = useViewModeStore(s => s.getViewMode(viewKey));
   const setViewMode = useViewModeStore(s => s.setViewMode);
   const modes: { id: ViewMode; icon: string }[] = [
-    { id: "card", icon: "▦" },
-    { id: "list", icon: "☰" },
-    { id: "compact", icon: "—" },
+    { id: "card", icon: "?? },
+    { id: "list", icon: "?? },
+    { id: "compact", icon: "?? },
   ];
   return (
     <div className={`flex items-center gap-0.5 rounded-lg border border-app-border p-0.5 ${className || ""}`}>

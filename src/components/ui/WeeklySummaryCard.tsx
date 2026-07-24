@@ -20,11 +20,11 @@ export const useWeeklySummary = create<SummaryStore>((set) => ({
       const res = await fetch("/api/analytics/weekly");
       const data = await res.json();
       set({ summary: data });
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in WeeklySummaryCard', e) }
   },
   dismiss: () => {
     set({ dismissed: true });
-    try { localStorage.setItem(DISMISS_KEY, getWeekStart()); } catch {}
+    try { localStorage.setItem(DISMISS_KEY, getWeekStart()); } catch (e) { console.warn('Unhandled error in WeeklySummaryCard', e) }
   },
 }));
 
@@ -47,12 +47,12 @@ export function WeeklySummaryCard() {
   return (
     <div className="rounded-2xl bg-gradient-to-br from-app-primary/20 to-app-primary/5 p-4 border border-app-primary/20">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold text-app-text">📊 이번주 요약</p>
-        <button onClick={dismiss} className="text-[10px] text-app-text-muted hover:text-app-text">닫기</button>
+        <p className="text-xs font-semibold text-app-text">?�� ?�번�??�약</p>
+        <button onClick={dismiss} className="text-[10px] text-app-text-muted hover:text-app-text">?�기</button>
       </div>
       <div className="flex items-center justify-between">
-        <div><span className="text-lg font-bold text-app-text">{summary.totalSent.toLocaleString()}</span><span className="text-xs text-app-text-muted ml-1">건 발송</span></div>
-        <div className="text-right"><span className="text-sm font-semibold text-emerald-500">{summary.successRate}%</span><span className="text-xs text-app-text-muted ml-1">성공률</span></div>
+        <div><span className="text-lg font-bold text-app-text">{summary.totalSent.toLocaleString()}</span><span className="text-xs text-app-text-muted ml-1">�?발송</span></div>
+        <div className="text-right"><span className="text-sm font-semibold text-emerald-500">{summary.successRate}%</span><span className="text-xs text-app-text-muted ml-1">?�공�?/span></div>
       </div>
     </div>
   );

@@ -85,7 +85,7 @@ export function DashboardShell() {
     setSidebarOpen(false);
   }, [haptics]);
 
-  // Edge swipe: left edge → sidebar, right edge → inspector
+  // Edge swipe: left edge ??sidebar, right edge ??inspector
   useEdgeSwipe(
     useCallback(() => { haptics.medium(); setInspectorOpen(true); setSidebarOpen(false); }, [haptics]),
     useCallback(() => { haptics.medium(); setSidebarOpen(true); setInspectorOpen(false); }, [haptics]),
@@ -125,7 +125,7 @@ export function DashboardShell() {
     };
   }, [orientation, activeTab]);
 
-  // ── Mobile detection ──
+  // ?�?� Mobile detection ?�?�
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     setIsMobile(mq.matches);
@@ -141,7 +141,7 @@ export function DashboardShell() {
     }
   }, [isMobile, selectedAccountId]);
 
-  // ── Foreground auto-refresh ──
+  // ?�?� Foreground auto-refresh ?�?�
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export function DashboardShell() {
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [fetchAccounts]);
 
-  // ── Browser notifications ──
+  // ?�?� Browser notifications ?�?�
   const { notifyBroadcastComplete } = useBrowserNotification();
 
   // Notify when broadcasts complete per-account
@@ -171,7 +171,7 @@ export function DashboardShell() {
     }
   }, [accounts, notifyBroadcastComplete]);
 
-  // ── First-visit auto-redirect to dashboard with 0 accounts ──
+  // ?�?� First-visit auto-redirect to dashboard with 0 accounts ?�?�
   useEffect(() => {
     const HAS_VISITED_KEY = "telemon-has-visited";
     if (typeof localStorage === "undefined") return;
@@ -181,7 +181,7 @@ export function DashboardShell() {
         localStorage.setItem(HAS_VISITED_KEY, "1");
         setActiveTab("dashboard");
       }
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in DashboardShell', e) }
   }, [accounts, accountsLoading]);
 
   return (
@@ -192,7 +192,7 @@ export function DashboardShell() {
       <Header />
       {/* Mobile: slim top bar with account + inspector toggles */}
       {isMobile && (
-        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="모바일 탐색">
+        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="모바???�색">
           <button
             type="button"
             onClick={() => { haptics.tick(); setSidebarOpen(v => !v); }}
@@ -209,11 +209,11 @@ export function DashboardShell() {
               haptics.light();
               setMobileInspectorOpen(v => !v);
             }}
-            aria-label="인스펙터"
+            aria-label="?�스?�터"
             className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all ml-auto"
           >
             <Bell className="h-4 w-4 shrink-0" />
-            <span className="text-[11px]">인스펙터</span>
+            <span className="text-[11px]">?�스?�터</span>
           </button>
         </div>
       )}
@@ -222,7 +222,7 @@ export function DashboardShell() {
         className="relative flex min-h-0 flex-1"
         style={{ paddingBottom: isKeyboardVisible ? "var(--keyboard-offset, 0px)" : undefined }}
       >
-        {/* Sidebar — always visible on desktop, overlay on mobile */}
+        {/* Sidebar ??always visible on desktop, overlay on mobile */}
         <div
           id="dashboard-sidebar"
           role="complementary"
@@ -237,11 +237,11 @@ export function DashboardShell() {
           </div>
         </div>
         <Workspace />
-        {/* Inspector — always visible on desktop, bottom sheet on mobile */}
+        {/* Inspector ??always visible on desktop, bottom sheet on mobile */}
         <div
           id="dashboard-inspector"
           role="complementary"
-          aria-label="인스펙터"
+          aria-label="?�스?�터"
           className={`${!isMobile && inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
         >
           {!isMobile && inspectorOpen && (
@@ -257,7 +257,7 @@ export function DashboardShell() {
           <MobileInspectorSheet
             open={mobileInspectorOpen}
             onClose={() => setMobileInspectorOpen(false)}
-            title="인스펙터"
+            title="?�스?�터"
           >
             <Inspector />
           </MobileInspectorSheet>

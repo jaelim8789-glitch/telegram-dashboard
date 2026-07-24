@@ -19,13 +19,13 @@ interface CollapsibleSectionProps {
 
 function getInitialState(key: string | undefined, fallback: boolean): boolean {
   if (typeof window === "undefined" || !key) return fallback;
-  try { const stored = localStorage.getItem(`collapsible:${key}`); if (stored !== null) return stored === "true"; } catch {}
+  try { const stored = localStorage.getItem(`collapsible:${key}`); if (stored !== null) return stored === "true"; } catch (e) { console.warn('Unhandled error in CollapsibleSection', e) }
   return fallback;
 }
 
 function persistState(key: string | undefined, open: boolean) {
   if (!key) return;
-  try { localStorage.setItem(`collapsible:${key}`, String(open)); } catch {}
+  try { localStorage.setItem(`collapsible:${key}`, String(open)); } catch (e) { console.warn('Unhandled error in CollapsibleSection', e) }
 }
 
 export function CollapsibleSection({ title, icon, defaultOpen = true, badge, children, groupKey, className, headerClassName, contentClassName }: CollapsibleSectionProps) {

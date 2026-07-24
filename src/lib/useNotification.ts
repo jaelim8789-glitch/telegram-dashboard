@@ -56,9 +56,7 @@ export function useNotification() {
 
       // Auto-close after 8 seconds
       setTimeout(() => n.close(), 8000);
-    } catch {
-      // Notification may fail in some environments
-    }
+    } catch (e) { console.warn('Unhandled error in useNotification', e) }
   }, []);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {

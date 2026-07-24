@@ -16,10 +16,10 @@ type Step = "account" | "message" | "confirm";
 const STEPS: { label: string; icon: typeof Send }[] = [
   { label: "계정", icon: Users },
   { label: "메시지", icon: Send },
-  { label: "확인", icon: CheckCircle2 },
+  { label: "?�인", icon: CheckCircle2 },
 ];
 
-const TEMPLATE_CHIPS = ["프로모션", "공지사항", "이벤트"];
+const TEMPLATE_CHIPS = ["?�로모션", "공�??�항", "?�벤??];
 
 export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onClose: () => void; onSent?: () => void }) {
   const [step, setStep] = useState<Step>("account");
@@ -36,10 +36,10 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
   const handleSend = useCallback(async () => {
     if (!message.trim() || sending) return;
     setSending(true);
-    try { hapticFeedback?.impactOccurred("medium"); } catch {}
+    try { hapticFeedback?.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in MobileSendSheet', e) }
     await new Promise(r => setTimeout(r, 1000));
     setSent(true); setSending(false);
-    try { hapticFeedback?.notificationOccurred("success"); } catch {}
+    try { hapticFeedback?.notificationOccurred("success"); } catch (e) { console.warn('Unhandled error in MobileSendSheet', e) }
     setTimeout(() => { onSent?.(); onClose(); setSent(false); setStep("account"); setMessage(""); setScheduled(false); setScheduledTime(""); setImageFile(null); }, 1500);
   }, [message, sending, onClose, onSent]);
 
@@ -77,14 +77,14 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
             <div className="px-5 py-4 overflow-y-auto max-h-[calc(85vh-120px)]">
               {step === "account" && (
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold">발송 계정 선택</p>
+                  <p className="text-sm font-semibold">발송 계정 ?�택</p>
                   <button onClick={() => { setSelectedAccount("demo"); setStep("message"); }} className="flex items-center gap-3 w-full rounded-xl border border-app-border bg-app-card p-4 hover:bg-app-card-hover active:scale-[0.98] transition-all">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20"><Users className="h-5 w-5 text-emerald-400" /></div>
-                    <div className="text-left"><p className="text-sm font-medium text-app-text">+82 10-1234-5678</p><p className="text-[11px] text-app-text-muted">오늘 12회 발송</p></div>
+                    <div className="text-left"><p className="text-sm font-medium text-app-text">+82 10-1234-5678</p><p className="text-[11px] text-app-text-muted">?�늘 12??발송</p></div>
                   </button>
                   <button onClick={() => { setSelectedAccount("demo2"); setStep("message"); }} className="flex items-center gap-3 w-full rounded-xl border border-app-border bg-app-card p-4 hover:bg-app-card-hover active:scale-[0.98] transition-all">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20"><Users className="h-5 w-5 text-emerald-400" /></div>
-                    <div className="text-left"><p className="text-sm font-medium text-app-text">+82 10-9876-5432</p><p className="text-[11px] text-app-text-muted">오늘 7회 발송</p></div>
+                    <div className="text-left"><p className="text-sm font-medium text-app-text">+82 10-9876-5432</p><p className="text-[11px] text-app-text-muted">?�늘 7??발송</p></div>
                   </button>
                 </div>
               )}
@@ -97,24 +97,24 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
                     ))}
                   </div>
 
-                  <p className="text-sm font-semibold">발송할 메시지</p>
+                  <p className="text-sm font-semibold">발송??메시지</p>
                   <div className="relative">
-                    <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="메시지를 입력하세요..." rows={6} autoFocus
+                    <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="메시지�??�력?�세??.." rows={6} autoFocus
                       className="w-full rounded-xl border border-app-border bg-app-card px-4 py-3 text-sm text-app-text outline-none resize-none" aria-label="발송 메시지" />
-                    <span className="absolute bottom-2 right-3 text-[10px] text-app-text-muted">{charCount}자</span>
+                    <span className="absolute bottom-2 right-3 text-[10px] text-app-text-muted">{charCount}??/span>
                   </div>
 
                   {/* Attachment + Scheduled send row */}
                   <div className="flex items-center gap-3">
                     <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-card-hover px-3 py-2 text-[11px] text-app-text-muted hover:text-app-text active:scale-95">
                       <Paperclip className="h-4 w-4" />
-                      {imageFile ? imageFile.name : "첨부"}
+                      {imageFile ? imageFile.name : "첨�?"}
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setImageFile(f); e.target.value = ""; }} />
 
                     <button onClick={() => setScheduled(!scheduled)} className={cn("flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] active:scale-95", scheduled ? "border-app-primary bg-app-primary-muted text-app-primary" : "border-app-border bg-app-card-hover text-app-text-muted")}>
                       <Calendar className="h-4 w-4" />
-                      예약발송
+                      ?�약발송
                     </button>
                   </div>
 
@@ -126,29 +126,29 @@ export function MobileSendSheet({ open, onClose, onSent }: { open: boolean; onCl
               )}
               {step === "confirm" && (
                 <div className="space-y-4 text-center">
-                  <p className="text-sm font-semibold">발송 확인</p>
+                  <p className="text-sm font-semibold">발송 ?�인</p>
                   <div className="rounded-xl bg-app-card-hover p-4 text-left space-y-2">
                     <p className="text-xs text-app-text-muted">계정: {selectedAccount}</p>
                     <p className="text-sm text-app-text line-clamp-3">{message}</p>
-                    {imageFile && <p className="text-xs text-app-text-muted">이미지 첨부: {imageFile.name}</p>}
-                    {scheduled && scheduledTime && <p className="text-xs text-app-text-muted">예약: {scheduledTime}</p>}
+                    {imageFile && <p className="text-xs text-app-text-muted">?��?지 첨�?: {imageFile.name}</p>}
+                    {scheduled && scheduledTime && <p className="text-xs text-app-text-muted">?�약: {scheduledTime}</p>}
                   </div>
                 </div>
               )}
             </div>
             <div className="px-5 pt-2">
               {step === "account" && !selectedAccount && (
-                <button disabled className="w-full rounded-xl bg-app-primary/50 py-3.5 text-sm font-semibold text-white">계정을 선택해주세요</button>
+                <button disabled className="w-full rounded-xl bg-app-primary/50 py-3.5 text-sm font-semibold text-white">계정???�택?�주?�요</button>
               )}
               {step === "confirm" && (
                 <button onClick={handleSend} disabled={sending} className="w-full rounded-xl bg-app-primary py-3.5 text-sm font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition-all">
-                  {sending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : sent ? "전송 완료!" : "발송하기"}
+                  {sending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : sent ? "?�송 ?�료!" : "발송?�기"}
                 </button>
               )}
               {(step === "message" || (step === "account" && selectedAccount)) && (
                 <button onClick={() => setStep(step === "account" ? "message" : "confirm")}
                   className="w-full rounded-xl bg-app-primary py-3.5 text-sm font-semibold text-white active:scale-[0.98] transition-all">
-                  {step === "message" ? "다음" : "발송하기"}
+                  {step === "message" ? "?�음" : "발송?�기"}
                 </button>
               )}
             </div>

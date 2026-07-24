@@ -29,11 +29,11 @@ interface Result {
 }
 
 const STEP_LABELS: Record<string, string> = {
-  planner: "계획 수립",
-  targeting: "타겟 분석",
-  content: "콘텐츠 생성",
-  schedule: "스케줄 예약",
-  summary: "결과 요약",
+  planner: "계획 ?�립",
+  targeting: "?��?분석",
+  content: "콘텐�??�성",
+  schedule: "?��?�??�약",
+  summary: "결과 ?�약",
 };
 
 const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -82,11 +82,11 @@ export function OperatorTab() {
       if (res.ok) {
         setResult(await res.json());
       } else {
-        const err = await res.json().catch(() => ({ detail: "오류 발생" }));
-        setError(err.detail || "실행 실패");
+        const err = await res.json().catch(() => ({ detail: "?�류 발생" }));
+        setError(err.detail || "?�행 ?�패");
       }
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError("?�트?�크 ?�류가 발생?�습?�다.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export function OperatorTab() {
         </div>
         <div>
           <h2 className="text-sm font-bold text-app-text">AI Operator</h2>
-          <p className="text-[10px] text-app-text-muted">목표만 말하면 AI가 알아서 운영을 실행합니다</p>
+          <p className="text-[10px] text-app-text-muted">목표�?말하�?AI가 ?�아???�영???�행?�니??/p>
         </div>
         {account && (
           <span className="ml-auto rounded-full bg-app-primary/10 px-2 py-0.5 text-[10px] font-medium text-app-primary">
@@ -120,12 +120,12 @@ export function OperatorTab() {
       </div>
 
       {/* Input Panel */}
-      <Panel title="🎯 운영 목표" className="border-app-primary/20">
+      <Panel title="?�� ?�영 목표" className="border-app-primary/20">
         <div className="space-y-3">
           <textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder="무엇을 하고 싶으신가요? 예: 채널 3개 키워줘, 오늘 발송 최적화해줘, 실패한 발송 다시 보내줘..."
+            placeholder="무엇???�고 ?�으?��??? ?? 채널 3�??�워�? ?�늘 발송 최적?�해�? ?�패??발송 ?�시 보내�?.."
             rows={4}
             disabled={loading}
             className="w-full rounded-xl border border-app-border bg-app-bg px-4 py-3 text-sm text-app-text placeholder:text-app-text-muted outline-none focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 resize-none disabled:opacity-50"
@@ -139,7 +139,7 @@ export function OperatorTab() {
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <label className="text-[11px] text-app-text-muted">채널 수</label>
+              <label className="text-[11px] text-app-text-muted">채널 ??/label>
               <input
                 type="number"
                 min={1}
@@ -158,7 +158,7 @@ export function OperatorTab() {
                 onChange={(e) => setDryRun(e.target.checked)}
                 className="h-3.5 w-3.5 rounded border-app-border"
               />
-              테스트 모드 (계획만 생성)
+              ?�스??모드 (계획�??�성)
             </label>
           </div>
 
@@ -170,7 +170,7 @@ export function OperatorTab() {
             className="w-full"
           >
             <Zap className="h-4 w-4" />
-            {loading ? "실행 중..." : "실행하기"}
+            {loading ? "?�행 �?.." : "?�행?�기"}
           </Button>
         </div>
       </Panel>
@@ -187,7 +187,7 @@ export function OperatorTab() {
       {result && (
         <div className="space-y-3 animate-scale-in">
           {/* Plan */}
-          <Panel title="📋 실행 계획">
+          <Panel title="?�� ?�행 계획">
             <div className="space-y-2">
               {result.plan.map((p, i) => (
                 <div key={`plan-${i}`} className="flex items-start gap-2 text-xs">
@@ -201,7 +201,7 @@ export function OperatorTab() {
           </Panel>
 
           {/* Steps */}
-          <Panel title="⚡ 실행 단계">
+          <Panel title="???�행 ?�계">
             <div className="space-y-1.5">
               {result.steps.map((s, i) => {
                 const Icon = STEP_ICONS[s.step] || ChevronRight;
@@ -239,7 +239,7 @@ export function OperatorTab() {
 
           {/* Generated Content */}
           {result.steps.find((s) => s.step === "content" && s.result?.message) && (
-            <Panel title="✍️ 생성된 콘텐츠">
+            <Panel title="?�️ ?�성??콘텐�?>
               <div className="rounded-xl border border-app-border bg-app-bg p-4">
                 <p className="text-xs text-app-text whitespace-pre-wrap">
                   {String(result.steps.find((s) => s.step === "content")!.result!.message)}
@@ -264,11 +264,11 @@ export function OperatorTab() {
                     const msg = String(result.steps.find((s) => s.step === "content")?.result?.message || "");
                     useDashboardStore.getState().setSendMessage(msg);
                     useDashboardStore.getState().setActiveTab("send");
-                    // Draft에 자동 저장
-                    try { localStorage.setItem("telemon-draft-message", msg); } catch {}
+                    // Draft???�동 ?�??
+                    try { localStorage.setItem("telemon-draft-message", msg); } catch (e) { console.warn('Unhandled error in OperatorTab', e) }
                   }}
                 >
-                  <Send className="h-3.5 w-3.5" /> 발송탭으로 보내기
+                  <Send className="h-3.5 w-3.5" /> 발송??���?보내�?
                 </Button>
               </div>
             </Panel>
@@ -276,12 +276,12 @@ export function OperatorTab() {
 
           {/* Summary + Stats */}
           {result.summary && (
-            <Panel title="📊 결과 요약">
+            <Panel title="?�� 결과 ?�약">
               <div className="text-xs text-app-text whitespace-pre-wrap leading-relaxed">
                 {result.summary}
               </div>
               <div className="mt-2 text-[10px] text-app-text-muted">
-                실행 시간: {(result.execution_time_ms / 1000).toFixed(1)}초
+                ?�행 ?�간: {(result.execution_time_ms / 1000).toFixed(1)}�?
               </div>
             </Panel>
           )}
@@ -296,15 +296,15 @@ export function OperatorTab() {
           </div>
           <p className="text-sm font-medium text-app-text">AI Operator</p>
           <p className="text-xs text-app-text-muted mt-1 max-w-xs">
-            채널 성장, 발송 최적화, 콘텐츠 제작 등<br />
-            운영 목표를 자연어로 입력하면 AI가 자동으로 실행합니다
+            채널 ?�장, 발송 최적?? 콘텐�??�작 ??br />
+            ?�영 목표�??�연?�로 ?�력?�면 AI가 ?�동?�로 ?�행?�니??
           </p>
           <div className="flex flex-wrap justify-center gap-1.5 mt-4">
             {[
-              "채널 3개 키워줘",
-              "오늘 발송 최적화해줘",
-              "실패한 발송 분석하고 다시 보내줘",
-              "주간 마케팅 계획 세워줘",
+              "채널 3�??�워�?,
+              "?�늘 발송 최적?�해�?,
+              "?�패??발송 분석?�고 ?�시 보내�?,
+              "주간 마�???계획 ?�워�?,
             ].map((suggestion) => (
               <button
                 key={suggestion}

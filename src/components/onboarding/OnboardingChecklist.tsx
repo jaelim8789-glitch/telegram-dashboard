@@ -41,7 +41,7 @@ export function OnboardingChecklist() {
 
   useEffect(() => {
     if (activeTab === "profile") {
-      try { localStorage.setItem(PROFILE_VISIT_KEY, "true"); } catch {}
+      try { localStorage.setItem(PROFILE_VISIT_KEY, "true"); } catch (e) { console.warn('Unhandled error in OnboardingChecklist', e) }
       setProfileVisited(true);
     }
   }, [activeTab]);
@@ -55,32 +55,32 @@ export function OnboardingChecklist() {
   }, []);
 
   const dismiss = useCallback(() => {
-    try { localStorage.setItem(DISMISS_KEY, JSON.stringify({ version: VERSION, at: Date.now() })); } catch {}
+    try { localStorage.setItem(DISMISS_KEY, JSON.stringify({ version: VERSION, at: Date.now() })); } catch (e) { console.warn('Unhandled error in OnboardingChecklist', e) }
     setDismissed(true);
   }, []);
 
   const steps: Step[] = [
     {
       id: "account",
-      label: "계정 등록하기",
+      label: "계정 ?�록?�기",
       icon: <UserPlus className="h-4 w-4" />,
       complete: accounts.length > 0,
     },
     {
       id: "group",
-      label: "첫 번째 대화방 연동",
+      label: "�?번째 ?�?�방 ?�동",
       icon: <Users className="h-4 w-4" />,
       complete: groups.length > 0,
     },
     {
       id: "send",
-      label: "첫 메시지 발송하기",
+      label: "�?메시지 발송?�기",
       icon: <Send className="h-4 w-4" />,
       complete: broadcasts.some((b) => b.status === "sent"),
     },
     {
       id: "profile",
-      label: "프로필 설정",
+      label: "?�로???�정",
       icon: <MessageSquare className="h-4 w-4" />,
       complete: profileVisited,
     },
@@ -101,7 +101,7 @@ export function OnboardingChecklist() {
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-app-text">시작하기</span>
+              <span className="text-sm font-semibold text-app-text">?�작?�기</span>
               <span className="text-xs text-app-text-muted tabular-nums">{completeCount}/{steps.length}</span>
             </div>
             <div className="flex items-center gap-1">
@@ -110,12 +110,12 @@ export function OnboardingChecklist() {
                 onClick={dismiss}
                 className="text-xs text-app-text-muted hover:text-app-text px-2 py-0.5 rounded transition-colors"
               >
-                다시 보지 않기
+                ?�시 보�? ?�기
               </button>
               <button
                 type="button"
                 onClick={dismiss}
-                aria-label="닫기"
+                aria-label="?�기"
                 className="flex h-6 w-6 items-center justify-center rounded text-app-text-muted hover:bg-app-card-hover transition-colors"
               >
                 <X className="h-3.5 w-3.5" />

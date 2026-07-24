@@ -15,37 +15,37 @@ interface PixelOfficeStaff {
 }
 
 const DEFAULT_STAFF: PixelOfficeStaff[] = [
-  { id: "boss", name: "사장", emoji: "👨‍💼", status: "online", role: "나" },
-  { id: "telemon-ai", name: "AI 텔레몬", emoji: "🤖", status: "online", role: "자동 응답" },
+  { id: "boss", name: "?�장", emoji: "?��?��?, status: "online", role: "?? },
+  { id: "telemon-ai", name: "AI ?�레�?, emoji: "?��", status: "online", role: "?�동 ?�답" },
 ];
 
 const STATUS_LABELS: Record<string, string> = { online: "online", busy: "busy", idle: "idle" };
-const STATUS_FILTERS = ["전체", "online", "busy", "idle"] as const;
+const STATUS_FILTERS = ["?�체", "online", "busy", "idle"] as const;
 
 export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
   const [staff, setStaff] = useState<PixelOfficeStaff[]>(DEFAULT_STAFF);
   const [showCreateStaff, setShowCreateStaff] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"전체" | "online" | "busy" | "idle">("전체");
+  const [statusFilter, setStatusFilter] = useState<"?�체" | "online" | "busy" | "idle">("?�체");
   const toast = useToastStore(s => s.add);
 
-  const filteredStaff = statusFilter === "전체" ? staff : staff.filter(s => s.status === statusFilter);
+  const filteredStaff = statusFilter === "?�체" ? staff : staff.filter(s => s.status === statusFilter);
 
   function handleCreateStaff() {
-    try { hapticFeedback.impactOccurred("medium"); } catch {}
+    try { hapticFeedback.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }
     const newStaff: PixelOfficeStaff = {
       id: `staff-${Date.now()}`,
-      name: `AI 직원 ${staff.length - 1}호`,
-      emoji: ["🧑‍💻", "👩‍💼", "👨‍🔧", "👩‍🔬", "🧙‍♂️"][(staff.length - 2) % 5],
+      name: `AI 직원 ${staff.length - 1}??,
+      emoji: ["?��?��?, "?��?��?, "?��?��?, "?��?��?, "?��?�♂�?][(staff.length - 2) % 5],
       status: "idle",
-      role: "AI 어시스턴트",
+      role: "AI ?�시?�턴??,
     };
     setStaff(prev => [...prev, newStaff]);
     setShowCreateStaff(false);
-    toast({ type: "success", title: "AI 직원 생성 완료!", message: `${newStaff.name}이(가) PixelOffice에 합류했습니다.` });
+    toast({ type: "success", title: "AI 직원 ?�성 ?�료!", message: `${newStaff.name}??가) PixelOffice???�류?�습?�다.` });
   }
 
   function toggleStatus(id: string) {
-    try { hapticFeedback.impactOccurred("light"); } catch {}
+    try { hapticFeedback.impactOccurred("light"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }
     setStaff(prev => prev.map(s => {
       if (s.id !== id) return s;
       const next: Record<string, PixelOfficeStaff["status"]> = { online: "busy", busy: "idle", idle: "online" };
@@ -55,9 +55,9 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
 
   function deleteStaff(id: string) {
     if (id === "boss") return;
-    try { hapticFeedback.impactOccurred("heavy"); } catch {}
+    try { hapticFeedback.impactOccurred("heavy"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }
     setStaff(prev => prev.filter(s => s.id !== id));
-    toast({ type: "info", title: "직원 퇴사", message: "AI 직원이 PixelOffice를 떠났습니다." });
+    toast({ type: "info", title: "직원 ?�사", message: "AI 직원??PixelOffice�??�났?�니??" });
   }
 
   return (
@@ -67,10 +67,10 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
           <h2 className="text-base font-bold flex items-center gap-1.5" style={{ fontFamily: "var(--font-heading)" }}>
             <Sparkles className="h-4 w-4 text-amber-400" /> PixelOffice
           </h2>
-          <button onClick={() => { try { hapticFeedback.impactOccurred("light"); } catch {}; setShowCreateStaff(true); }}
+          <button onClick={() => { try { hapticFeedback.impactOccurred("light"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }; setShowCreateStaff(true); }}
             className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-medium active:scale-95"
             style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-            <Plus className="h-3 w-3" /> AI 직원 생성
+            <Plus className="h-3 w-3" /> AI 직원 ?�성
           </button>
         </div>
 
@@ -79,7 +79,7 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
             <button key={f} onClick={() => setStatusFilter(f)}
               className={`rounded-full px-3 py-1 text-[11px] font-medium transition-all active:scale-90 ${statusFilter === f ? "text-white" : "opacity-60"}`}
               style={{ backgroundColor: statusFilter === f ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-section-bg-color, #232e3c)", color: statusFilter === f ? "#fff" : "var(--tg-theme-text-color, #f5f5f5)" }}>
-              {f === "전체" ? "전체" : `🟢 ${f}`}
+              {f === "?�체" ? "?�체" : `?�� ${f}`}
             </button>
           ))}
         </div>
@@ -111,15 +111,15 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
 
         {staff.length <= 2 && (
           <p className="text-[10px] text-center mt-3" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-            AI 직원을 생성하면 PixelOffice에 추가됩니다
+            AI 직원???�성?�면 PixelOffice??추�??�니??
           </p>
         )}
       </div>
 
       <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
         <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-          총 <span className="font-semibold text-emerald-400">{staff.length}명</span>의 스태프 •{" "}
-          {staff.filter(s => s.status === "online").length}명 online
+          �?<span className="font-semibold text-emerald-400">{staff.length}�?/span>???�태????" "}
+          {staff.filter(s => s.status === "online").length}�?online
         </p>
       </div>
 
@@ -130,13 +130,13 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="mx-4 w-full max-w-sm rounded-2xl p-5 shadow-2xl" onClick={e => e.stopPropagation()}
               style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)" }}>
-              <h3 className="text-sm font-bold mb-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>🤖 AI 직원 생성</h3>
+              <h3 className="text-sm font-bold mb-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>?�� AI 직원 ?�성</h3>
               <p className="text-xs mb-4" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-                새 AI 직원이 PixelOffice에 합류합니다. 자동으로 발송/응답을 도와줍니다.
+                ??AI 직원??PixelOffice???�류?�니?? ?�동?�로 발송/?�답???��?줍니??
               </p>
               <button onClick={handleCreateStaff}
                 className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-3 text-sm font-semibold text-white active:scale-[0.98]">
-                <Zap className="h-4 w-4 inline mr-1" /> AI 직원 생성하기
+                <Zap className="h-4 w-4 inline mr-1" /> AI 직원 ?�성?�기
               </button>
               <button onClick={() => setShowCreateStaff(false)}
                 className="w-full mt-2 rounded-xl py-2.5 text-xs font-medium"

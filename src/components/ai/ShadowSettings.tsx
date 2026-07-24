@@ -28,17 +28,17 @@ function loadSettings(): ShadowSettings {
 function saveSettings(s: ShadowSettings) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in ShadowSettings', e) }
 }
 
 const WATCH_OPTIONS = [
-  { value: 5, label: "5분" },
-  { value: 10, label: "10분" },
-  { value: 15, label: "15분" },
-  { value: 20, label: "20분" },
-  { value: 30, label: "30분" },
-  { value: 45, label: "45분" },
-  { value: 60, label: "60분" },
+  { value: 5, label: "5�? },
+  { value: 10, label: "10�? },
+  { value: 15, label: "15�? },
+  { value: 20, label: "20�? },
+  { value: 30, label: "30�? },
+  { value: 45, label: "45�? },
+  { value: 60, label: "60�? },
 ];
 
 export function ShadowSettings() {
@@ -59,16 +59,15 @@ export function ShadowSettings() {
         <div>
           <p className="text-sm font-semibold text-app-text">AI Shadow</p>
           <p className="text-[11px] text-app-text-muted">
-            고객 응답이 없을 때 AI가 먼저 답장을 제안합니다
-          </p>
+            고객 ?�답???�을 ??AI가 먼�? ?�장???�안?�니??          </p>
         </div>
       </div>
 
       <div className="rounded-xl border border-app-border/50 bg-app-card divide-y divide-app-border/30">
         <ToggleRow
           icon={settings.enabled ? <ToggleRight className="h-4 w-4 text-app-primary" /> : <ToggleLeft className="h-4 w-4 text-app-text-muted" />}
-          label="Shadow 활성화"
-          description="켜면 고객 메시지 감시를 시작합니다"
+          label="Shadow ?�성??
+          description="켜면 고객 메시지 감시�??�작?�니??
           checked={settings.enabled}
           onChange={(v) => update({ enabled: v })}
         />
@@ -77,9 +76,9 @@ export function ShadowSettings() {
           <div className="flex items-center gap-2.5 min-w-0">
             <Clock className="h-4 w-4 shrink-0 text-app-text-muted" />
             <div className="min-w-0">
-              <p className="text-xs font-medium text-app-text">감시 시간</p>
+              <p className="text-xs font-medium text-app-text">감시 ?�간</p>
               <p className="text-[10px] text-app-text-muted">
-                고객 메시지 후 AI가 개입하기까지 대기 시간
+                고객 메시지 ??AI가 개입?�기까�? ?��??�간
               </p>
             </div>
           </div>
@@ -98,16 +97,16 @@ export function ShadowSettings() {
 
         <ToggleRow
           icon={settings.notificationSound ? <Volume2 className="h-4 w-4 text-app-text" /> : <VolumeX className="h-4 w-4 text-app-text-muted" />}
-          label="알림음"
-          description="Shadow 알림 도착 시 소리 재생"
+          label="?�림??
+          description="Shadow ?�림 ?�착 ???�리 ?�생"
           checked={settings.notificationSound}
           onChange={(v) => update({ notificationSound: v })}
         />
 
         <ToggleRow
           icon={settings.autoReply ? <Bot className="h-4 w-4 text-app-primary" /> : <Bot className="h-4 w-4 text-app-text-muted" />}
-          label="자동 답장"
-          description="AI가 자동으로 답장을 전송 (제안만 할지, 바로 보낼지)"
+          label="?�동 ?�장"
+          description="AI가 ?�동?�로 ?�장???�송 (?�안�??��?, 바로 보낼지)"
           checked={settings.autoReply}
           onChange={(v) => update({ autoReply: v })}
         />
@@ -116,10 +115,10 @@ export function ShadowSettings() {
       {settings.autoReply && (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
           <p className="text-[11px] text-amber-400 font-medium">
-            자동 답장이 활성화되었습니다
+            ?�동 ?�장???�성?�되?�습?�다
           </p>
           <p className="text-[10px] text-amber-400/70 mt-0.5">
-            AI가 고객 메시지를 분석하여 자동으로 답장을 전송합니다. 신중하게 사용하세요.
+            AI가 고객 메시지�?분석?�여 ?�동?�로 ?�장???�송?�니?? ?�중?�게 ?�용?�세??
           </p>
         </div>
       )}

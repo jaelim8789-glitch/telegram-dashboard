@@ -38,8 +38,8 @@ const TYPE_COLORS: Record<NotificationType, string> = {
 const CATEGORY_LABELS: Record<string, string> = {
   account: "계정",
   broadcast: "발송",
-  system: "시스템",
-  schedule: "스케줄",
+  system: "?�스??,
+  schedule: "?��?�?,
 };
 
 function loadNotifications(): Notification[] {
@@ -50,7 +50,7 @@ function loadNotifications(): Notification[] {
 }
 
 function saveNotifications(ns: Notification[]) {
-  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(ns.slice(0, 50))); } catch {}
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(ns.slice(0, 50))); } catch (e) { console.warn('Unhandled error in NotificationBell', e) }
 }
 
 export function addNotification(n: Omit<Notification, "id" | "time" | "read">) {
@@ -60,7 +60,7 @@ export function addNotification(n: Omit<Notification, "id" | "time" | "read">) {
   saveNotifications(existing);
 
   if (n.type === "error" || n.type === "warning") {
-    try { navigator.vibrate?.(n.type === "error" ? [30, 50, 30] : [10]); } catch {}
+    try { navigator.vibrate?.(n.type === "error" ? [30, 50, 30] : [10]); } catch (e) { console.warn('Unhandled error in NotificationBell', e) }
   }
 
   const event = new CustomEvent("telemon-notification", { detail: notif });
@@ -114,7 +114,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (unread > prevUnread.current && open === false) {
-      try { navigator.vibrate?.(5); } catch {}
+      try { navigator.vibrate?.(5); } catch (e) { console.warn('Unhandled error in NotificationBell', e) }
     }
     prevUnread.current = unread;
   }, [unread, open]);
@@ -144,7 +144,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen(!open)}
         className="relative flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all sm:min-h-8 sm:min-w-8"
-        aria-label="알림"
+        aria-label="?�림"
       >
         {unread > 0 ? (
           <>
@@ -176,14 +176,14 @@ export function NotificationBell() {
               className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-app-border/60 bg-app-card shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-app-border/60">
-                <h3 className="text-sm font-semibold text-app-text">알림</h3>
+                <h3 className="text-sm font-semibold text-app-text">?�림</h3>
                 <div className="flex items-center gap-1.5">
                   {isSupported && (
                     <div ref={settingsRef} className="relative">
                       <button
                         onClick={() => setSettingsOpen(!settingsOpen)}
                         className="p-1 text-app-text-muted hover:text-app-text transition-colors"
-                        title="알림 설정"
+                        title="?�림 ?�정"
                       >
                         <Settings className="h-3 w-3" />
                       </button>
@@ -202,12 +202,12 @@ export function NotificationBell() {
                               {disabled ? (
                                 <>
                                   <BellRing className="h-3.5 w-3.5 text-app-text-muted" />
-                                  <span>브라우저 알림 켜기</span>
+                                  <span>브라?��? ?�림 켜기</span>
                                 </>
                               ) : (
                                 <>
                                   <BellOff className="h-3.5 w-3.5 text-app-text-muted" />
-                                  <span>브라우저 알림 끄기</span>
+                                  <span>브라?��? ?�림 ?�기</span>
                                 </>
                               )}
                             </button>
@@ -217,10 +217,10 @@ export function NotificationBell() {
                     </div>
                   )}
                   {unread > 0 && (
-                    <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 읽음</button>
+                    <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 ?�음</button>
                   )}
                   {notifState.length > 0 && (
-                    <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="전체 삭제">
+                    <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="?�체 ??��">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   )}
@@ -239,7 +239,7 @@ export function NotificationBell() {
 
               <div className="max-h-80 overflow-y-auto">
                 {notifState.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-app-text-muted">알림이 없습니다</div>
+                  <div className="py-8 text-center text-xs text-app-text-muted">?�림???�습?�다</div>
                 ) : (
                   notifState.map((n) => {
                     const Icon = TYPE_ICONS[n.type];

@@ -29,14 +29,14 @@ export function VoiceMemoRecorder({ onTranscribe }: { onTranscribe: (text: strin
         r.start(); recognitionRef.current = r;
         setRecording(true);
         timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in VoiceMemoRecorder', e) }
     }
   }
 
   useEffect(() => () => { clearInterval(timerRef.current); recognitionRef.current?.stop(); }, []);
 
   return (
-    <button onClick={toggle} className={cn("flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90", recording ? "bg-red-500 animate-pulse" : "border border-app-border text-app-text-muted hover:text-app-text")} aria-label={recording ? "녹음 중지" : "음성 메모"}>
+    <button onClick={toggle} className={cn("flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90", recording ? "bg-red-500 animate-pulse" : "border border-app-border text-app-text-muted hover:text-app-text")} aria-label={recording ? "?�음 중�?" : "?�성 메모"}>
       {recording ? <Square className="h-4 w-4 text-white" /> : <Mic className="h-4 w-4" />}
     </button>
   );

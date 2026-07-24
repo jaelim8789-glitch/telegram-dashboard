@@ -48,7 +48,7 @@ export default function MiniAppPage() {
   const setOpen = useCommandPaletteStore(s => s.setOpen);
 
   const handleRefresh = useCallback(() => {
-    try { hapticFeedback.impactOccurred("medium"); } catch {}
+    try { hapticFeedback.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in page', e) }
     setRefreshKey((k) => k + 1);
     setLastUpdated(new Date());
   }, []);
@@ -62,10 +62,10 @@ export default function MiniAppPage() {
       off = backButton.onClick(() => {
         if (activeTab !== "dashboard") setActiveTab("dashboard");
       });
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in page', e) }
     return () => {
       if (off) off();
-      try { backButton.unmount(); } catch {}
+      try { backButton.unmount(); } catch (e) { console.warn('Unhandled error in page', e) }
     };
   }, []);
 
@@ -76,9 +76,9 @@ export default function MiniAppPage() {
         const { mainButton } = await import("@tma.js/sdk-react");
         if (cancelled) return;
         mainButton.mount();
-        mainButton.setParams({ text: "새로고침", isEnabled: true, isVisible: false });
+        mainButton.setParams({ text: "?�로고침", isEnabled: true, isVisible: false });
         off = mainButton.onClick(handleRefresh);
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in page', e) }
     })();
     return () => { cancelled = true; if (off) off(); };
   }, [handleRefresh]);
@@ -102,7 +102,7 @@ export default function MiniAppPage() {
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
 
-  const greeting = user ? user.first_name + "님" : "TeleMon";
+  const greeting = user ? user.first_name + "?? : "TeleMon";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", color: "var(--tg-theme-text-color, #f5f5f5)" }}>
@@ -110,12 +110,12 @@ export default function MiniAppPage() {
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)", borderBottom: "1px solid var(--tg-theme-section-separator-color, #3a4a5a)" }}>
           <div className="flex flex-col">
             <span className="text-base font-bold">{greeting}</span>
-            <span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>TeleMon · Ctrl+K 검색</span>
+            <span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>TeleMon · Ctrl+K 검??/span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeQuickToggle />
             {online ? <Wifi className="h-3.5 w-3.5 text-emerald-500" /> : <WifiOff className="h-3.5 w-3.5 text-red-500" />}
-            <button onClick={handleRefresh} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="새로고침">
+            <button onClick={handleRefresh} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="?�로고침">
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>

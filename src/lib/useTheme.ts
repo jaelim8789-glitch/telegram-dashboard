@@ -8,13 +8,13 @@ const STORAGE_KEY = "telemon-theme";
 
 /** Inline bootstrap script rendered in the root layout's <head> (see
  * src/app/layout.tsx). Runs synchronously before first paint so data-theme
- * is already correct by the time CSS applies — without it, every page loads
+ * is already correct by the time CSS applies ??without it, every page loads
  * in the light-mode default and then visibly flips once this module's
  * useEffect runs post-hydration. Must mirror getTheme()/getSystemTheme()/
  * applyTheme() above exactly (default "light" when unset, "system" resolves
- * via prefers-color-scheme: light) since it can't import this file — no JS
+ * via prefers-color-scheme: light) since it can't import this file ??no JS
  * bundle has loaded yet when it runs. */
-export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="dark-pure"||v==="system")?v:"system";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem("${STORAGE_KEY}");var m=(v==="light"||v==="dark"||v==="dark-pure"||v==="system")?v:"system";var r=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;var el=document.documentElement;el.setAttribute("data-theme",r);el.classList.add(r);}catch (e) { console.warn('Unhandled error in useTheme', e) }})();`;
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";

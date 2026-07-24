@@ -9,12 +9,12 @@ const ONBOARDING_VERSION = 1;
  * Returns true if the onboarding tour should be shown for this session.
  *
  * `hasAccounts` gates the tour on real account state, not just the
- * localStorage flag — a returning operator who already registered accounts
+ * localStorage flag ??a returning operator who already registered accounts
  * is not a first-time visitor, even in a browser/profile that has never
  * stored the dismissal flag (fresh browser, incognito, cleared storage).
  * Without this, the tour's full-viewport backdrop (z-[100], click-to-dismiss)
- * re-appears and silently swallows the first click anywhere on the page —
- * including workspace tab buttons underneath it — which reads to the user
+ * re-appears and silently swallows the first click anywhere on the page ??
+ * including workspace tab buttons underneath it ??which reads to the user
  * as "the tab doesn't respond to clicks."
  */
 export function useOnboarding(hasAccounts = false, accountsLoading = false) {
@@ -27,7 +27,7 @@ export function useOnboarding(hasAccounts = false, accountsLoading = false) {
       setReady(true);
       return;
     }
-    // Check localStorage – only show if never dismissed and key doesn't exist
+    // Check localStorage ??only show if never dismissed and key doesn't exist
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
@@ -53,9 +53,7 @@ export function useOnboarding(hasAccounts = false, accountsLoading = false) {
         STORAGE_KEY,
         JSON.stringify({ version: ONBOARDING_VERSION, dismissedAt: Date.now() })
       );
-    } catch {
-      // Storage full or blocked – silently ignore
-    }
+    } catch (e) { console.warn('Unhandled error in useOnboarding', e) }
     setShow(false);
   }, []);
 
