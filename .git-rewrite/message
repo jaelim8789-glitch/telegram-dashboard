@@ -1,0 +1,19 @@
+Redesign Phase 2: Send screen — the flagship flow
+
+- Checkbox list -> selectable card grid (GroupSelectCard), with search,
+  sort-by-member-count, favorites and per-group tags. Favorites/recent/
+  tags are localStorage-only (no backend field exists for them, and
+  adding one is out of scope for this UI-only redesign).
+- SendTab's draft state (groups/message/image/selection) moved into
+  useDashboardStore so the Inspector can read it too.
+- SendInspector replaced entirely: it was static/fake before (hardcoded
+  "선택된 그룹: 없음", a Toggle wired to nothing). Now shows a real
+  live-updating message preview, a real send summary sourced from the
+  actual selection, real per-account stats (todaySent/groupCount, both
+  already-existing API fields), and a safety-settings panel that states
+  the real server-enforced limits instead of a fake toggle.
+- Send button is now a floating pill-shaped primary action (sticky to
+  the bottom of the scroll area, spring-animated in once the form is
+  valid) instead of sitting at the bottom of the form.
+- No changes to createBroadcast, fetchGroups, fetchLogs, or any
+  send/schedule/rate-limit logic.
