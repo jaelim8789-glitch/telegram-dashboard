@@ -32,7 +32,7 @@ export function sanitizeInput(input: string, maxLength: number = 1000): string {
     if (allowedTags.includes(tagName.toLowerCase())) {
       return tag;
     }
-    // 허용되지 않은 태그는 이스케이프 처리
+    // 허용되지 않은 태그는 이스케프 처리
     return escapeHtml(tag);
   });
   
@@ -43,14 +43,18 @@ export function sanitizeInput(input: string, maxLength: number = 1000): string {
 export function generateCSPHeader(): string {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' https:",
-    "connect-src 'self' https:",
-    "frame-src 'self' https:",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io https://static.cloudflareinsights.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https: http:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://*.sentry.io https://api.telegram.org https://telegram.org https://*.telegram.org https://api.telemon.online wss: http:",
+    "media-src 'self' https://telemon.online https://*.telemon.online https://*.sentry.io",
+    "frame-src 'self' https://telegram.org https://*.telegram.org https://*.tma.js",
     "object-src 'none'",
-    "base-uri 'self'"
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests"
   ].join('; ');
 }
 

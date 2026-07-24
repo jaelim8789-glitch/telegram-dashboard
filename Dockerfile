@@ -1,6 +1,10 @@
-﻿# TeleMon Frontend ??鍮뚮뱶 諛⑸쾿
+# TeleMon Frontend ??鍮뚮뱶 諛⑸쾿
 # docker build --no-cache -t telemon-frontend .
 # docker run -p 3000:3000 telemon-frontend
+
+# Production build stage
+FROM node:20-alpine AS production
+WORKDIR /app
 
 # Multi-stage build using Next.js's standalone output (next.config.ts) so the final
 # image ships a minimal self-contained server instead of the full node_modules tree.
@@ -52,4 +56,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 -O /dev/null http://127.0.0.1:3000/ || exit 1
 
 CMD ["node", "server.js"]
-
