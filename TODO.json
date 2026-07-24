@@ -1,30 +1,62 @@
 {
-  "date": "2026-07-23",
-  "phase": "Final Testing",
+  "date": "2026-07-24",
+  "phase": "완료",
   "items": [
     {
-      "id": "ci-fix",
-      "title": "CI 통과",
-      "status": "in_progress",
-      "owner": "Kilo(CTO)",
+      "id": "vps-migration",
+      "title": "VPS 이전 (130.94.32.152 → 130.94.30.112)",
+      "status": "completed",
+      "owner": "Kilo",
       "priority": "🔥 CRITICAL",
-      "eta": "30분"
+      "eta": "완료"
     },
     {
-      "id": "design-deploy",
-      "title": "리디자인 배포",
-      "status": "pending",
+      "id": "ci-build",
+      "title": "CI build 통과",
+      "status": "completed",
+      "owner": "Kilo",
+      "priority": "🔥 CRITICAL",
+      "eta": "완료"
+    },
+    {
+      "id": "design-merge",
+      "title": "리디자인 머지",
+      "status": "completed",
       "owner": "Agent B",
       "priority": "A",
-      "eta": "CI 통과 후"
+      "eta": "완료"
     },
     {
-      "id": "login-e2e",
-      "title": "로그인 E2E",
-      "status": "blocked",
+      "id": "nginx-restore",
+      "title": "nginx 복구",
+      "status": "completed",
+      "owner": "Kilo",
+      "priority": "A",
+      "eta": "완료"
+    },
+    {
+      "id": "login-widget",
+      "title": "로그인 위젯",
+      "status": "completed",
       "owner": "사용자",
       "priority": "🔥 CRITICAL",
-      "eta": "CI 통과 후 5분"
+      "eta": "완료"
+    },
+    {
+      "id": "backend-migration",
+      "title": "backend DB 마이그레이션",
+      "status": "completed",
+      "owner": "Kilo",
+      "priority": "A",
+      "eta": "완료"
+    },
+    {
+      "id": "ci-frontend-docker",
+      "title": "CI frontend-docker 활성화",
+      "status": "completed",
+      "owner": "Kilo",
+      "priority": "A",
+      "eta": "완료"
     }
   ]
 }

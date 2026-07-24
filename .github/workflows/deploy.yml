@@ -1,44 +1,32 @@
-name: Deploy
+name: Frontend CI/CD
 
 on:
   push:
     branches: [master]
-  workflow_dispatch:
-
-env:
-  REGISTRY: ghcr.io
-  VPS_HOST: 130.94.30.112
+  pull_request:
+    branches: [master]
 
 jobs:
-  frontend-docker:
+  frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: corepack enable && pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
+      - uses: actions/setup-node@v3
+        with: { node-version: 20, cache: "pnpm" }
+      - run: pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
       - run: pnpm approve-builds
       - run: pnpm build
+      - run: ls -la .next/standalone/package.json 2>/dev/null && echo "? standalone output OK" || { echo "? .next/standalone not found"; exit 1; }
 
-      - name: Check for unmerged commits
-        run: |
-          git fetch origin master
-          BEHIND=$(git rev-list --count HEAD..origin/master)
-          if [ "$BEHIND" -gt 0 ]; then
-            echo "❌ $BEHIND commits behind origin/master. Another agent pushed first. Deploy blocked."
-            exit 1
-          fi
+  frontend-docker:
+    needs: [frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Backup current image digest
-        run: |
-          DIGEST=$(ssh root@${{ env.VPS_HOST }} \
-            "docker inspect ghcr.io/${{ github.repository }}:latest 2>/dev/null | jq -r '.[0].RepoDigests[0] // empty'" || true)
-          echo "prev_digest=$DIGEST" >> $GITHUB_ENV
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -47,13 +35,17 @@ jobs:
           tags: |
             type=sha,prefix=,suffix=,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
-      - name: Login to GHCR
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
+
+      - name: Build and push frontend image (BuildKit cache)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -64,71 +56,77 @@ jobs:
           cache-to: type=gha,mode=max,scope=frontend
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.telemon.online' }}
+            NEXT_PUBLIC_API_BASE_URL=${{ env.NEXT_PUBLIC_API_BASE_URL }}
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://telemon.online' }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
+            NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
 
-      - name: Deploy to VPS
+  deploy-frontend-production:
+    if: ${{ always() && github.ref == 'refs/heads/master' }}
+    needs: [frontend-docker]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pre-deploy gateway health check
+        id: gateway-precheck
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ env.VPS_HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/telemon/backend
-            docker compose pull frontend
-            docker compose up -d --no-deps frontend
-            docker compose restart nginx
-
-            for i in $(seq 1 30); do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                -H "Host: app.telemon.online" http://localhost/ 2>/dev/null || echo "000")
-              if [ "$STATUS" = "200" ]; then
-                echo "✅ Frontend healthy after $i seconds"
+            set +e
+            for i in $(seq 1 6); do
+              if curl -sf http://localhost/health > /dev/null 2>&1; then
+                echo "Gateway healthy"
                 exit 0
               fi
-              sleep 1
+              sleep 3
             done
-            echo "❌ Health check failed after 30 seconds"
+            echo "Gateway unhealthy, aborting deploy"
             exit 1
 
-      - name: Rollback on failure
-        if: failure()
+      - name: Pull image + restart frontend
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            docker pull ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker stop frontend && docker rm frontend
+            docker run -d --name frontend --restart unless-stopped -p 3000:3000 ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker restart nginx
+
+      - name: Health check (production)
+        id: smoke-frontend-prod
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 12); do
+              curl -sf http://localhost/health > /dev/null 2>&1 && { echo "ok"; exit 0; }
+              sleep 5
+            done
+            echo "smoke fail"; exit 1
+
+      - name: Rollback on health failure
+        if: steps.smoke-frontend-prod.outcome != 'success'
         uses: appleboy/ssh-action@v1.2.2
         continue-on-error: true
         with:
-          host: ${{ env.VPS_HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            PREV_DIGEST="${{ env.prev_digest }}"
-            if [ -n "$PREV_DIGEST" ]; then
-              docker pull ghcr.io/${{ github.repository }}@$PREV_DIGEST
-              docker tag ghcr.io/${{ github.repository }}@$PREV_DIGEST \
-                ghcr.io/${{ github.repository }}:latest
-              docker compose up -d --no-deps frontend
-              echo "✅ Rolled back to previous digest"
-            else
-              echo "⚠️ No previous digest to roll back to"
-            fi
-
-  notify:
-    needs: [frontend-docker]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Telegram notification
-        env:
-          STATUS: ${{ needs.frontend-docker.result }}
-          COMMIT: ${{ github.sha }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          if [ "$STATUS" = "success" ]; then
-            MSG="deploy OK | ${COMMIT:0:7} | $COMMIT_MSG | VPS: ${{ env.VPS_HOST }} | $(date -u '+%Y-%m-%d %H:%M UTC')"
-          else
-            MSG="deploy FAIL ($STATUS) | ${COMMIT:0:7} | VPS: ${{ env.VPS_HOST }} | rollback done"
-          fi
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d "text=$MSG" \
-            -d "parse_mode=Markdown"
+            set -e
+            docker pull ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker stop frontend && docker rm frontend
+            docker run -d --name frontend --restart unless-stopped -p 3000:3000 ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker restart nginx
