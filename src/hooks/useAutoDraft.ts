@@ -12,11 +12,11 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   drafts: (() => { try { return JSON.parse(typeof window !== "undefined" ? localStorage.getItem(DRAFT_KEY) || "[]" : "[]"); } catch { return []; } })(),
   save: (key, value) => set(s => {
     const next = [{ key, value, savedAt: Date.now() }, ...s.drafts.filter(d => d.key !== key)].slice(0, 20);
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in useAutoDraft', e) }
     return { drafts: next };
   }),
   load: (key) => { const d = get().drafts.find(x => x.key === key); return d ? d.value : null; },
-  clear: (key) => set(s => { const next = s.drafts.filter(d => d.key !== key); try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch {} return { drafts: next }; }),
+  clear: (key) => set(s => { const next = s.drafts.filter(d => d.key !== key); try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in useAutoDraft', e) } return { drafts: next }; }),
 }));
 
 export function useAutoDraft(key: string) {

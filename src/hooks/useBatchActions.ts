@@ -15,20 +15,20 @@ export function useBatchActions() {
       try {
         await api.deleteBroadcasts([id]);
         success++;
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in useBatchActions', e) }
     }
     const failed = ids.length - success;
     if (failed > 0) {
       toast({ 
         type: "warning", 
-        title: `${ids.length}건 처리`, 
-        message: `${success}건 성공, ${failed}건 실패` 
+        title: `${ids.length}�?처리`, 
+        message: `${success}�??�공, ${failed}�??�패` 
       });
     } else {
       toast({ 
         type: "success", 
-        title: `${ids.length}건 삭제됨`, 
-        message: `${success}건 성공` 
+        title: `${ids.length}�???��??, 
+        message: `${success}�??�공` 
       });
     }
     fetchAccounts();
@@ -41,20 +41,20 @@ export function useBatchActions() {
       try {
         await api.cancelBroadcasts([id]); // Use plural form with array parameter
         success++;
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in useBatchActions', e) }
     }
     const failed = ids.length - success;
     if (failed > 0) {
       toast({ 
         type: "warning", 
-        title: `${ids.length}건 처리`, 
-        message: `${success}건 성공, ${failed}건 실패` 
+        title: `${ids.length}�?처리`, 
+        message: `${success}�??�공, ${failed}�??�패` 
       });
     } else {
       toast({ 
         type: "success", 
-        title: `${ids.length}건 취소됨`, 
-        message: `${success}건 성공` 
+        title: `${ids.length}�?취소??, 
+        message: `${success}�??�공` 
       });
     }
     fetchAccounts();

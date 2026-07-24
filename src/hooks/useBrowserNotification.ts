@@ -9,7 +9,7 @@ function readPref(key: string): boolean {
 }
 
 function writePref(key: string, v: boolean): void {
-  try { localStorage.setItem(key, String(v)); } catch {}
+  try { localStorage.setItem(key, String(v)); } catch (e) { console.warn('Unhandled error in useBrowserNotification', e) }
 }
 
 const DISABLED_KEY = "telemon-browser-notify-disabled";
@@ -34,7 +34,7 @@ export function useBrowserNotification() {
     if (!isSupported) return;
     const deniedPermanently = readPref(DENIED_KEY);
     if (deniedPermanently) {
-      toast("info", "알림 권한이 차단되었습니다. 브라우저 설정에서 변경해주세요.");
+      toast("info", "?�림 권한??차단?�었?�니?? 브라?��? ?�정?�서 변경해주세??");
       return;
     }
     try {
@@ -42,7 +42,7 @@ export function useBrowserNotification() {
       setPermission(result);
       if (result === "denied") {
         writePref(DENIED_KEY, true);
-        toast("info", "브라우저 알림이 차단되었습니다.");
+        toast("info", "브라?��? ?�림??차단?�었?�니??");
       }
     } catch {
       // permission request can fail silently
@@ -73,11 +73,11 @@ export function useBrowserNotification() {
 
   const notifyBroadcastComplete = useCallback(
     (accountName: string, recipientCount: number, successCount: number, failCount: number) => {
-      const title = "발송 완료";
+      const title = "발송 ?�료";
       const parts: string[] = [];
-      if (successCount > 0) parts.push(`${successCount}건 성공`);
-      if (failCount > 0) parts.push(`${failCount}건 실패`);
-      const body = `[${accountName}] ${recipientCount}명 대상 ${parts.join(", ")}`;
+      if (successCount > 0) parts.push(`${successCount}�??�공`);
+      if (failCount > 0) parts.push(`${failCount}�??�패`);
+      const body = `[${accountName}] ${recipientCount}�??�??${parts.join(", ")}`;
       notify(title, { body, tag: `broadcast-${Date.now()}` });
     },
     [notify]

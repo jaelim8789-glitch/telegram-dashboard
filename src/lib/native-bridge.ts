@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * TeleMon Native Bridge — Capacitor 네이티브 기능 추상화
- * 웹 환경에서는 gracefully fallback, 네이티브에서는 진짜 기능 사용
+ * TeleMon Native Bridge ??Capacitor ?�이?�브 기능 추상??
+ * ???�경?�서??gracefully fallback, ?�이?�브?�서??진짜 기능 ?�용
  */
 
 let native: boolean | null = null;
@@ -13,7 +13,7 @@ function isNative(): boolean {
   return native;
 }
 
-// ── Push Notifications ──
+// ?�?� Push Notifications ?�?�
 
 export async function registerNativePush() {
   if (!isNative()) return false;
@@ -36,7 +36,7 @@ export async function registerNativePush() {
   } catch { return false; }
 }
 
-// ── Haptics ──
+// ?�?� Haptics ?�?�
 
 export async function nativeHaptic(type: "light" | "medium" | "heavy" | "success" | "warning" | "error" = "light") {
   if (!isNative()) return;
@@ -47,30 +47,30 @@ export async function nativeHaptic(type: "light" | "medium" | "heavy" | "success
     } else {
       await Haptics.impact({ style: type as any });
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in native-bridge', e) }
 }
 
-// ── Share ──
+// ?�?� Share ?�?�
 
 export async function nativeShare(title: string, text: string, url?: string) {
   if (!isNative()) return navigator.share?.({ title, text, url }).catch(() => {});
   try {
     const { Share } = await import("@capacitor/share");
     await Share.share({ title, text, url });
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in native-bridge', e) }
 }
 
-// ── Status Bar ──
+// ?�?� Status Bar ?�?�
 
 export async function setStatusBarStyle(style: "light" | "dark") {
   if (!isNative()) return;
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: style === "dark" ? Style.Dark : Style.Light });
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in native-bridge', e) }
 }
 
-// ── App Badge ──
+// ?�?� App Badge ?�?�
 
 export async function setNativeBadge(count: number) {
   if (!isNative()) return;
@@ -79,17 +79,17 @@ export async function setNativeBadge(count: number) {
     if (!mod) return;
     if (count > 0) await mod.Badge.set({ badge: count });
     else await mod.Badge.clear();
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in native-bridge', e) }
 }
 
-// ── Filesystem ──
+// ?�?� Filesystem ?�?�
 
 export async function writeNativeFile(path: string, data: string) {
   if (!isNative()) return;
   try {
     const { Filesystem, Directory } = await import("@capacitor/filesystem");
     await Filesystem.writeFile({ path, data, directory: Directory.Documents });
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in native-bridge', e) }
 }
 
 export async function readNativeFile(path: string): Promise<string | null> {

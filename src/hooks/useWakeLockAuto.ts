@@ -9,14 +9,12 @@ export function useWakeLockAuto() {
   const request = useCallback(async () => {
     try {
       if ("wakeLock" in navigator) {
-        // @ts-ignore - Wake Lock API는 실험적인 기능
+        // @ts-expect-error - Wake Lock API is experimental
         wakeRef.current = await (navigator as any).wakeLock.request("screen");
         setHeld(true);
-        console.log("Wake Lock이 활성화되었습니다.");
         
         wakeRef.current.addEventListener("release", () => {
           setHeld(false);
-          console.log("Wake Lock이 해제되었습니다.");
         });
       }
     } catch (err) {
@@ -29,7 +27,6 @@ export function useWakeLockAuto() {
       if (wakeRef.current) {
         await wakeRef.current.release();
         setHeld(false);
-        console.log("Wake Lock이 해제되었습니다.");
       }
     } catch (err) {
       console.error("Wake Lock 해제 실패:", err);

@@ -44,9 +44,9 @@ const DEFAULT_FETCH_TIMEOUT = 10000;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 
-// API 요청 함수
+// API ?�청 ?�수
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // 환경 변수 존재 여부 확인
+  // ?�경 변??존재 ?��? ?�인
   if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
     console.warn("NEXT_PUBLIC_API_BASE_URL is not set, using default");
   }
@@ -75,29 +75,28 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
             if (refreshed) continue;
           }
           const body = await readErrorBody(res);
-          const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+          const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
           throw new ApiError(detail, res.status, false);
         }
 
         if (res.status === 204) return undefined as T;
         return res.json() as Promise<T>;
       } catch (err) {
-        // HTTP errors (4xx/5xx) ? surface immediately, do NOT retry (unless 401 was handled above)
+        // HTTP errors (4xx/5xx): surface immediately, do NOT retry (unless 401 was handled above)
         if (err instanceof ApiError && !err.isNetworkError) {
           throw err;
         }
 
-        // First attempt failed ? surface the error to the UI immediately
+        // First attempt failed: surface the error to the UI immediately
         const firstError = err instanceof DOMException && err.name === "AbortError"
-          ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
-          : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
+          ? new ApiError("서버 응답이 지연되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+          : new ApiError("?�버???�결?????�습?�다. ?�터???�결???�인?�고 ?�시 ?�도?�주?�요.", undefined, true);
 
         // Retry with exponential backoff, returning the first success or final error
         const lastError = await (async () => {
           for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            // 타임아웃 검사
-            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% 시간이 지나면 종료
-              throw new ApiError("요청 시간이 곧 초과됩니다. 네트워크 상태를 확인해주세요.", undefined, true);
+            // ?�?�아??검??            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% ?�간??지?�면 종료
+              throw new ApiError("?�청 ?�간??�?초과?�니?? ?�트?�크 ?�태�??�인?�주?�요.", undefined, true);
             }
 
             const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
@@ -123,7 +122,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
                   if (refreshed) continue;
                 }
                 const body = await readErrorBody(res);
-                const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+                const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
                 throw new ApiError(detail, res.status, false);
               }
 
@@ -173,7 +172,7 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
 
     if (!res.ok) {
       const body = await readErrorBody(res);
-      const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+      const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
       throw new ApiError(detail, res.status, false);
     }
 
@@ -185,9 +184,9 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
       throw err;
     }
 
-    // First attempt failed ? surface the error to the UI immediately
+        // First attempt failed: surface the error to the UI immediately
     const firstError = err instanceof DOMException && err.name === "AbortError"
-      ? new ApiError("서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
+      ? new ApiError("서버 응답이 지연되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
       : new ApiError("서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.", undefined, true);
 
     // Retry with exponential backoff, returning the first success or final error
@@ -212,7 +211,7 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
 
           if (!res.ok) {
             const body = await readErrorBody(res);
-            const detail = extractDetailMessage(body) ?? `요청에 실패했습니다 (${res.status})`;
+            const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
             throw new ApiError(detail, res.status, false);
           }
 
@@ -238,7 +237,7 @@ export function getApiBaseUrl(): string {
 
 // -- Network resilience ---------------------------------------------
 // Retry with exponential backoff so Render free-tier cold starts
-// (5-30 seconds) don't surface a "서버에 연결할 수 없습니다" error.
+// (5-30 seconds) don't surface a "?�버???�결?????�습?�다" error.
 // Only network errors (connection refused, DNS failure) are retried;
 // HTTP 4xx/5xx responses are returned immediately.
 //
@@ -261,7 +260,7 @@ function flushSlowApi() {
     const merged = stored.concat(slowApiBuffer).slice(-200);
     localStorage.setItem(SLOW_LOG_KEY, JSON.stringify(merged));
     slowApiBuffer = [];
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in api', e) }
 }
 
 function recordSlowApi(path: string, durationMs: number, status: number | undefined) {
@@ -285,7 +284,7 @@ export function getSlowApiLog(): { path: string; durationMs: number; status: num
 }
 
 export function clearSlowApiLog(): void {
-  try { localStorage.removeItem(SLOW_LOG_KEY); } catch {}
+  try { localStorage.removeItem(SLOW_LOG_KEY); } catch (e) { console.warn('Unhandled error in api', e) }
 }
 
 export function authHeaders(): Record<string, string> {
@@ -608,8 +607,8 @@ function toSelfResetResult(api: ApiSelfResetResult): SelfResetResult {
   return { reset: api.reset, requiresTwoFactor: api.requires_2fa, detail: api.detail };
 }
 
-// "이미 등록된 전화번호입니다" 셀프서비스 재등록 ? 해당 번호의 Telegram 인증(+2FA)으로
-// 본인 확인 후 기존에 남아있던 계정 레코드를 정리한다.
+// "?��? ?�록???�화번호?�니?? ?�?�서비스 ?�등�?? ?�당 번호??Telegram ?�증(+2FA)?�로
+// 본인 ?�인 ??기존???�아?�던 계정 ?�코?��? ?�리?�다.
 export async function selfResetSendCode(phone: string): Promise<SelfResetResult> {
   const result = await request<ApiSelfResetResult>("/api/accounts/self-reset/send-code", {
     method: "POST",
@@ -2175,13 +2174,13 @@ export async function requestAiReplyStream(
 
   if (!res.ok) {
     const err = await readErrorBody(res).catch(() => null);
-    onChunk({ type: "error", error: extractDetailMessage(err) || "스트리밍 요청 실패" });
+    onChunk({ type: "error", error: extractDetailMessage(err) || "?�트리밍 ?�청 ?�패" });
     return;
   }
 
   const reader = res.body?.getReader();
   if (!reader) {
-    onChunk({ type: "error", error: "응답 스트림을 읽을 수 없습니다" });
+    onChunk({ type: "error", error: "?�답 ?�트림을 ?�을 ???�습?�다" });
     return;
   }
 
@@ -2514,7 +2513,7 @@ export async function fetchPixelOffices(): Promise<{ id: string; name: string; s
 // --- TeleMon AI Chat Wrapper (system prompt auto-injected) ----
 
 /**
- * TeleMon AI chat — @/lib/ai system prompt is injected via augmented message.
+ * TeleMon AI chat ??@/lib/ai system prompt is injected via augmented message.
  * Uses the backend /api/ai/chat endpoint.
  */
 export async function telemonAiChat(

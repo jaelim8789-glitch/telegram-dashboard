@@ -20,13 +20,13 @@ export function useNotificationSound() {
       osc.frequency.value = sound === "urgent" ? 880 : 440;
       gain.gain.value = 0.1;
       osc.start(); osc.stop(ctx.currentTime + 0.15);
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in useNotificationSound', e) }
   }, [settings]);
 
   const setSound = useCallback((accountId: string, sound: string) => {
     const next = { ...settings, [accountId]: sound };
     setSettings(next);
-    try { localStorage.setItem("telemon-notification-sounds", JSON.stringify(next)); } catch {}
+    try { localStorage.setItem("telemon-notification-sounds", JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in useNotificationSound', e) }
   }, [settings]);
 
   return { play, setSound, settings };
@@ -35,9 +35,9 @@ export function useNotificationSound() {
 export function NotificationSoundSettings({ accountId, current, onChange }: { accountId: string; current: string; onChange: (sound: string) => void }) {
   const sounds = [
     { id: "default", label: "기본" },
-    { id: "urgent", label: "긴급 (높은음)" },
-    { id: "gentle", label: "부드러운" },
-    { id: "none", label: "끄기" },
+    { id: "urgent", label: "긴급 (?��???" },
+    { id: "gentle", label: "부?�러?? },
+    { id: "none", label: "?�기" },
   ];
   return (
     <div className="flex gap-1.5 flex-wrap">

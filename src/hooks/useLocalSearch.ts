@@ -18,7 +18,7 @@ export function useLocalSearch() {
       ]);
       setIndex({ accounts: acc || [], groups: grp || [], broadcasts: brd || [] });
       loaded.current = true;
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in useLocalSearch', e) }
   }, []);
 
   const search = useCallback((q: string) => {

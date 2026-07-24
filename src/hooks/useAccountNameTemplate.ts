@@ -16,8 +16,8 @@ export function useAccountNameTemplate() {
   }, []);
 
   const saveTemplate = useCallback((t: string) => {
-    try { localStorage.setItem("telemon-account-name-templates", JSON.stringify([t])); } catch {}
-    toast({ type: "success", title: "템플릿 저장됨" });
+    try { localStorage.setItem("telemon-account-name-templates", JSON.stringify([t])); } catch (e) { console.warn('Unhandled error in useAccountNameTemplate', e) }
+    toast({ type: "success", title: "?�플�??�?�됨" });
   }, [toast]);
 
   return { templates, applyTemplate, saveTemplate };

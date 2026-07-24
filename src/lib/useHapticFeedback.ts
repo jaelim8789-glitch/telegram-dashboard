@@ -8,7 +8,7 @@ function isHapticEnabled(): boolean {
 }
 
 export function setHapticEnabled(enabled: boolean) {
-  try { localStorage.setItem("telemon-haptic-enabled", String(enabled)); } catch {}
+  try { localStorage.setItem("telemon-haptic-enabled", String(enabled)); } catch (e) { console.warn('Unhandled error in useHapticFeedback', e) }
 }
 
 export function useHapticFeedback() {

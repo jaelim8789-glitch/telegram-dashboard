@@ -1,5 +1,6 @@
 "use client";
-// ë²ë¤ ìµì ???´ë??class BundleOptimizer {
+// BundleOptimizer: dead code / unused import / chunk optimization
+class BundleOptimizer {
   private static instance: BundleOptimizer;
   private deadCodeMap: Map<string, boolean> = new Map();
   private unusedImports: Set<string> = new Set();

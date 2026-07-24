@@ -29,7 +29,7 @@ function safeSessionSet(key: string, value: string): void {
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.setItem(key, value);
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in offlineDetector', e) }
 }
 
 function safeSessionRemove(key: string): void {
@@ -37,7 +37,7 @@ function safeSessionRemove(key: string): void {
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem(key);
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in offlineDetector', e) }
 }
 
 export function useOnlineStatus() {

@@ -9,8 +9,8 @@ import {
   LoopCycle, 
   CycleAnalysis 
 } from '@/types/autonomous-growth';
-import { requestAiReply } from '@/lib/api'; // AI 콘텐츠 생성을 위한 API
-import * as api from '@/lib/api'; // 발송을 위한 API
+import { requestAiReply } from '@/lib/api'; // AI 콘텐�??�성???�한 API
+import * as api from '@/lib/api'; // 발송???�한 API
 
 const STORAGE_KEY = "autonomous_growth_loops";
 
@@ -29,7 +29,7 @@ function loadLoops(): Map<string, AutonomousGrowthLoop> {
       Object.entries(parsed).forEach(([k, v]) => map.set(k, v as AutonomousGrowthLoop));
       return map;
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in autonomous-growth-manager', e) }
   return new Map();
 }
 
@@ -39,7 +39,7 @@ function saveLoops(loops: Map<string, AutonomousGrowthLoop>) {
     const obj: Record<string, AutonomousGrowthLoop> = {};
     loops.forEach((v, k) => { obj[k] = v; });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in autonomous-growth-manager', e) }
 }
 
 class AutonomousGrowthManager {
@@ -47,7 +47,7 @@ class AutonomousGrowthManager {
   private activeTimers: Map<string, NodeJS.Timeout> = new Map();
 
   /**
-   * 새로운 자동 성장 루프를 생성합니다
+   * ?�로???�동 ?�장 루프�??�성?�니??
    */
   async createLoop(goal: string, userId: string): Promise<AutonomousGrowthLoop> {
     const loopId = `loop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -77,7 +77,7 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 자동 성장 루프를 시작합니다
+   * ?�동 ?�장 루프�??�작?�니??
    */
   async startLoop(loopId: string): Promise<boolean> {
     const loop = this.loops.get(loopId);
@@ -91,20 +91,20 @@ class AutonomousGrowthManager {
       return false;
     }
 
-    // 루프 상태 업데이트
+    // 루프 ?�태 ?�데?�트
     loop.status = 'running';
     loop.updatedAt = new Date();
     this.loops.set(loopId, loop);
     saveLoops(this.loops);
 
-    // 루프 실행
+    // 루프 ?�행
     this.executeLoop(loopId);
 
     return true;
   }
 
   /**
-   * 자동 성장 루프를 일시 중지합니다
+   * ?�동 ?�장 루프�??�시 중�??�니??
    */
   async pauseLoop(loopId: string): Promise<boolean> {
     const loop = this.loops.get(loopId);
@@ -123,7 +123,7 @@ class AutonomousGrowthManager {
     this.loops.set(loopId, loop);
     saveLoops(this.loops);
 
-    // 실행 중인 타이머 정리
+    // ?�행 중인 ?�?�머 ?�리
     if (this.activeTimers.has(loopId)) {
       clearTimeout(this.activeTimers.get(loopId)!);
       this.activeTimers.delete(loopId);
@@ -133,7 +133,7 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 자동 성장 루프를 중지합니다
+   * ?�동 ?�장 루프�?중�??�니??
    */
   async stopLoop(loopId: string): Promise<boolean> {
     const loop = this.loops.get(loopId);
@@ -147,7 +147,7 @@ class AutonomousGrowthManager {
     this.loops.set(loopId, loop);
     saveLoops(this.loops);
 
-    // 실행 중인 타이머 정리
+    // ?�행 중인 ?�?�머 ?�리
     if (this.activeTimers.has(loopId)) {
       clearTimeout(this.activeTimers.get(loopId)!);
       this.activeTimers.delete(loopId);
@@ -175,7 +175,7 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 자동 성장 루프를 실행합니다
+   * ?�동 ?�장 루프�??�행?�니??
    */
   private async executeLoop(loopId: string) {
     const loop = this.loops.get(loopId);
@@ -183,12 +183,12 @@ class AutonomousGrowthManager {
       return;
     }
 
-    // 최대 실행 시간 체크 추가
+    // 최�? ?�행 ?�간 체크 추�?
     const startTime = Date.now();
-    const MAX_EXECUTION_TIME = 30 * 60 * 1000; // 30분
+    const MAX_EXECUTION_TIME = 30 * 60 * 1000; // 30�?
 
     try {
-      // 최대 실행 시간 초과 시 루프 종료
+      // 최�? ?�행 ?�간 초과 ??루프 종료
       if (Date.now() - startTime > MAX_EXECUTION_TIME) {
         console.warn(`Loop ${loopId} exceeded maximum execution time, stopping.`);
         await this.stopLoop(loopId);
@@ -203,8 +203,8 @@ class AutonomousGrowthManager {
 
       const nextRunDelay = this.calculateNextRunDelay(loop.strategy.timingStrategy);
       
-      // 너무 짧은 지연 시간을 방지하여 시스템 과부하 방지
-      const safeDelay = Math.max(nextRunDelay, 30000); // 최소 30초 지연
+      // ?�무 짧�? 지???�간??방�??�여 ?�스??과�???방�?
+      const safeDelay = Math.max(nextRunDelay, 30000); // 최소 30�?지??
       
       const timer = setTimeout(() => {
         this.executeLoop(loopId);
@@ -217,24 +217,24 @@ class AutonomousGrowthManager {
       const isRateLimit = this.isRateLimitError(error);
       loop.lastError = error instanceof Error ? error.message : String(error);
 
-      // 최대 재시도 횟수 초과 시 실패 처리
+      // 최�? ?�시???�수 초과 ???�패 처리
       if (loop.retryCount >= MAX_RETRY_COUNT) {
         console.error(`Loop ${loopId} failed after ${MAX_RETRY_COUNT} retries`);
         loop.status = 'failed';
         loop.updatedAt = new Date();
         this.loops.set(loopId, loop);
         saveLoops(this.loops);
-        return; // 더 이상 재시도하지 않음
+        return; // ???�상 ?�시?�하지 ?�음
       }
 
-      // 재시도 로직
+      // ?�시??로직
       loop.retryCount++;
       const delay = this.getBackoffDelay(loop.retryCount, isRateLimit);
       
-      // 너무 긴 대기 시간을 방지
-      const cappedDelay = Math.min(delay, 30 * 60 * 1000); // 최대 30분
+      // ?�무 �??��??�간??방�?
+      const cappedDelay = Math.min(delay, 30 * 60 * 1000); // 최�? 30�?
       
-      console.log(
+      console.debug(
         `Retrying loop ${loopId} in ${cappedDelay}ms (attempt ${loop.retryCount}/${MAX_RETRY_COUNT})`
       );
       loop.updatedAt = new Date();
@@ -249,7 +249,7 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 루프의 단일 사이클을 실행합니다
+   * 루프???�일 ?�이?�을 ?�행?�니??
    */
   private async executeCycle(loopId: string): Promise<void> {
     const loop = this.loops.get(loopId);
@@ -257,31 +257,31 @@ class AutonomousGrowthManager {
       throw new Error(`Loop with id ${loopId} not found`);
     }
 
-    // 1. 콘텐츠 생성
+    // 1. 콘텐�??�성
     const content = await this.generateContent(loop.strategy.contentStrategy, loop.goal, loop.userId);
 
-    // 2. 발송 대상 결정
+    // 2. 발송 ?�??결정
     const targets = await this.determineTargets(loop.strategy.targetingStrategy);
 
-    // 3. 콘텐츠 발송
+    // 3. 콘텐�?발송
     const sentResult = await this.sendContent(content, targets, loop.strategy.timingStrategy);
 
-    // 4. 사이클 분석
+    // 4. ?�이??분석
     const analysis = await this.analyzeCycle(content, sentResult);
 
-    // 5. 전략 업데이트
+    // 5. ?�략 ?�데?�트
     const updatedStrategy = await this.updateStrategy(loop.strategy, analysis);
 
-    // 6. 메트릭 업데이트
+    // 6. 메트�??�데?�트
     const updatedMetrics = await this.updateMetrics(loop.successMetrics, sentResult, analysis);
 
-    // 7. 루프 상태 업데이트
+    // 7. 루프 ?�태 ?�데?�트
     loop.currentCycle++;
     loop.strategy = updatedStrategy;
     loop.successMetrics = updatedMetrics;
     loop.updatedAt = new Date();
 
-    // 목표 달성 여부 확인
+    // 목표 ?�성 ?��? ?�인
     if (this.isGoalAchieved(loop)) {
       loop.status = 'completed';
     }
@@ -291,21 +291,21 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 콘텐츠를 생성합니다
+   * 콘텐츠�? ?�성?�니??
    */
   private async generateContent(strategy: ContentStrategy, goal: string, accountId: string): Promise<string> {
-    // AI를 사용하여 콘텐츠 생성
+    // AI�??�용?�여 콘텐�??�성
     const prompt = `
-      사용자의 목표: "${goal}"
-      콘텐츠 유형: ${strategy.contentType}
-      톤: ${strategy.tone}
+      ?�용?�의 목표: "${goal}"
+      콘텐�??�형: ${strategy.contentType}
+      ?? ${strategy.tone}
       
-      위 조건에 맞는 콘텐츠를 생성해주세요. 이 콘텐츠는 Telegram 그룹에 발송될 예정입니다.
-      콘텐츠는 간결하고 매력적이어야 하며, 사용자의 목표 달성을 돕는 내용이어야 합니다.
+      ??조건??맞는 콘텐츠�? ?�성?�주?�요. ??콘텐츠는 Telegram 그룹??발송???�정?�니??
+      콘텐츠는 간결?�고 매력?�이?�야 ?�며, ?�용?�의 목표 ?�성???�는 ?�용?�어???�니??
     `;
 
     try {
-      // AI API를 사용하여 콘텐츠 생성
+      // AI API�??�용?�여 콘텐�??�성
       const aiResponse = await requestAiReply({
         accountId,
         message: prompt,
@@ -316,45 +316,45 @@ class AutonomousGrowthManager {
       return aiResponse.reply;
     } catch (error) {
       console.error('Failed to generate content:', error);
-      // 실패 시 기본 콘텐츠 반환
-      return `안녕하세요! ${goal}을(를) 위해 연락드렸습니다.`;
+      // ?�패 ??기본 콘텐�?반환
+      return `?�녕?�세?? ${goal}??�? ?�해 ?�락?�렸?�니??`;
     }
   }
 
   /**
-   * 발송 대상을 결정합니다
+   * 발송 ?�?�을 결정?�니??
    */
   private async determineTargets(strategy: TargetingStrategy): Promise<string[]> {
     try {
-      // 실제 계정 및 그룹 정보를 가져옴
+      // ?�제 계정 �?그룹 ?�보�?가?�옴
       const accounts = await api.fetchAccounts();
       const activeAccount = accounts.find(acc => acc.status === 'active');
       
       if (!activeAccount) {
-        throw new Error('활성 계정이 없습니다');
+        throw new Error('?�성 계정???�습?�다');
       }
 
-      // 계정의 그룹 목록 가져오기
+      // 계정??그룹 목록 가?�오�?
       const groups = await api.fetchGroups(activeAccount.id);
       
-      // 전략에 따라 타겟팅
+      // ?�략???�라 ?�겟팅
       let targetedGroups = groups;
       
-      // 제외 그룹 필터링
+      // ?�외 그룹 ?�터�?
       if (strategy.excludeGroups && strategy.excludeGroups.length > 0) {
         targetedGroups = targetedGroups.filter(group => 
           !strategy.excludeGroups.includes(group.id)
         );
       }
       
-      // 포함 그룹 필터링
+      // ?�함 그룹 ?�터�?
       if (strategy.groups && strategy.groups.length > 0) {
         targetedGroups = targetedGroups.filter(group => 
           strategy.groups.includes(group.id)
         );
       }
 
-      // 최대 10개 그룹으로 제한 (API 제한 고려)
+      // 최�? 10�?그룹?�로 ?�한 (API ?�한 고려)
       return targetedGroups.slice(0, 10).map(group => group.id);
     } catch (error) {
       console.error('Failed to determine targets:', error);
@@ -363,19 +363,19 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 콘텐츠를 발송합니다
+   * 콘텐츠�? 발송?�니??
    */
   private async sendContent(content: string, targets: string[], timing: TimingStrategy): Promise<any> {
     try {
-      // 활성 계정 가져오기
+      // ?�성 계정 가?�오�?
       const accounts = await api.fetchAccounts();
       const activeAccount = accounts.find(acc => acc.status === 'active');
       
       if (!activeAccount) {
-        throw new Error('활성 계정이 없습니다');
+        throw new Error('?�성 계정???�습?�다');
       }
 
-      // 발송 요청
+      // 발송 ?�청
       const broadcast = await api.sendToGroup({
         accountId: activeAccount.id,
         message: content,
@@ -403,10 +403,10 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 사이클을 분석합니다
+   * ?�이?�을 분석?�니??
    */
   private async analyzeCycle(content: string, sentResult: any): Promise<CycleAnalysis> {
-    // 간단한 분석 로직 (실제 구현에서는 더 복잡한 분석이 필요)
+    // 간단??분석 로직 (?�제 구현?�서????복잡??분석???�요)
     const analysis: CycleAnalysis = {
       performance: sentResult.success ? 'good' : 'poor',
       improvementSuggestions: [],
@@ -415,35 +415,35 @@ class AutonomousGrowthManager {
 
     if (!sentResult.success) {
       analysis.failureReasons = [sentResult.error];
-      analysis.improvementSuggestions.push('콘텐츠를 변경해보세요');
-      analysis.nextSteps.push('콘텐츠 전략을 조정합니다');
+      analysis.improvementSuggestions.push('콘텐츠�? 변경해보세??);
+      analysis.nextSteps.push('콘텐�??�략??조정?�니??);
     } else {
-      analysis.improvementSuggestions.push('성공적인 발송입니다. 계속 진행하세요');
-      analysis.nextSteps.push('다음 사이클로 진행합니다');
+      analysis.improvementSuggestions.push('?�공?�인 발송?�니?? 계속 진행?�세??);
+      analysis.nextSteps.push('?�음 ?�이?�로 진행?�니??);
     }
 
     return analysis;
   }
 
   /**
-   * 전략을 업데이트합니다
+   * ?�략???�데?�트?�니??
    */
   private async updateStrategy(currentStrategy: Strategy, analysis: CycleAnalysis): Promise<Strategy> {
-    // 분석 결과에 따라 전략 업데이트
+    // 분석 결과???�라 ?�략 ?�데?�트
     const updatedStrategy = { ...currentStrategy };
 
-    // 실패한 경우 전략 조정
+    // ?�패??경우 ?�략 조정
     if (analysis.failureReasons && analysis.failureReasons.length > 0) {
-      // 콘텐츠 전략 조정
+      // 콘텐�??�략 조정
       if (updatedStrategy.contentStrategy.frequency > 1) {
         updatedStrategy.contentStrategy.frequency--;
       }
 
-      // 타겟팅 전략 조정
+      // ?�겟팅 ?�략 조정
       if (analysis.improvementSuggestions.some(suggestion => 
-          suggestion.toLowerCase().includes('콘텐츠')
+          suggestion.toLowerCase().includes('콘텐�?)
         )) {
-        // 콘텐츠 유형 변경
+        // 콘텐�??�형 변�?
         if (updatedStrategy.contentStrategy.contentType === 'text') {
           updatedStrategy.contentStrategy.contentType = 'mixed';
         }
@@ -454,12 +454,12 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 메트릭을 업데이트합니다
+   * 메트�?�� ?�데?�트?�니??
    */
   private async updateMetrics(currentMetrics: Metrics, sentResult: any, analysis: CycleAnalysis): Promise<Metrics> {
     const updatedMetrics = { ...currentMetrics };
     
-    // 발송 성공 시 메트릭 업데이트
+    // 발송 ?�공 ??메트�??�데?�트
     if (sentResult.success) {
       updatedMetrics.totalReached += sentResult.sentCount;
       updatedMetrics.conversionRate = Math.min(100, updatedMetrics.conversionRate + 0.1);
@@ -471,7 +471,7 @@ class AutonomousGrowthManager {
 
     updatedMetrics.lastUpdated = new Date();
     
-    // 일일 목표 업데이트
+    // ?�일 목표 ?�데?�트
     const today = new Date().toISOString().split('T')[0];
     const todayGoalIndex = updatedMetrics.dailyGoals.findIndex(
       goal => goal.date.toISOString().split('T')[0] === today
@@ -482,12 +482,12 @@ class AutonomousGrowthManager {
     } else {
       updatedMetrics.dailyGoals.push({
         date: new Date(),
-        target: 10, // 기본 일일 목표
+        target: 10, // 기본 ?�일 목표
         achieved: sentResult.sentCount || 0
       });
     }
 
-    // 최대 30일치 데이터만 유지
+    // 최�? 30?�치 ?�이?�만 ?��?
     if (updatedMetrics.dailyGoals.length > 30) {
       updatedMetrics.dailyGoals = updatedMetrics.dailyGoals.slice(-30);
     }
@@ -496,11 +496,11 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 목표 달성 여부를 확인합니다
+   * 목표 ?�성 ?��?�??�인?�니??
    */
   private isGoalAchieved(loop: AutonomousGrowthLoop): boolean {
-    // 현재는 단순하게 totalReached가 1000 이상이면 달성으로 간주
-    // 실제 구현에서는 goal 문자열을 파싱하여 실제 목표와 비교
+    // ?�재???�순?�게 totalReached가 1000 ?�상?�면 ?�성?�로 간주
+    // ?�제 구현?�서??goal 문자?�을 ?�싱?�여 ?�제 목표?� 비교
     const goalMatch = loop.goal.match(/(\d+)/);
     if (goalMatch) {
       const targetNumber = parseInt(goalMatch[1], 10);
@@ -510,14 +510,14 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 기본 전략을 반환합니다
+   * 기본 ?�략??반환?�니??
    */
   private getDefaultStrategy(): Strategy {
     return {
       contentStrategy: {
         contentType: 'text',
         tone: 'promotional',
-        frequency: 5, // 하루 5회 발송
+        frequency: 5, // ?�루 5??발송
         aiModel: 'gpt-4'
       },
       targetingStrategy: {
@@ -529,7 +529,7 @@ class AutonomousGrowthManager {
       timingStrategy: {
         optimalTimes: ['09:00', '12:00', '15:00', '18:00'],
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        delayBetweenSends: 30, // 발송 간 30초 지연
+        delayBetweenSends: 30, // 발송 �?30�?지??
         pausePeriods: []
       },
       contentVariations: []
@@ -537,28 +537,28 @@ class AutonomousGrowthManager {
   }
 
   /**
-   * 다음 실행까지의 지연 시간을 계산합니다
+   * ?�음 ?�행까�???지???�간??계산?�니??
    */
   private calculateNextRunDelay(timingStrategy: TimingStrategy): number {
-    // 기본적으로 1시간 (3600000ms)으로 설정
-    // 실제 구현에서는 timingStrategy에 따라 동적으로 계산
+    // 기본?�으�?1?�간 (3600000ms)?�로 ?�정
+    // ?�제 구현?�서??timingStrategy???�라 ?�적?�로 계산
     return 3600000; // 1 hour in milliseconds
   }
 
   /**
-   * 루프 목록을 가져옵니다
+   * 루프 목록??가?�옵?�다
    */
   getLoops(): AutonomousGrowthLoop[] {
     return Array.from(this.loops.values());
   }
 
   /**
-   * 특정 루프를 가져옵니다
+   * ?�정 루프�?가?�옵?�다
    */
   getLoop(loopId: string): AutonomousGrowthLoop | undefined {
     return this.loops.get(loopId);
   }
 }
 
-// 싱글톤 인스턴스 생성
+// ?��????�스?�스 ?�성
 export const autonomousGrowthManager = new AutonomousGrowthManager();

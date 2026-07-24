@@ -13,7 +13,7 @@ export function useEmptyStateCTA() {
         title: "연결된 계정이 없습니다",
         desc: "첫 Telegram 계정을 연결하고 자동화를 시작하세요",
         cta: "계정 연결하기",
-        action: () => setActiveTab("register" as any),
+        action: () => setActiveTab("register"),
       },
       broadcasts: {
         icon: "✉️",

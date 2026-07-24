@@ -7,7 +7,7 @@ export function useBatterySaverAuto() {
     // 배터리 정보가 있는지 확인하고 사용
     if ('getBattery' in navigator || 'battery' in navigator) {
       const getBattery = () => {
-        // @ts-ignore - 배터리 API는 브라우저마다 지원 여부가 다름
+        // @ts-expect-error - Battery API is experimental, varies by browser
         return navigator.getBattery ? navigator.getBattery() : (navigator as any).battery;
       };
 
