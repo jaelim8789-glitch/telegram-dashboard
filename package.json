@@ -13,6 +13,7 @@
   ],
   "private": true,
   "scripts": {
+    "docker:build": "docker build --no-cache --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.telemon.online --build-arg NEXT_PUBLIC_SITE_URL=https://telemon.online --build-arg NEXT_PUBLIC_APP_URL=https://app.telemon.online --build-arg NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=telemon_verify_bot -t telemon-frontend .",
     "analyze": "cross-env ANALYZE=true npm run build",
     "approve-builds": "bash scripts/pnpm-approve-builds.sh",
     "branch-status": "bash scripts/git-branch-status.sh",
