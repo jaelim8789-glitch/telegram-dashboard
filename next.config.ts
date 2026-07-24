@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 let nextConfig: NextConfig = {
   ...(process.env.CAPACITOR ? { output: "export", distDir: "dist" } : {}),
@@ -54,7 +54,8 @@ let nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io https://static.cloudflareinsights.com",
+             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io https://static.cloudflareinsights.com",
+             "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io https://static.cloudflareinsights.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https: http:",
             "font-src 'self' https://fonts.gstatic.com",
@@ -78,3 +79,4 @@ let nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
