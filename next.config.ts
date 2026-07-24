@@ -54,7 +54,7 @@ let nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io",  // 수정: https://telegram.org을 https://*.telegram.org 앞에 명시적으로 추가
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io https://static.cloudflareinsights.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https: http:",
             "font-src 'self' https://fonts.gstatic.com",
