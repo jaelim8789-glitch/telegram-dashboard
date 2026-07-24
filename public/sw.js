@@ -7,7 +7,7 @@ const CACHE_NAME = `telemon-v9cD-91OZKvsm9eiCRCEDC`;
 const TEMP_CACHE_NAME = 'telemon-temp-v1';
 const STATIC_ASSETS = [
   "/",
-  "/app",
+  "/workspace",
   "/offline",
   "/manifest.json",
   "/favicon.svg",
