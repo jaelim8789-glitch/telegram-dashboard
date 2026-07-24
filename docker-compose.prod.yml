@@ -6,7 +6,8 @@ services:
     container_name: telemon_watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30 --cleanup --include-restarting
+    # Poll for new images every 6h (21600s) instead of every 30s
+    command: --interval 21600 --cleanup --include-restarting
     environment:
       - TZ=Asia/Seoul
     restart: unless-stopped
