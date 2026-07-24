@@ -1,4 +1,4 @@
-catch (e) { console.warn('Unhandled error in page', e) }rn('Unhandled error in page', e) }ort { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ChevronLeft, KeyRound, RefreshCw, Smartphone, UserCheck, Users, Search, CheckCircle2, Copy, Trash2, AlertTriangle, Zap, Sparkles, TrendingUp } from "lucide-react";
 import { AdminGuard } from "@/components/admin/AdminGuard";
@@ -36,7 +36,7 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
       const result = await api.adminUserLookup(searchQuery.trim());
       setLookupResult(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "?�용??조회???�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "?�용??조회???�패?�습?�다.");
     } finally { setSearching(false); }
   }
 
@@ -46,13 +46,13 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
     try {
       const result = await api.manualIssueApiKey(lookupResult.phone, memo.trim() || undefined, plan);
       if (result.alreadyIssued) {
-        setError("?��? API ?��? 발급???�용?�입?�다.");
+        setError("?��? API ?��? 발급???�용?�입?�다.");
       } else {
         setIssuedKey(result.apiKey);
         onIssued();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "API ??발급???�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "API ??발급???�패?�습?�다.");
     } finally { setIssuing(false); }
   }
 
@@ -62,23 +62,23 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
     <Panel title={
       <div className="flex items-center gap-2">
         <KeyRound className="h-4 w-4 text-amber-400" />
-        ?�동 API ??발급
+        ?�동 API ??발급
       </div>
-    } description="관리자가 ?�하???�용?�에�?직접 API ?��? 발급?�니??">
+    } description="관리자가 ?�하???�용?�에�?직접 API ?��? 발급?�니??">
       <form onSubmit={handleSearch} className="mb-3 flex items-start gap-2">
         <div className="flex-1">
-          <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="?�화번호 ?�력..." required />
+          <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="?�화번호 ?�력..." required />
         </div>
-        <Button type="submit" disabled={searching}>{searching ? "검??�?.." : "조회"}</Button>
+        <Button type="submit" disabled={searching}>{searching ? "검??�?.." : "조회"}</Button>
       </form>
       {error && <InlineError className="mb-3">{error}</InlineError>}
       {hasResult && !issuedKey && (
         <div className="rounded-xl border border-app-border bg-app-bg p-3 space-y-3">
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div><span className="text-app-text-muted">?�화번호</span><p className="font-medium text-app-text">{lookupResult.phone}</p></div>
-            <div><span className="text-app-text-muted">?�태</span><p className="font-medium">{lookupResult.isActive ? "?�성" : "비활??}</p></div>
-            <div><span className="text-app-text-muted">?�랜</span><p className="font-medium">{lookupResult.tenantPlan ?? "-"}</p></div>
-            <div><span className="text-app-text-muted">API ??/span><p className="font-medium">{lookupResult.hasApiKey ? "???�음" : "???�음"}</p></div>
+            <div><span className="text-app-text-muted">?�화번호</span><p className="font-medium text-app-text">{lookupResult.phone}</p></div>
+            <div><span className="text-app-text-muted">?�태</span><p className="font-medium">{lookupResult.isActive ? "?�성" : "비활??}</p></div>
+            <div><span className="text-app-text-muted">?�랜</span><p className="font-medium">{lookupResult.tenantPlan ?? "-"}</p></div>
+            <div><span className="text-app-text-muted">API ??/span><p className="font-medium">{lookupResult.hasApiKey ? "???�음" : "???�음"}</p></div>
           </div>
           <div className="space-y-2">
             <Select value={plan} onChange={(e) => setPlan(e.target.value as "free" | "pro" | "team")}>
@@ -86,7 +86,7 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
               <option value="pro">Pro</option>
               <option value="team">Team</option>
             </Select>
-            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="발급 ?�유 (?�택)" />
+            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="발급 ?�유 (?�택)" />
             <Button onClick={handleIssue} disabled={issuing} loading={issuing} className="w-full">
               <KeyRound className="h-4 w-4" /> API ??발급
             </Button>
@@ -95,7 +95,7 @@ function ManualIssueSection({ onIssued }: { onIssued: () => void }) {
       )}
       {issuedKey && (
         <div className="rounded-xl border border-app-success/30 bg-app-success-muted/20 p-3 space-y-2">
-          <div className="flex items-center gap-2 text-app-success"><CheckCircle2 className="h-4 w-4" /> 발급 ?�료</div>
+          <div className="flex items-center gap-2 text-app-success"><CheckCircle2 className="h-4 w-4" /> 발급 ?�료</div>
           <code className="block break-all rounded-lg bg-app-bg p-2 text-xs font-mono">{issuedKey}</code>
           <Button variant="ghost" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(issuedKey); } catch {} }}>
             <Copy className="h-3 w-3" /> 복사
@@ -123,9 +123,9 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
       setDone(true);
       setPhone("");
       onDeleted();
-      toast("success", `?�용??${result.phone} ??�� ?�료`);
+      toast("success", `?�용??${result.phone} ??�� ?�료`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "??��???�패?�습?�다.");
+      setError(err instanceof Error ? err.message : "??��???�패?�습?�다.");
     } finally { setDeleting(false); }
   }
 
@@ -135,17 +135,17 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
       title={
         <div className="flex items-center gap-2">
           <Trash2 className="h-4 w-4 text-rose-400" />
-          ?�화번호�??�용????��
+          ?�화번호�??�용????��
         </div>
       }
-      description="DB?�서 ?�용??+ Tenant + ?�션???�전????��?�니?? ??�� ??Telegram Login Widget?�로 ?��???가?�합?�다."
+      description="DB?�서 ?�용??+ Tenant + ?�션???�전????��?�니?? ??�� ??Telegram Login Widget?�로 ?��???가?�합?�다."
     >
       <div className="flex items-start gap-2">
         <div className="flex-1">
           <Input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="?�화번호 (?? +819010679014)"
+            placeholder="?�화번호 (?? +819010679014)"
             className="font-mono"
           />
         </div>
@@ -155,21 +155,21 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
           disabled={!phone.trim() || deleting}
           loading={deleting}
         >
-          <Trash2 className="h-4 w-4" /> ??��
+          <Trash2 className="h-4 w-4" /> ??��
         </Button>
       </div>
       {error && <InlineError className="mt-2">{error}</InlineError>}
-      {done && <p className="mt-2 text-xs text-app-success">????�� ?�료. Telegram Login?�로 ?��???가?�합?�다.</p>}
+      {done && <p className="mt-2 text-xs text-app-success">????�� ?�료. Telegram Login?�로 ?��???가?�합?�다.</p>}
       <p className="mt-2 text-[10px] text-app-text-subtle">
-        ?�️ ???�업?� ?�돌�????�습?�다. ?�용?�의 모든 ?�이??발송 ?�역 ?�외)가 ??��?�니??
+        ?�️ ???�업?� ?�돌�????�습?�다. ?�용?�의 모든 ?�이??발송 ?�역 ?�외)가 ??��?�니??
       </p>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="?�용????��"
-        description={`"${phone}" ?????�화번호???�용?��? ?�결??Tenant, ?�션???�구 ??��?�니?? 계속?�까??`}
+        title="?�용????��"
+        description={`"${phone}" ?????�화번호???�용?��? ?�결??Tenant, ?�션???�구 ??��?�니?? 계속?�까??`}
         variant="danger"
-        confirmLabel="?�구 ??��"
+        confirmLabel="?�구 ??��"
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
       />
@@ -180,7 +180,7 @@ function DeleteUserByPhoneSection({ onDeleted }: { onDeleted: () => void }) {
 function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
   const [phoneInput, setPhoneInput] = useState("");
   const [amount, setAmount] = useState(1000);
-  const [memo, setMemo] = useState("관리자 ?�동 충전");
+  const [memo, setMemo] = useState("관리자 ?�동 충전");
   const [toppingUp, setToppingUp] = useState(false);
   const [done, setDone] = useState(false);
   const [resultText, setResultText] = useState<string | null>(null);
@@ -193,17 +193,17 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
     try {
       const lookup = await api.adminUserLookup(phoneInput.trim());
       if (!lookup?.userId) {
-        toast("error", "?�당 ?�화번호 ?�용?��? 찾을 ???�습?�다.");
+        toast("error", "?�당 ?�화번호 ?�용?��? 찾을 ???�습?�다.");
         return;
       }
       const result = await api.adminTopUpTokens(lookup.userId, amount, memo.trim() || undefined);
       setDone(true);
-      setResultText(`충전 ?�료: ???�액 ${result.new_balance.toLocaleString()} ?�큰`);
+      setResultText(`충전 ?�료: ???�액 ${result.new_balance.toLocaleString()} ?�큰`);
       setPhoneInput("");
-      toast("success", `${lookup.phone ?? "?�용??}??${amount.toLocaleString()}?�큰 충전 ?�료`);
+      toast("success", `${lookup.phone ?? "?�용??}??${amount.toLocaleString()}?�큰 충전 ?�료`);
       onTopUp();
     } catch (err) {
-      toast("error", err instanceof Error ? err.message : "충전 ?�패");
+      toast("error", err instanceof Error ? err.message : "충전 ?�패");
     }
     finally { setToppingUp(false); }
   }
@@ -211,15 +211,15 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
   return (
     <Panel
       accent="amber"
-      title={<div className="flex items-center gap-2"><Zap className="h-4 w-4 text-amber-400" /> ?�큰 ?�동 충전</div>}
-      description="?�용?�에�??�큰??직접 지급합?�다. (로컬: 로그 기록, ?�버: API ?�요)"
+      title={<div className="flex items-center gap-2"><Zap className="h-4 w-4 text-amber-400" /> ?�큰 ?�동 충전</div>}
+      description="?�용?�에�??�큰??직접 지급합?�다. (로컬: 로그 기록, ?�버: API ?�요)"
     >
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[180px]">
-          <Input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="?�화번호" className="font-mono" />
+          <Input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="?�화번호" className="font-mono" />
         </div>
         <div className="min-w-[180px]">
-          <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="?�유 메모" />
+          <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="?�유 메모" />
         </div>
         <select value={amount} onChange={(e) => setAmount(Number(e.target.value))}
           className="rounded-lg border border-app-border bg-app-card px-2 py-2 text-xs text-app-text outline-none">
@@ -233,7 +233,7 @@ function TokenTopUpSection({ onTopUp }: { onTopUp: () => void }) {
           <Zap className="h-3.5 w-3.5" /> 충전
         </Button>
       </div>
-      {done && <p className="mt-2 text-xs text-app-success">??{resultText ?? "충전 ?�료"}</p>}
+      {done && <p className="mt-2 text-xs text-app-success">??{resultText ?? "충전 ?�료"}</p>}
     </Panel>
   );
 }
@@ -285,7 +285,7 @@ function UsersContent() {
 
   const load = async () => {
     setLoading(true); setError(null);
-    try { setUsers(await api.fetchUsers()); } catch (err) { setError(err instanceof Error ? err.message : "?�용??목록 로드 ?�패"); }
+    try { setUsers(await api.fetchUsers()); } catch (err) { setError(err instanceof Error ? err.message : "?�용??목록 로드 ?�패"); }
     finally { setLoading(false); }
   };
 
@@ -395,7 +395,7 @@ function UsersContent() {
       await load();
       setSelectedIds([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "?�???�태 변�??�패");
+      setError(err instanceof Error ? err.message : "?�???�태 변�??�패");
     } finally {
       setBulkLoading(false);
     }
@@ -434,16 +434,16 @@ function UsersContent() {
     if (!confirmUser) return;
     try {
       const newKey = await api.reissueUserApiKey(confirmUser.id, "Admin reissue");
-      toast("success", `??API ?��? ?�성?�었?�니?? ???�는 ??번만 ?�시?�니??`);
+      toast("success", `??API ?��? ?�성?�었?�니?? ???�는 ??번만 ?�시?�니??`);
       setConfirmUser(null);
-    } catch { setError("???�발�??�패"); }
+    } catch { setError("???�발�??�패"); }
   }
 
   async function handleToggle(u: DashboardUser) {
     try {
       await api.toggleUser(u.id, !u.isActive);
       await load();
-    } catch { setError("?�태 변�??�패"); }
+    } catch { setError("?�태 변�??�패"); }
   }
 
   async function handleApproveCommission(commissionId: string) {
@@ -451,7 +451,7 @@ function UsersContent() {
       await api.approveAdminReferralCommission(commissionId, commissionTxDrafts[commissionId] || undefined);
       await Promise.all([loadCommissions(), loadAuditLogs()]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "커�????�인 ?�패");
+      setError(err instanceof Error ? err.message : "커�????�인 ?�패");
     }
   }
 
@@ -464,7 +464,7 @@ function UsersContent() {
     if (!highRiskAction || highRiskSubmitting) return;
     const required = highRiskAction.kind === "bulk_deactivate" ? "DEACTIVATE" : "DELETE";
     if (highRiskPhrase.trim().toUpperCase() !== required) {
-      setError(`?�인 문구가 ?�치?��? ?�습?�다. ${required} �??�력?�주?�요.`);
+      setError(`?�인 문구가 ?�치?��? ?�습?�다. ${required} �??�력?�주?�요.`);
       return;
     }
     setHighRiskSubmitting(true);
@@ -480,7 +480,7 @@ function UsersContent() {
       setHighRiskAction(null);
       setHighRiskPhrase("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "고위???�업 ?�패");
+      setError(err instanceof Error ? err.message : "고위???�업 ?�패");
     } finally {
       setHighRiskSubmitting(false);
     }
@@ -500,7 +500,7 @@ function UsersContent() {
     if (billingSubscription !== "keep") payload.subscription_status = billingSubscription;
     if (extendTrialDays > 0) payload.extend_trial_days = extendTrialDays;
     if (!payload.plan && !payload.subscription_status && !payload.extend_trial_days) {
-      setError("변경할 결제/?�랜 ??��???�택?�주?�요.");
+      setError("변경할 결제/?�랜 ??��???�택?�주?�요.");
       return;
     }
     setBillingLoading(true);
@@ -509,7 +509,7 @@ function UsersContent() {
       await api.adminUpdateUserBilling(selectedUser.id, payload);
       await refreshUsersAndSelection(selectedUser.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "결제/?�랜 ?�데?�트 ?�패");
+      setError(err instanceof Error ? err.message : "결제/?�랜 ?�데?�트 ?�패");
     } finally {
       setBillingLoading(false);
     }
@@ -553,11 +553,11 @@ function UsersContent() {
     <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-app-text">?�용??관�?/h1>
-          <p className="text-sm text-app-text-muted">API ??발급 �??�용??계정 관�?/p>
+          <h1 className="text-xl font-bold text-app-text">?�용??관�?/h1>
+          <p className="text-sm text-app-text-muted">API ??발급 �??�용??계정 관�?/p>
         </div>
         <Link href="/admin/dashboard" className="flex items-center gap-1 text-xs text-app-primary-hover hover:underline">
-          <ChevronLeft className="h-3 w-3" /> ?�?�보??
+          <ChevronLeft className="h-3 w-3" /> ?�?�보??
         </Link>
       </div>
 
@@ -571,74 +571,74 @@ function UsersContent() {
         title={
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-cyan-400" />
-            ?�화번호 ?�증 ?�용??
+            ?�화번호 ?�증 ?�용??
           </div>
         }
-        description="본인 ?�화번호�??�증??API ?��? 발급받�? ?�용?�입?�다."
+        description="본인 ?�화번호�??�증??API ?��? 발급받�? ?�용?�입?�다."
       >
         <div className="mb-4 space-y-3 rounded-xl border border-app-border bg-app-bg p-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <Input
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              placeholder="?�화번호 검??
+              placeholder="?�화번호 검??
             />
             <Select
               value={filters.plan}
               onChange={(e) => setFilters((prev) => ({ ...prev, plan: e.target.value as UserFilterState["plan"] }))}
             >
-              <option value="all">?�랜 ?�체</option>
+              <option value="all">?�랜 ?�체</option>
               <option value="free">무료</option>
-              <option value="pro">?�로</option>
-              <option value="team">?�</option>
+              <option value="pro">?�로</option>
+              <option value="team">?�</option>
             </Select>
             <Select
               value={filters.subscription}
               onChange={(e) => setFilters((prev) => ({ ...prev, subscription: e.target.value as UserFilterState["subscription"] }))}
             >
-              <option value="all">구독 ?�체</option>
-              <option value="active">?�성</option>
-              <option value="inactive">비활??기�?</option>
+              <option value="all">구독 ?�체</option>
+              <option value="active">?�성</option>
+              <option value="inactive">비활??기�?</option>
             </Select>
             <Select
               value={filters.activity}
               onChange={(e) => setFilters((prev) => ({ ...prev, activity: e.target.value as UserFilterState["activity"] }))}
             >
-              <option value="all">?�성?�태 ?�체</option>
-              <option value="active">?�성 ?�용??/option>
-              <option value="inactive">비활???�용??/option>
+              <option value="all">?�성?�태 ?�체</option>
+              <option value="active">?�성 ?�용??/option>
+              <option value="inactive">비활???�용??/option>
             </Select>
             <Select
               value={filters.minAccounts}
               onChange={(e) => setFilters((prev) => ({ ...prev, minAccounts: e.target.value as UserFilterState["minAccounts"] }))}
             >
-              <option value="all">계정 ???�체</option>
-              <option value="1">1�??�상</option>
-              <option value="3">3�??�상</option>
-              <option value="5">5�??�상</option>
+              <option value="all">계정 ???�체</option>
+              <option value="1">1�??�상</option>
+              <option value="3">3�??�상</option>
+              <option value="5">5�??�상</option>
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-app-text-muted">
-            <span>조회 {filteredUsers.length}�?/span>
-            <span>리스???�보 {riskUsers}�?/span>
-            <span>?�택 {selectedIds.length}�?/span>
-            <Button size="sm" variant="ghost" onClick={resetFilters}>?�터 초기??/Button>
-            <Button size="sm" variant="secondary" onClick={exportFilteredUsersCsv} disabled={filteredUsers.length === 0}>CSV ?�보?�기</Button>
-            <Button size="sm" variant="secondary" onClick={() => runBulkToggle(true)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>?�택 ?�괄 ?�성??/Button>
-            <Button size="sm" variant="danger" onClick={() => requestHighRiskAction({ kind: "bulk_deactivate" })} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>?�택 ?�괄 비활?�화</Button>
+            <span>조회 {filteredUsers.length}�?/span>
+            <span>리스???�보 {riskUsers}�?/span>
+            <span>?�택 {selectedIds.length}�?/span>
+            <Button size="sm" variant="ghost" onClick={resetFilters}>?�터 초기??/Button>
+            <Button size="sm" variant="secondary" onClick={exportFilteredUsersCsv} disabled={filteredUsers.length === 0}>CSV ?�보?�기</Button>
+            <Button size="sm" variant="secondary" onClick={() => runBulkToggle(true)} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>?�택 ?�괄 ?�성??/Button>
+            <Button size="sm" variant="danger" onClick={() => requestHighRiskAction({ kind: "bulk_deactivate" })} disabled={selectedIds.length === 0 || bulkLoading} loading={bulkLoading}>?�택 ?�괄 비활?�화</Button>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-t border-app-border pt-2">
             <Input
               value={newViewName}
               onChange={(e) => setNewViewName(e.target.value)}
-              placeholder="?�??�??�름"
+              placeholder="?�??�??�름"
               className="w-full sm:w-52"
             />
-            <Button size="sm" onClick={saveCurrentView} disabled={!newViewName.trim()}>?�재 ?�터 ?�??/Button>
+            <Button size="sm" onClick={saveCurrentView} disabled={!newViewName.trim()}>?�재 ?�터 ?�??/Button>
             {savedViews.map((view) => (
               <div key={view.name} className="flex items-center gap-1 rounded-lg border border-app-border px-2 py-1 text-xs">
                 <button className="text-app-text hover:underline" onClick={() => applySavedView(view)}>{view.name}</button>
-                <button className="text-app-text-muted hover:text-app-danger" onClick={() => removeSavedView(view.name)} aria-label={`${view.name} ??��`}>x</button>
+                <button className="text-app-text-muted hover:text-app-danger" onClick={() => removeSavedView(view.name)} aria-label={`${view.name} ??��`}>x</button>
               </div>
             ))}
           </div>
@@ -653,10 +653,10 @@ function UsersContent() {
         )}
         {error && <InlineError>{error}</InlineError>}
         {!loading && !error && users.length === 0 && (
-          <EmptyState icon={Users} title="가?�한 ?�용???�음" />
+          <EmptyState icon={Users} title="가?�한 ?�용???�음" />
         )}
         {!loading && !error && users.length > 0 && filteredUsers.length === 0 && (
-          <EmptyState icon={Users} title="?�터 결과가 ?�습?�다" />
+          <EmptyState icon={Users} title="?�터 결과가 ?�습?�다" />
         )}
         {/* Users table with enriched info */}
         {!loading && filteredUsers.length > 0 && (
@@ -669,18 +669,18 @@ function UsersContent() {
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={toggleSelectAllFiltered}
-                      aria-label="?�재 ?�터 결과 ?�체 ?�택"
+                      aria-label="?�재 ?�터 결과 ?�체 ?�택"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">?�화번호</th>
-                  <th className="px-4 py-3 text-left font-semibold">?�랜</th>
-                  <th className="px-4 py-3 text-left font-semibold">구독?�태</th>
+                  <th className="px-4 py-3 text-left font-semibold">?�화번호</th>
+                  <th className="px-4 py-3 text-left font-semibold">?�랜</th>
+                  <th className="px-4 py-3 text-left font-semibold">구독?�태</th>
                   <th className="px-4 py-3 text-center font-semibold">계정??/th>
-                  <th className="px-4 py-3 text-center font-semibold">�??�액</th>
+                  <th className="px-4 py-3 text-center font-semibold">�??�액</th>
                   <th className="px-4 py-3 text-left font-semibold">리스??/th>
-                  <th className="px-4 py-3 text-left font-semibold">가?�일</th>
-                  <th className="px-4 py-3 text-left font-semibold">?�태</th>
-                  <th className="px-4 py-3 text-right font-semibold">?�업</th>
+                  <th className="px-4 py-3 text-left font-semibold">가?�일</th>
+                  <th className="px-4 py-3 text-left font-semibold">?�태</th>
+                  <th className="px-4 py-3 text-right font-semibold">?�업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
@@ -691,7 +691,7 @@ function UsersContent() {
                         type="checkbox"
                         checked={selectedIds.includes(u.id)}
                         onChange={() => toggleSelectUser(u.id)}
-                        aria-label={`${u.phone} ?�택`}
+                        aria-label={`${u.phone} ?�택`}
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -703,7 +703,7 @@ function UsersContent() {
                     <td className="px-4 py-3">
                       {u.plan ? (
                         <Badge tone={u.plan === "team" ? "info" : u.plan === "pro" ? "success" : "neutral"}>
-                          {u.plan === "team" ? "?�" : u.plan === "pro" ? "?�로" : "무료"}
+                          {u.plan === "team" ? "?�" : u.plan === "pro" ? "?�로" : "무료"}
                         </Badge>
                       ) : (
                         <span className="text-app-text-muted">-</span>
@@ -712,7 +712,7 @@ function UsersContent() {
                     <td className="px-4 py-3">
                       {u.subscriptionStatus ? (
                         <Badge tone={u.subscriptionStatus === "active" ? "success" : "danger"}>
-                          {u.subscriptionStatus === "active" ? "?�성" : "비활??}
+                          {u.subscriptionStatus === "active" ? "?�성" : "비활??}
                         </Badge>
                       ) : (
                         <span className="text-app-text-muted">-</span>
@@ -736,21 +736,21 @@ function UsersContent() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {getRiskLevel(u) === "high" && <Badge tone="danger">?�음</Badge>}
+                      {getRiskLevel(u) === "high" && <Badge tone="danger">?�음</Badge>}
                       {getRiskLevel(u) === "warning" && <Badge tone="warning">주의</Badge>}
-                      {getRiskLevel(u) === "normal" && <Badge tone="success">?�상</Badge>}
+                      {getRiskLevel(u) === "normal" && <Badge tone="success">?�상</Badge>}
                     </td>
                     <td className="px-4 py-3 text-xs text-app-text-muted">
                       {formatDateTime(u.createdAt)}
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={u.isActive ? "success" : "neutral"}>
-                        {u.isActive ? "?�성" : "비활??}
+                        {u.isActive ? "?�성" : "비활??}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); handleReissue(u); }} title="API ???�발�?>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); handleReissue(u); }} title="API ???�발�?>
                           <KeyRound className="h-4 w-4" />
                         </Button>
                         <Button
@@ -759,14 +759,14 @@ function UsersContent() {
                           className="h-8 px-2 text-xs"
                           onClick={(e) => { e.stopPropagation(); setToggleConfirm(u); }}
                         >
-                          {u.isActive ? "비활?? : "?�성"}
+                          {u.isActive ? "비활?? : "?�성"}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-app-danger hover:bg-app-danger-muted/20"
                           onClick={(e) => { e.stopPropagation(); setDeletePhone(u.phone); setDeleteConfirmOpen(true); }}
-                          title="?�용????��"
+                          title="?�용????��"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -782,29 +782,29 @@ function UsersContent() {
 
       <Panel
         accent="violet"
-        title={<div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-violet-400" /> 추천/총판 커�????�영</div>}
-        description="?��?�?커�??�을 검?�하�?지�?처리?�니??"
+        title={<div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-violet-400" /> 추천/총판 커�????�영</div>}
+        description="?��?�?커�??�을 검?�하�?지�?처리?�니??"
       >
         <div className="mb-3 flex items-center gap-2">
           <Select value={commissionStatusFilter} onChange={(e) => setCommissionStatusFilter(e.target.value as typeof commissionStatusFilter)}>
-            <option value="all">?�체</option>
-            <option value="pending">?��?/option>
-            <option value="paid">지급완�?/option>
+            <option value="all">?�체</option>
+            <option value="pending">?��?/option>
+            <option value="paid">지급완�?/option>
           </Select>
-          <Button size="sm" variant="ghost" onClick={() => void loadCommissions()} disabled={commissionLoading}>?�로고침</Button>
+          <Button size="sm" variant="ghost" onClick={() => void loadCommissions()} disabled={commissionLoading}>?�로고침</Button>
         </div>
-        {commissionLoading && <p className="text-xs text-app-text-muted">불러?�는 �?..</p>}
-        {!commissionLoading && commissions.length === 0 && <EmptyState icon={TrendingUp} title="커�????�이???�음" />}
+        {commissionLoading && <p className="text-xs text-app-text-muted">불러?�는 �?..</p>}
+        {!commissionLoading && commissions.length === 0 && <EmptyState icon={TrendingUp} title="커�????�이???�음" />}
         {!commissionLoading && commissions.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-app-border text-app-text-muted">
-                  <th className="px-2 py-2 text-left">?�태</th>
+                  <th className="px-2 py-2 text-left">?�태</th>
                   <th className="px-2 py-2 text-left">금액</th>
                   <th className="px-2 py-2 text-left">Rate</th>
-                  <th className="px-2 py-2 text-left">지�?TX</th>
-                  <th className="px-2 py-2 text-right">?�업</th>
+                  <th className="px-2 py-2 text-left">지�?TX</th>
+                  <th className="px-2 py-2 text-right">?�업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
@@ -820,7 +820,7 @@ function UsersContent() {
                         <Input
                           value={commissionTxDrafts[c.id] ?? ""}
                           onChange={(e) => setCommissionTxDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                          placeholder="지�?TX ID (?�택)"
+                          placeholder="지�?TX ID (?�택)"
                           className="w-52"
                         />
                       ) : (
@@ -829,9 +829,9 @@ function UsersContent() {
                     </td>
                     <td className="px-2 py-2 text-right">
                       {c.status === "pending" ? (
-                        <Button size="sm" onClick={() => void handleApproveCommission(c.id)}>지�??�인</Button>
+                        <Button size="sm" onClick={() => void handleApproveCommission(c.id)}>지�??�인</Button>
                       ) : (
-                        <span className="text-app-text-muted">?�료</span>
+                        <span className="text-app-text-muted">?�료</span>
                       )}
                     </td>
                   </tr>
@@ -845,21 +845,21 @@ function UsersContent() {
       <Panel
         accent="indigo"
         title={<div className="flex items-center gap-2"><Search className="h-4 w-4 text-slate-400" /> 관리자 감사로그</div>}
-        description="고위???�업 추적??최근 감사 ?�벤?�입?�다."
+        description="고위???�업 추적??최근 감사 ?�벤?�입?�다."
       >
         <div className="mb-2 flex items-center justify-end">
-          <Button size="sm" variant="ghost" onClick={() => void loadAuditLogs()} disabled={auditLoading}>?�로고침</Button>
+          <Button size="sm" variant="ghost" onClick={() => void loadAuditLogs()} disabled={auditLoading}>?�로고침</Button>
         </div>
-        {auditLoading && <p className="text-xs text-app-text-muted">불러?�는 �?..</p>}
-        {!auditLoading && auditLogs.length === 0 && <EmptyState icon={Search} title="감사로그 ?�음" />}
+        {auditLoading && <p className="text-xs text-app-text-muted">불러?�는 �?..</p>}
+        {!auditLoading && auditLogs.length === 0 && <EmptyState icon={Search} title="감사로그 ?�음" />}
         {!auditLoading && auditLogs.length > 0 && (
           <div className="max-h-72 overflow-y-auto rounded-lg border border-app-border">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-app-card">
                 <tr className="border-b border-app-border text-app-text-muted">
-                  <th className="px-2 py-2 text-left">?�간</th>
-                  <th className="px-2 py-2 text-left">?�션</th>
-                  <th className="px-2 py-2 text-left">?�??/th>
+                  <th className="px-2 py-2 text-left">?�간</th>
+                  <th className="px-2 py-2 text-left">?�션</th>
+                  <th className="px-2 py-2 text-left">?�??/th>
                   <th className="px-2 py-2 text-left">메모</th>
                 </tr>
               </thead>
@@ -882,44 +882,44 @@ function UsersContent() {
         <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSelectedUser(null)}>
           <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-app-border bg-app-card p-4" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-app-text">?�용??360 ?�세</h2>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedUser(null)}>?�기</Button>
+              <h2 className="text-base font-semibold text-app-text">?�용??360 ?�세</h2>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedUser(null)}>?�기</Button>
             </div>
             <div className="space-y-3 text-sm">
               <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                <p className="text-xs text-app-text-muted">?�화번호</p>
+                <p className="text-xs text-app-text-muted">?�화번호</p>
                 <p className="mt-1 font-semibold text-app-text">{selectedUser.phone}</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                  <p className="text-xs text-app-text-muted">?�랜</p>
+                  <p className="text-xs text-app-text-muted">?�랜</p>
                   <p className="mt-1 font-semibold text-app-text">{selectedUser.plan ?? "-"}</p>
                 </div>
                 <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                  <p className="text-xs text-app-text-muted">구독 ?�태</p>
+                  <p className="text-xs text-app-text-muted">구독 ?�태</p>
                   <p className="mt-1 font-semibold text-app-text">{selectedUser.subscriptionStatus ?? "-"}</p>
                 </div>
                 <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                  <p className="text-xs text-app-text-muted">?�결 계정 ??/p>
+                  <p className="text-xs text-app-text-muted">?�결 계정 ??/p>
                   <p className="mt-1 font-semibold text-app-text">{selectedUser.accountCount}</p>
                 </div>
                 <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                  <p className="text-xs text-app-text-muted">Stars ?�액</p>
+                  <p className="text-xs text-app-text-muted">Stars ?�액</p>
                   <p className="mt-1 font-semibold text-app-text">{selectedUser.starsBalance}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                <p className="text-xs text-app-text-muted">가?�일</p>
+                <p className="text-xs text-app-text-muted">가?�일</p>
                 <p className="mt-1 text-app-text">{formatDateTime(selectedUser.createdAt)}</p>
                 <p className="mt-2 text-xs text-app-text-muted">최근 로그??/p>
-                <p className="mt-1 text-app-text">{selectedUser.lastLogin ? formatDateTime(selectedUser.lastLogin) : "로그???�력 ?�음"}</p>
-                <p className="mt-2 text-xs text-app-text-muted">?�라?�얼 만료</p>
+                <p className="mt-1 text-app-text">{selectedUser.lastLogin ? formatDateTime(selectedUser.lastLogin) : "로그???�력 ?�음"}</p>
+                <p className="mt-2 text-xs text-app-text-muted">?�라?�얼 만료</p>
                 <p className="mt-1 text-app-text">{selectedUser.trialExpiresAt ? formatDateTime(selectedUser.trialExpiresAt) : "-"}</p>
-                <p className="mt-2 text-xs text-app-text-muted">?�영 리스??/p>
+                <p className="mt-2 text-xs text-app-text-muted">?�영 리스??/p>
                 <div className="mt-1">
-                  {getRiskLevel(selectedUser) === "high" && <Badge tone="danger">?�음</Badge>}
+                  {getRiskLevel(selectedUser) === "high" && <Badge tone="danger">?�음</Badge>}
                   {getRiskLevel(selectedUser) === "warning" && <Badge tone="warning">주의</Badge>}
-                  {getRiskLevel(selectedUser) === "normal" && <Badge tone="success">?�상</Badge>}
+                  {getRiskLevel(selectedUser) === "normal" && <Badge tone="success">?�상</Badge>}
                 </div>
               </div>
               <div className="flex items-center gap-2 pt-1">
@@ -929,22 +929,22 @@ function UsersContent() {
                     setToggleConfirm(selectedUser);
                   }}
                 >
-                  {selectedUser.isActive ? "비활?�화" : "?�성??}
+                  {selectedUser.isActive ? "비활?�화" : "?�성??}
                 </Button>
-                <Button variant="secondary" onClick={() => handleReissue(selectedUser)}>API ???�발�?/Button>
+                <Button variant="secondary" onClick={() => handleReissue(selectedUser)}>API ???�발�?/Button>
               </div>
 
               <div className="rounded-xl border border-app-border bg-app-bg p-3">
-                <p className="text-sm font-semibold text-app-text">결제/?�랜 ?�영</p>
+                <p className="text-sm font-semibold text-app-text">결제/?�랜 ?�영</p>
                 <div className="mt-2 grid grid-cols-1 gap-2">
                   <Select value={billingPlan} onChange={(e) => setBillingPlan(e.target.value as typeof billingPlan)}>
-                    <option value="keep">?�랜 변�??�함</option>
-                    <option value="free">무료�?변�?/option>
-                    <option value="pro">?�로�?변�?/option>
-                    <option value="team">?�?�로 변�?/option>
+                    <option value="keep">?�랜 변�??�함</option>
+                    <option value="free">무료�?변�?/option>
+                    <option value="pro">?�로�?변�?/option>
+                    <option value="team">?�?�로 변�?/option>
                   </Select>
                   <Select value={billingSubscription} onChange={(e) => setBillingSubscription(e.target.value as typeof billingSubscription)}>
-                    <option value="keep">구독?�태 변�??�함</option>
+                    <option value="keep">구독?�태 변�??�함</option>
                     <option value="active">active</option>
                     <option value="inactive">inactive</option>
                     <option value="pending">pending</option>
@@ -957,9 +957,9 @@ function UsersContent() {
                     max={365}
                     value={extendTrialDays}
                     onChange={(e) => setExtendTrialDays(Number(e.target.value || 0))}
-                    placeholder="?�라?�얼 ?�장 ?�수"
+                    placeholder="?�라?�얼 ?�장 ?�수"
                   />
-                  <Button onClick={handleBillingUpdate} loading={billingLoading} disabled={billingLoading}>결제/?�랜 반영</Button>
+                  <Button onClick={handleBillingUpdate} loading={billingLoading} disabled={billingLoading}>결제/?�랜 반영</Button>
                 </div>
               </div>
             </div>
@@ -969,19 +969,19 @@ function UsersContent() {
 
       <ConfirmDialog
         open={!!confirmUser}
-        title="API ???�발�?
-        description={confirmUser ? `${confirmUser.phone} ?�용?�의 API ?��? ?�발급하�?기존 ?�는 즉시 무효?�됩?�다. 계속?�까??` : ""}
+        title="API ???�발�?
+        description={confirmUser ? `${confirmUser.phone} ?�용?�의 API ?��? ?�발급하�?기존 ?�는 즉시 무효?�됩?�다. 계속?�까??` : ""}
         variant="danger"
-        confirmLabel="?�발�?
+        confirmLabel="?�발�?
         onConfirm={handleConfirmReissue}
         onCancel={() => setConfirmUser(null)}
       />
       <ConfirmDialog
         open={deleteConfirmOpen && !!deletePhone}
-        title="?�용????��"
-        description={`"${deletePhone}" ?????�용?��? ?�결??Tenant, ?�션???�구 ??��?�니??`}
+        title="?�용????��"
+        description={`"${deletePhone}" ?????�용?��? ?�결??Tenant, ?�션???�구 ??��?�니??`}
         variant="danger"
-        confirmLabel="?�구 ??��"
+        confirmLabel="?�구 ??��"
         onConfirm={async () => {
           const phone = deletePhone;
           setDeleteConfirmOpen(false);
@@ -993,10 +993,10 @@ function UsersContent() {
       />
       <ConfirmDialog
         open={!!toggleConfirm}
-        title={toggleConfirm?.isActive ? "?�용??비활?�화" : "?�용???�성??}
-        description={toggleConfirm ? `"${toggleConfirm.phone}" ?�용?��? ${toggleConfirm.isActive ? "비활?�화" : "?�성??}?�시겠습?�까?` : ""}
+        title={toggleConfirm?.isActive ? "?�용??비활?�화" : "?�용???�성??}
+        description={toggleConfirm ? `"${toggleConfirm.phone}" ?�용?��? ${toggleConfirm.isActive ? "비활?�화" : "?�성??}?�시겠습?�까?` : ""}
         variant={toggleConfirm?.isActive ? "danger" : "default"}
-        confirmLabel={toggleConfirm?.isActive ? "비활?�화" : "?�성??}
+        confirmLabel={toggleConfirm?.isActive ? "비활?�화" : "?�성??}
         onConfirm={() => { const u = toggleConfirm; setToggleConfirm(null); if (u) handleToggle(u); }}
         onCancel={() => setToggleConfirm(null)}
       />
@@ -1004,24 +1004,24 @@ function UsersContent() {
       <Modal
         open={!!highRiskAction}
         onClose={() => { if (!highRiskSubmitting) setHighRiskAction(null); }}
-        title="고위???�업 2?�계 ?�인"
+        title="고위???�업 2?�계 ?�인"
         description={highRiskAction?.kind === "bulk_deactivate"
-          ? "?�택 ?�용???�괄 비활?�화 ?? ?�인 문구�??�력?�주?�요."
-          : `"${highRiskAction?.phone}" ?�용???�구 ??�� ?? ?�인 문구�??�력?�주?�요.`}
+          ? "?�택 ?�용???�괄 비활?�화 ?? ?�인 문구�??�력?�주?�요."
+          : `"${highRiskAction?.phone}" ?�용???�구 ??�� ?? ?�인 문구�??�력?�주?�요.`}
         size="sm"
         preventClose={highRiskSubmitting}
         footer={
           <>
             <Button variant="ghost" onClick={() => setHighRiskAction(null)} disabled={highRiskSubmitting}>취소</Button>
-            <Button variant="danger" onClick={() => void executeHighRiskAction()} loading={highRiskSubmitting}>?�행</Button>
+            <Button variant="danger" onClick={() => void executeHighRiskAction()} loading={highRiskSubmitting}>?�행</Button>
           </>
         }
       >
         <div className="space-y-2">
           <p className="text-xs text-app-text-muted">
-            ?�인 문구: <span className="font-semibold text-app-text">{highRiskAction?.kind === "bulk_deactivate" ? "DEACTIVATE" : "DELETE"}</span>
+            ?�인 문구: <span className="font-semibold text-app-text">{highRiskAction?.kind === "bulk_deactivate" ? "DEACTIVATE" : "DELETE"}</span>
           </p>
-          <Input value={highRiskPhrase} onChange={(e) => setHighRiskPhrase(e.target.value)} placeholder="?�인 문구 ?�력" />
+          <Input value={highRiskPhrase} onChange={(e) => setHighRiskPhrase(e.target.value)} placeholder="?�인 문구 ?�력" />
         </div>
       </Modal>
     </div>

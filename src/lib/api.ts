@@ -96,8 +96,9 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         // Retry with exponential backoff, returning the first success or final error
         const lastError = await (async () => {
           for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            // ?�?�아??검??            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% ?�간??지?�면 종료
-              throw new ApiError("?청 ?�간??�?초과?�니?? ?�트?�크 ?�태�??�인?�주?�요.", undefined, true);
+                        // retry timeout check
+            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% ?�간??지?�면 종료
+              throw new ApiError("요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.", undefined, true);
             }
 
             const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
