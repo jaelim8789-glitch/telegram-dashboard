@@ -18,35 +18,64 @@ coverage/
 .venv
 __pycache__/
 *.pyc
-.pytest_cache/
-.cache/
-.turbo/
-logs/
-*.zip
-*.tar.gz
-*.session
-*.log
-*.local
 
-# CRITICAL: Root dirs that shadow src/app for Next.js App Router.
-/app
-/backend
-/telegram-dashboard-backend
-
-# Documentation files
+# Docs & meta
 *.md
+*.mdx
+AGENTS.md
+TEAM_STATUS.md
+CHANGELOG.md
+README.md
+CONTRIBUTING.md
+DEPLOY_HANDOVER.md
+DOMAIN_CONNECTION_RUNBOOK.md
+UPGRADE_PLAN.md
+TODO.json
+PULL_REQUEST_TEMPLATE.md
+CODEOWNERS
 
-.env
-npm-debug.log*
-test-results
-playwright-report
-e2e
-data/
-sessions/
-*.db
-.backup
+# CI/CD
+.github/
+.actrc
+.dockerignore
+
+# Config
+.vscode/
+.idea/
+*.sublime-workspace
+.editorconfig
+.prettierrc*
+.eslintrc*
+.env*
+*.env.local
+.env.example
+
+# Test & e2e
 tests/
-docs/
-project-structure.txt
-package-lock.json
-yarn.lock
+e2e/
+test/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+playwright/
+.nyc_output/
+coverage/
+
+# Git worktrees related
+worktree/
+.kilo/
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/
+*.tmp
+
+# Docker
+docker-compose*.yml
+Dockerfile
