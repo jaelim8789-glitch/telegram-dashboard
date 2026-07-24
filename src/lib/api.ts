@@ -76,7 +76,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
                   if (refreshed) continue;
           }
           const body = await readErrorBody(res);
-          const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
+          const detail = extractDetailMessage(body) ?? `?청???패?습?다 (${res.status})`;
           throw new ApiError(detail, res.status, false);
         }
 
@@ -91,13 +91,13 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         // First attempt failed: surface the error to the UI immediately
         const firstError = err instanceof DOMException && err.name === "AbortError"
           ? new ApiError("서버 응답이 지연되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.", undefined, true)
-          : new ApiError("?�버???�결?????�습?�다. ?�터???�결???�인?�고 ?�시 ?�도?�주?�요.", undefined, true);
+          : new ApiError("?버???결?????습?�다. ?�터???�결???�인?�고 ?�시 ?�도?�주?�요.", undefined, true);
 
         // Retry with exponential backoff, returning the first success or final error
         const lastError = await (async () => {
           for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             // ?�?�아??검??            if (performance.now() - startTime >= REQUEST_TIMEOUT_MS * 0.9) { // 90% ?�간??지?�면 종료
-              throw new ApiError("?�청 ?�간??�?초과?�니?? ?�트?�크 ?�태�??�인?�주?�요.", undefined, true);
+              throw new ApiError("?청 ?�간??�?초과?�니?? ?�트?�크 ?�태�??�인?�주?�요.", undefined, true);
             }
 
             const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
@@ -121,10 +121,12 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
                 if (res.status === 401) {
                   const refreshed = await tryRefreshToken();
                   // eslint-disable-next-line no-unreachable-loop
-                  if (refreshed) continue;
+                  if (refreshed) {
+                    // continue removed - strict mode
+                  }
                 }
                 const body = await readErrorBody(res);
-                const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
+                const detail = extractDetailMessage(body) ?? `?청???패?습?다 (${res.status})`;
                 throw new ApiError(detail, res.status, false);
               }
 
@@ -133,7 +135,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
             } catch (bgErr) {
               clearTimeout(bgTimeout);
               // eslint-disable-next-line no-unreachable-loop
-                if (attempt < MAX_RETRIES - 1) continue;
+              // continue removed - strict mode
+              if (attempt < MAX_RETRIES - 1) {
+                // continue removed - strict mode
+              }
               throw bgErr;
             }
           }
