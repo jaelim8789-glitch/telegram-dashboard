@@ -54,13 +54,13 @@ let nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://*.telegram.org https://*.tma.js https://*.sentry.io",
+            "script-src 'self' 'unsafe-inline' https://telegram.org https://*.telegram.org https://*.tma.js https://*.sentry.io",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https: http:",
             "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://*.sentry.io https://api.telegram.org https://*.telegram.org https://api.telemon.online wss: http:",
+            "connect-src 'self' https://*.sentry.io https://api.telegram.org https://telegram.org https://*.telegram.org https://api.telemon.online wss: http:",
             "media-src 'self' https: http:",
-            "frame-src 'self' https://*.telegram.org https://*.tma.js",
+            "frame-src 'self' https://telegram.org https://*.telegram.org https://*.tma.js",
             "object-src 'none'", "base-uri 'self'", "form-action 'self'",
             "frame-ancestors 'none'", "upgrade-insecure-requests"
           ].join("; ") },
