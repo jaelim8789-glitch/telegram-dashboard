@@ -1,0 +1,43 @@
+name: Auto Release
+
+on:
+  workflow_run:
+    workflows: ["Deploy"]
+    types: [completed]
+    branches: [master]
+
+jobs:
+  create-release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          TAG="v$(date -u '+%Y%m%d-%H%M')"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Collect commits
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | head -1 || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log --oneline --no-decorate "$PREV_TAG..HEAD" 2>/dev/null || git log --oneline --no-decorate -20)
+          else
+            NOTES=$(git log --oneline --no-decorate -20)
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Release ${{ steps.tag.outputs.tag }}"
+          body: ${{ steps.notes.outputs.notes }}
+          generate_release_notes: true
