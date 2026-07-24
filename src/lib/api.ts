@@ -56,7 +56,7 @@ import type {
 } from "@/types";
 
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.telemon.online";
 const REQUEST_TIMEOUT_MS = 60000;
 /** Default timeout for standalone fetch calls (10s) */
 const DEFAULT_FETCH_TIMEOUT = 10000;
