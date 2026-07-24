@@ -19,7 +19,7 @@ ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 RUN corepack enable && corepack prepare pnpm@10.8.1 --activate
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
 
 COPY --chown=nextjs:nodejs . .
 

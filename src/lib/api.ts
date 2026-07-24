@@ -122,7 +122,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
                   const refreshed = await tryRefreshToken();
                   // eslint-disable-next-line no-unreachable-loop
                   if (refreshed) {
-                    // continue removed - strict mode
+                    // continue removed for strict mode - throw e added
                   }
                 }
                 const body = await readErrorBody(res);
@@ -132,12 +132,12 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
               if (res.status === 204) return undefined as T;
               return res.json() as Promise<T>;
-            } catch (bgErr) {
+            } catch (bgErr: any) {
               clearTimeout(bgTimeout);
               // eslint-disable-next-line no-unreachable-loop
-              // continue removed - strict mode
+              /* continue removed for strict mode */ throw bgErr;
               if (attempt < MAX_RETRIES - 1) {
-                // continue removed - strict mode
+                // continue removed for strict mode - throw e added
               }
               throw bgErr;
             }
