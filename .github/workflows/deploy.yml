@@ -17,8 +17,8 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 10.8.1 }
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: "pnpm" }
-      - run: pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
+        with: { node-version: 22 }
+      - run: corepack enable && pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
       - run: pnpm approve-builds
       - run: pnpm build
       - uses: actions/upload-artifact@v4
