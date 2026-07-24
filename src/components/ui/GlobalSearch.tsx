@@ -55,7 +55,7 @@ export function GlobalSearch() {
       group: { label: "그룹", icon: <Users className="h-3.5 w-3.5" /> },
     };
     Object.entries(tabMap).forEach(([id, t]) => {
-      if (fuzzyMatch(q, t.label)) items.push({ label: t.label, sub: "탭 이동", action: () => { setActiveTab(id as any); setOpen(false); }, icon: t.icon });
+      if (fuzzyMatch(q, t.label)) items.push({ label: t.label, sub: "탭 이동", action: () => { setActiveTab(id); setOpen(false); }, icon: t.icon });
     });
 
     setResults(items);

@@ -48,10 +48,10 @@ export function SendMonitorTab() {
   useEffect(() => { loadStats(); const t = setInterval(loadStats, 15000); return () => clearInterval(t); }, [loadStats]);
 
   const SUB_TABS: { id: SubTab; label: string; icon: React.ReactNode }[] = [
-    { id: "monitor", label: "모니?�링", icon: <Activity className="h-3.5 w-3.5" /> },
-    { id: "compose", label: "발송?�기", icon: <Send className="h-3.5 w-3.5" /> },
-    { id: "history", label: "발송?�역", icon: <FileText className="h-3.5 w-3.5" /> },
-    { id: "schedule", label: "?�약관�?, icon: <Calendar className="h-3.5 w-3.5" /> },
+    { id: "monitor", label: "모니?�링", icon: <Activity className="h-3.5 w-3.5" /> },
+    { id: "compose", label: "발송?�기", icon: <Send className="h-3.5 w-3.5" /> },
+    { id: "history", label: "발송?�역", icon: <FileText className="h-3.5 w-3.5" /> },
+    { id: "schedule", label: "?�약관�?, icon: <Calendar className="h-3.5 w-3.5" /> },
   ];
 
   return (
@@ -61,8 +61,8 @@ export function SendMonitorTab() {
           <Radio className="h-5 w-5 text-app-primary" />
         </div>
         <div className="flex-1">
-          <h2 className="text-sm font-bold text-app-text">발송 ?�터</h2>
-          <p className="text-[10px] text-app-text-muted">{account ? `${account.name || account.phone?.slice(0, 10)} · ` : ""}{loading ? "로딩 �?.." : `?�늘 ${stats.total}�?· ${stats.pending}�?진행 �?}</p>
+          <h2 className="text-sm font-bold text-app-text">발송 ?�터</h2>
+          <p className="text-[10px] text-app-text-muted">{account ? `${account.name || account.phone?.slice(0, 10)} · ` : ""}{loading ? "로딩 �?.." : `?�늘 ${stats.total}�?· ${stats.pending}�?진행 �?}</p>
         </div>
         <button onClick={loadStats} disabled={polling} className="p-2 rounded-lg hover:bg-app-card-hover text-app-text-muted transition-colors"><RefreshCw className={cn("h-4 w-4", polling && "animate-spin")} /></button>
       </div>
@@ -75,9 +75,9 @@ export function SendMonitorTab() {
         ))}
       </div>
       {sub === "monitor" && <MonitorView stats={stats} loading={loading} />}
-      {sub === "compose" && <RedirectTab tab="send" label="발송?�기" />}
-      {sub === "history" && <RedirectTab tab="log" label="발송?�역" />}
-      {sub === "schedule" && <RedirectTab tab="scheduler" label="?�약관�? />}
+      {sub === "compose" && <RedirectTab tab="send" label="발송?�기" />}
+      {sub === "history" && <RedirectTab tab="log" label="발송?�역" />}
+      {sub === "schedule" && <RedirectTab tab="scheduler" label="?�약관�? />}
     </div>
   );
 }
@@ -89,26 +89,26 @@ function MonitorView({ stats, loading }: { stats: BroadcastStats; loading: boole
     <WidgetErrorBoundary>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatCard icon={<Send />} label="?�체" value={stats.total} color="text-app-text" />
-          <StatCard icon={<CheckCircle2 />} label="?�공" value={stats.sent} color="text-app-success" />
-          <StatCard icon={<AlertTriangle />} label="?�패" value={stats.failed} color="text-app-danger" />
-          <StatCard icon={<Clock />} label="진행 �? value={stats.pending} color="text-app-primary" pulse={stats.pending > 0} />
+          <StatCard icon={<Send />} label="?�체" value={stats.total} color="text-app-text" />
+          <StatCard icon={<CheckCircle2 />} label="?�공" value={stats.sent} color="text-app-success" />
+          <StatCard icon={<AlertTriangle />} label="?�패" value={stats.failed} color="text-app-danger" />
+          <StatCard icon={<Clock />} label="진행 �? value={stats.pending} color="text-app-primary" pulse={stats.pending > 0} />
         </div>
-        <Panel title="?? 빠른 ?�션">
+        <Panel title="?? 빠른 ?�션">
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setActiveTab("send")} className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card p-3 text-left hover:bg-app-card-hover">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-app-primary/10"><Send className="h-5 w-5 text-app-primary" /></div>
-              <div><p className="text-xs font-medium text-app-text">??발송</p><p className="text-[10px] text-app-text-muted">메시지 ?�성</p></div>
+              <div><p className="text-xs font-medium text-app-text">??발송</p><p className="text-[10px] text-app-text-muted">메시지 ?�성</p></div>
               <ChevronRight className="h-4 w-4 text-app-text-muted ml-auto" />
             </button>
             <button onClick={() => setActiveTab("scheduler")} className="flex items-center gap-2 rounded-xl border border-app-border bg-app-card p-3 text-left hover:bg-app-card-hover">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-app-warning/10"><Calendar className="h-5 w-5 text-app-warning" /></div>
-              <div><p className="text-xs font-medium text-app-text">?�약 발송</p><p className="text-[10px] text-app-text-muted">?�간 ?�약</p></div>
+              <div><p className="text-xs font-medium text-app-text">?�약 발송</p><p className="text-[10px] text-app-text-muted">?�간 ?�약</p></div>
               <ChevronRight className="h-4 w-4 text-app-text-muted ml-auto" />
             </button>
             <button onClick={() => setActiveTab("myai")} className="flex items-center gap-2 rounded-xl border border-app-primary/30 bg-app-primary/5 p-3 text-left hover:bg-app-primary/10">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-app-primary/10"><TrendingUp className="h-5 w-5 text-app-primary" /></div>
-              <div><p className="text-xs font-medium text-app-text">AI 분석</p><p className="text-[10px] text-app-text-muted">?�패 ?�인 분석</p></div>
+              <div><p className="text-xs font-medium text-app-text">AI 분석</p><p className="text-[10px] text-app-text-muted">?�패 ?�인 분석</p></div>
               <ChevronRight className="h-4 w-4 text-app-text-muted ml-auto" />
             </button>
           </div>
@@ -120,8 +120,8 @@ function MonitorView({ stats, loading }: { stats: BroadcastStats; loading: boole
 
 function RedirectTab({ tab, label }: { tab: string; label: string }) {
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
-  useEffect(() => { setActiveTab(tab as any); }, [tab]);
-  return <div className="flex flex-col items-center gap-3 py-8 text-app-text-muted"><Loader2 className="h-6 w-6 animate-spin text-app-primary" /><p className="text-xs">{label}�??�동 �?..</p></div>;
+  useEffect(() => { setActiveTab(tab); }, [tab]);
+  return <div className="flex flex-col items-center gap-3 py-8 text-app-text-muted"><Loader2 className="h-6 w-6 animate-spin text-app-primary" /><p className="text-xs">{label}�??�동 �?..</p></div>;
 }
 
 function StatCard({ icon, label, value, color, pulse }: { icon: React.ReactNode; label: string; value: number; color: string; pulse?: boolean }) {

@@ -72,7 +72,7 @@ export const MiniAppDashboard = memo(function MiniAppDashboard() {
         fetchTokenBalance(),
         fetchRecentBroadcasts(),
       ]);
-      const active = (accountsList as any[]).filter((a: any) => a.status === "active");
+      const active = (accountsList as unknown[]).filter((a: any) => a.status === "active");
       const todayTotal = active.reduce((s: number, a: any) => s + (a.todaySent || 0), 0);
       setState({
         tokenBalance, activeAccounts: active.length, queueCount: scheduler?.due_broadcasts_count ?? 0, todayTotal,

@@ -32,7 +32,7 @@ export function MobileBottomNav() {
     if (id === "chat") {
       navigateToChat();
     } else {
-      setActiveTab(id as any);
+      setActiveTab(id);
     }
     setMoreOpen(false);
   }, [navigateToChat, setActiveTab]);
@@ -112,7 +112,7 @@ export function MobileBottomNav() {
               </div>
               <div className="grid grid-cols-4 gap-2 px-4 pb-6 overflow-y-auto max-h-[50vh]">
                 {["myai", "aireply", "autoreply", "replymacro", "templates", "deliveryanalytics", "channelhub", "audit", "folders", "triggers", "pixeloffice", "fortune"].map((tabId) => (
-                  <button key={tabId} type="button" onClick={() => { setActiveTab(tabId as any); setMoreOpen(false); }}
+                  <button key={tabId} type="button" onClick={() => { setActiveTab(tabId); setMoreOpen(false); }}
                     className="flex flex-col items-center gap-1 rounded-xl border border-app-border bg-app-card p-2.5 min-h-[44px] hover:bg-app-card-hover active:scale-95 transition-all"
                   >
                     <span className="text-[10px] font-medium text-app-text text-center leading-tight">{tabId}</span>

@@ -117,7 +117,7 @@ export function SmartGroupFilter({
           </div>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value )}
             className="flex-1 rounded-lg border bg-app-bg px-2 py-1 text-xs outline-none"
             style={{ 
               borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)",
