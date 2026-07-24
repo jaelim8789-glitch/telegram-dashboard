@@ -1,4 +1,4 @@
-﻿node_modules
+node_modules
 .next
 .git
 .gitattributes
@@ -11,7 +11,6 @@ report/
 .kilo/
 .kilocode/
 android/
-public/
 coverage/
 .nyc_output/
 .venv/
