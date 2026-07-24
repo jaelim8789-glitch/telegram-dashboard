@@ -3,11 +3,30 @@
 .git
 .gitattributes
 .gitignore
+.tsbuildinfo
 .tsbuildinfo*
 report/
 .pnpm-store
-scripts/
+
 .kilo/
+.kilocode/
+android/
+public/
+coverage/
+.nyc_output/
+.venv/
+.venv
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+.turbo/
+logs/
+*.zip
+*.tar.gz
+*.session
+*.log
+*.local
 
 # CRITICAL: Root dirs that shadow src/app for Next.js App Router.
 /app
@@ -18,7 +37,6 @@ scripts/
 *.md
 
 .env
-*.local
 npm-debug.log*
 test-results
 playwright-report
@@ -26,8 +44,9 @@ e2e
 data/
 sessions/
 *.db
-*.session
 .backup
-*.log
 tests/
 docs/
+project-structure.txt
+package-lock.json
+yarn.lock
