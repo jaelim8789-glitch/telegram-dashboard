@@ -18,11 +18,11 @@ import { useToast } from "@/components/ui/Toast";
 import type { AccountHealthItem, AccountHealthState } from "@/types";
 
 const HEALTH_FILTERS: { key: AccountHealthState | "all"; label: string; icon: typeof Ban | null }[] = [
-  { key: "all", label: "?�체", icon: null },
-  { key: "healthy", label: "?�상", icon: null },
-  { key: "unauthorized", label: "?�션 만료", icon: Plug },
-  { key: "rate_limited", label: "?�한??, icon: Clock },
-  { key: "error", label: "?�류", icon: ShieldAlert },
+  { key: "all", label: "?�체", icon: null },
+  { key: "healthy", label: "?�상", icon: null },
+  { key: "unauthorized", label: "?�션 만료", icon: Plug },
+  { key: "rate_limited", label: "?�한??, icon: Clock },
+  { key: "error", label: "?�류", icon: ShieldAlert },
   { key: "not_configured", label: "미설??, icon: WifiOff },
   { key: "banned", label: "차단", icon: Ban },
 ];
@@ -31,7 +31,7 @@ const BACKGROUND_POLL_INTERVAL_MS = 30000;
 
 export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   const storeAccounts = useDashboardStore((s) => s.accounts);
-  const accounts = (storeAccounts ?? []) as any[];
+  const accounts = (storeAccounts ?? []) as unknown[];
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
   const accountsError = useDashboardStore((s) => s.accountsError);
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
@@ -63,7 +63,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   const groups = useAccountGroups();
   const { toast } = useToast();
 
-  // ?�?� Batch selection ?�?�
+  // ?�?� Batch selection ?�?�
   const [batchMode, setBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchUpdating, setBatchUpdating] = useState(false);
@@ -157,7 +157,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
     return counts;
   }, [accounts, healthByAccountId]);
 
-  // ?�?� Batch selection callbacks (defined after filteredAccounts) ?�?�
+  // ?�?� Batch selection callbacks (defined after filteredAccounts) ?�?�
   const selectAllFiltered = useCallback(() => {
     setSelectedIds(new Set(filteredAccounts.map((a) => a.id)));
   }, [filteredAccounts]);
@@ -167,11 +167,11 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
     setBatchUpdating(true);
     try {
       await api.batchUpdateAccountStatus(Array.from(selectedIds), "active");
-      toast("success", `${selectedIds.size}�?계정???�성?�되?�습?�다.`);
+      toast("success", `${selectedIds.size}�?계정???�성?�되?�습?�다.`);
       await fetchAccounts();
       exitBatchMode();
     } catch (err) {
-      toast("error", err instanceof Error ? err.message : "?�괄 ?�성?�에 ?�패?�습?�다.");
+      toast("error", err instanceof Error ? err.message : "?�괄 ?�성?�에 ?�패?�습?�다.");
     } finally {
       setBatchUpdating(false);
     }
@@ -182,11 +182,11 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
     setBatchUpdating(true);
     try {
       await api.batchUpdateAccountStatus(Array.from(selectedIds), "inactive");
-      toast("success", `${selectedIds.size}�?계정??비활?�화?�었?�니??`);
+      toast("success", `${selectedIds.size}�?계정??비활?�화?�었?�니??`);
       await fetchAccounts();
       exitBatchMode();
     } catch (err) {
-      toast("error", err instanceof Error ? err.message : "?�괄 비활?�화???�패?�습?�다.");
+      toast("error", err instanceof Error ? err.message : "?�괄 비활?�화???�패?�습?�다.");
     } finally {
       setBatchUpdating(false);
     }
@@ -195,7 +195,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   async function handleDelete(id: string) {
     setDeleteError(null);
     try { await removeAccount(id); }
-    catch (err) { setDeleteError(err instanceof Error ? err.message : "??�� ?�패"); }
+    catch (err) { setDeleteError(err instanceof Error ? err.message : "??�� ?�패"); }
   }
 
   async function handleClearError(id: string) {
@@ -204,8 +204,8 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   }
 
   async function handleResume(id: string) {
-    try { await api.resumeAccount(id); toast("success", "계정???�개?�었?�니??"); await fetchAccounts(); }
-    catch (err) { toast("error", err instanceof Error ? err.message : "?�개???�패?�습?�다."); }
+    try { await api.resumeAccount(id); toast("success", "계정???�개?�었?�니??"); await fetchAccounts(); }
+    catch (err) { toast("error", err instanceof Error ? err.message : "?�개???�패?�습?�다."); }
   }
 
   const isCollapsed = collapsed || sidebarCollapsed;
@@ -234,8 +234,8 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
                 ? "bg-app-primary text-white"
                 : "text-app-text-muted hover:text-app-text hover:bg-app-card"
             )}
-            aria-label="배치 모드 ?�환"
-            title={batchMode ? "?�괄 ?�택 종료" : "?�괄 ?�택 모드"}
+            aria-label="배치 모드 ?�환"
+            title={batchMode ? "?�괄 ?�택 종료" : "?�괄 ?�택 모드"}
           >
             <CheckSquare className="h-4 w-4" />
           </button>
@@ -244,8 +244,8 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
               type="button"
               onClick={() => setGroupMgmtOpen(true)}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
-              title="그룹 관�?
-              aria-label="그룹 관�?
+              title="그룹 관�?
+              aria-label="그룹 관�?
             >
               <Layers className="h-4 w-4" />
             </button>
@@ -253,7 +253,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
           <button
             type="button"
             onClick={() => { fetchAccounts(); loadHealth(); }}
-            aria-label="계정 ?�로고침"
+            aria-label="계정 ?�로고침"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all"
           >
             <RefreshCw className={`h-4 w-4 ${accountsLoading ? "animate-spin" : ""}`} />
@@ -270,17 +270,17 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
             onClick={selectAllFiltered}
             className="rounded-lg px-2 py-1 text-[10px] font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
           >
-            ?�체 ?�택
+            ?�체 ?�택
           </button>
           <button
             type="button"
             onClick={clearBatchSelection}
             className="rounded-lg px-2 py-1 text-[10px] font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
           >
-            ?�택 ?�제
+            ?�택 ?�제
           </button>
           <span className="ml-auto text-[10px] font-medium text-app-text-muted">
-            {selectedIds.size}�??�택??
+            {selectedIds.size}�??�택??
           </span>
           <button
             type="button"
@@ -288,7 +288,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
             disabled={selectedIds.size === 0 || batchUpdating}
             className="rounded-lg bg-app-success/80 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-app-success transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {batchUpdating ? "..." : "?�성??}
+            {batchUpdating ? "..." : "?�성??}
           </button>
           <button
             type="button"
@@ -296,13 +296,13 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
             disabled={selectedIds.size === 0 || batchUpdating}
             className="rounded-lg bg-app-warning/80 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-app-warning transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {batchUpdating ? "..." : "비활?�화"}
+            {batchUpdating ? "..." : "비활?�화"}
           </button>
           <button
             type="button"
             onClick={exitBatchMode}
             className="flex h-6 w-6 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card-hover transition-colors"
-            title="?�괄 모드 종료"
+            title="?�괄 모드 종료"
             aria-label="배치 모드 종료"
           >
             <X className="h-3 w-3" />
@@ -331,14 +331,14 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
                   });
                 }
               }}
-              placeholder="계정 ?�름 ?�는 ?�화번호 검??
+              placeholder="계정 ?�름 ?�는 ?�화번호 검??
               aria-label="계정 검??
               className="w-full rounded-xl border border-app-border bg-app-card py-2.5 pl-8 pr-8 text-xs text-app-text placeholder:text-app-text-subtle outline-none transition-colors duration-150 focus:border-app-primary/60 focus:ring-2 focus:ring-app-primary/15"
             />
             {searchQuery && (
               <button type="button" onClick={() => { setSearchQuery(""); setRecentSearches([]); try { localStorage.removeItem("telemon-sidebar-recent-searches"); } catch (e) { console.warn('Unhandled error in Sidebar', e) } }}
                 className="absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg text-app-text-subtle hover:bg-app-card-hover hover:text-app-text transition-colors"
-                title="검??지?�기"
+                title="검??지?�기"
                 aria-label="검??초기??>
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -396,7 +396,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
               className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
             >
               <X className="h-3 w-3" />
-              ?�체 그룹
+              ?�체 그룹
             </button>
           )}
           {groups.map((g) => {
@@ -427,7 +427,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
               className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-app-card-hover text-app-text-muted hover:text-app-text transition-colors"
             >
               <Settings className="h-3 w-3" />
-              관�?
+              관�?
             </button>
           )}
         </div>
@@ -440,8 +440,8 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
           <div className="mx-0 mb-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-amber-700">비활??계정 {dormantAccounts.length}�?/p>
-                <p className="text-[10px] text-amber-600/70 mt-0.5">?�이?�바?�서 ?�인?�고 ?�리?�세??/p>
+                <p className="text-[11px] font-medium text-amber-700">비활??계정 {dormantAccounts.length}�?/p>
+                <p className="text-[10px] text-amber-600/70 mt-0.5">?�이?�바?�서 ?�인?�고 ?�리?�세??/p>
               </div>
               <button onClick={() => { setShowDormantBanner(false); try { localStorage.setItem("telemon-dormant-banner-dismissed", "true"); } catch (e) { console.warn('Unhandled error in Sidebar', e) } }}
                 className="shrink-0 h-5 w-5 rounded flex items-center justify-center text-amber-500 hover:bg-amber-500/10">
@@ -458,10 +458,10 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
         {!accountsLoading && !accountsError && accounts.length === 0 && (
           <EmptyState
             icon={Users}
-            title="계정 ?�음"
-            description="계정 ?�록 ??��??Telegram 계정??추�??�세??"
+            title="계정 ?�음"
+            description="계정 ?�록 ??��??Telegram 계정??추�??�세??"
             action={{
-              label: "계정 ?�록",
+              label: "계정 ?�록",
               icon: UserPlus,
               onClick: () => useDashboardStore.getState().setActiveTab("register"),
             }}
@@ -469,7 +469,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
           />
         )}
         {filteredAccounts.length === 0 && accounts.length > 0 && (
-          <p className="py-6 text-center text-xs text-app-text-subtle">조건??맞는 계정???�습?�다.</p>
+          <p className="py-6 text-center text-xs text-app-text-subtle">조건??맞는 계정???�습?�다.</p>
         )}
         {filteredAccounts.map((account) => {
           const health = healthByAccountId[account.id];
@@ -502,8 +502,8 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
                 type="button"
                 onClick={() => toggleBatchSelection(account.id)}
                 className="mt-3 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors"
-                title={isBatchSelected ? "?�택 ?�제" : "?�택"}
-                aria-label={isBatchSelected ? "?�택 ?�제" : "?�택"}
+                title={isBatchSelected ? "?�택 ?�제" : "?�택"}
+                aria-label={isBatchSelected ? "?�택 ?�제" : "?�택"}
               >
                   {isBatchSelected ? (
                     <CheckSquare className="h-4 w-4 text-app-primary" />
@@ -542,13 +542,13 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-border py-2 text-[11px] font-medium text-app-text-muted hover:border-app-border-strong hover:text-app-text transition-colors"
           >
             <Layers className="h-3.5 w-3.5" />
-            계정 그룹 만들�?
+            계정 그룹 만들�?
           </button>
         </div>
       )}
 
       <div className="border-t border-app-border px-4 py-3">
-        <p className="text-[11px] text-app-text-muted">계정??마우?��? ?�리�???�� 가??/p>
+        <p className="text-[11px] text-app-text-muted">계정??마우?��? ?�리�???�� 가??/p>
       </div>
       </>
       )}

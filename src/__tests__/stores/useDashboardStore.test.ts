@@ -9,7 +9,7 @@ jest.mock("@/lib/runtimeManager", () => {
   const mockRefreshAll = jest.fn();
   const mockSubscribe = jest.fn(() => jest.fn());
   const mockInstance = {
-    accounts: [] as any[],
+    accounts: [] as unknown[],
     selectedAccountId: null as string | null,
     selectAccount: mockSelectAccount,
     initialize: mockInitialize,

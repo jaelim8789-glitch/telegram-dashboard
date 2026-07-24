@@ -153,7 +153,7 @@ export function AiChatHome() {
 
   const handleQuickAction = useCallback(
     (categoryId: string) => {
-      setCategory(categoryId as any);
+      setCategory(categoryId);
     },
     [setCategory],
   );
