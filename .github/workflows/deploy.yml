@@ -61,84 +61,72 @@ jobs:
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://app.telemon.online' }}
             NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'telemon_verify_bot' }}
 
-  # ============================================
-  # 2. Deploy frontend production (pull-only)
-  # ============================================
-  # deploy-frontend-production:
-  #   if: ${{ always() && github.ref == 'refs/heads/master' }}
-  #   needs: [frontend-docker]
-  #   runs-on: ubuntu-latest
-  #   environment: production
-  #   steps:
-  #     - name: Pre-deploy gateway health check
-  #       id: gateway-precheck
-  #       continue-on-error: true
-  #       uses: appleboy/ssh-action@v1.2.2
-  #       with:
-  #         host: ${{ secrets.VPS_HOST }}
-  #         username: ${{ secrets.VPS_USER }}
-  #         key: ${{ secrets.VPS_SSH_KEY }}
-  #         script: |
-  #           set +e
-  #           for i in $(seq 1 6); do
-  #             if curl -sf http://localhost/health > /dev/null 2>&1; then
-  #               echo "??Gateway healthy"
-  #               exit 0
-  #             fi
-  #             sleep 3
-  #           done
-  #           echo "??Gateway unhealthy ??aborting deploy"
-  #           exit 1
+  deploy-frontend-production:
+    if: ${{ always() && github.ref == 'refs/heads/master' }}
+    needs: [frontend-docker]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pre-deploy gateway health check
+        id: gateway-precheck
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 6); do
+              if curl -sf http://localhost/health > /dev/null 2>&1; then
+                echo "Gateway healthy"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Gateway unhealthy, aborting deploy"
+            exit 1
 
-  #     - name: Pull image + restart frontend
-  #       uses: appleboy/ssh-action@v1.2.2
-  #       with:
-  #         host: ${{ secrets.VPS_HOST }}
-  #         username: ${{ secrets.VPS_USER }}
-  #         key: ${{ secrets.VPS_SSH_KEY }}
-  #         script: |
-  #           set -e
-  #           cd /opt/telemon/backend
-  #           docker compose pull --quiet frontend
-  #           docker compose up -d --no-deps frontend
-  #           docker compose restart nginx
+      - name: Pull image + restart frontend
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            docker pull ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker stop frontend && docker rm frontend
+            docker run -d --name frontend --restart unless-stopped -p 3000:3000 ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker restart nginx
 
-  #     - name: Health check (production)
-  #       id: smoke-frontend-prod
-  #       continue-on-error: true
-  #       uses: appleboy/ssh-action@v1.2.2
-  #       with:
-  #         host: ${{ secrets.VPS_HOST }}
-  #         username: ${{ secrets.VPS_USER }}
-  #         key: ${{ secrets.VPS_SSH_KEY }}
-  #         script: |
-  #           set +e
-  #           for i in $(seq 1 12); do
-  #             curl -sf http://localhost/health > /dev/null 2>&1 && { echo "ok"; exit 0; }
-  #             sleep 5
-  #           done
-  #           echo "smoke fail"; exit 1
+      - name: Health check (production)
+        id: smoke-frontend-prod
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set +e
+            for i in $(seq 1 12); do
+              curl -sf http://localhost/health > /dev/null 2>&1 && { echo "ok"; exit 0; }
+              sleep 5
+            done
+            echo "smoke fail"; exit 1
 
-  #     - name: Rollback on health failure
-  #       if: steps.smoke-frontend-prod.outcome != 'success'
-  #       uses: appleboy/ssh-action@v1.2.2
-  #       continue-on-error: true
-  #       with:
-  #         host: ${{ secrets.VPS_HOST }}
-  #         username: ${{ secrets.VPS_USER }}
-  #         key: ${{ secrets.VPS_SSH_KEY }}
-  #         script: |
-  #           cd /opt/telemon/backend
-  #           bash scripts/rollback-deploy.sh docker-compose.yml frontend
-
-  #     - name: Notify production deploy result
-  #       if: always()
-  #       uses: fjogeleit/http-request-action@v1
-  #       continue-on-error: true
-  #       with:
-  #         url: ${{ secrets.ALERT_WEBHOOK_URL }}
-  #         method: POST
-  #         data: >-
-
-
-
+      - name: Rollback on health failure
+        if: steps.smoke-frontend-prod.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.2
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            docker pull ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker stop frontend && docker rm frontend
+            docker run -d --name frontend --restart unless-stopped -p 3000:3000 ghcr.io/jaelim8789-glitch/telemon-frontend:latest
+            docker restart nginx
