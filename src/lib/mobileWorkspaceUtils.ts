@@ -20,7 +20,7 @@ export function recordWidgetClick(widgetId: string) {
     const data: Record<string, number> = raw ? JSON.parse(raw) : {};
     data[widgetId] = (data[widgetId] || 0) + 1;
     localStorage.setItem(USAGE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in mobileWorkspaceUtils', e) }
 }
 
 export function getTopWidgets(limit = 5): string[] {

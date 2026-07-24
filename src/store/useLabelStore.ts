@@ -18,7 +18,7 @@ export const useLabelStore = create<LabelStore>()(persist(
     toggleAssignment: (targetId, labelId) => {
       const current = get().getAssignments(targetId);
       const next = current.includes(labelId) ? current.filter((x: string) => x !== labelId) : [...current, labelId];
-      try { localStorage.setItem(`labels-${targetId}`, JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(`labels-${targetId}`, JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in useLabelStore', e) }
     },
   }),
   { name: "telemon-labels" }

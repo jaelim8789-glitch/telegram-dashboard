@@ -1,8 +1,8 @@
 "use client";
 
-// ─── 로컬스토리지 기반 토큰/보상 시스템 ─────────────────────────
-// 백엔드 연동 전까지 로컬에서 동작하는 MVP 버전입니다.
-// 차후 서버 API로 마이그레이션 예정.
+// ?�?�?� 로컬?�토리�? 기반 ?�큰/보상 ?�스???�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// 백엔???�동 ?�까지 로컬?�서 ?�작?�는 MVP 버전?�니??
+// 차후 ?�버 API�?마이그레?�션 ?�정.
 
 const TOKEN_KEY = "telemon_tokens";
 const STREAK_KEY = "telemon_streak";
@@ -32,13 +32,13 @@ export interface QuestState {
   expires_at: string;
 }
 
-// ── 토큰 ───────────────────────────────────────────────────────
+// ?�?� ?�큰 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 function getTokenState(): TokenState {
   try {
     const raw = localStorage.getItem(TOKEN_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in token-system', e) }
   return { balance: FREE_TIER_TOKENS, lifetime_earned: 0, last_updated: new Date().toISOString() };
 }
 
@@ -65,16 +65,16 @@ export function earnTokens(amount: number, reason: string) {
   state.lifetime_earned += amount;
   state.last_updated = new Date().toISOString();
   saveTokenState(state);
-  console.log(`[토큰] +${amount} (${reason})`);
+  console.debug(`[토큰] +${amount} (${reason})`);
 }
 
-// ── 출석 체인 ──────────────────────────────────────────────────
+// ?�?� 출석 체인 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export function getStreak(): StreakState {
   try {
     const raw = localStorage.getItem(STREAK_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in token-system', e) }
   return { current: 0, longest: 0, last_checkin: "" };
 }
 
@@ -104,7 +104,7 @@ export function checkIn(): { streak: number; reward: number } {
 
   const reward = rewardMap[state.current] || 0;
   if (reward > 0) {
-    earnTokens(reward, `출석 ${state.current}일 보상`);
+    earnTokens(reward, `출석 ${state.current}??보상`);
   }
 
   return { streak: state.current, reward };
@@ -114,7 +114,7 @@ function saveState(state: StreakState) {
   localStorage.setItem(STREAK_KEY, JSON.stringify(state));
 }
 
-// ── 주간 퀘스트 ────────────────────────────────────────────────
+// ?�?� 주간 ?�스???�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 function generateWeeklyQuests(): QuestState[] {
   const now = new Date();
@@ -123,9 +123,9 @@ function generateWeeklyQuests(): QuestState[] {
   const expires = weekEnd.toISOString();
 
   return [
-    { id: "quest_success_rate", label: "모든 발송 100% 성공", progress: 0, target: 1, reward: 200, completed: false, expires_at: expires },
-    { id: "quest_groups_30", label: "30개 그룹에 발송 완료", progress: 0, target: 30, reward: 500, completed: false, expires_at: expires },
-    { id: "quest_ai_5", label: "AI 분석 5회 사용", progress: 0, target: 5, reward: 150, completed: false, expires_at: expires },
+    { id: "quest_success_rate", label: "모든 발송 100% ?�공", progress: 0, target: 1, reward: 200, completed: false, expires_at: expires },
+    { id: "quest_groups_30", label: "30�?그룹??발송 ?�료", progress: 0, target: 30, reward: 500, completed: false, expires_at: expires },
+    { id: "quest_ai_5", label: "AI 분석 5???�용", progress: 0, target: 5, reward: 150, completed: false, expires_at: expires },
   ];
 }
 
@@ -137,7 +137,7 @@ export function getQuests(): QuestState[] {
       // Check if expired
       if (saved[0] && new Date(saved[0].expires_at) > new Date()) return saved;
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in token-system', e) }
   const fresh = generateWeeklyQuests();
   localStorage.setItem(QUEST_KEY, JSON.stringify(fresh));
   return fresh;
@@ -150,12 +150,12 @@ export function updateQuestProgress(questId: string, amount: number = 1) {
   quest.progress = Math.min(quest.target, quest.progress + amount);
   if (quest.progress >= quest.target) {
     quest.completed = true;
-    earnTokens(quest.reward, `퀘스트 완료: ${quest.label}`);
+    earnTokens(quest.reward, `?�스???�료: ${quest.label}`);
   }
   localStorage.setItem(QUEST_KEY, JSON.stringify(quests));
 }
 
-// ── 그룹 발견 보상 ─────────────────────────────────────────────
+// ?�?� 그룹 발견 보상 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export function rewardGroupDiscovery(groupTitle: string): number {
   try {
@@ -169,7 +169,7 @@ export function rewardGroupDiscovery(groupTitle: string): number {
   } catch { return 0; }
 }
 
-// ── AI 호출 비용 ────────────────────────────────────────────────
+// ?�?� AI ?�출 비용 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 const AI_COST: Record<string, number> = {
   chat: 50,

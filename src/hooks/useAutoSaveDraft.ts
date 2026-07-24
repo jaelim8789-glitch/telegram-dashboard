@@ -27,7 +27,7 @@ export function useAutoSaveDraft() {
     };
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in useAutoSaveDraft', e) }
   }, []);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function useAutoSaveDraft() {
   }, []);
 
   const clearDraft = useCallback(() => {
-    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { console.warn('Unhandled error in useAutoSaveDraft', e) }
   }, []);
 
   return { save, restore, clearDraft };
@@ -78,7 +78,7 @@ export function useDraftRestore() {
       if (store.sendSelectedGroupIds.length === 0 && draft.selectedGroupIds.length > 0) {
         store.setSendSelectedGroupIds(draft.selectedGroupIds);
       }
-    } catch {}
+    } catch (e) { console.warn('Unhandled error in useAutoSaveDraft', e) }
   }, []);
 
   useEffect(() => { restore(); }, [restore]);

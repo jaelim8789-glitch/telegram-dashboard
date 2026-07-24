@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { aiChat } from "@/lib/ai/ai-chat";
@@ -55,7 +55,7 @@ function loadSettings(): ShadowSettings {
 function saveSettings(s: ShadowSettings) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in useAiShadow', e) }
 }
 
 function loadDismissed(): Set<string> {
@@ -72,7 +72,7 @@ function loadDismissed(): Set<string> {
 function saveDismissed(ids: Set<string>) {
   try {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in useAiShadow', e) }
 }
 
 function parseShadowReply(content: string): { intent: string; reply: string; confidence: number } | null {
@@ -88,7 +88,7 @@ function parseShadowReply(content: string): { intent: string; reply: string; con
         };
       }
     }
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in useAiShadow', e) }
   return {
     intent: "general",
     reply: content.replace(/```/g, "").trim(),
@@ -148,8 +148,8 @@ export function useAiShadow(
 
     try {
       const context = msg.previousMessages.length > 0
-        ? `ì´ì „ ëŒ€í™”:\n${msg.previousMessages.slice(-3).join("\n")}\n\në§ˆì§€ë§‰ ê³ ê° ë©”ì‹œì§€: ${msg.message}`
-        : `ê³ ê° ë©”ì‹œì§€: ${msg.message}`;
+        ? `ÀÌÀü ´ëÈ­:\n${msg.previousMessages.slice(-3).join("\n")}\n\n¸¶Áö¸· °í°´ ¸Ş½ÃÁö: ${msg.message}`
+        : `°í°´ ¸Ş½ÃÁö: ${msg.message}`;
 
       const result = await aiChat({
         messages: [

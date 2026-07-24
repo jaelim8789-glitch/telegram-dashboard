@@ -18,7 +18,7 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.warn('Unhandled error in accountPreferences', e) }
 }
 
 export function useAccountFavorites() {

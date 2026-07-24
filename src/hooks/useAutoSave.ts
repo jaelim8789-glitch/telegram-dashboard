@@ -8,7 +8,7 @@ export function useAutoSave(key: string, value: string) {
   useEffect(() => {
     if (!saved.current) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem(key, JSON.stringify({ value, timestamp: Date.now() })); } catch {}
+      try { localStorage.setItem(key, JSON.stringify({ value, timestamp: Date.now() })); } catch (e) { console.warn('Unhandled error in useAutoSave', e) }
     }, 500);
     return () => clearTimeout(timer);
   }, [key, value]);
@@ -24,7 +24,7 @@ export function useAutoSave(key: string, value: string) {
     } catch { return ""; }
   }
 
-  function clearSaved() { try { localStorage.removeItem(key); } catch {} }
+  function clearSaved() { try { localStorage.removeItem(key); } catch (e) { console.warn('Unhandled error in useAutoSave', e) } }
 
   return { loadSaved, clearSaved };
 }

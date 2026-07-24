@@ -161,9 +161,9 @@ export function useSmartTaskAutomation(options: TaskAutomationOptions = {}) {
           // 알림 작업
           if (action.params.type === 'toast') {
             // 토스트 알림 (구현 필요)
-            console.log('Toast notification:', action.params.message);
+            console.warn('Toast notification:', action.params.message);
           } else if (action.params.type === 'console') {
-            console.log(action.params.message);
+            console.warn(action.params.message);
           }
           result = true;
           break;

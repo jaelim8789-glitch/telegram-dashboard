@@ -15,7 +15,7 @@ export function useAutoSaveDraft(message: string, recipients: string[], isActive
         localStorage.setItem(DRAFT_KEY, message);
         if (recipients.length > 0) localStorage.setItem(DRAFT_RECIPIENTS_KEY, JSON.stringify(recipients));
         savedRef.current = true;
-      } catch {}
+      } catch (e) { console.warn('Unhandled error in useAutoSaveDraft', e) }
     }, 5000);
     return () => clearInterval(t);
   }, [message, recipients, isActive]);
@@ -30,7 +30,7 @@ export function useAutoSaveDraft(message: string, recipients: string[], isActive
       } catch { return { message: "", recipients: [] as string[] }; }
     }, []),
     clear: useCallback(() => {
-      try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem(DRAFT_RECIPIENTS_KEY); } catch {}
+      try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem(DRAFT_RECIPIENTS_KEY); } catch (e) { console.warn('Unhandled error in useAutoSaveDraft', e) }
     }, []),
   };
 }

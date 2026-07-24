@@ -16,7 +16,7 @@ export function useSessionRestore() {
 
   const save = useCallback((tab: string, view: string) => {
     setSession(tab, view);
-    try { sessionStorage.setItem("telemon-session", JSON.stringify({ tab, view })); } catch {}
+    try { sessionStorage.setItem("telemon-session", JSON.stringify({ tab, view })); } catch (e) { console.warn('Unhandled error in useSessionRestore', e) }
   }, [setSession]);
 
   const restore = useCallback(() => {

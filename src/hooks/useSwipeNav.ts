@@ -13,8 +13,8 @@ export function useSwipeNav() {
     const dx = e.changedTouches[0].clientX - startX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - startY.current);
     if (Math.abs(dx) > 60 && dy < Math.abs(dx)) {
-      if (dx > 0) { setDirection("right"); onSwipeRight?.(); try { hapticFeedback.impactOccurred("light"); } catch {} }
-      else { setDirection("left"); onSwipeLeft?.(); try { hapticFeedback.impactOccurred("light"); } catch {} }
+      if (dx > 0) { setDirection("right"); onSwipeRight?.(); try { hapticFeedback.impactOccurred("light"); } catch (e) { console.warn('Unhandled error in useSwipeNav', e) } }
+      else { setDirection("left"); onSwipeLeft?.(); try { hapticFeedback.impactOccurred("light"); } catch (e) { console.warn('Unhandled error in useSwipeNav', e) } }
     }
   }, []);
 

@@ -19,14 +19,14 @@ function loadPinned(): string[] {
     if (!raw) return ["todaySent", "successRate", "activeAccounts"];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.every((i: unknown) => typeof i === "string")) return parsed;
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in usePinnedKpiStore', e) }
   return ["todaySent", "successRate", "activeAccounts"];
 }
 
 function persistPinned(ids: string[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in usePinnedKpiStore', e) }
 }
 
 interface PinnedKpiState {

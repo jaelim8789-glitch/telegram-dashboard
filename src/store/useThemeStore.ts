@@ -54,12 +54,12 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   setTheme: (t) => {
     set({ theme: t, useSystemPreference: false });
     applyTheme(t);
-    try { localStorage.setItem(KEY, t); } catch {}
-    try { localStorage.setItem(SYSTEM_PREF_KEY, "false"); } catch {}
+    try { localStorage.setItem(KEY, t); } catch (e) { console.warn('Unhandled error in useThemeStore', e) }
+    try { localStorage.setItem(SYSTEM_PREF_KEY, "false"); } catch (e) { console.warn('Unhandled error in useThemeStore', e) }
   },
   setUseSystemPreference: (v) => {
     set({ useSystemPreference: v });
-    try { localStorage.setItem(SYSTEM_PREF_KEY, String(v)); } catch {}
+    try { localStorage.setItem(SYSTEM_PREF_KEY, String(v)); } catch (e) { console.warn('Unhandled error in useThemeStore', e) }
     if (v) {
       const sys = getSystemTheme();
       set({ theme: sys });
@@ -80,7 +80,7 @@ if (typeof window !== "undefined") {
         applyTheme(next);
       }
     });
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in useThemeStore', e) }
 }
 
 export function usePreferredTheme() {

@@ -85,17 +85,16 @@ class PermissionManager {
     return this.hasPermission(Permission.ADMIN_ACCESS);
   }
 
-  // 권한 갱신
   async refreshPermissions(): Promise<boolean> {
     try {
-      // 실제 구현에서는 서버에서 권한 정보 가져오기
-      // const response = await fetch('/api/auth/permissions');
-      // const permissions = await response.json();
-      // this.setUserPermissions(permissions);
-      
+      const response = await fetch('/api/auth/permissions');
+      if (!response.ok) return false;
+      const permissions = await response.json();
+      this.setUserPermissions(permissions);
       this.lastChecked = Date.now();
       return true;
-    } catch {
+    } catch (e) {
+      console.warn('refreshPermissions failed', e);
       return false;
     }
   }

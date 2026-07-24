@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { WhisperData } from "@/types/ai-whisper";
@@ -27,7 +27,7 @@ function readCache(chatId: string): WhisperData | null {
 function writeCache(chatId: string, data: WhisperData) {
   try {
     localStorage.setItem(cacheKey(chatId), JSON.stringify(data));
-  } catch {}
+  } catch (e) { console.warn('Unhandled error in useAiWhisper', e) }
 }
 
 interface Options {
@@ -78,11 +78,11 @@ export function useAiWhisper(chatId: string | null, options: Options = {}) {
       }, MAX_LOAD_MS);
 
       try {
-        const payload = `ê³ ê°ëª…: ${options.customerName || "ê³ ê°"}
-ë©”ì‹œì§€:
+        const payload = `°í°´¸í: ${options.customerName || "°í°´"}
+¸Ş½ÃÁö:
 ${(options.recentMessages || []).slice(0, RECENT_MSG_COUNT).map((m) => `[${m.role}] ${m.content}`).join("\n")}
 
-ì´ ê³ ê°ì— ëŒ€í•œ Whisper ë¶„ì„ì„ ìœ„ ì‹œìŠ¤í…œ í”„ë¡¬í”„íŠ¸ ê·œì¹™ì— ë”°ë¼ JSONìœ¼ë¡œ ì‘ë‹µí•˜ì„¸ìš”.`;
+ÀÌ °í°´¿¡ ´ëÇÑ Whisper ºĞ¼®À» À§ ½Ã½ºÅÛ ÇÁ·ÒÇÁÆ® ±ÔÄ¢¿¡ µû¶ó JSONÀ¸·Î ÀÀ´äÇÏ¼¼¿ä.`;
 
         const response = await aiChat({
           messages: [

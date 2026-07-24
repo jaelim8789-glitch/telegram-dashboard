@@ -1,6 +1,15 @@
 #!/bin/bash
+# Encoding check script -- also available as encoding-check.ps1 for Windows
+# WINDOWS USERS: Run "powershell -File scripts/encoding-check.ps1" instead
 
 echo "=== 인코딩 문제 검사 ==="
+
+# Detect OS
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    echo "Windows detected. Please run: powershell -File scripts/encoding-check.ps1"
+    echo "Or use: find . -type f \( -name \"*.ts\" -o -name \"*.tsx\" \) -exec file {} \; | grep -i \"utf-16\""
+    exit 0
+fi
 
 # UTF-16 파일 찾기
 echo "UTF-16 파일 검사 중..."

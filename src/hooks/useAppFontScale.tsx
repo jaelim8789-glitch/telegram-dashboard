@@ -13,7 +13,7 @@ export function useAppFontScale() {
   const setScale = useCallback((s: number) => {
     const clamped = Math.max(0.8, Math.min(1.3, s));
     setScaleState(clamped);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clamped)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clamped)); } catch (e) { console.warn('Unhandled error in useAppFontScale', e) }
     document.documentElement.style.setProperty("--app-font-scale", String(clamped));
   }, []);
 
@@ -29,7 +29,7 @@ export function FontSizeControl() {
   function change(delta: number) {
     const next = Math.max(0.8, Math.min(1.3, scale + delta));
     setScale(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.warn('Unhandled error in useAppFontScale', e) }
     document.documentElement.style.setProperty("--app-font-scale", String(next));
   }
 
