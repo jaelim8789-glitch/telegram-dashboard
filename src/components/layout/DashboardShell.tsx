@@ -125,7 +125,7 @@ export function DashboardShell() {
     };
   }, [orientation, activeTab]);
 
-  // ?€?€ Mobile detection ?€?€
+  // ?ï¿½?ï¿½ Mobile detection ?ï¿½?ï¿½
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     setIsMobile(mq.matches);
@@ -141,7 +141,7 @@ export function DashboardShell() {
     }
   }, [isMobile, selectedAccountId]);
 
-  // ?€?€ Foreground auto-refresh ?€?€
+  // ?ï¿½?ï¿½ Foreground auto-refresh ?ï¿½?ï¿½
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export function DashboardShell() {
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [fetchAccounts]);
 
-  // ?€?€ Browser notifications ?€?€
+  // ?ï¿½?ï¿½ Browser notifications ?ï¿½?ï¿½
   const { notifyBroadcastComplete } = useBrowserNotification();
 
   // Notify when broadcasts complete per-account
@@ -171,7 +171,7 @@ export function DashboardShell() {
     }
   }, [accounts, notifyBroadcastComplete]);
 
-  // ?€?€ First-visit auto-redirect to dashboard with 0 accounts ?€?€
+  // ?ï¿½?ï¿½ First-visit auto-redirect to dashboard with 0 accounts ?ï¿½?ï¿½
   useEffect(() => {
     const HAS_VISITED_KEY = "telemon-has-visited";
     if (typeof localStorage === "undefined") return;
@@ -192,7 +192,7 @@ export function DashboardShell() {
       <Header />
       {/* Mobile: slim top bar with account + inspector toggles */}
       {isMobile && (
-        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="ëª¨ë°”???ìƒ‰">
+        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="ëª¨ë°”???ï¿½ìƒ‰">
           <button
             type="button"
             onClick={() => { haptics.tick(); setSidebarOpen(v => !v); }}
@@ -209,11 +209,11 @@ export function DashboardShell() {
               haptics.light();
               setMobileInspectorOpen(v => !v);
             }}
-            aria-label="?¸ìŠ¤?™í„°"
+            aria-label="?ï¿½ìŠ¤?ï¿½í„°"
             className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all ml-auto"
           >
             <Bell className="h-4 w-4 shrink-0" />
-            <span className="text-[11px]">?¸ìŠ¤?™í„°</span>
+            <span className="text-[11px]">?ï¿½ìŠ¤?ï¿½í„°</span>
           </button>
         </div>
       )}
@@ -241,7 +241,7 @@ export function DashboardShell() {
         <div
           id="dashboard-inspector"
           role="complementary"
-          aria-label="?¸ìŠ¤?™í„°"
+          aria-label="?ï¿½ìŠ¤?ï¿½í„°"
           className={`${!isMobile && inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
         >
           {!isMobile && inspectorOpen && (
@@ -257,7 +257,7 @@ export function DashboardShell() {
           <MobileInspectorSheet
             open={mobileInspectorOpen}
             onClose={() => setMobileInspectorOpen(false)}
-            title="?¸ìŠ¤?™í„°"
+            title="?ï¿½ìŠ¤?ï¿½í„°"
           >
             <Inspector />
           </MobileInspectorSheet>

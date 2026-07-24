@@ -72,7 +72,7 @@ function MessageBubble({ msg, isConsecutive, isBookmarked, onToggleBookmark }: {
         {msg.is_forwarded && msg.forward_from_name && (
           <p className="text-[10px] font-medium text-app-text-muted mb-1">
             <CornerUpRight className="h-2.5 w-2.5 inline mr-0.5" />
-            {msg.forward_from_name}???꾨떖 硫붿?�吏?
+            {msg.forward_from_name}???꾨떖 硫붿?�吏?
           </p>
         )}
 
@@ -89,11 +89,11 @@ function MessageBubble({ msg, isConsecutive, isBookmarked, onToggleBookmark }: {
         {/* Media */}
         {msg.media_type === "photo" && (
           <div className="flex items-center gap-1.5 text-xs mb-1 opacity-70">
-            <ImageIcon className="h-3 w-3" /> ??�?          </div>
+            <ImageIcon className="h-3 w-3" /> ??�?          </div>
         )}
         {msg.media_type === "document" && (
           <div className="flex items-center gap-1.5 text-xs mb-1 opacity-70">
-            <FileText className="h-3 w-3" /> ???��
+            <FileText className="h-3 w-3" /> ???��
           </div>
         )}
 
@@ -191,14 +191,14 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: true }),
-      }).catch((e) => { console.error("[TelegramChatView] typing start fetch ??�뙣", e); toast("error", "????�븨 ?곹깭 ?꾩넚????�뙣??�뒿??�떎"); });
+      }).catch((e) => { console.error("[TelegramChatView] typing start fetch ??�뙣", e); toast("error", "????�븨 ?곹깭 ?꾩넚????�뙣??�뒿??�떎"); });
     }
     typingTimeoutRef.current = setTimeout(() => {
       lastTypingStatus.current = false;
       fetch(`${API_BASE}/api/chat-telegram/accounts/${accountId}/dialogs/${chatId}/typing`, {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({ typing: false }),
-      }).catch((e) => { console.error("[TelegramChatView] typing end fetch ??�뙣", e); toast("error", "????�븨 ?곹깭 ?꾩넚????�뙣??�뒿??�떎"); });
+      }).catch((e) => { console.error("[TelegramChatView] typing end fetch ??�뙣", e); toast("error", "????�븨 ?곹깭 ?꾩넚????�뙣??�뒿??�떎"); });
     }, 2000);
   }, [input, accountId, chatId]);
 
@@ -307,7 +307,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-app-text truncate">{chatTitle}</h3>
-          <p className="text-[10px] text-app-text-muted">{messages.length}媛쒖??硫붿?�吏?</p>
+          <p className="text-[10px] text-app-text-muted">{messages.length}媛쒖??硫붿?�吏?</p>
         </div>
       </div>
 
@@ -320,8 +320,8 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-app-text-muted">
             <MessageCircle className="h-10 w-10 mb-2 opacity-30" />
-            <p className="text-sm">硫붿?�吏?媛 ??�뒿??�떎</p>
-            <p className="text-xs mt-1">�?硫붿?�吏???蹂�?궡蹂?�꽭??</p>
+            <p className="text-sm">硫붿?�吏?媛 ??�뒿??�떎</p>
+            <p className="text-xs mt-1">�?硫붿?�吏???蹂�?궡蹂?�꽭??</p>
           </div>
         ) : (
           <>
@@ -345,7 +345,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
                   <span className="h-1.5 w-1.5 rounded-full bg-app-text-muted animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-app-text-muted animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span>{typingUsers.join(", ")}{typingUsers.length === 1 ? "??�씠" : "??�씠"} ??�젰 �?..</span>
+                <span>{typingUsers.join(", ")}{typingUsers.length === 1 ? "??�씠" : "??�씠"} ??�젰 �?..</span>
               </div>
             )}
           </>
@@ -365,7 +365,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
         <div className="flex items-center gap-2 border-t border-app-border bg-app-card px-3 py-2">
           <CornerUpRight className="h-3.5 w-3.5 shrink-0 text-app-primary" />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-app-primary">?�신 ?�??/p>
+            <p className="text-[10px] font-medium text-app-primary">?�신 ?�??/p>
             <p className="truncate text-xs text-app-text-muted">{replyTo.text.slice(0, 100)}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="shrink-0 h-6 w-6 flex items-center justify-center rounded hover:bg-app-card-hover">
@@ -385,7 +385,7 @@ export function TelegramChatView({ accountId, chatId, chatTitle, onBack, bookmar
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="硫붿?�吏? ??�젰..."
+              placeholder="硫붿?�吏? ??�젰..."
               rows={1}
               className="w-full resize-none rounded-xl border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary max-h-32"
               style={{ minHeight: "36px" }}

@@ -34,7 +34,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
     unsubscribe: 0,
   });
 
-  // 초기?? 로컬 ?�토리�??�서 메트�?�� 불러?�기
+  // 초기?? 로컬 ?�토리�??�서 메트�?�� 불러?�기
   useEffect(() => {
     const storedMetrics = localStorage.getItem(METRICS_STORAGE_KEY);
     if (storedMetrics) {
@@ -44,7 +44,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
     }
   }, []);
 
-  // 메트�?�� 변�???로컬 ?�토리�????�??
+  // 메트�?�� 변�???로컬 ?�토리�????�??
   useEffect(() => {
     localStorage.setItem(METRICS_STORAGE_KEY, JSON.stringify(metrics));
   }, [metrics]);
@@ -58,7 +58,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackSent = (notificationId: string) => {
     updateMetric('sent');
-    // ?�림 ID?� ?�태�?로컬 ?�토리�????�??
+    // ?�림 ID?� ?�태�?로컬 ?�토리�????�??
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     notificationStatus[notificationId] = { sent: Date.now() };
     localStorage.setItem('notification_status', JSON.stringify(notificationStatus));
@@ -66,7 +66,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackDelivered = (notificationId: string) => {
     updateMetric('delivered');
-    // ?�림 ID ?�태 ?�데?�트
+    // ?�림 ID ?�태 ?�데?�트
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     if (notificationStatus[notificationId]) {
       notificationStatus[notificationId].delivered = Date.now();
@@ -76,7 +76,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackOpened = (notificationId: string) => {
     updateMetric('opened');
-    // ?�림 ID ?�태 ?�데?�트
+    // ?�림 ID ?�태 ?�데?�트
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     if (notificationStatus[notificationId]) {
       notificationStatus[notificationId].opened = Date.now();
@@ -86,7 +86,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackClicked = (notificationId: string) => {
     updateMetric('clicked');
-    // ?�림 ID ?�태 ?�데?�트
+    // ?�림 ID ?�태 ?�데?�트
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     if (notificationStatus[notificationId]) {
       notificationStatus[notificationId].clicked = Date.now();
@@ -96,7 +96,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackError = (notificationId: string, error: string) => {
     updateMetric('error');
-    // ?�림 ID ?�태 ?�데?�트
+    // ?�림 ID ?�태 ?�데?�트
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     if (notificationStatus[notificationId]) {
       notificationStatus[notificationId].error = { error, timestamp: Date.now() };
@@ -106,7 +106,7 @@ export function usePushNotificationTracking(): PushNotificationTracking {
 
   const trackUnsubscribe = (notificationId: string) => {
     updateMetric('unsubscribe');
-    // ?�림 ID ?�태 ?�데?�트
+    // ?�림 ID ?�태 ?�데?�트
     const notificationStatus = JSON.parse(localStorage.getItem('notification_status') || '{}');
     if (notificationStatus[notificationId]) {
       notificationStatus[notificationId].unsubscribed = Date.now();

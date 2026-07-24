@@ -7,11 +7,11 @@ import { cn } from "@/lib/cn";
 type PushEvent = "broadcast_sent" | "broadcast_failed" | "account_banned" | "account_error" | "queue_empty";
 
 const EVENT_LABELS: Record<PushEvent, string> = {
-  broadcast_sent: "발송 ?�료",
-  broadcast_failed: "발송 ?�패",
+  broadcast_sent: "발송 ?�료",
+  broadcast_failed: "발송 ?�패",
   account_banned: "계정 차단",
-  account_error: "계정 ?�류",
-  queue_empty: "?�기열 ?�진",
+  account_error: "계정 ?�류",
+  queue_empty: "?�기열 ?�진",
 };
 
 const STORAGE_KEY = "telemon-push-settings";
@@ -44,7 +44,7 @@ export function PushSettingsPanel() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-app-text">?�시 ?�림</p>
+        <p className="text-sm font-semibold text-app-text">?�시 ?�림</p>
         <button onClick={subscribeAll} disabled={saving} className="text-xs text-app-primary font-medium hover:underline">
           {saving ? <Loader2 className="h-3 w-3 animate-spin inline" /> : "모두 켜기"}
         </button>

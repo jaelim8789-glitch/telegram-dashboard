@@ -39,12 +39,12 @@ interface SearchItem {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  navigation: "?�비게이??,
+  navigation: "?�비게이??,
   account: "계정",
   group: "그룹",
-  template: "?�플�?,
+  template: "?�플�?,
   broadcast: "발송 기록",
-  action: "빠른 ?�션",
+  action: "빠른 ?�션",
 };
 
 const CATEGORY_ORDER = ["navigation", "action", "account", "group", "template", "broadcast"];
@@ -75,10 +75,10 @@ function buildNavActions(setActiveTab: (tab: TabId) => void, close: () => void):
     })),
     { id: "action:new-broadcast", label: "??발송", icon: <Plus className="h-4 w-4" />, category: "action" as const, action: () => navigate("send") },
     { id: "action:find-groups", label: "그룹 검??, icon: <Search className="h-4 w-4" />, category: "action" as const, action: () => navigate("groupsearch") },
-    { id: "action:add-account", label: "계정 ?�록", icon: <UserPlus className="h-4 w-4" />, category: "action" as const, action: () => navigate("register") },
-    { id: "action:view-failed", label: "?�패??발송 보기", icon: <FileText className="h-4 w-4" />, category: "action" as const, action: () => navigate("log") },
-    { id: "action:open-scheduler", label: "?��?줄러 ?�기", icon: <CalendarClock className="h-4 w-4" />, category: "action" as const, action: () => navigate("scheduler") },
-    { id: "action:delivery-analytics", label: "?�달 분석", icon: <BarChart3 className="h-4 w-4" />, category: "action" as const, action: () => navigate("deliveryanalytics") },
+    { id: "action:add-account", label: "계정 ?�록", icon: <UserPlus className="h-4 w-4" />, category: "action" as const, action: () => navigate("register") },
+    { id: "action:view-failed", label: "?�패??발송 보기", icon: <FileText className="h-4 w-4" />, category: "action" as const, action: () => navigate("log") },
+    { id: "action:open-scheduler", label: "?��?줄러 ?�기", icon: <CalendarClock className="h-4 w-4" />, category: "action" as const, action: () => navigate("scheduler") },
+    { id: "action:delivery-analytics", label: "?�달 분석", icon: <BarChart3 className="h-4 w-4" />, category: "action" as const, action: () => navigate("deliveryanalytics") },
   ];
 }
 
@@ -86,7 +86,7 @@ function buildAccountItems(accounts: ReturnType<typeof useDashboardStore.getStat
   return accounts.map((a) => ({
     id: `account-${a.id}`,
     label: getAccountDisplayName(a),
-    description: a.status === "active" ? "?�성" : a.status,
+    description: a.status === "active" ? "?�성" : a.status,
     icon: <User className="h-4 w-4" />,
     category: "account" as const,
     action: () => { selectAccount(a.id); setActiveTab("send"); close(); },
@@ -97,7 +97,7 @@ function buildGroupItems(groups: Group[], selectAccount: (id: string) => void, s
   return groups.map((g) => ({
     id: `group-${g.id}`,
     label: g.title,
-    description: `${g.type === "channel" ? "채널" : "그룹"} · ${g.participantsCount ?? "?"}�?,
+    description: `${g.type === "channel" ? "채널" : "그룹"} · ${g.participantsCount ?? "?"}�?,
     icon: <Hash className="h-4 w-4" />,
     category: "group" as const,
     action: () => { setActiveTab("send"); close(); },
@@ -124,7 +124,7 @@ function buildBroadcastItems(broadcasts: Broadcast[]): SearchItem[] {
   return broadcasts.map((b) => ({
     id: `broadcast-${b.id}`,
     label: b.message.length > 50 ? b.message.slice(0, 50) + "..." : b.message,
-    description: b.status === "sent" ? "?�료" : b.status === "failed" ? "?�패" : b.status === "sending" ? "발송 �? : b.status === "pending" ? "?��?�? : "취소??,
+    description: b.status === "sent" ? "?�료" : b.status === "failed" ? "?�패" : b.status === "sending" ? "발송 �? : b.status === "pending" ? "?��?�? : "취소??,
     icon: <Send className="h-4 w-4" />,
     category: "broadcast" as const,
     action: () => {
@@ -262,7 +262,7 @@ export function CommandPalette() {
         const recentItems = recent
           .map((id) => [...local, ...remote].find((c) => c.id === id))
           .filter((item): item is SearchItem => item != null);
-        if (recentItems.length > 0) return { items: recentItems, label: "최근 ?�용" };
+        if (recentItems.length > 0) return { items: recentItems, label: "최근 ?�용" };
       }
       return { items: local, label: null };
     }
@@ -349,7 +349,7 @@ export function CommandPalette() {
             transition={{ duration: 0.12, ease: "easeOut" }}
             role="dialog"
             aria-modal="true"
-            aria-label="?�퍼 검??
+            aria-label="?�퍼 검??
             className="relative flex w-[90vw] max-w-[560px] flex-col rounded-2xl border border-app-border bg-app-card shadow-2xl shadow-black/20"
             onKeyDown={handleKeyDown}
           >
@@ -363,9 +363,9 @@ export function CommandPalette() {
                   setQuery(event.target.value);
                   setActiveIdx(0);
                 }}
-                placeholder="계정 · 그룹 · ?�플�?· 발송 기록 · 메뉴 ?�합 검??.."
+                placeholder="계정 · 그룹 · ?�플�?· 발송 기록 · 메뉴 ?�합 검??.."
                 className="min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none placeholder:text-app-text-subtle"
-                aria-label="?�합 검??
+                aria-label="?�합 검??
               />
               {searching && <Loader2 className="h-4 w-4 animate-spin text-app-text-muted" />}
               <kbd className="hidden shrink-0 items-center gap-0.5 rounded-md border border-app-border bg-app-card-hover px-1.5 py-0.5 text-[10px] font-medium text-app-text-subtle sm:flex">
@@ -391,8 +391,8 @@ export function CommandPalette() {
               {flatItems.length === 0 && !searching && (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Search className="mb-2 h-6 w-6 text-app-text-subtle" aria-hidden="true" />
-                  <p className="text-xs text-app-text-muted">?�치?�는 ??��???�습?�다</p>
-                  <p className="mt-0.5 text-[10px] text-app-text-subtle">?�른 ?�워?�로 검?�해보세??/p>
+                  <p className="text-xs text-app-text-muted">?�치?�는 ??��???�습?�다</p>
+                  <p className="mt-0.5 text-[10px] text-app-text-subtle">?�른 ?�워?�로 검?�해보세??/p>
                 </div>
               )}
 
@@ -400,7 +400,7 @@ export function CommandPalette() {
               {flatItems.length === 0 && searching && (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Loader2 className="mb-2 h-6 w-6 animate-spin text-app-text-muted" />
-                  <p className="text-xs text-app-text-muted">검??�?..</p>
+                  <p className="text-xs text-app-text-muted">검??�?..</p>
                 </div>
               )}
 
@@ -495,21 +495,21 @@ export function CommandPalette() {
             {/* Footer */}
             <div className="hidden items-center gap-3 border-t border-app-border px-4 py-2 sm:flex">
               <div className="flex items-center gap-1.5 text-[10px] text-app-text-subtle">
-                <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">?�↓</kbd>
-                <span>?�동</span>
+                <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">?�↓</kbd>
+                <span>?�동</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-app-text-subtle">
                 <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">??/kbd>
-                <span>?�택</span>
+                <span>?�택</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-app-text-subtle">
                 <kbd className="rounded border border-app-border bg-app-card-hover px-1 py-0.5 font-sans">Esc</kbd>
-                <span>?�기</span>
+                <span>?�기</span>
               </div>
               {searching && (
                 <div className="ml-auto flex items-center gap-1.5 text-[10px] text-app-text-muted">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>검??�?..</span>
+                  <span>검??�?..</span>
                 </div>
               )}
             </div>
@@ -527,9 +527,9 @@ export function CommandPaletteTrigger() {
     <button
       type="button"
       onClick={toggle}
-      aria-label="?�퍼 검???�기"
+      aria-label="?�퍼 검???�기"
       className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text sm:min-h-8 sm:min-w-8"
-      title="?�퍼 검??(?�K)"
+      title="?�퍼 검??(?�K)"
     >
       <Command className="h-4 w-4" aria-hidden="true" />
     </button>

@@ -17,7 +17,7 @@ export function useStaleDataWarning(key: string, maxAgeMs = 600000) {
       const parsed = JSON.parse(raw);
       if (Date.now() - parsed.timestamp > maxAgeMs) {
         setStale(true);
-        toast({ type: "warning", title: "?�이?��? ?�래?�었?�니??, message: "?�로고침??권장?�니?? });
+        toast({ type: "warning", title: "?�이?��? ?�래?�었?�니??, message: "?�로고침??권장?�니?? });
       }
     } catch (e) { console.warn('Unhandled error in useStaleDataWarning', e) }
   }, [key, maxAgeMs, toast]);

@@ -35,8 +35,8 @@ export function HealthAlertBanner() {
         );
         if (newUnauthorized.length > 0) {
           notify({
-            title: "?�️ 계정 ?�증 ?�요",
-            body: `${newUnauthorized.length}�?계정???�션??만료?�었?�니??`,
+            title: "?�️ 계정 ?�증 ?�요",
+            body: `${newUnauthorized.length}�?계정???�션??만료?�었?�니??`,
             tag: "account-unauthorized",
           });
         }
@@ -47,8 +47,8 @@ export function HealthAlertBanner() {
         );
         if (newBanned.length > 0) {
           notify({
-            title: "?�� 계정 차단??,
-            body: `${newBanned.length}�?계정??Telegram??차단?�었?�니??`,
+            title: "?�� 계정 차단??,
+            body: `${newBanned.length}�?계정??Telegram??차단?�었?�니??`,
             tag: "account-banned",
           });
         }

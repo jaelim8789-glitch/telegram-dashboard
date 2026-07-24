@@ -84,11 +84,11 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
         body: JSON.stringify({ is_active: nextActive, message_content: toggle.message_content }),
       });
       const data = await res.json();
-      if (!res.ok) { toast({ type: "error", title: "?�???�패", message: data.detail || "" }); return; }
+      if (!res.ok) { toast({ type: "error", title: "?�???�패", message: data.detail || "" }); return; }
       setToggle(prev => ({ ...prev, is_active: !!data.is_active }));
       try { hapticFeedback.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in MiniAppReplyMacro', e) }
-      toast({ type: "success", title: nextActive ? "?�덤 ?�장 켜짐" : "?�덤 ?�장 꺼짐" });
-    } catch { toast({ type: "error", title: "?�트?�크 ?�류" }); }
+      toast({ type: "success", title: nextActive ? "?�덤 ?�장 켜짐" : "?�덤 ?�장 꺼짐" });
+    } catch { toast({ type: "error", title: "?�트?�크 ?�류" }); }
     finally { setToggleSaving(false); }
   }, [selectedAccountId, toggle.message_content, toggleSaving, toast]);
 
@@ -105,7 +105,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
       if (res.ok) {
         setToggle(prev => ({ ...prev, message_content: data.message_content || "" }));
         try { hapticFeedback.notificationOccurred("success"); } catch (e) { console.warn('Unhandled error in MiniAppReplyMacro', e) }
-        toast({ type: "success", title: "메시지 ?�?�됨" });
+        toast({ type: "success", title: "메시지 ?�?�됨" });
       }
     } catch (e) { console.warn('Unhandled error in MiniAppReplyMacro', e) }
     finally { setToggleSaving(false); }
@@ -117,10 +117,10 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
     try {
       if (editingMacro) {
         await api.updateReplyMacro(selectedAccountId, editingMacro.id, { name: formName.trim(), messageContent: formMessage.trim() });
-        toast({ type: "success", title: "매크�??�정?? });
+        toast({ type: "success", title: "매크�??�정?? });
       } else {
         await api.createReplyMacro(selectedAccountId, { name: formName.trim(), messageContent: formMessage.trim(), targetChats: [], scheduleType: "interval", intervalHours: 24, maxSendsPerDay: 10 });
-        toast({ type: "success", title: "매크�??�성?? });
+        toast({ type: "success", title: "매크�??�성?? });
       }
       try { hapticFeedback.notificationOccurred("success"); } catch (e) { console.warn('Unhandled error in MiniAppReplyMacro', e) }
       setShowForm(false);
@@ -128,7 +128,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
       setFormName("");
       setFormMessage("");
       fetchMacros(selectedAccountId);
-    } catch { toast({ type: "error", title: "?�???�패" }); }
+    } catch { toast({ type: "error", title: "?�???�패" }); }
     finally { setFormSaving(false); }
   }, [selectedAccountId, formName, formMessage, editingMacro, formSaving, toast, fetchMacros]);
 
@@ -137,9 +137,9 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
     try {
       await api.deleteReplyMacro(selectedAccountId, macroId);
       try { hapticFeedback.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in MiniAppReplyMacro', e) }
-      toast({ type: "success", title: "매크�???��?? });
+      toast({ type: "success", title: "매크�???��?? });
       fetchMacros(selectedAccountId);
-    } catch { toast({ type: "error", title: "??�� ?�패" }); }
+    } catch { toast({ type: "error", title: "??�� ?�패" }); }
   }, [selectedAccountId, toast, fetchMacros]);
 
   const startEditMacro = useCallback((macro: ReplyMacro) => {
@@ -159,7 +159,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
   return (
     <div className="p-4 pb-8 space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold" style={{ color: "var(--tg-theme-text-color)" }}>?�덤 ?�장</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--tg-theme-text-color)" }}>?�덤 ?�장</p>
         <span className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>Reply Macro</span>
       </div>
 
@@ -191,7 +191,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
               <div className="flex items-center gap-2">
                 <div className={`h-2.5 w-2.5 rounded-full ${toggle.is_active ? "bg-emerald-500" : "bg-gray-500"}`} />
                 <span className="text-sm font-medium" style={{ color: "var(--tg-theme-text-color)" }}>
-                  {toggle.is_active ? "켜짐 ???�동 ?�행 �? : "꺼짐"}
+                  {toggle.is_active ? "켜짐 ???�동 ?�행 �? : "꺼짐"}
                 </span>
               </div>
               <GradientToggle
@@ -208,7 +208,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                 <textarea
                   value={toggle.message_content}
                   onChange={(e) => setToggle(prev => ({ ...prev, message_content: e.target.value }))}
-                  placeholder="?�장?�로 보낼 메시지�??�력?�세??
+                  placeholder="?�장?�로 보낼 메시지�??�력?�세??
                   rows={3}
                   disabled={toggleSaving}
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
@@ -218,17 +218,17 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                   <div className="flex items-center gap-3 text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
                     {toggle.last_sent_at && (
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> 마�?�? {new Date(toggle.last_sent_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                        <Clock className="h-3 w-3" /> 마�?�? {new Date(toggle.last_sent_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     )}
                     {toggle.today_count > 0 && (
-                      <span>?�늘 {toggle.today_count}??/span>
+                      <span>?�늘 {toggle.today_count}??/span>
                     )}
                   </div>
                   <button onClick={handleSaveMessage} disabled={toggleSaving}
                     className="rounded-lg px-3 py-1.5 text-[11px] font-medium active:scale-95 disabled:opacity-50"
                     style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-                    {toggleSaving ? "?�??�?.." : "메시지 ?�??}
+                    {toggleSaving ? "?�??�?.." : "메시지 ?�??}
                   </button>
                 </div>
               </>
@@ -238,11 +238,11 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
           {/* Macro rules */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium" style={{ color: "var(--tg-theme-hint-color)" }}>매크�?규칙 ({macros.length})</span>
+              <span className="text-xs font-medium" style={{ color: "var(--tg-theme-hint-color)" }}>매크�?규칙 ({macros.length})</span>
               <button onClick={() => { setShowForm(true); setEditingMacro(null); setFormName(""); setFormMessage(""); }}
                 className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-medium active:scale-95"
                 style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-                <Plus className="h-3 w-3" /> 추�?
+                <Plus className="h-3 w-3" /> 추�?
               </button>
             </div>
 
@@ -251,8 +251,8 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
             ) : macros.length === 0 && !showForm ? (
               <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
                 <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
-                <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>?�록??매크로�? ?�습?�다.</p>
-                <p className="text-[10px] mt-1" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>??메시지 ?�????추�? 버튼?�로 규칙??만드?�요.</p>
+                <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>?�록??매크로�? ?�습?�다.</p>
+                <p className="text-[10px] mt-1" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>??메시지 ?�????추�? 버튼?�로 규칙??만드?�요.</p>
               </div>
             ) : (
               <div className="space-y-1.5">
@@ -269,12 +269,12 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); startEditMacro(macro); }}
                           className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
-                          style={{ color: "var(--tg-theme-hint-color, #708499)" }} aria-label="?�정">
+                          style={{ color: "var(--tg-theme-hint-color, #708499)" }} aria-label="?�정">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteMacro(macro.id); }}
                           className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
-                          style={{ color: "var(--tg-theme-destructive-text-color, #ec3942)" }} aria-label="??��">
+                          style={{ color: "var(--tg-theme-destructive-text-color, #ec3942)" }} aria-label="??��">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                         {expandedMacroId === macro.id ? <ChevronUp className="h-4 w-4 opacity-50" /> : <ChevronDown className="h-4 w-4 opacity-50" />}
@@ -288,9 +288,9 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                           <div className="px-4 pb-3 space-y-2 border-t pt-2" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
                             <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--tg-theme-text-color)" }}>{macro.messageContent}</p>
                             <div className="flex flex-wrap gap-2 text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {macro.intervalHours}?�간 간격</span>
-                              <span>최�? {macro.maxSendsPerDay}????/span>
-                              {macro.lastSentAt && <span>마�?�??�송: {new Date(macro.lastSentAt).toLocaleString("ko-KR")}</span>}
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {macro.intervalHours}?�간 간격</span>
+                              <span>최�? {macro.maxSendsPerDay}????/span>
+                              {macro.lastSentAt && <span>마�?�??�송: {new Date(macro.lastSentAt).toLocaleString("ko-KR")}</span>}
                             </div>
                           </div>
                         </motion.div>
@@ -310,23 +310,23 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                 style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium" style={{ color: "var(--tg-theme-text-color)" }}>
-                    {editingMacro ? "매크�??�정" : "??매크�?}
+                    {editingMacro ? "매크�??�정" : "??매크�?}
                   </span>
                   <button onClick={cancelForm} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90"
-                    aria-label="?�기"><X className="h-4 w-4" /></button>
+                    aria-label="?�기"><X className="h-4 w-4" /></button>
                 </div>
 
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="매크�??�름"
+                  placeholder="매크�??�름"
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none"
                   style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
                 />
                 <textarea
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
-                  placeholder="보낼 메시지 ?�용"
+                  placeholder="보낼 메시지 ?�용"
                   rows={4}
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
                   style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
@@ -336,8 +336,8 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
                   className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold active:scale-[0.98] disabled:opacity-50"
                   style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
                   {formSaving ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> ?�??�?..</>
-                  ) : editingMacro ? "?�정 ?�료" : "?�성?�기"}
+                    <><Loader2 className="h-4 w-4 animate-spin" /> ?�??�?..</>
+                  ) : editingMacro ? "?�정 ?�료" : "?�성?�기"}
                 </button>
               </motion.div>
             )}
@@ -347,7 +347,7 @@ export const MiniAppReplyMacro = memo(function MiniAppReplyMacro() {
 
       {!selectedAccountId && !loadingAccts && (
         <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-hint-color, #708499)" }}>
-          <AlertCircle className="h-3.5 w-3.5" /> ?�성 계정???�습?�다. ?�로????��??계정???�결?�세??
+          <AlertCircle className="h-3.5 w-3.5" /> ?�성 계정???�습?�다. ?�로????��??계정???�결?�세??
         </div>
       )}
     </div>

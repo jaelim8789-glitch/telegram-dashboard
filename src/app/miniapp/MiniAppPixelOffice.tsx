@@ -15,33 +15,33 @@ interface PixelOfficeStaff {
 }
 
 const DEFAULT_STAFF: PixelOfficeStaff[] = [
-  { id: "boss", name: "?¬ì¥", emoji: "?‘¨?ğŸ’?, status: "online", role: "?? },
-  { id: "telemon-ai", name: "AI ?”ë ˆëª?, emoji: "?¤–", status: "online", role: "?ë™ ?‘ë‹µ" },
+  { id: "boss", name: "?ï¿½ì¥", emoji: "?ï¿½ï¿½?ï¿½ï¿½?, status: "online", role: "?? },
+  { id: "telemon-ai", name: "AI ?ï¿½ë ˆï¿½?, emoji: "?ï¿½ï¿½", status: "online", role: "?ï¿½ë™ ?ï¿½ë‹µ" },
 ];
 
 const STATUS_LABELS: Record<string, string> = { online: "online", busy: "busy", idle: "idle" };
-const STATUS_FILTERS = ["?„ì²´", "online", "busy", "idle"] as const;
+const STATUS_FILTERS = ["?ï¿½ì²´", "online", "busy", "idle"] as const;
 
 export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
   const [staff, setStaff] = useState<PixelOfficeStaff[]>(DEFAULT_STAFF);
   const [showCreateStaff, setShowCreateStaff] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"?„ì²´" | "online" | "busy" | "idle">("?„ì²´");
+  const [statusFilter, setStatusFilter] = useState<"?ï¿½ì²´" | "online" | "busy" | "idle">("?ï¿½ì²´");
   const toast = useToastStore(s => s.add);
 
-  const filteredStaff = statusFilter === "?„ì²´" ? staff : staff.filter(s => s.status === statusFilter);
+  const filteredStaff = statusFilter === "?ï¿½ì²´" ? staff : staff.filter(s => s.status === statusFilter);
 
   function handleCreateStaff() {
     try { hapticFeedback.impactOccurred("medium"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }
     const newStaff: PixelOfficeStaff = {
       id: `staff-${Date.now()}`,
       name: `AI ì§ì› ${staff.length - 1}??,
-      emoji: ["?§‘?ğŸ’?, "?‘©?ğŸ’?, "?‘¨?ğŸ”?, "?‘©?ğŸ”?, "?§™?â™‚ï¸?][(staff.length - 2) % 5],
+      emoji: ["?ï¿½ï¿½?ï¿½ï¿½?, "?ï¿½ï¿½?ï¿½ï¿½?, "?ï¿½ï¿½?ï¿½ï¿½?, "?ï¿½ï¿½?ï¿½ï¿½?, "?ï¿½ï¿½?ï¿½â™‚ï¿½?][(staff.length - 2) % 5],
       status: "idle",
-      role: "AI ?´ì‹œ?¤í„´??,
+      role: "AI ?ï¿½ì‹œ?ï¿½í„´??,
     };
     setStaff(prev => [...prev, newStaff]);
     setShowCreateStaff(false);
-    toast({ type: "success", title: "AI ì§ì› ?ì„± ?„ë£Œ!", message: `${newStaff.name}??ê°€) PixelOffice???©ë¥˜?ˆìŠµ?ˆë‹¤.` });
+    toast({ type: "success", title: "AI ì§ì› ?ï¿½ì„± ?ï¿½ë£Œ!", message: `${newStaff.name}??ê°€) PixelOffice???ï¿½ë¥˜?ï¿½ìŠµ?ï¿½ë‹¤.` });
   }
 
   function toggleStatus(id: string) {
@@ -57,7 +57,7 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
     if (id === "boss") return;
     try { hapticFeedback.impactOccurred("heavy"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }
     setStaff(prev => prev.filter(s => s.id !== id));
-    toast({ type: "info", title: "ì§ì› ?´ì‚¬", message: "AI ì§ì›??PixelOfficeë¥?? ë‚¬?µë‹ˆ??" });
+    toast({ type: "info", title: "ì§ì› ?ï¿½ì‚¬", message: "AI ì§ì›??PixelOfficeï¿½??ï¿½ë‚¬?ï¿½ë‹ˆ??" });
   }
 
   return (
@@ -70,7 +70,7 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
           <button onClick={() => { try { hapticFeedback.impactOccurred("light"); } catch (e) { console.warn('Unhandled error in MiniAppPixelOffice', e) }; setShowCreateStaff(true); }}
             className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-medium active:scale-95"
             style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-            <Plus className="h-3 w-3" /> AI ì§ì› ?ì„±
+            <Plus className="h-3 w-3" /> AI ì§ì› ?ï¿½ì„±
           </button>
         </div>
 
@@ -79,7 +79,7 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
             <button key={f} onClick={() => setStatusFilter(f)}
               className={`rounded-full px-3 py-1 text-[11px] font-medium transition-all active:scale-90 ${statusFilter === f ? "text-white" : "opacity-60"}`}
               style={{ backgroundColor: statusFilter === f ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-section-bg-color, #232e3c)", color: statusFilter === f ? "#fff" : "var(--tg-theme-text-color, #f5f5f5)" }}>
-              {f === "?„ì²´" ? "?„ì²´" : `?Ÿ¢ ${f}`}
+              {f === "?ï¿½ì²´" ? "?ï¿½ì²´" : `?ï¿½ï¿½ ${f}`}
             </button>
           ))}
         </div>
@@ -111,15 +111,15 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
 
         {staff.length <= 2 && (
           <p className="text-[10px] text-center mt-3" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-            AI ì§ì›???ì„±?˜ë©´ PixelOffice??ì¶”ê??©ë‹ˆ??
+            AI ì§ì›???ï¿½ì„±?ï¿½ë©´ PixelOffice??ì¶”ï¿½??ï¿½ë‹ˆ??
           </p>
         )}
       </div>
 
       <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
         <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-          ì´?<span className="font-semibold text-emerald-400">{staff.length}ëª?/span>???¤íƒœ????" "}
-          {staff.filter(s => s.status === "online").length}ëª?online
+          ï¿½?<span className="font-semibold text-emerald-400">{staff.length}ï¿½?/span>???ï¿½íƒœ????" "}
+          {staff.filter(s => s.status === "online").length}ï¿½?online
         </p>
       </div>
 
@@ -130,13 +130,13 @@ export const MiniAppPixelOffice = memo(function MiniAppPixelOffice() {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="mx-4 w-full max-w-sm rounded-2xl p-5 shadow-2xl" onClick={e => e.stopPropagation()}
               style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)" }}>
-              <h3 className="text-sm font-bold mb-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>?¤– AI ì§ì› ?ì„±</h3>
+              <h3 className="text-sm font-bold mb-2" style={{ color: "var(--tg-theme-text-color, #f5f5f5)" }}>?ï¿½ï¿½ AI ì§ì› ?ï¿½ì„±</h3>
               <p className="text-xs mb-4" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-                ??AI ì§ì›??PixelOffice???©ë¥˜?©ë‹ˆ?? ?ë™?¼ë¡œ ë°œì†¡/?‘ë‹µ???„ì?ì¤ë‹ˆ??
+                ??AI ì§ì›??PixelOffice???ï¿½ë¥˜?ï¿½ë‹ˆ?? ?ï¿½ë™?ï¿½ë¡œ ë°œì†¡/?ï¿½ë‹µ???ï¿½ï¿½?ì¤ë‹ˆ??
               </p>
               <button onClick={handleCreateStaff}
                 className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-3 text-sm font-semibold text-white active:scale-[0.98]">
-                <Zap className="h-4 w-4 inline mr-1" /> AI ì§ì› ?ì„±?˜ê¸°
+                <Zap className="h-4 w-4 inline mr-1" /> AI ì§ì› ?ï¿½ì„±?ï¿½ê¸°
               </button>
               <button onClick={() => setShowCreateStaff(false)}
                 className="w-full mt-2 rounded-xl py-2.5 text-xs font-medium"

@@ -34,7 +34,7 @@ export function useBrowserNotification() {
     if (!isSupported) return;
     const deniedPermanently = readPref(DENIED_KEY);
     if (deniedPermanently) {
-      toast("info", "?�림 권한??차단?�었?�니?? 브라?��? ?�정?�서 변경해주세??");
+      toast("info", "?�림 권한??차단?�었?�니?? 브라?��? ?�정?�서 변경해주세??");
       return;
     }
     try {
@@ -42,7 +42,7 @@ export function useBrowserNotification() {
       setPermission(result);
       if (result === "denied") {
         writePref(DENIED_KEY, true);
-        toast("info", "브라?��? ?�림??차단?�었?�니??");
+        toast("info", "브라?��? ?�림??차단?�었?�니??");
       }
     } catch (e) { console.warn('Unhandled error in useBrowserNotification', e) }
   }, [isSupported, toast]);
@@ -69,11 +69,11 @@ export function useBrowserNotification() {
 
   const notifyBroadcastComplete = useCallback(
     (accountName: string, recipientCount: number, successCount: number, failCount: number) => {
-      const title = "발송 ?�료";
+      const title = "발송 ?�료";
       const parts: string[] = [];
-      if (successCount > 0) parts.push(`${successCount}�??�공`);
-      if (failCount > 0) parts.push(`${failCount}�??�패`);
-      const body = `[${accountName}] ${recipientCount}�??�??${parts.join(", ")}`;
+      if (successCount > 0) parts.push(`${successCount}�??�공`);
+      if (failCount > 0) parts.push(`${failCount}�??�패`);
+      const body = `[${accountName}] ${recipientCount}�??�??${parts.join(", ")}`;
       notify(title, { body, tag: `broadcast-${Date.now()}` });
     },
     [notify]

@@ -37,7 +37,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
     fetch(`${API_BASE}/api/smart-folders/rules`, { headers: authHeaders })
       .then((r) => r.json())
       .then(setRules)
-      .catch((e) => { console.error("[SmartFolders] smart-folders rules fetch ?�패", e); toast("error", "?�마???�더 규칙??불러?��? 못했?�니??); });
+      .catch((e) => { console.error("[SmartFolders] smart-folders rules fetch ?�패", e); toast("error", "?�마???�더 규칙??불러?��? 못했?�니??); });
   }, []);
 
   const categorize = useCallback(async () => {
@@ -60,7 +60,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
       name: newName.trim(),
       keywords: newKeywords.split(",").map((k) => k.trim()).filter(Boolean),
       color: `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0")}`,
-      icon: "?��",
+      icon: "?��",
     };
     try {
       const res = await fetch(`${API_BASE}/api/smart-folders/rules`, {
@@ -71,7 +71,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
         const newRule = await res.json();
         setRules((prev) => [...prev, newRule]);
         setNewName(""); setNewKeywords(""); setShowAddRule(false);
-        toast("success", "?�더 규칙??추�??�었?�니??);
+        toast("success", "?�더 규칙??추�??�었?�니??);
       }
     } catch (e) { console.warn('Unhandled error in SmartFolders', e) }
   };
@@ -82,7 +82,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
         method: "DELETE", headers: authHeaders,
       });
       setRules((prev) => prev.filter((r) => r.id !== ruleId));
-      toast("success", "규칙????��?�었?�니??);
+      toast("success", "규칙????��?�었?�니??);
     } catch (e) { console.warn('Unhandled error in SmartFolders', e) }
   };
 
@@ -93,8 +93,8 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <FolderOpen className="h-3.5 w-3.5 text-app-primary" />
-          <span className="text-xs font-semibold text-app-text">?�마???�더</span>
-          <span className="text-[9px] text-app-text-muted">({totalCount}�??�??</span>
+          <span className="text-xs font-semibold text-app-text">?�마???�더</span>
+          <span className="text-[9px] text-app-text-muted">({totalCount}�??�??</span>
         </div>
         <button onClick={() => setShowAddRule(!showAddRule)} className="flex items-center gap-1 rounded-lg bg-app-primary/10 px-2 py-1 text-[9px] text-app-primary hover:bg-app-primary/20 transition-colors">
           <Plus className="h-3 w-3" /> 규칙
@@ -105,13 +105,13 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
         {showAddRule && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-2">
             <div className="space-y-1.5 rounded-xl bg-app-card-hover p-2">
-              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="?�더 ?�름 (?? 고객문의)"
+              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="?�더 ?�름 (?? 고객문의)"
                 className="w-full rounded-lg border border-app-border bg-app-bg px-2 py-1.5 text-[10px] text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary" />
-              <input value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)} placeholder="?�워??(?�표�?구분, ?? 문의,견적,가�?"
+              <input value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)} placeholder="?�워??(?�표�?구분, ?? 문의,견적,가�?"
                 className="w-full rounded-lg border border-app-border bg-app-bg px-2 py-1.5 text-[10px] text-app-text placeholder:text-app-text-muted focus:outline-none focus:border-app-primary" />
               <div className="flex gap-1">
                 <button onClick={addRule} className="flex-1 rounded-lg bg-app-primary py-1 text-[9px] font-semibold text-white hover:opacity-90 transition-opacity">
-                  추�?
+                  추�?
                 </button>
                 <button onClick={() => setShowAddRule(false)} className="rounded-lg bg-app-card-hover px-3 py-1 text-[9px] text-app-text-muted hover:text-app-text transition-colors">
                   취소
@@ -124,7 +124,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
 
       <div className="space-y-0.5 max-h-48 overflow-y-auto">
         {Object.entries(categories).map(([name, items]) => {
-          if (items.length === 0 && name === "기�?") return null;
+          if (items.length === 0 && name === "기�?") return null;
           return (
             <button key={name} onClick={() => {
               setActiveFolder(activeFolder === name ? null : name);
@@ -135,7 +135,7 @@ export function SmartFolders({ onSelectFolder, dialogs = [] }: SmartFoldersProps
                 activeFolder === name ? "bg-app-primary/10 text-app-primary" : "hover:bg-app-card-hover text-app-text"
               )}
             >
-              <span className="text-xs">{rules.find((r) => r.name === name)?.icon || "?��"}</span>
+              <span className="text-xs">{rules.find((r) => r.name === name)?.icon || "?��"}</span>
               <span className="flex-1 text-left truncate">{name}</span>
               <span className={cn(
                 "flex h-4 min-w-[18px] items-center justify-center rounded-full px-1.5 text-[8px] font-bold",

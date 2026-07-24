@@ -127,7 +127,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             const { request } = await import("@/lib/api");
             const topGroups = await api.fetchGroups(accountId);
             const groupIds = topGroups.slice(0, 5).map((g: any) => g.id);
-            if (groupIds.length === 0) throw new Error("?�결??그룹???�습?�다");
+            if (groupIds.length === 0) throw new Error("?�결??그룹???�습?�다");
             const form = new FormData();
             form.append("account_id", accountId);
             form.append("message", message.trim() || "");
@@ -149,10 +149,10 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       setImageFile(null);
       draft.clearDraft();
       try { hapticFeedback?.notificationOccurred("success"); } catch (e) { console.warn('Unhandled error in MiniAppSend', e) }
-      toast({ type: "success", title: "발송 ?�료", message: `${success}�?계정 발송 ?�공` });
+      toast({ type: "success", title: "발송 ?�료", message: `${success}�?계정 발송 ?�공` });
       setTimeout(() => setSent(false), 3000);
     } else {
-      setError(`${success}�??�공, ${failed}�??�패`);
+      setError(`${success}�??�공, ${failed}�??�패`);
       try { hapticFeedback?.notificationOccurred("error"); } catch (e) { console.warn('Unhandled error in MiniAppSend', e) }
     }
   }, [message, imageFile, sending, selectedAccountIds, selectedGroupIds, toast, draft]);
@@ -174,7 +174,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
 
       {/* Account selection */}
       <div className="space-y-1">
-        <label className="text-[10px] font-medium flex items-center gap-1" style={{ color: "var(--tg-theme-hint-color)" }}><Users className="h-3 w-3" /> 계정 ({selectedAccountIds.length}�?</label>
+        <label className="text-[10px] font-medium flex items-center gap-1" style={{ color: "var(--tg-theme-hint-color)" }}><Users className="h-3 w-3" /> 계정 ({selectedAccountIds.length}�?</label>
         {loadingAccts ? <div className="h-10 rounded-xl animate-pulse" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color)" }} /> : (
           <div className="flex flex-wrap gap-1.5">
             {accounts.map(a => (
@@ -188,7 +188,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         )}
         {accounts.length === 0 && !loadingAccts && (
           <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-hint-color)" }}>
-            <Info className="h-3.5 w-3.5" /> ?�성 계정???�습?�다. ?�로????��??계정???�결?�세??
+            <Info className="h-3.5 w-3.5" /> ?�성 계정???�습?�다. ?�로????��??계정???�결?�세??
           </div>
         )}
       </div>
@@ -197,13 +197,13 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       <div>
         <button onClick={() => setShowGroupPicker(!showGroupPicker)} className="flex items-center justify-between w-full rounded-xl px-4 py-3 text-sm active:scale-[0.98]"
           style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
-          <span>{selectedGroupIds.length > 0 ? `${selectedGroupIds.length}�?그룹 ?�택?? : "그룹 ?�택 (?�택?�항)"}</span>
+          <span>{selectedGroupIds.length > 0 ? `${selectedGroupIds.length}�?그룹 ?�택?? : "그룹 ?�택 (?�택?�항)"}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${showGroupPicker ? "rotate-180" : ""}`} style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
         </button>
         {showGroupPicker && (
           <div className="mt-1 max-h-40 overflow-y-auto rounded-xl p-2" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
             {groups.length === 0 ? (
-              <p className="text-xs py-3 text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹???�습?�다</p>
+              <p className="text-xs py-3 text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹???�습?�다</p>
             ) : groups.map(g => (
               <button key={g.id} onClick={() => toggleGroup(g.id)}
                 className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs ${selectedGroupIds.includes(g.id) ? "font-semibold" : ""}`}
@@ -219,7 +219,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       {/* Image attachment */}
       <div>
         <label className="text-[10px] font-medium flex items-center gap-1 mb-1" style={{ color: "var(--tg-theme-hint-color)" }}>
-          <Image className="h-3 w-3" /> ?��?지 첨�? (?�택?�항)
+          <Image className="h-3 w-3" /> ?��?지 첨�? (?�택?�항)
         </label>
         <div className="flex gap-2">
           <button onClick={() => handlePickImage(true)}
@@ -230,7 +230,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           <button onClick={() => handlePickImage(false)}
             className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-medium active:scale-95"
             style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}>
-            <Image className="h-4 w-4" /> ?�범
+            <Image className="h-4 w-4" /> ?�범
           </button>
           <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelected} />
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleImageSelected} />
@@ -239,10 +239,10 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
         {/* Image preview */}
         {imagePreviewUrl && (
           <div className="relative mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
-            <img src={imagePreviewUrl} alt="첨�? ?��?지" className="w-full max-h-48 object-contain" />
+            <img src={imagePreviewUrl} alt="첨�? ?��?지" className="w-full max-h-48 object-contain" />
             <button onClick={handleRemoveImage}
               className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full active:scale-90"
-              style={{ backgroundColor: "rgba(0,0,0,0.6)" }} aria-label="?��?지 ?�거">
+              style={{ backgroundColor: "rgba(0,0,0,0.6)" }} aria-label="?��?지 ?�거">
               <X className="h-4 w-4 text-white" />
             </button>
             <span className="absolute bottom-2 left-2 rounded px-2 py-0.5 text-[10px]"
@@ -252,7 +252,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
             {imageFile && imageFile.size > 5 * 1024 * 1024 && (
               <div className="absolute bottom-8 left-2 flex items-center gap-1 rounded px-2 py-0.5 text-[10px]"
                 style={{ backgroundColor: "rgba(239,68,68,0.8)", color: "#fff" }}>
-                <AlertCircle className="h-3 w-3" /> 5MB 초과 ???�송???�패?????�습?�다
+                <AlertCircle className="h-3 w-3" /> 5MB 초과 ???�송???�패?????�습?�다
               </div>
             )}
           </div>
@@ -262,7 +262,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       {/* Message textarea */}
       <div className="relative">
         <textarea ref={textareaRef} value={message} onChange={e => { setMessage(e.target.value); draft.onChange(e.target.value); }}
-          placeholder="보낼 메시지�??�력?�세??.." rows={5} maxLength={MAX_CHARS}
+          placeholder="보낼 메시지�??�력?�세??.." rows={5} maxLength={MAX_CHARS}
           style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)", color: "var(--tg-theme-text-color)" }}
           className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" aria-label="발송 메시지" />
         <div className="absolute bottom-2 right-3 text-[10px] font-medium" style={{ color: remainingColor }}>{remaining}</div>
@@ -275,7 +275,7 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
           <div className="flex items-center gap-2">
             <div className={`h-2.5 w-2.5 rounded-full ${replyMacroActive ? "bg-emerald-500" : "bg-gray-500"}`} />
             <span className="text-xs" style={{ color: "var(--tg-theme-text-color)" }}>
-              ?�덤 ?�장 {replyMacroActive ? "켜짐" : "꺼짐"}
+              ?�덤 ?�장 {replyMacroActive ? "켜짐" : "꺼짐"}
             </span>
             {replyMacroMessage && (
               <span className="text-[10px] truncate max-w-[120px]" style={{ color: "var(--tg-theme-hint-color)" }}>
@@ -315,36 +315,36 @@ export const MiniAppSend = memo(function MiniAppSend({ user }: MiniAppSendProps)
       )}
 
       <motion.button
-        onClick={() => confirm("발송 ?�인", handleSend, `${selectedAccountIds.length}�?계정 · ${selectedGroupIds.length || "?�위 5"}�?그룹${imageFile ? " · ?��?지 ?�함" : ""}?�로 발송?�니??)}
+        onClick={() => confirm("발송 ?�인", handleSend, `${selectedAccountIds.length}�?계정 · ${selectedGroupIds.length || "?�위 5"}�?그룹${imageFile ? " · ?��?지 ?�함" : ""}?�로 발송?�니??)}
         disabled={(!message.trim() && !imageFile) || sending || selectedAccountIds.length === 0}
         animate={sent ? { backgroundColor: "var(--tg-theme-button-color, #5288c1)", transition: { duration: 0.3 } } : {}}
         style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}
         className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-semibold disabled:opacity-50 active:scale-[0.98]"
-        aria-label={sending ? "발송 �? : sent ? "발송 ?�료" : "발송?�기"}>
+        aria-label={sending ? "발송 �? : sent ? "발송 ?�료" : "발송?�기"}>
         <AnimatePresence mode="wait">
           {sending ? (
             <motion.div key="spinner" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="flex items-center gap-2">
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
                 <Loader2 className="h-5 w-5" />
               </motion.div>
-              발송 �?..
+              발송 �?..
             </motion.div>
           ) : sent ? (
             <motion.div key="check" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 15 }} className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              발송 ?�료!
+              발송 ?�료!
             </motion.div>
           ) : (
             <motion.div key="send" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
               <Send className="h-5 w-5" />
-              {`발송 (${selectedAccountIds.length}�?계정)`}
+              {`발송 (${selectedAccountIds.length}�?계정)`}
             </motion.div>
           )}
         </AnimatePresence>
       </motion.button>
 
       {selectedGroupIds.length === 0 && (
-        <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹???�택?��? ?�으�??�위 5�?그룹???�동 발송?�니??/p>
+        <p className="text-xs text-center" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>그룹???�택?��? ?�으�??�위 5�?그룹???�동 발송?�니??/p>
       )}
       {ConfirmDialog}
     </div>

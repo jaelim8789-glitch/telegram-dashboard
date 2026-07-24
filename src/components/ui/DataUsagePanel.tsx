@@ -21,10 +21,10 @@ export function DataUsagePanel() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-app-text flex items-center gap-1.5">?“Š ?°ì´???¬ìš©??/p>
+      <p className="text-xs font-semibold text-app-text flex items-center gap-1.5">?ï¿½ï¿½ ?ï¿½ì´???ï¿½ìš©??/p>
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-app-card-hover p-3"><p className="text-[10px] text-app-text-muted">API ?¸ì¶œ</p><p className="text-sm font-bold text-app-text">{usage.apiCalls.toLocaleString()}??/p></div>
-        <div className="rounded-xl bg-app-card-hover p-3"><p className="text-[10px] text-app-text-muted">?„ì†¡??/p><p className="text-sm font-bold text-app-text">{usage.dataTransferred}</p></div>
+        <div className="rounded-xl bg-app-card-hover p-3"><p className="text-[10px] text-app-text-muted">API ?ï¿½ì¶œ</p><p className="text-sm font-bold text-app-text">{usage.apiCalls.toLocaleString()}??/p></div>
+        <div className="rounded-xl bg-app-card-hover p-3"><p className="text-[10px] text-app-text-muted">?ï¿½ì†¡??/p><p className="text-sm font-bold text-app-text">{usage.dataTransferred}</p></div>
       </div>
     </div>
   );

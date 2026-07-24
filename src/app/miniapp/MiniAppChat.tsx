@@ -17,10 +17,10 @@ if (typeof window !== "undefined") {
 interface Message { role: "user" | "agent"; content: string; id: string; bookmarked?: boolean; }
 
 const QUICK_PROMPTS = [
-  { label: "?�늘 ?�약", prompt: "?�늘 발송 ?�황 ?�려�?, icon: "?��" },
-  { label: "계정 ?�태", prompt: "계정 건강 ?�태??", icon: "?�️" },
-  { label: "?�패 분석", prompt: "최근 발송 ?�패??�??�어?", icon: "?? },
-  { label: "발송 ?�성", prompt: "??마�???카피 ?�성?�줘", icon: "?�️" },
+  { label: "?�늘 ?�약", prompt: "?�늘 발송 ?�황 ?�려�?, icon: "?��" },
+  { label: "계정 ?�태", prompt: "계정 건강 ?�태??", icon: "?�️" },
+  { label: "?�패 분석", prompt: "최근 발송 ?�패??�??�어?", icon: "?? },
+  { label: "발송 ?�성", prompt: "??마�???카피 ?�성?�줘", icon: "?�️" },
 ];
 
 interface ChatHistory { messages: Message[]; chatId: string | null; agentId: string | null; }
@@ -28,10 +28,10 @@ const useChatStore = create<ChatHistory>()(persist(() => ({ messages: [], chatId
 
 function getContextualGreeting(): string {
   const h = new Date().getHours();
-  if (h < 6) return "??? ?�간까�? 고생?�시?�요! ?�늘 발송 ?�황???�려?�릴까요?";
-  if (h < 12) return "좋�? ?�침?�니?? ?�늘??발송 ?�황???�인?�보?�요.";
-  if (h < 18) return "?�녕?�세?? TeleMon AI?�니?? 무엇???��??�릴까요?";
-  return "?�???�간?�니?? ?�늘 ?�루 발송 ?�황???�약?�드릴까??";
+  if (h < 6) return "??? ?�간까�? 고생?�시?�요! ?�늘 발송 ?�황???�려?�릴까요?";
+  if (h < 12) return "좋�? ?�침?�니?? ?�늘??발송 ?�황???�인?�보?�요.";
+  if (h < 18) return "?�녕?�세?? TeleMon AI?�니?? 무엇???��??�릴까요?";
+  return "?�???�간?�니?? ?�늘 ?�루 발송 ?�황???�약?�드릴까??";
 }
 
 const ChatBubble = memo(function ChatBubble({ msg, onCopy, onBookmark }: { msg: Message; onCopy: (text: string) => void; onBookmark: (id: string) => void }) {
@@ -92,7 +92,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // 초기?? ?�이?�트 + 채팅 ?�성
+  // 초기?? ?�이?�트 + 채팅 ?�성
   useEffect(() => {
     async function init() {
       try {
@@ -106,7 +106,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 name: "TeleMon AI", role: "assistant",
-                systemPrompt: "?�신?� TeleMon 미니?�의 AI ?�시?�턴?�입?�다. ?�용?�의 질문??간결?�고 ?��????�는 ?��????�국?�로 ?�공?�세?? 발송 관??질문?�면 구체?�으�??�내?�주?�요.",
+                systemPrompt: "?�신?� TeleMon 미니?�의 AI ?�시?�턴?�입?�다. ?�용?�의 질문??간결?�고 ?��????�는 ?��????�국?�로 ?�공?�세?? 발송 관??질문?�면 구체?�으�??�내?�주?�요.",
               }),
             }).then(r => r.json()).catch(() => null);
             if (demo?.id) aid = demo.id;
@@ -130,13 +130,13 @@ export const MiniAppChat = memo(function MiniAppChat() {
         } else {
           setMessages([{ role: "agent", content: getContextualGreeting(), id: "welcome" }]);
         }
-      } catch { setMessages([{ role: "agent", content: "?�결 �??�류가 발생?�습?�다. ?�시 ?�도?�주?�요.", id: "welcome" }]); }
+      } catch { setMessages([{ role: "agent", content: "?�결 �??�류가 발생?�습?�다. ?�시 ?�도?�주?�요.", id: "welcome" }]); }
       setInitLoading(false);
     }
     init();
   }, []);
 
-  // ?�태 ?�??
+  // ?�태 ?�??
   useEffect(() => { useChatStore.setState({ messages, chatId, agentId }); }, [messages, chatId, agentId]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -149,7 +149,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
     try { hapticFeedback?.notificationOccurred("success"); } catch (e) { console.warn('Unhandled error in MiniAppChat', e) }
 
     try {
-      // 1. 채팅???�으�??�성
+      // 1. 채팅???�으�??�성
       let cid = chatId;
       if (!cid) {
         const aid = agentId;
@@ -159,11 +159,11 @@ export const MiniAppChat = memo(function MiniAppChat() {
         else throw new Error("chat creation failed");
       }
 
-      // 2. ?�제 API ?�출 (DeepSeek ??stream)
+      // 2. ?�제 API ?�출 (DeepSeek ??stream)
       const response = await sendChatMessage(cid, text);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      // 3. SSE ?�트리밍 ?�답 처리
+      // 3. SSE ?�트리밍 ?�답 처리
       const reader = response.body?.getReader();
       if (!reader) throw new Error("no reader");
 
@@ -199,7 +199,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
         });
       }
 
-      // ?�트리밍 ?�료 ??최종 메시지 ?�정
+      // ?�트리밍 ?�료 ??최종 메시지 ?�정
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.id.startsWith("stream-")) {
@@ -208,8 +208,8 @@ export const MiniAppChat = memo(function MiniAppChat() {
         return prev;
       });
     } catch (err) {
-      useToastStore.getState().add({ type: "error", title: "AI ?�답 ?�패", message: "?�시 ?�도?�주?�요" });
-      setMessages(prev => [...prev, { role: "agent", content: "죄송?�니?? ?�답???�성?�는 �??�류가 발생?�습?�다.", id: `a-${Date.now()}` }]);
+      useToastStore.getState().add({ type: "error", title: "AI ?�답 ?�패", message: "?�시 ?�도?�주?�요" });
+      setMessages(prev => [...prev, { role: "agent", content: "죄송?�니?? ?�답???�성?�는 �??�류가 발생?�습?�다.", id: `a-${Date.now()}` }]);
     }
     setLoading(false);
   }, [loading, chatId, agentId]);
@@ -224,7 +224,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
   }, []);
 
   const handleVoiceToggle = useCallback(() => {
-    if (!SpeechRecognition) { useToastStore.getState().add({ type: "info", title: "??브라?��????�성 ?�력??지?�하지 ?�습?�다" }); return; }
+    if (!SpeechRecognition) { useToastStore.getState().add({ type: "info", title: "??브라?��????�성 ?�력??지?�하지 ?�습?�다" }); return; }
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; return; }
     try {
       const r = new SpeechRecognition();
@@ -246,7 +246,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
     return (
       <div className="flex flex-col h-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--tg-theme-button-color, #5288c1)" }} />
-        <p className="text-xs mt-2" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>AI ?�결 �?..</p>
+        <p className="text-xs mt-2" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>AI ?�결 �?..</p>
       </div>
     );
   }
@@ -255,7 +255,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
     <div className="flex flex-col h-full pb-4">
       <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500"><Sparkles className="h-4 w-4 text-white" /></div>
-        <div className="flex-1"><h2 className="text-sm font-bold">AI ?�시?�턴??/h2><p className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>DeepSeek AI · SSE ?�트리밍</p></div>
+        <div className="flex-1"><h2 className="text-sm font-bold">AI ?�시?�턴??/h2><p className="text-[10px]" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>DeepSeek AI · SSE ?�트리밍</p></div>
         {bookmarkedCount > 0 && (
           <div className="flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
             <BookmarkCheck className="h-3 w-3 text-amber-400" /> {bookmarkedCount}
@@ -288,17 +288,17 @@ export const MiniAppChat = memo(function MiniAppChat() {
           {SpeechRecognition && (
             <button onClick={handleVoiceToggle} className="flex h-14 w-14 items-center justify-center rounded-xl active:scale-95"
               style={{ backgroundColor: recognitionRef.current ? "var(--tg-theme-destructive-text-color, #ec3942)" : "var(--tg-theme-section-bg-color, #232e3c)" }}
-              aria-label="?�성 ?�력">
+              aria-label="?�성 ?�력">
               {recognitionRef.current ? <MicOff className="h-5 w-5 text-white" /> : <Mic className="h-5 w-5" style={{ color: "var(--tg-theme-hint-color)" }} />}
             </button>
           )}
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
-            placeholder="DeepSeek AI??질문?�세??.." autoComplete="off" aria-label="메시지 ?�력"
+            placeholder="DeepSeek AI??질문?�세??.." autoComplete="off" aria-label="메시지 ?�력"
             className="flex-1 rounded-xl px-4 py-3.5 text-sm outline-none"
             style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-text-color)", border: "1px solid var(--tg-theme-hint-color, #708499)" }} />
           <button onClick={() => handleSend(input)} disabled={!input.trim() || loading}
             className="flex h-14 w-14 items-center justify-center rounded-xl active:scale-95 disabled:opacity-50"
-            style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }} aria-label="메시지 ?�송">
+            style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)" }} aria-label="메시지 ?�송">
             <Send className="h-5 w-5 text-white" />
           </button>
         </div>
@@ -307,7 +307,7 @@ export const MiniAppChat = memo(function MiniAppChat() {
       {messages.length <= 2 && (
         <button onClick={handleSendRedirect} className="mx-4 flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium active:scale-[0.98]"
           style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
-          <Send className="h-3.5 w-3.5" /> 발송 ??���??�동
+          <Send className="h-3.5 w-3.5" /> 발송 ??���??�동
         </button>
       )}
     </div>

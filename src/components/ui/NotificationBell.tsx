@@ -38,8 +38,8 @@ const TYPE_COLORS: Record<NotificationType, string> = {
 const CATEGORY_LABELS: Record<string, string> = {
   account: "계정",
   broadcast: "발송",
-  system: "?�스??,
-  schedule: "?��?�?,
+  system: "?�스??,
+  schedule: "?��?�?,
 };
 
 function loadNotifications(): Notification[] {
@@ -144,7 +144,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen(!open)}
         className="relative flex min-h-11 min-w-11 items-center justify-center rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-card transition-all sm:min-h-8 sm:min-w-8"
-        aria-label="?�림"
+        aria-label="?�림"
       >
         {unread > 0 ? (
           <>
@@ -176,14 +176,14 @@ export function NotificationBell() {
               className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-app-border/60 bg-app-card shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-app-border/60">
-                <h3 className="text-sm font-semibold text-app-text">?�림</h3>
+                <h3 className="text-sm font-semibold text-app-text">?�림</h3>
                 <div className="flex items-center gap-1.5">
                   {isSupported && (
                     <div ref={settingsRef} className="relative">
                       <button
                         onClick={() => setSettingsOpen(!settingsOpen)}
                         className="p-1 text-app-text-muted hover:text-app-text transition-colors"
-                        title="?�림 ?�정"
+                        title="?�림 ?�정"
                       >
                         <Settings className="h-3 w-3" />
                       </button>
@@ -202,12 +202,12 @@ export function NotificationBell() {
                               {disabled ? (
                                 <>
                                   <BellRing className="h-3.5 w-3.5 text-app-text-muted" />
-                                  <span>브라?��? ?�림 켜기</span>
+                                  <span>브라?��? ?�림 켜기</span>
                                 </>
                               ) : (
                                 <>
                                   <BellOff className="h-3.5 w-3.5 text-app-text-muted" />
-                                  <span>브라?��? ?�림 ?�기</span>
+                                  <span>브라?��? ?�림 ?�기</span>
                                 </>
                               )}
                             </button>
@@ -217,10 +217,10 @@ export function NotificationBell() {
                     </div>
                   )}
                   {unread > 0 && (
-                    <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 ?�음</button>
+                    <button onClick={markAllRead} className="text-xs text-app-primary hover:underline">모두 ?�음</button>
                   )}
                   {notifState.length > 0 && (
-                    <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="?�체 ??��">
+                    <button onClick={clearAll} className="p-1 text-app-text-muted hover:text-app-danger transition-colors" title="?�체 ??��">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   )}
@@ -239,7 +239,7 @@ export function NotificationBell() {
 
               <div className="max-h-80 overflow-y-auto">
                 {notifState.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-app-text-muted">?�림???�습?�다</div>
+                  <div className="py-8 text-center text-xs text-app-text-muted">?�림???�습?�다</div>
                 ) : (
                   notifState.map((n) => {
                     const Icon = TYPE_ICONS[n.type];

@@ -35,9 +35,9 @@ export function useNotificationSound() {
 export function NotificationSoundSettings({ accountId, current, onChange }: { accountId: string; current: string; onChange: (sound: string) => void }) {
   const sounds = [
     { id: "default", label: "기본" },
-    { id: "urgent", label: "긴급 (?��???" },
-    { id: "gentle", label: "부?�러?? },
-    { id: "none", label: "?�기" },
+    { id: "urgent", label: "긴급 (?��???" },
+    { id: "gentle", label: "부?�러?? },
+    { id: "none", label: "?�기" },
   ];
   return (
     <div className="flex gap-1.5 flex-wrap">

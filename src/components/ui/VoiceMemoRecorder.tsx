@@ -36,7 +36,7 @@ export function VoiceMemoRecorder({ onTranscribe }: { onTranscribe: (text: strin
   useEffect(() => () => { clearInterval(timerRef.current); recognitionRef.current?.stop(); }, []);
 
   return (
-    <button onClick={toggle} className={cn("flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90", recording ? "bg-red-500 animate-pulse" : "border border-app-border text-app-text-muted hover:text-app-text")} aria-label={recording ? "?�음 중�?" : "?�성 메모"}>
+    <button onClick={toggle} className={cn("flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90", recording ? "bg-red-500 animate-pulse" : "border border-app-border text-app-text-muted hover:text-app-text")} aria-label={recording ? "?�음 중�?" : "?�성 메모"}>
       {recording ? <Square className="h-4 w-4 text-white" /> : <Mic className="h-4 w-4" />}
     </button>
   );

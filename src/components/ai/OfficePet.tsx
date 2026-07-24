@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Fish, Cookie, Gift } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const PET_NAMES = ["?˜ë¹„", "ì´ˆì½”", "ëª½ì´", "ë£¨í‚¤", "ì½”ì½”"];
-const PET_EMOJIS = ["?±", "?¶", "?°", "?¹", "?¦Š"];
+const PET_NAMES = ["?ï¿½ë¹„", "ì´ˆì½”", "ëª½ì´", "ë£¨í‚¤", "ì½”ì½”"];
+const PET_EMOJIS = ["?ï¿½ï¿½", "?ï¿½ï¿½", "?ï¿½ï¿½", "?ï¿½ï¿½", "?ï¿½ï¿½"];
 
 interface PetData {
   name: string;
@@ -19,7 +19,7 @@ interface PetData {
 }
 
 function loadPet(): PetData {
-  if (typeof window === "undefined") return { name: "?˜ë¹„", emoji: "?±", level: 1, exp: 0, fed: 0, petted: 0, lastFed: "" };
+  if (typeof window === "undefined") return { name: "?ï¿½ë¹„", emoji: "?ï¿½ï¿½", level: 1, exp: 0, fed: 0, petted: 0, lastFed: "" };
   try {
     const raw = localStorage.getItem("office_pet");
     if (raw) return JSON.parse(raw);
@@ -29,11 +29,11 @@ function loadPet(): PetData {
 }
 
 const PET_MOODS: Record<string, { emoji: string; msg: string }> = {
-  happy: { emoji: "?˜Š", msg: "ê¸°ë¶„??ì¢‹ì•„??" },
-  hungry: { emoji: "?˜‹", msg: "ë°°ê³ ?Œìš”..." },
-  sleepy: { emoji: "?˜´", msg: "ì¡¸ë ¤??.." },
-  love: { emoji: "?¥°", msg: "?¬ë‘?´ìš”! ?’•" },
-  play: { emoji: "?¾", msg: "?€?„ì£¼?¸ìš”!" },
+  happy: { emoji: "?ï¿½ï¿½", msg: "ê¸°ë¶„??ì¢‹ì•„??" },
+  hungry: { emoji: "?ï¿½ï¿½", msg: "ë°°ê³ ?ï¿½ìš”..." },
+  sleepy: { emoji: "?ï¿½ï¿½", msg: "ì¡¸ë ¤??.." },
+  love: { emoji: "?ï¿½ï¿½", msg: "?ï¿½ë‘?ï¿½ìš”! ?ï¿½ï¿½" },
+  play: { emoji: "?ï¿½ï¿½", msg: "?ï¿½?ï¿½ì£¼?ï¿½ìš”!" },
 };
 
 export function OfficePet() {
@@ -69,16 +69,16 @@ export function OfficePet() {
         next.fed += 1;
         next.exp += 5;
         next.lastFed = new Date().toISOString();
-        setShowAction("?½ï¸?? ëƒ !");
+        setShowAction("?ï¿½ï¿½ï¿½??ï¿½ëƒ !");
       } else if (action === "pet") {
         next.petted += 1;
         next.exp += 3;
-        setShowAction("?’• ê°„ì???");
+        setShowAction("?ï¿½ï¿½ ê°„ï¿½???");
       }
       if (next.exp >= 50) {
         next.level += 1;
         next.exp = 0;
-        setShowAction("?‰ ?ˆë²¨??");
+        setShowAction("?ï¿½ï¿½ ?ï¿½ë²¨??");
       }
       setMood("love");
       localStorage.setItem("office_pet", JSON.stringify(next));
@@ -93,10 +93,10 @@ export function OfficePet() {
     return (
       <div className="rounded-2xl border border-app-border bg-gradient-to-br from-indigo-500/5 to-purple-500/5 p-3">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">?’¤</span>
+          <span className="text-2xl">?ï¿½ï¿½</span>
           <div>
             <p className="text-xs font-semibold text-app-text">{pet.emoji} {pet.name} (Lv.{pet.level})</p>
-            <p className="text-[9px] text-app-text-muted">?˜´ ? ì??ì¤?.. (ë°¤ì´?¼ì„œ)</p>
+            <p className="text-[9px] text-app-text-muted">?ï¿½ï¿½ ?ï¿½ì??ï¿½?.. (ë°¤ì´?ï¿½ì„œ)</p>
           </div>
         </div>
       </div>
@@ -128,9 +128,9 @@ export function OfficePet() {
       {/* Action buttons */}
       <div className="flex gap-1.5">
         <button onClick={() => petAction("feed")} className="flex items-center gap-1 rounded-lg bg-orange-500/10 px-2.5 py-1 text-[9px] text-orange-400 hover:bg-orange-500/20 transition-colors">
-          <Fish className="h-3 w-3" /> ë°¥ì£¼ê¸?        </button>
+          <Fish className="h-3 w-3" /> ë°¥ì£¼ï¿½?        </button>
         <button onClick={() => petAction("pet")} className="flex items-center gap-1 rounded-lg bg-pink-500/10 px-2.5 py-1 text-[9px] text-pink-400 hover:bg-pink-500/20 transition-colors">
-          <Heart className="h-3 w-3" /> ?°ë‹¤?¬ê¸°
+          <Heart className="h-3 w-3" /> ?ï¿½ë‹¤?ï¿½ê¸°
         </button>
       </div>
 

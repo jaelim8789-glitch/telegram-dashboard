@@ -80,11 +80,11 @@ export function AiOperationsReportTab() {
         setCurrentReport(data);
         listReports();
       } else {
-        const err = await res.json().catch(() => ({ detail: "?�류 발생" }));
-        setError(err.detail || "리포???�성 ?�패");
+        const err = await res.json().catch(() => ({ detail: "?�류 발생" }));
+        setError(err.detail || "리포???�성 ?�패");
       }
     } catch {
-      setError("?�트?�크 ?�류가 발생?�습?�다.");
+      setError("?�트?�크 ?�류가 발생?�습?�다.");
     } finally { setLoading(false); }
   };
 
@@ -100,7 +100,7 @@ export function AiOperationsReportTab() {
     <AiSubTabLayout
       icon={<Bot className="h-5 w-5 text-app-primary" />}
       title="AI Operations Report"
-      subtitle="?�영 분석 리포??
+      subtitle="?�영 분석 리포??
       badge="NEW"
       error={error}
       loading={loading && !currentReport}
@@ -109,13 +109,13 @@ export function AiOperationsReportTab() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-3">
-          <Panel title="??리포???�성" className="shrink-0">
+          <Panel title="??리포???�성" className="shrink-0">
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-medium text-app-text-muted">리포???�형</label>
+                <label className="text-[11px] font-medium text-app-text-muted">리포???�형</label>
                 <select value={reportType} onChange={e => { setReportType(e.target.value); setDays(e.target.value === "daily" ? 1 : e.target.value === "weekly" ? 7 : 30); }}
                   className="mt-1 w-full rounded-lg border border-app-border bg-app-bg px-3 py-2 text-xs text-app-text focus:outline-none focus:border-app-primary">
-                  <option value="daily">?�간 리포??/option>
+                  <option value="daily">?�간 리포??/option>
                   <option value="weekly">주간 리포??/option>
                   <option value="custom">맞춤 리포??/option>
                 </select>
@@ -130,16 +130,16 @@ export function AiOperationsReportTab() {
               <button onClick={generateReport} disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-app-primary px-4 py-2 text-xs font-medium text-white hover:bg-app-primary-hover disabled:opacity-50 transition-colors">
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {loading ? "?�성 �?.." : "AI 리포???�성"}
+                {loading ? "?�성 �?.." : "AI 리포???�성"}
               </button>
               {error && <p className="text-xs text-app-danger">{error}</p>}
             </div>
           </Panel>
 
-          <Panel title="?�전 리포?? className="flex-1">
+          <Panel title="?�전 리포?? className="flex-1">
             <div className="space-y-1">
               {reports.length === 0 ? (
-                <p className="text-xs text-app-text-muted text-center py-4">?�성??리포?��? ?�습?�다</p>
+                <p className="text-xs text-app-text-muted text-center py-4">?�성??리포?��? ?�습?�다</p>
               ) : (
                 reports.map(r => (
                   <button key={r.id} onClick={() => loadReport(r.id)}
@@ -167,7 +167,7 @@ export function AiOperationsReportTab() {
         <div className="lg:col-span-3">
           {currentReport ? (
             <div className="space-y-4">
-              <Panel title="?�� ?�영 ?�약">
+              <Panel title="?�� ?�영 ?�약">
                 <div className="flex items-center gap-2 text-[11px] text-app-text-muted mb-3">
                   <Calendar className="h-3.5 w-3.5" />
                   <span>{new Date(currentReport.period_start).toLocaleDateString("ko-KR")} ~ {new Date(currentReport.period_end).toLocaleDateString("ko-KR")}</span>
@@ -179,7 +179,7 @@ export function AiOperationsReportTab() {
               {(currentReport.sections?.length ?? 0) > 0 && (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {currentReport.sections!.map((section: ReportSection, i: number) => (
-                    <Panel key={section.title || `section-${i}`} title={section.title || `?�션 ${i + 1}`}>
+                    <Panel key={section.title || `section-${i}`} title={section.title || `?�션 ${i + 1}`}>
                       <p className="text-xs text-app-text leading-relaxed whitespace-pre-wrap">
                         {section.content || JSON.stringify(section)}
                       </p>
@@ -189,7 +189,7 @@ export function AiOperationsReportTab() {
               )}
 
               {(currentReport.insights?.length ?? 0) > 0 && (
-                <Panel title={<div className="flex items-center gap-1.5"><Lightbulb className="h-4 w-4 text-app-warning" /> ?�사?�트</div>}>
+                <Panel title={<div className="flex items-center gap-1.5"><Lightbulb className="h-4 w-4 text-app-warning" /> ?�사?�트</div>}>
                   <div className="space-y-2">
                     {currentReport.insights!.map((insight: ReportInsight, i: number) => (
                       <div key={`insight-${i}`} className="flex items-start gap-2 rounded-lg border border-app-border bg-app-bg p-2.5">
@@ -230,8 +230,8 @@ export function AiOperationsReportTab() {
           ) : (
             <div className="flex flex-col items-center justify-center h-96 text-center">
               <TrendingUp className="h-12 w-12 text-app-text-subtle mb-3" />
-              <p className="text-sm font-medium text-app-text">AI ?�영 리포??/p>
-              <p className="text-xs text-app-text-muted mt-1">?�영 ?�이?��? 분석???�사?�트 리포?��? ?�공?�니??/p>
+              <p className="text-sm font-medium text-app-text">AI ?�영 리포??/p>
+              <p className="text-xs text-app-text-muted mt-1">?�영 ?�이?��? 분석???�사?�트 리포?��? ?�공?�니??/p>
             </div>
           )}
         </div>

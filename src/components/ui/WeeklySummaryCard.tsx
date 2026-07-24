@@ -47,12 +47,12 @@ export function WeeklySummaryCard() {
   return (
     <div className="rounded-2xl bg-gradient-to-br from-app-primary/20 to-app-primary/5 p-4 border border-app-primary/20">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold text-app-text">?“Š ?´ë²ˆì£??”ì•½</p>
-        <button onClick={dismiss} className="text-[10px] text-app-text-muted hover:text-app-text">?«ê¸°</button>
+        <p className="text-xs font-semibold text-app-text">?ï¿½ï¿½ ?ï¿½ë²ˆï¿½??ï¿½ì•½</p>
+        <button onClick={dismiss} className="text-[10px] text-app-text-muted hover:text-app-text">?ï¿½ê¸°</button>
       </div>
       <div className="flex items-center justify-between">
-        <div><span className="text-lg font-bold text-app-text">{summary.totalSent.toLocaleString()}</span><span className="text-xs text-app-text-muted ml-1">ê±?ë°œì†¡</span></div>
-        <div className="text-right"><span className="text-sm font-semibold text-emerald-500">{summary.successRate}%</span><span className="text-xs text-app-text-muted ml-1">?±ê³µë¥?/span></div>
+        <div><span className="text-lg font-bold text-app-text">{summary.totalSent.toLocaleString()}</span><span className="text-xs text-app-text-muted ml-1">ï¿½?ë°œì†¡</span></div>
+        <div className="text-right"><span className="text-sm font-semibold text-emerald-500">{summary.successRate}%</span><span className="text-xs text-app-text-muted ml-1">?ï¿½ê³µï¿½?/span></div>
       </div>
     </div>
   );

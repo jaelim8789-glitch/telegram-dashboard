@@ -19,6 +19,24 @@ import type {
 import { getToken, getSessionToken, setSessionToken, clearAll } from "@/lib/auth";
 
 import {
+  type ApiResponse,
+  type AuthResponse,
+  type RefreshResponse,
+  type LoginRequest,
+  type LoginResponse,
+  type RegisterRequest,
+  type RegisterResponse,
+  type ValidateTokenResponse,
+} from "./types/auth";
+import { ApiError } from "./errors";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.telemon.online";
+
+if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.warn("NEXT_PUBLIC_API_BASE_URL is not set, using default");
+}
+
+import {
   telemonSystemPrompt,
   aiChat as telemonAiChatCore,
 } from "@/lib/ai";
@@ -36,6 +54,7 @@ import type {
   AiSession, AiUsageSummary, AiPlanLimits, AiSearchFilters,
   TeleMonMemorySnapshot,
 } from "@/types";
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const REQUEST_TIMEOUT_MS = 60000;

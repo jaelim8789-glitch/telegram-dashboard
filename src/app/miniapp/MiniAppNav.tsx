@@ -13,12 +13,12 @@ interface MiniAppNavProps {
 }
 
 const TABS: { id: MiniAppTab; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "dashboard", label: "?�?�보??, icon: LayoutDashboard },
+  { id: "dashboard", label: "?�?�보??, icon: LayoutDashboard },
   { id: "chat", label: "AI 채팅", icon: MessageSquare },
   { id: "send", label: "발송", icon: Send },
   { id: "pixeloffice", label: "PixelOffice", icon: Building2 },
-  { id: "replymacro", label: "?�장매크�?, icon: Zap },
-  { id: "profile", label: "?�로??, icon: User },
+  { id: "replymacro", label: "?�장매크�?, icon: Zap },
+  { id: "profile", label: "?�로??, icon: User },
 ];
 
 export const MiniAppNav = memo(function MiniAppNav({ activeTab, onTabChange, unreadCount }: MiniAppNavProps) {
@@ -27,13 +27,13 @@ export const MiniAppNav = memo(function MiniAppNav({ activeTab, onTabChange, unr
 
   function handleTab(id: MiniAppTab) {
     const now = Date.now();
-    // ??짧�? ?�블??간격?�로 리프?�시 ?�작 개선
+    // ??짧�? ?�블??간격?�로 리프?�시 ?�작 개선
     if (id === "dashboard" && lastTap.current["dashboard"] && now - lastTap.current["dashboard"] < 250) {
       refreshDashboard();
       return;
     }
     lastTap.current[id] = now;
-    // ???�환 ??즉시 반응?�을 ?�해 haptic feedback 추�?
+    // ???�환 ??즉시 반응?�을 ?�해 haptic feedback 추�?
     try {
       (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
     } catch (e) { console.warn('Unhandled error in MiniAppNav', e) }
@@ -41,7 +41,7 @@ export const MiniAppNav = memo(function MiniAppNav({ activeTab, onTabChange, unr
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5" role="tablist" aria-label="메인 ?�비게이??
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-1.5" role="tablist" aria-label="메인 ?�비게이??
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)", backgroundColor: "var(--tg-theme-bg-color, #17212b)", borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
       {TABS.map((tab) => {
         const Icon = tab.icon;

@@ -55,7 +55,7 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
         // New deploys change sw.js's byte content (CACHE_NAME bump etc.),
         // so ask the browser to check for an update on every load.
-        registration.update().catch((e) => { console.error("[PwaRegister] SW update ?�패", e); toast("error", "?�비?�워�??�데?�트???�패?�습?�다"); });
+        registration.update().catch((e) => { console.error("[PwaRegister] SW update ?�패", e); toast("error", "?�비?�워�??�데?�트???�패?�습?�다"); });
 
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
@@ -79,11 +79,11 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
 
   const { trackDelivered, trackOpened, trackClicked, trackError } = usePushNotificationTracking();
 
-  // ?�시 ?�림 ?�벤???�록
+  // ?�시 ?�림 ?�벤???�록
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        // ?�시 메시지 ?�신 ?�벤??
+        // ?�시 메시지 ?�신 ?�벤??
         registration.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const { notificationId } = event.data;
@@ -91,12 +91,12 @@ export function PwaRegister({ onUpdateAvailable }: PwaRegisterProps) {
           }
         }) as EventListener);
 
-        // ?�림 ?�릭 ?�벤??
+        // ?�림 ?�릭 ?�벤??
         navigator.serviceWorker.addEventListener('message', ((event: MessageEvent) => {
           if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
             const { notificationId } = event.data;
             trackOpened(notificationId);
-            // ?�릭 ?�벤?�는 ?�용?��? ?�림???�제�??�릭?�을 ??발생
+            // ?�릭 ?�벤?�는 ?�용?��? ?�림???�제�??�릭?�을 ??발생
             if (event.data.action === 'CLICK_ACTION') {
               trackClicked(notificationId);
             }

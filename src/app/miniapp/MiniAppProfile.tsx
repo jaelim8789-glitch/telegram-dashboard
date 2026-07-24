@@ -79,7 +79,7 @@ export const MiniAppProfile = memo(function MiniAppProfile() {
         <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-full text-3xl font-bold" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)", color: "var(--tg-theme-button-color, #5288c1)" }}>
           {user?.photo_url ? <Image src={user.photo_url} alt={user.first_name || ""} width={80} height={80} className="h-full w-full rounded-full object-cover" unoptimized /> : user?.first_name?.charAt(0)?.toUpperCase() || "U"}
         </div>
-        <h2 className="text-lg font-bold">{user?.first_name || "?�용??}</h2>
+        <h2 className="text-lg font-bold">{user?.first_name || "?�용??}</h2>
         {user?.username && <p className="text-sm" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>@{user.username}</p>}
         <div className="mt-2 rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: planName === "AI Premium" ? "var(--tg-theme-button-color, #5288c1)" : "var(--tg-theme-section-bg-color, #232e3c)", color: planName === "AI Premium" ? "#fff" : "var(--tg-theme-hint-color, #708499)" }}>{planName}</div>
       </div>
@@ -88,7 +88,7 @@ export const MiniAppProfile = memo(function MiniAppProfile() {
         <div className="mx-4 mb-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
             <div className="flex items-center gap-2"><Activity className="h-4 w-4" style={{ color: "var(--tg-theme-button-color, #5288c1)" }} /><span className="text-sm font-semibold">계정 건강</span></div>
-            <span className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{stats.todaySent}�?/ ?�늘</span>
+            <span className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>{stats.todaySent}�?/ ?�늘</span>
           </div>
           <div className="divide-y" style={{ borderColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }}>
             {accounts.map(acc => (
@@ -120,27 +120,27 @@ export const MiniAppProfile = memo(function MiniAppProfile() {
       </div>
 
       <div className="mx-4 mb-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <div className="flex items-center justify-between px-4 py-3"><span className="text-xs font-semibold">?�면 ?�정</span><div className="flex items-center gap-3"><ThemeQuickToggle /><FontSizeControl /></div></div>
+        <div className="flex items-center justify-between px-4 py-3"><span className="text-xs font-semibold">?�면 ?�정</span><div className="flex items-center gap-3"><ThemeQuickToggle /><FontSizeControl /></div></div>
       </div>
 
       <div className="mx-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<User className="h-5 w-5" />} label="계정 관�? href="/app" />
+        <MenuItem icon={<User className="h-5 w-5" />} label="계정 관�? href="/app" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Settings className="h-5 w-5" />} label="?�체 ?�?�보?? value="Web" href="/app" />
+        <MenuItem icon={<Settings className="h-5 w-5" />} label="?�체 ?�?�보?? value="Web" href="/app" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Star className="h-5 w-5" />} label="?�금?? value={planName} href="/pricing" />
+        <MenuItem icon={<Star className="h-5 w-5" />} label="?�금?? value={planName} href="/pricing" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<Globe className="h-5 w-5" />} label="??버전 ?�기" href={SITE.app} />
+        <MenuItem icon={<Globe className="h-5 w-5" />} label="??버전 ?�기" href={SITE.app} />
       </div>
 
       <div className="mx-4 mt-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<Info className="h-5 w-5" />} label="버전 ?�보" value="v0.1.0" />
+        <MenuItem icon={<Info className="h-5 w-5" />} label="버전 ?�보" value="v0.1.0" />
         <div className="mx-4 h-px" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} />
-        <MenuItem icon={<ExternalLink className="h-5 w-5" />} label="문의?�기" href={`https://t.me/${SITE.support?.telegram?.replace("@", "") || "telemon"}`} />
+        <MenuItem icon={<ExternalLink className="h-5 w-5" />} label="문의?�기" href={`https://t.me/${SITE.support?.telegram?.replace("@", "") || "telemon"}`} />
       </div>
 
       <div className="mx-4 mt-4 rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--tg-theme-section-bg-color, #232e3c)" }}>
-        <MenuItem icon={<LogOut className="h-5 w-5" />} label="로그?�웃" danger onClick={handleLogout} />
+        <MenuItem icon={<LogOut className="h-5 w-5" />} label="로그?�웃" danger onClick={handleLogout} />
       </div>
     </div>
   );

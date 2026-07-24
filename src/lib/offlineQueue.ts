@@ -97,7 +97,7 @@ export function useOnlineFlush(sendFn: (item: QueuedSend) => Promise<boolean>) {
           try {
             const toast = document.createElement("div");
             toast.className = "fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-app-success px-4 py-2 text-xs font-medium text-white shadow-lg";
-            toast.textContent = `${sent}개의 메시지가 ?�동 ?�송?�었?�니??;
+            toast.textContent = `${sent}개의 메시지가 ?�동 ?�송?�었?�니??;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
           } catch (e) { console.warn('Unhandled error in offlineQueue', e) }

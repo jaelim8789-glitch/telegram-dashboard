@@ -21,14 +21,14 @@ export function useBatchActions() {
     if (failed > 0) {
       toast({ 
         type: "warning", 
-        title: `${ids.length}ê±?ì²˜ë¦¬`, 
-        message: `${success}ê±??±ê³µ, ${failed}ê±??¤íŒ¨` 
+        title: `${ids.length}ï¿½?ì²˜ë¦¬`, 
+        message: `${success}ï¿½??ï¿½ê³µ, ${failed}ï¿½??ï¿½íŒ¨` 
       });
     } else {
       toast({ 
         type: "success", 
-        title: `${ids.length}ê±??? œ??, 
-        message: `${success}ê±??±ê³µ` 
+        title: `${ids.length}ï¿½???ï¿½ï¿½??, 
+        message: `${success}ï¿½??ï¿½ê³µ` 
       });
     }
     fetchAccounts();
@@ -47,14 +47,14 @@ export function useBatchActions() {
     if (failed > 0) {
       toast({ 
         type: "warning", 
-        title: `${ids.length}ê±?ì²˜ë¦¬`, 
-        message: `${success}ê±??±ê³µ, ${failed}ê±??¤íŒ¨` 
+        title: `${ids.length}ï¿½?ì²˜ë¦¬`, 
+        message: `${success}ï¿½??ï¿½ê³µ, ${failed}ï¿½??ï¿½íŒ¨` 
       });
     } else {
       toast({ 
         type: "success", 
-        title: `${ids.length}ê±?ì·¨ì†Œ??, 
-        message: `${success}ê±??±ê³µ` 
+        title: `${ids.length}ï¿½?ì·¨ì†Œ??, 
+        message: `${success}ï¿½??ï¿½ê³µ` 
       });
     }
     fetchAccounts();

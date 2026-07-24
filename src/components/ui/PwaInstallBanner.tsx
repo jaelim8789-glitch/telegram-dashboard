@@ -91,9 +91,9 @@ export function PwaInstallBanner() {
               <Download className="h-5 w-5 text-app-accent" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-app-text">?�으�??�치?�기</p>
+              <p className="text-sm font-semibold text-app-text">?�으�??�치?�기</p>
               <p className="mt-0.5 text-xs text-app-text-subtle">
-                TeleMon???�화면에 추�??�세??              </p>
+                TeleMon???�화면에 추�??�세??              </p>
             </div>
           </div>
           <div className="mt-3 flex gap-2">
@@ -106,7 +106,7 @@ export function PwaInstallBanner() {
               className="flex-1 rounded-lg border border-app-border bg-app-card px-4 py-2.5 text-xs font-semibold text-app-text-muted"
               style={{ minHeight: 44 }}
             >
-              ?�음??            </button>
+              ?�음??            </button>
             <button
               type="button"
               onClick={() => {
@@ -118,7 +118,7 @@ export function PwaInstallBanner() {
               className="flex-1 rounded-lg bg-app-accent px-4 py-2.5 text-xs font-semibold text-white"
               style={{ minHeight: 44 }}
             >
-              ?�치
+              ?�치
             </button>
           </div>
         </motion.div>

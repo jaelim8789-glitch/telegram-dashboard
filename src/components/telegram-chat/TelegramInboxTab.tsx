@@ -83,11 +83,11 @@ export function TelegramInboxTab() {
       const res = await fetch(`${API_BASE}/api/chat-telegram/accounts/${activeAccountId}/dialogs`, {
         headers: authHeaders,
       });
-      if (!res.ok) throw new Error("?�?�방??불러?????�습?�다");
+      if (!res.ok) throw new Error("?�?�방??불러?????�습?�다");
       const data = await res.json();
       setDialogs(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "로드 ?�패");
+      setError(e instanceof Error ? e.message : "로드 ?�패");
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export function TelegramInboxTab() {
         method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(msg),
       });
-      toast("success", "북마???�?�됨");
+      toast("success", "북마???�?�됨");
       loadBookmarks();
     } catch (e) { console.warn('Unhandled error in TelegramInboxTab', e) }
   };
@@ -139,7 +139,7 @@ export function TelegramInboxTab() {
         method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ mute: true }),
       });
-      toast("success", "?�소거되?�습?�다");
+      toast("success", "?�소거되?�습?�다");
     } catch (e) { console.warn('Unhandled error in TelegramInboxTab', e) }
   };
 
@@ -149,7 +149,7 @@ export function TelegramInboxTab() {
         method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ pin: true }),
       });
-      toast("success", "고정?�었?�니??);
+      toast("success", "고정?�었?�니??);
       loadDialogs();
     } catch (e) { console.warn('Unhandled error in TelegramInboxTab', e) }
   };
@@ -190,7 +190,7 @@ export function TelegramInboxTab() {
           <div>
             <h2 className="text-sm font-semibold text-app-text">Telegram</h2>
             <p className="text-[10px] text-app-text-muted">
-              {dialogs.length}�??�?�방{totalUnread > 0 && ` · ${totalUnread}�????�음`}
+              {dialogs.length}�??�?�방{totalUnread > 0 && ` · ${totalUnread}�????�음`}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -240,7 +240,7 @@ export function TelegramInboxTab() {
 
         {error ? (
           <div className="flex-1 flex items-center justify-center p-4">
-            <InlineError action={<button onClick={loadDialogs} className="text-xs underline hover:no-underline">?�시 ?�도</button>}>{error}</InlineError>
+            <InlineError action={<button onClick={loadDialogs} className="text-xs underline hover:no-underline">?�시 ?�도</button>}>{error}</InlineError>
           </div>
         ) : (
           <DialogList
@@ -281,7 +281,7 @@ export function TelegramInboxTab() {
             <MessageCircle className="h-16 w-16 mb-3 opacity-20" />
             <h3 className="text-base font-semibold text-app-text mb-1">Telegram 메시지</h3>
             <p className="text-xs text-center max-w-xs">
-              ?�쪽?�서 ?�?�방???�택?�거??검?�하??메시지�??�인?�세??
+              ?�쪽?�서 ?�?�방???�택?�거??검?�하??메시지�??�인?�세??
             </p>
           </div>
         )}
@@ -293,15 +293,15 @@ export function TelegramInboxTab() {
           setDeleteConfirmChatId(null);
           try {
             await fetch(`${API_BASE}/api/chat-telegram/accounts/${activeAccountId}/dialogs/${id}`, { method: "DELETE", headers: authHeaders });
-            toast("success", "??��?�었?�니??);
+            toast("success", "??��?�었?�니??);
             if (activeChatId === id) setActiveChatId(null);
             loadDialogs();
           } catch (e) { console.warn('Unhandled error in TelegramInboxTab', e) }
         }}
         onCancel={() => setDeleteConfirmChatId(null)}
-        title="?�?�방 ??��"
-        description="?�말�????�?�방????��?�시겠습?�까? 모든 메시지가 ?�구?�으�???��?�니??"
-        confirmLabel="??��"
+        title="?�?�방 ??��"
+        description="?�말�????�?�방????��?�시겠습?�까? 모든 메시지가 ?�구?�으�???��?�니??"
+        confirmLabel="??��"
         variant="danger"
       />
     </div>

@@ -18,9 +18,9 @@ export function useRetentionTracker() {
   }, [events]);
 
   const milestones: Record<string, { check: () => boolean; message: string }> = {
-    first_send: { check: () => events.filter(e => e === "broadcast_sent").length === 1, message: "?�� �?발송??축하?�니??" },
-    tenth_send: { check: () => events.filter(e => e === "broadcast_sent").length === 10, message: "?�� 10??발송 ?�성!" },
-    first_account: { check: () => events.filter(e => e === "account_added").length === 1, message: "?�� �?계정 ?�결 ?�료!" },
+    first_send: { check: () => events.filter(e => e === "broadcast_sent").length === 1, message: "?�� �?발송??축하?�니??" },
+    tenth_send: { check: () => events.filter(e => e === "broadcast_sent").length === 10, message: "?�� 10??발송 ?�성!" },
+    first_account: { check: () => events.filter(e => e === "account_added").length === 1, message: "?�� �?계정 ?�결 ?�료!" },
   };
 
   useEffect(() => {

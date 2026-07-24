@@ -148,8 +148,8 @@ export function useAiShadow(
 
     try {
       const context = msg.previousMessages.length > 0
-        ? `ÀÌÀü ´ëÈ­:\n${msg.previousMessages.slice(-3).join("\n")}\n\n¸¶Áö¸· °í°´ ¸Ş½ÃÁö: ${msg.message}`
-        : `°í°´ ¸Ş½ÃÁö: ${msg.message}`;
+        ? `ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È­:\n${msg.previousMessages.slice(-3).join("\n")}\n\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ş½ï¿½ï¿½ï¿½: ${msg.message}`
+        : `ï¿½ï¿½ï¿½ï¿½ ï¿½Ş½ï¿½ï¿½ï¿½: ${msg.message}`;
 
       const result = await aiChat({
         messages: [
