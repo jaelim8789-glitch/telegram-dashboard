@@ -62,44 +62,44 @@ export default function AgentChatPage() {
     {
       id: "web_search",
       role: "web_search",
-      name: "?�� ?�서치�?",
-      desc: "??검??+ ?�약 ?�문",
-      prompt: "?�신?� ??리서�??�문가?�니?? 최신 ?�스, ?�렌?? ?�보�??�집?�여 간결?�게 ?�약?�니?? ??�� 출처�?명시?�고 ?�국?�로 ?�답?�세??",
+      name: "? ?서치?",
+      desc: "??검??+ ?약 ?문",
+      prompt: "?신? ??리서??문가?니?? 최신 ?스, ?렌?? ?보??집?여 간결?게 ?약?니?? ?? 출처?명시?고 ?국?로 ?답?세??",
     },
     {
       id: "marketing",
       role: "marketing",
-      name: "?�� 마�???,
-      desc: "카피?�이??+ 분석",
-      prompt: "?�신?� ?�문 마�????�시?�턴?�입?�다. ?��?분석, 카피 ?�성, ?�로모션 ?�략???�립?�니?? ??�� ?�이??기반?�로 조언?�고 ?�국?�로 ?�답?�세??",
+      name: "? 마???,
+      desc: "카피?이??+ 분석",
+      prompt: "?신? ?문 마????시?턴?입?다. ??분석, 카피 ?성, ?로모션 ?략???립?니?? ?? ?이??기반?로 조언?고 ?국?로 ?답?세??",
     },
     {
       id: "customer_support",
       role: "custom",
-      name: "?�� 고객?��??�",
-      desc: "?�동 ?��? + CS",
-      prompt: "?�신?� 친절?�고 ?�문?�인 고객 ?��? 매니?�?�니?? 고객 문의???�속?�고 ?�확?�게 ?��??�며, 공감?�인 ?�도�??��??�세?? ?�국?�로 ?�답?�니??",
+      name: "? 고객???",
+      desc: "?동 ?? + CS",
+      prompt: "?신? 친절?고 ?문?인 고객 ?? 매니??니?? 고객 문의???속?고 ?확?게 ???며, 공감?인 ?도????세?? ?국?로 ?답?니??",
     },
     {
       id: "content_creator",
       role: "custom",
-      name: "?�️ 콘텐츠�?",
-      desc: "?�스??+ ?�스?�터 ?�성",
-      prompt: "?�신?� 창의?�인 콘텐�??�리?�이?�입?�다. ?�레그램 채널???�스?? ?�스?�터, 광고 카피�??�성?�니?? ?�렌?�에 민감?�고 참신???�이?�어�??�시?�세??",
+      name: "?️ 콘텐츠?",
+      desc: "?스??+ ?스?터 ?성",
+      prompt: "?신? 창의?인 콘텐??리?이?입?다. ?레그램 채널???스?? ?스?터, 광고 카피??성?니?? ?렌?에 민감?고 참신???이?어??시?세??",
     },
     {
       id: "data_analyst",
       role: "custom",
-      name: "?�� ?�이?�분?��?",
-      desc: "?�계 + ?�사?�트 ?�출",
-      prompt: "?�신?� ?�이??분석 ?�문가?�니?? 발송 ?�계, ?�용???�동 ?�이?? ?�과 지?��? 분석?�여 ?�사?�트�??�출?�니?? ?�자?� 차트�??�용??명확??분석???�공?�세??",
+      name: "? ?이?분??",
+      desc: "?계 + ?사?트 ?출",
+      prompt: "?신? ?이??분석 ?문가?니?? 발송 ?계, ?용???동 ?이?? ?과 지?? 분석?여 ?사?트??출?니?? ?자? 차트??용??명확??분석???공?세??",
     },
     {
       id: "scheduler",
       role: "scheduler",
-      name: "???��?줄러",
-      desc: "발송 ?�정 최적??,
-      prompt: "?�신?� ?�정 관�?�?코디?�이???�문가?�니?? 발송 ?�정??계획?�고, 반복 ?�업???�정?�며, ?�간?��?최적 발송 ?�략???�안?�니??",
+      name: "????줄러",
+      desc: "발송 ?정 최적??,
+      prompt: "?신? ?정 관??코디?이???문가?니?? 발송 ?정??계획?고, 반복 ?업???정?며, ?간??최적 발송 ?략???안?니??",
     },
   ];
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -114,7 +114,7 @@ export default function AgentChatPage() {
       const list = await agentApi.fetchAgents();
       setAgents(list);
     } catch (err) {
-      setAgentsError(err instanceof Error ? err.message : "Agent 목록??불러?�는???�패?�습?�다.");
+      setAgentsError(err instanceof Error ? err.message : "Agent 목록??불러?는???패?습?다.");
     } finally {
       setAgentsLoading(false);
     }
@@ -134,7 +134,7 @@ export default function AgentChatPage() {
     agentApi.fetchChats(activeAgentId).then((list) => {
       if (!cancelled) setChats(list);
     }).catch((err) => {
-      if (!cancelled) setChatsError(err instanceof Error ? err.message : "채팅 목록??불러?�는???�패?�습?�다.");
+      if (!cancelled) setChatsError(err instanceof Error ? err.message : "채팅 목록??불러?는???패?습?다.");
     }).finally(() => {
       if (!cancelled) setChatsLoading(false);
     });
@@ -152,7 +152,7 @@ export default function AgentChatPage() {
     agentApi.fetchChatMessages(activeChatId).then((list) => {
       if (!cancelled) setMessages(list);
     }).catch((err) => {
-      if (!cancelled) setMessagesError(err instanceof Error ? err.message : "메시지�?불러?�는???�패?�습?�다.");
+      if (!cancelled) setMessagesError(err instanceof Error ? err.message : "메시지?불러?는???패?습?다.");
     }).finally(() => {
       if (!cancelled) setMessagesLoading(false);
     });
@@ -264,7 +264,7 @@ export default function AgentChatPage() {
       });
 
       if (!res.ok) {
-        setStreamMsg({ role: "agent", content: "?�버 ?�류가 발생?�습?�다.", tokensUsed: 0 });
+        setStreamMsg({ role: "agent", content: "?버 ?류가 발생?습?다.", tokensUsed: 0 });
         setLoading(false);
         return;
       }
@@ -273,12 +273,12 @@ export default function AgentChatPage() {
 
       // Level-up notification
       if (data.level_up && data.new_level) {
-        toast("success", `?�� Lv.${data.new_level} ?�성!`, {
-          description: `${data.exp_gained || 0} EXP�??�득?�습?�다.`,
+        toast("success", `? Lv.${data.new_level} ?성!`, {
+          description: `${data.exp_gained || 0} EXP??득?습?다.`,
           duration: 5000,
         });
         // Refresh agent list to update level/exp
-        agentApi.fetchAgents().then(setAgents).catch((e) => { console.error("[chat/page] fetchAgents 갱신 ?�패", e); toast("error", "Agent 목록 갱신???�패?�습?�다"); });
+        agentApi.fetchAgents().then(setAgents).catch((e) => { console.error("[chat/page] fetchAgents 갱신 ?패", e); toast("error", "Agent 목록 갱신???패?습?다"); });
       }
 
       // Reload messages
@@ -287,7 +287,7 @@ export default function AgentChatPage() {
       setStreamMsg(null);
     } catch (err) {
       if ((err as DOMException)?.name === "AbortError") return;
-      setStreamMsg({ role: "agent", content: "?�트?�크 ?�류가 발생?�습?�다.", tokensUsed: 0 });
+      setStreamMsg({ role: "agent", content: "?트?크 ?류가 발생?습?다.", tokensUsed: 0 });
     } finally {
       setLoading(false);
       abortRef.current = null;
@@ -346,18 +346,18 @@ export default function AgentChatPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] bg-app-bg">
-      {/* ?�?� Mobile sidebar toggle ?�?� */}
+      {/* ?? Mobile sidebar toggle ?? */}
       <div className="fixed bottom-4 left-4 z-30 sm:hidden">
         <button
           onClick={() => setMobileSidebarOpen(true)}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-app-primary text-white shadow-lg shadow-app-primary/30 active:scale-95 transition-transform"
-          aria-label="?�이?�바 ?�기"
+          aria-label="?이?바 ?기"
         >
           <Menu className="h-5 w-5" />
         </button>
       </div>
 
-      {/* ?�?� Sidebar ?�?� */}
+      {/* ?? Sidebar ?? */}
       <div
         className={`${mobileSidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
       >
@@ -393,7 +393,7 @@ export default function AgentChatPage() {
         </div>
       </div>
 
-      {/* ?�?� Main Chat Area ?�?� */}
+      {/* ?? Main Chat Area ?? */}
       <div className="flex flex-1 flex-col min-w-0">
         {agentsLoading ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
@@ -404,11 +404,11 @@ export default function AgentChatPage() {
           </div>
         ) : agentsError ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-            <InlineError title="Agent�?불러?????�습?�다" className="max-w-md">
+            <InlineError title="Agent?불러?????습?다" className="max-w-md">
               {agentsError}
             </InlineError>
             <Button variant="primary" size="sm" onClick={loadAgents}>
-              ?�시 ?�도
+              ?시 ?도
             </Button>
           </div>
         ) : !activeAgentId ? (
@@ -416,21 +416,21 @@ export default function AgentChatPage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-app-card shadow-sm">
               <Sparkles className="h-8 w-8 text-app-primary" />
             </div>
-            <p className="text-sm font-medium text-center">AI Agent?� ?�?��? ?�작?�세??/p>
+            <p className="text-sm font-medium text-center">AI Agent? ??? ?작?세??/p>
             <p className="max-w-xs text-center text-xs">
-              ?�쪽 ?�이?�바?�서 Agent�??�택?�거???�로 만드?�요
+              ?쪽 ?이?바?서 Agent??택?거???로 만드?요
             </p>
             <Button variant="primary" size="sm" onClick={handleNewAgent}>
-              <Plus className="h-3.5 w-3.5" /> ??Agent 만들�?            </Button>
+              <Plus className="h-3.5 w-3.5" /> ??Agent 만들?            </Button>
           </div>
         ) : !activeChatId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-app-text-muted p-4">
             <MessageSquare className="h-10 w-10 opacity-30" />
             <p className="text-sm text-center">
               <span className="font-medium text-app-text">{activeAgent?.name}</span>
-              {" ?��"}
+              {" ?"}
             </p>
-            <p className="text-xs text-center">??채팅???�작?�거??기존 채팅???�택?�세??/p>
+            <p className="text-xs text-center">??채팅???작?거??기존 채팅???택?세??/p>
             <Button variant="primary" size="sm" onClick={handleNewChat}>
               <Plus className="h-3.5 w-3.5" /> ??채팅
             </Button>
@@ -442,7 +442,7 @@ export default function AgentChatPage() {
               <button
                 onClick={() => setMobileSidebarOpen(true)}
                 className="flex sm:hidden h-8 w-8 items-center justify-center rounded-lg text-app-text-muted hover:bg-app-card-hover hover:text-app-text -ml-1"
-                aria-label="?�이?�바 ?�기"
+                aria-label="?이?바 ?기"
               >
                 <Menu className="h-4 w-4" />
               </button>
@@ -489,14 +489,14 @@ export default function AgentChatPage() {
                 ) : messagesError ? (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <InlineError className="max-w-md">{messagesError}</InlineError>
-                      <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch((e) => { console.error("[chat/page] fetchChatMessages ?�시???�패", e); toast("error", "메시지 ?�로고침???�패?�습?�다"); })}>
-                      ?�시 ?�도
+                      <Button variant="secondary" size="sm" onClick={() => activeChatId && agentApi.fetchChatMessages(activeChatId).then(setMessages).catch((e) => { console.error("[chat/page] fetchChatMessages ?시???패", e); toast("error", "메시지 ?로고침???패?습?다"); })}>
+                      ?시 ?도
                     </Button>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-12 text-app-text-muted">
                     <MessageSquare className="h-8 w-8 opacity-30" />
-                    <p className="text-xs">메시지�?보내???�?��? ?�작?�세??/p>
+                    <p className="text-xs">메시지?보내????? ?작?세??/p>
                   </div>
                 ) : (
                   messages.map((m) => (
@@ -512,7 +512,7 @@ export default function AgentChatPage() {
                   <div className="flex justify-start">
                     <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-app-border bg-app-card-hover px-4 py-2.5 text-sm text-app-text-muted">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      ?��? ?�성 �?..
+                      ?? ?성 ?..
                     </div>
                   </div>
                 )}
@@ -556,7 +556,7 @@ export default function AgentChatPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`${activeAgent?.name || "Agent"}?�게 메시지 보내�?..`}
+                    placeholder={`${activeAgent?.name || "Agent"}?게 메시지 보내?..`}
                     disabled={loading}
                     className="min-h-[44px] flex-1 rounded-xl border border-app-border bg-app-bg px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-app-text-muted/50 focus:border-app-primary focus:ring-1 focus:ring-app-primary/30 disabled:opacity-50"
                   />
@@ -570,11 +570,11 @@ export default function AgentChatPage() {
         )}
       </div>
 
-      {/* ?�?� New Agent Modal ?�?� */}
+      {/* ?? New Agent Modal ?? */}
       <Modal
         open={showNewAgentModal}
         onClose={() => !creatingAgent && setShowNewAgentModal(false)}
-        title="??Agent 만들�?
+        title="??Agent 만들?
         size="lg"
         preventClose={creatingAgent}
         footer={
@@ -583,7 +583,7 @@ export default function AgentChatPage() {
               취소
             </Button>
             <Button variant="primary" size="sm" onClick={confirmCreateAgent} loading={creatingAgent} disabled={!newAgentName.trim()}>
-              {creatingAgent ? "?�성 �?.." : "?�성"}
+              {creatingAgent ? "?성 ?.." : "?성"}
             </Button>
           </div>
         }
@@ -592,7 +592,7 @@ export default function AgentChatPage() {
           {/* Purpose Templates */}
           <div>
             <label className="mb-2 block text-xs font-medium text-app-text-muted">
-              ?�� 목적 ?�플�??�택 <span className="text-app-text-subtle">(?�택 ???�동 ?�력)</span>
+              ? 목적 ?플??택 <span className="text-app-text-subtle">(?택 ???동 ?력)</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PURPOSE_TEMPLATES.map((tmpl) => (
@@ -617,41 +617,41 @@ export default function AgentChatPage() {
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-app-border" />
-            <span className="text-[10px] text-app-text-muted uppercase tracking-wider">?�는 직접 ?�정</span>
+            <span className="text-[10px] text-app-text-muted uppercase tracking-wider">?는 직접 ?정</span>
             <div className="flex-1 h-px bg-app-border" />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-app-text-muted">?�름</label>
+            <label className="mb-1 block text-xs font-medium text-app-text-muted">?름</label>
             <input
               value={newAgentName}
               onChange={(e) => { setNewAgentName(e.target.value); setSelectedTemplate(null); }}
-              placeholder="?? 마�??��?-1"
+              placeholder="?? 마???-1"
               disabled={creatingAgent}
               className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-app-text-muted">??��</label>
+            <label className="mb-1 block text-xs font-medium text-app-text-muted">??</label>
             <select
               value={newAgentRole}
               onChange={(e) => { setNewAgentRole(e.target.value); setSelectedTemplate(null); }}
               disabled={creatingAgent}
               className="w-full rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"
             >
-              <option value="marketing">?�� 마�???/option>
-              <option value="web_search">?�� ??검??/option>
-              <option value="coding">?�� 코딩</option>
-              <option value="scheduler">???��?줄러</option>
-              <option value="custom">?�� 커스?�</option>
+              <option value="marketing">? 마???/option>
+              <option value="web_search">? ??검??/option>
+              <option value="coding">? 코딩</option>
+              <option value="scheduler">????줄러</option>
+              <option value="custom">? 커스?</option>
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-app-text-muted">System Prompt (?�택)</label>
+            <label className="mb-1 block text-xs font-medium text-app-text-muted">System Prompt (?택)</label>
             <textarea
               value={newAgentPrompt}
               onChange={(e) => { setNewAgentPrompt(e.target.value); setSelectedTemplate(null); }}
-              placeholder="Agent???�격�???��???�의?�세??.."
+              placeholder="Agent???격??????의?세??.."
               rows={3}
               disabled={creatingAgent}
               className="w-full resize-none rounded-lg border border-app-border bg-app-bg px-3 py-2.5 text-sm outline-none transition-colors focus:border-app-primary disabled:opacity-50"

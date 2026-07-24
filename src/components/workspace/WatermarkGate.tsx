@@ -16,15 +16,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://telemon.online";
 
 const WATERMARK_VARIANTS = [
   {
-    text: `\n\n?�━?�━?�━?�━?�━?�━?�━?�━?�━\n?�� AI가 ?�동?�로 ?��??�습?�다. 무료 AI 직원 받기\n\n?�� ${SITE_URL}/signup`,
+    text: `\n\n?━?━?━?━?━?━?━?━?━\n? AI가 ?동?로 ???습?다. 무료 AI 직원 받기\n\n? ${SITE_URL}/signup`,
     key: "default",
   },
   {
-    text: `\n\n?�━?�━?�━?�━?�━?�━?�━?�━?�━\n?�� AI 비서가 ?�???�장?�어??\n\n?? 지�?무료�??�작?�세??n?�� ${SITE_URL}/signup`,
+    text: `\n\n?━?━?━?━?━?━?━?━?━\n? AI 비서가 ????장?어??\n\n?? 지?무료??작?세??n? ${SITE_URL}/signup`,
     key: "ai_assistant",
   },
   {
-    text: `\n\n?�━?�━?�━?�━?�━?�━?�━?�━?�━\n??바쁠 ??AI?�게 맡기?�요\n\n?�� 24?�간 ?�동 ?�답 무료 체험\n?�� ${SITE_URL}/signup`,
+    text: `\n\n?━?━?━?━?━?━?━?━?━\n??바쁠 ??AI?게 맡기?요\n\n? 24?간 ?동 ?답 무료 체험\n? ${SITE_URL}/signup`,
     key: "busy",
   },
 ];
@@ -80,7 +80,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
     setReferralLoading(true);
     getMyReferralCode()
       .then((r) => { if (r?.code) setReferralCode(r.code); })
-      .catch((e) => { console.error("[WatermarkGate] getMyReferralCode ?�패", e); toast("error", "추천??코드�?불러?��? 못했?�니??); })
+      .catch((e) => { console.error("[WatermarkGate] getMyReferralCode ?패", e); toast("error", "추천??코드?불러?? 못했?니??); })
       .finally(() => setReferralLoading(false));
   }, [token]);
 
@@ -92,7 +92,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
         if (d?.referred_users) setReferralInflow(d.referred_users.length);
         else setReferralInflow(0);
       })
-      .catch((e) => { console.error("[WatermarkGate] getReferralDashboard ?�패", e); toast("error", "추천 ?�계�?불러?��? 못했?�니??); });
+      .catch((e) => { console.error("[WatermarkGate] getReferralDashboard ?패", e); toast("error", "추천 ?계?불러?? 못했?니??); });
   }, [token, watermarkOn, isFree]);
 
   // First referral success toast
@@ -107,7 +107,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
         const d = await getReferralDashboard();
         if (cancelled) return;
         if ((d?.referred_users?.length ?? 0) > 0) {
-          toast("success", "?�� 축하?�니?? �?추천 ?�공! 커�??�이 ?�립?�었?�니??", { duration: 8000 });
+          toast("success", "? 축하?니?? ?추천 ?공! 커??이 ?립?었?니??", { duration: 8000 });
           try { localStorage.setItem(REFERRAL_NOTIFIED_KEY, "true"); } catch (e) { console.warn('Unhandled error in WatermarkGate', e) }
         }
       } catch (e) { console.warn('Unhandled error in WatermarkGate', e) }
@@ -127,7 +127,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
     const next = WATERMARK_VARIANTS[(currentIdx + 1) % WATERMARK_VARIANTS.length];
     setVariantKey(next.key);
     try { localStorage.setItem(WM_STORAGE_KEY, next.key); } catch (e) { console.warn('Unhandled error in WatermarkGate', e) }
-    toast("success", `?�터마크 문구가 "${next.text.split('\n')[1]?.trim() ?? '변�?}"(??�?변경되?�습?�다.`);
+    toast("success", `?터마크 문구가 "${next.text.split('\n')[1]?.trim() ?? '변?}"(???변경되?습?다.`);
   }
 
   async function handleCreateReferral() {
@@ -136,13 +136,13 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
       const r = await generateReferralCode();
       if (r?.code) {
         setReferralCode(r.code);
-        toast("success", "추천??코드가 ?�성?�었?�니??");
+        toast("success", "추천??코드가 ?성?었?니??");
         onReferralReady?.(r.code);
         // Refresh inflow stats
-        getReferralDashboard().then((d) => setReferralInflow(d?.referred_users?.length ?? 0)).catch((e) => { console.error("[WatermarkGate] referral inflow refresh ?�패", e); toast("error", "추천 ?�계 갱신???�패?�습?�다"); });
+        getReferralDashboard().then((d) => setReferralInflow(d?.referred_users?.length ?? 0)).catch((e) => { console.error("[WatermarkGate] referral inflow refresh ?패", e); toast("error", "추천 ?계 갱신???패?습?다"); });
       }
     } catch {
-      toast("error", "추천??코드 ?�성???�패?�습?�다");
+      toast("error", "추천??코드 ?성???패?습?다");
     } finally {
       setReferralCreating(false);
     }
@@ -152,8 +152,8 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
     if (!referralCode) return;
     const link = `${SITE_URL}/signup?ref=${referralCode}`;
     navigator.clipboard.writeText(link).then(
-      () => toast("success", "추천??링크가 복사?�었?�니??"),
-      () => toast("error", "복사???�패?�습?�다"),
+      () => toast("success", "추천??링크가 복사?었?니??"),
+      () => toast("error", "복사???패?습?다"),
     );
   }
 
@@ -177,10 +177,10 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
               </div>
               <div className="min-w-0">
                 <p className={cn("text-sm font-medium", showGate ? "text-amber-500" : "text-app-text")}>
-                  ?�터마크 광고
+                  ?터마크 광고
                 </p>
                 <p className="text-xs text-app-text-muted mt-0.5">
-                  메시지 ?�단??TeleMon ?�보 문구가 ?�동 추�??�니??                </p>
+                  메시지 ?단??TeleMon ?보 문구가 ?동 추??니??                </p>
               </div>
             </div>
             <label className="relative inline-flex cursor-pointer items-center shrink-0">
@@ -216,11 +216,11 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                     <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
                     <div>
                       <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                        ?�터마크�?켜야 발송 가?�합?�다
+                        ?터마크?켜야 발송 가?합?다
                       </p>
                       <p className="text-[11px] text-app-text-muted mt-0.5">
-                        무료 ?�금?�에?�는 ?�터마크 광고가 ?�함???�태로만 메시지�?발송?????�습?�다.
-                        ???��???켜면 ?�동?�로 ?�용?�니??
+                        무료 ?금?에?는 ?터마크 광고가 ?함???태로만 메시지?발송?????습?다.
+                        ??????켜면 ?동?로 ?용?니??
                       </p>
                     </div>
                   </div>
@@ -232,7 +232,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                     className="w-full"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    ?�터마크 켜고 계속?�기
+                    ?터마크 켜고 계속?기
                   </Button>
 
                   {/* Referral Section */}
@@ -244,7 +244,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                     >
                       <div className="flex items-center gap-1.5">
                         <Gift className="h-3.5 w-3.5 text-app-primary" />
-                        <span>추천??코드 ?�정</span>
+                        <span>추천??코드 ?정</span>
                       </div>
                       {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
@@ -261,7 +261,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                             {referralLoading ? (
                               <div className="flex items-center gap-2 py-2">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin text-app-text-muted" />
-                                <span className="text-xs text-app-text-muted">추천???�보 ?�인 �?..</span>
+                                <span className="text-xs text-app-text-muted">추천???보 ?인 ?..</span>
                               </div>
                             ) : referralCode ? (
                               <div className="space-y-2">
@@ -275,13 +275,13 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                                   </Button>
                                 </div>
                                 <p className="text-[10px] text-app-text-subtle">
-                                  ??코드가 ?�터마크???�동 ?�함?�니?? 친구가 가?�하�?커�??�을 받을 ???�어??
+                                  ??코드가 ?터마크???동 ?함?니?? 친구가 가?하?커??을 받을 ???어??
                                 </p>
                               </div>
                             ) : (
                               <div className="space-y-2">
                                 <p className="text-xs text-app-text-muted">
-                                  ?�직 추천??코드가 ?�습?�다. 지�??�성?�고 친구�?초�??�보?�요!
+                                  ?직 추천??코드가 ?습?다. 지??성?고 친구?초??보?요!
                                 </p>
                                 <Button
                                   variant="secondary"
@@ -291,7 +291,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                                   className="w-full"
                                 >
                                   <Gift className="h-3.5 w-3.5" />
-                                  추천??코드 ?�성?�기
+                                  추천??코드 ?성?기
                                 </Button>
                               </div>
                             )}
@@ -315,8 +315,8 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
             <div className="flex items-center gap-2 rounded-lg border border-app-border/50 bg-app-card/30 px-3 py-2">
               <Users className="h-3.5 w-3.5 text-app-primary" />
               <span className="text-xs text-app-text-muted flex-1">
-                ?�번 ???�터마크 ?�입:{' '}
-                <span className="font-semibold text-app-text tabular-nums">{referralInflow}�?/span>
+                ?번 ???터마크 ?입:{' '}
+                <span className="font-semibold text-app-text tabular-nums">{referralInflow}?/span>
               </span>
             </div>
           )}
@@ -328,7 +328,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
               <div className="flex items-center gap-2 px-3 py-2">
                 <Share2 className="h-3.5 w-3.5 text-app-text-muted" />
                 <span className="text-xs text-app-text-muted flex-1">
-                  추천??코드 <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-[11px] text-app-text">{referralCode}</code>가 ?�터마크???�함?�니??                </span>
+                  추천??코드 <code className="rounded bg-app-card-hover px-1 py-0.5 font-mono text-[11px] text-app-text">{referralCode}</code>가 ?터마크???함?니??                </span>
                 <button
                   type="button"
                   onClick={handleCopyReferral}
@@ -344,14 +344,14 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
             <div className="flex items-center gap-2 px-3 py-2">
               <TrendingUp className="h-3.5 w-3.5 text-app-text-muted" />
               <span className="text-xs text-app-text-muted flex-1">
-                ?�터마크: <span className="text-app-text">{currentVariant.text.split('\n')[1]?.trim() ?? '기본'}</span>
+                ?터마크: <span className="text-app-text">{currentVariant.text.split('\n')[1]?.trim() ?? '기본'}</span>
               </span>
               <button
                 type="button"
                 onClick={cycleVariant}
                 className="shrink-0 rounded-lg border border-app-border px-2 py-1 text-[10px] font-medium text-app-primary hover:bg-app-primary/10 transition-colors"
               >
-                A/B ?�스??              </button>
+                A/B ?스??              </button>
             </div>
 
             {/* Upgrade nudge ??dismissable */}
@@ -360,7 +360,7 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                 <Crown className="h-3.5 w-3.5 text-app-warning mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-app-text-muted">
-                    ?�료 ?�환?�면 ?�터마크 ?�이 발송 가??
+                    ?료 ?환?면 ?터마크 ?이 발송 가??
                     <button
                       type="button"
                       onClick={() => {
@@ -369,14 +369,14 @@ export function WatermarkGate({ plan, onWatermarkEnabled, onReferralReady, compa
                       }}
                       className="ml-1.5 text-[10px] text-app-text-subtle hover:text-app-text-muted underline"
                     >
-                      ?�기
+                      ?기
                     </button>
                   </p>
                   <a
                     href="/pricing"
                     className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-app-primary hover:underline"
                   >
-                    <Sparkles className="h-3 w-3" /> ?�금??보기
+                    <Sparkles className="h-3 w-3" /> ?금??보기
                   </a>
                 </div>
               </div>

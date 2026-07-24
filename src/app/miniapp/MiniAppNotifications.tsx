@@ -24,10 +24,10 @@ const TYPE_CONFIG = {
 
 function generateMockNotifications(): Notification[] {
   return [
-    { id: "1", type: "success", title: "발송 ?�료", message: "3�?계정, 12�?그룹??발송 ?�료", time: new Date(Date.now() - 300000).toISOString(), read: false },
-    { id: "2", type: "error", title: "발송 ?�패", message: "계정 010-1234-5678 차단??- ?�인�??�요", time: new Date(Date.now() - 3600000).toISOString(), read: false },
-    { id: "3", type: "warning", title: "계정 ?�한", message: "010-9876-5432 30�????�한 ?�제 ?�정", time: new Date(Date.now() - 7200000).toISOString(), read: false },
-    { id: "4", type: "info", title: "?�큰 ?�진", message: "AI ?�큰??10% ?�았?�니?? 충전?�세??", time: new Date(Date.now() - 86400000).toISOString(), read: true },
+    { id: "1", type: "success", title: "발송 ?료", message: "3?계정, 12?그룹??발송 ?료", time: new Date(Date.now() - 300000).toISOString(), read: false },
+    { id: "2", type: "error", title: "발송 ?패", message: "계정 010-1234-5678 차단??- ?인??요", time: new Date(Date.now() - 3600000).toISOString(), read: false },
+    { id: "3", type: "warning", title: "계정 ?한", message: "010-9876-5432 30????한 ?제 ?정", time: new Date(Date.now() - 7200000).toISOString(), read: false },
+    { id: "4", type: "info", title: "?큰 ?진", message: "AI ?큰??10% ?았?니?? 충전?세??", time: new Date(Date.now() - 86400000).toISOString(), read: true },
   ];
 }
 
@@ -68,7 +68,7 @@ export const MiniAppNotifications = memo(function MiniAppNotifications() {
     <div className="pb-4">
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <h2 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--tg-theme-text-color)" }}>
-          <Bell className="h-4 w-4" /> ?�림
+          <Bell className="h-4 w-4" /> ?림
           {unreadCount > 0 && (
             <span className="text-[9px] font-medium rounded-full px-1.5 py-0.5" style={{ backgroundColor: "var(--tg-theme-destructive-text-color, #ec3942)", color: "#fff" }}>
               {unreadCount}
@@ -78,12 +78,12 @@ export const MiniAppNotifications = memo(function MiniAppNotifications() {
         <div className="flex gap-2">
           {unreadCount > 0 && (
             <button onClick={markAllRead} className="text-[10px] font-medium active:scale-90" style={{ color: "var(--tg-theme-button-color, #5288c1)" }}>
-              모두 ?�음
+              모두 ?음
             </button>
           )}
           {notifications.length > 0 && (
             <button onClick={clearAll} className="text-[10px] font-medium active:scale-90" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-              ?�체 ??��
+              ?체 ??
             </button>
           )}
         </div>
@@ -92,7 +92,7 @@ export const MiniAppNotifications = memo(function MiniAppNotifications() {
       {notifications.length === 0 ? (
         <div className="flex flex-col items-center py-12">
           <Bell className="h-10 w-10 mb-2" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
-          <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>?�림???�습?�다</p>
+          <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>?림???습?다</p>
         </div>
       ) : (
         <div className="px-4 space-y-1.5">

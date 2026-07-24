@@ -14,20 +14,20 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: "계정 ?�결",
-    description: "?�레그램 계정???�결?�고\n발송??준비�? ?�세??,
+    title: "계정 ?결",
+    description: "?레그램 계정???결?고\n발송??준비? ?세??,
     icon: Users,
     color: "#3b82f6",
   },
   {
-    title: "�?발송",
-    description: "메시지�??�성?�고\n?�하??그룹??발송?�보?�요",
+    title: "?발송",
+    description: "메시지??성?고\n?하??그룹??발송?보?요",
     icon: Send,
     color: "#22c55e",
   },
   {
-    title: "?�림 ?�정",
-    description: "발송 결과?� 계정 ?�태\n?�림??받아보세??,
+    title: "?림 ?정",
+    description: "발송 결과? 계정 ?태\n?림??받아보세??,
     icon: Bell,
     color: "#f59e0b",
   },
@@ -56,7 +56,7 @@ export const MiniAppOnboarding = memo(function MiniAppOnboarding({ onComplete }:
   return (
     <div className="fixed inset-0 z-[100] flex flex-col" style={{ backgroundColor: "var(--tg-theme-bg-color, #17212b)" }}>
       <button onClick={handleSkip} className="self-end px-4 py-3 text-xs font-medium active:scale-90" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-        건너?�기
+        건너?기
       </button>
 
       <div className="flex-1 flex flex-col items-center justify-center px-8">
@@ -90,9 +90,9 @@ export const MiniAppOnboarding = memo(function MiniAppOnboarding({ onComplete }:
           className="w-full rounded-xl py-4 text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
           style={{ backgroundColor: "var(--tg-theme-button-color, #5288c1)", color: "#fff" }}>
           {step < STEPS.length - 1 ? (
-            <>?�음 <ArrowRight className="h-4 w-4" /></>
+            <>?음 <ArrowRight className="h-4 w-4" /></>
           ) : (
-            <><Check className="h-4 w-4" /> ?�작?�기</>
+            <><Check className="h-4 w-4" /> ?작?기</>
           )}
         </button>
       </div>

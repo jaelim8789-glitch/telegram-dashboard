@@ -9,11 +9,11 @@ import type { BroadcastStatus } from "@/types";
 import { relativeTime } from "@/lib/relativeTime";
 
 const STATUS_FILTERS: { key: "all" | BroadcastStatus; label: string }[] = [
-  { key: "all", label: "?�체" },
-  { key: "sent", label: "?�공" },
-  { key: "failed", label: "?�패" },
-  { key: "pending", label: "?��? },
-  { key: "sending", label: "발송�? },
+  { key: "all", label: "?체" },
+  { key: "sent", label: "?공" },
+  { key: "failed", label: "?패" },
+  { key: "pending", label: "?? },
+  { key: "sending", label: "발송? },
 ];
 
 const STATUS_CONFIG: Record<string, { icon: typeof Clock; color: string; bg: string }> = {
@@ -50,7 +50,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
       const logs = await api.fetchLogs({ limit: 100, ...(statusFilter !== "all" ? { status: statusFilter } : {}) });
       setEntries(logs.map((l: any) => ({
         id: l.id,
-        message: l.message || "(?�용 ?�음)",
+        message: l.message || "(?용 ?음)",
         status: l.status,
         sentAt: l.scheduledAt || l.createdAt,
         accountPhone: l.accountPhone,
@@ -88,7 +88,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
     <div className="pb-4 space-y-3">
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <h2 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--tg-theme-text-color)" }}>
-          <Clock className="h-4 w-4" /> 발송 ?�역
+          <Clock className="h-4 w-4" /> 발송 ?역
         </h2>
         <button onClick={fetchHistory} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-secondary-bg-color, #232e3c)" }}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -118,7 +118,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
       ) : displayEntries.length === 0 ? (
         <div className="flex flex-col items-center py-12">
           <Clock className="h-10 w-10 mb-2" style={{ color: "var(--tg-theme-hint-color, #708499)" }} />
-          <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>발송 ?�역???�습?�다</p>
+          <p className="text-xs" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>발송 ?역???습?다</p>
         </div>
       ) : (
         <div className="px-4 space-y-1.5">
@@ -135,7 +135,7 @@ export const MiniAppHistory = memo(function MiniAppHistory() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate" style={{ color: "var(--tg-theme-text-color)" }}>{e.message}</p>
                   <div className="flex items-center gap-2 text-[10px] mt-0.5" style={{ color: "var(--tg-theme-hint-color, #708499)" }}>
-                    <span>{e.recipientCount ? `${e.recipientCount}�? : ""}</span>
+                    <span>{e.recipientCount ? `${e.recipientCount}? : ""}</span>
                     {e.sentAt && <span>{relativeTime(e.sentAt)}</span>}
                     {e.accountPhone && <span className="truncate max-w-[80px]">{e.accountPhone}</span>}
                   </div>

@@ -27,13 +27,13 @@ export function MobileAccessibilityEnhancer() {
         }
       });
 
-      // 모바???�경?�서 ?�커??가?�한 ?�소???�근???�래??추�?
+      // 모바???경?서 ?커??가?한 ?소???근???래??추?
       if (window.matchMedia('(max-width: 768px)').matches) {
         const focusableElements = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
         focusableElements.forEach(element => {
           element.classList.add('focus-ring');
           
-          // ?�치 기기?�서???�근?�을 ?�해 추�? ?�성 부??
+          // ?치 기기?서???근?을 ?해 추? ?성 부??
           if (!element.getAttribute('role')) {
             element.setAttribute('role', 'button');
           }
@@ -67,7 +67,7 @@ export function MobileAccessibilityEnhancer() {
                 }
               }
               
-              // ?�적?�로 추�??�는 ?�소?�도 모바???�근???�래???�용
+              // ?적?로 추??는 ?소?도 모바???근???래???용
               if (window.matchMedia('(max-width: 768px)').matches) {
                 element.classList.add('focus-ring');
                 if (!element.getAttribute('role')) {

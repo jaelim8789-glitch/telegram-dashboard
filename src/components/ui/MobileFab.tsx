@@ -48,18 +48,18 @@ export function MobileFab() {
     ? [
         { icon: Sparkles, label: "AI 명령", action: () => {} },
         { icon: PenLine, label: "??메시지", action: () => {} },
-        { icon: ChevronUp, label: "?�로가�?, action: handleScrollTop },
+        { icon: ChevronUp, label: "?로가?, action: handleScrollTop },
       ]
     : currentTab === "send"
     ? [
         { icon: Send, label: "??발송", action: () => setActiveTab("send") },
-        { icon: RefreshCw, label: "?�로고침", action: () => { fetchAccounts(); } },
-        { icon: ChevronUp, label: "?�로가�?, action: handleScrollTop },
+        { icon: RefreshCw, label: "?로고침", action: () => { fetchAccounts(); } },
+        { icon: ChevronUp, label: "?로가?, action: handleScrollTop },
       ]
     : [
-        { icon: UserPlus, label: "계정 ?�록", action: () => setActiveTab("register") },
-        { icon: RefreshCw, label: "?�로고침", action: () => { fetchAccounts(); } },
-        { icon: ChevronUp, label: "?�로가�?, action: handleScrollTop },
+        { icon: UserPlus, label: "계정 ?록", action: () => setActiveTab("register") },
+        { icon: RefreshCw, label: "?로고침", action: () => { fetchAccounts(); } },
+        { icon: ChevronUp, label: "?로가?, action: handleScrollTop },
       ];
 
   return (
@@ -97,7 +97,7 @@ export function MobileFab() {
         whileTap={{ scale: 0.92 }}
         animate={open ? { rotate: 45 } : { rotate: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        aria-label={open ? "메뉴 ?�기" : "빠른 ?�업 ?�기"}
+        aria-label={open ? "메뉴 ?기" : "빠른 ?업 ?기"}
       >
         <Plus className="h-6 w-6" style={{ color: "var(--color-accent-contrast)" }} />
       </motion.button>

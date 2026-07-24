@@ -1,4 +1,4 @@
-// ?�보???�비게이??�??�근???�생 ?�틸리티
+// ?보???비게이????근???생 ?틸리티
 import { useState, useEffect } from "react";
 import type React from "react";
 
@@ -36,7 +36,7 @@ class AccessibilityManager {
   }
 
   private setupAccessibilityFeatures(): void {
-    // ?�보???�비게이??객�?
+    // ?보???비게이??객?
     document.addEventListener('keydown', (event) => {
       if (!this.isKeyboardNavigation) {
         this.isKeyboardNavigation = true;
@@ -49,10 +49,10 @@ class AccessibilityManager {
       document.body.classList.remove('keyboard-navigation');
     });
 
-    // ?�축???�록
+    // ?축???록
     this.registerDefaultShortcuts();
 
-    // 고�?�?모드 객�?
+    // 고??모드 객?
     const highContrastMediaQuery = window.matchMedia('(prefers-contrast: high)');
     highContrastMediaQuery.addEventListener('change', (e) => {
       this.isHighContrast = e.matches;
@@ -60,7 +60,7 @@ class AccessibilityManager {
     });
     this.isHighContrast = highContrastMediaQuery.matches;
 
-    // ?�니메이??객소 모드 객�?
+    // ?니메이??객소 모드 객?
     const reducedMotionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     reducedMotionMediaQuery.addEventListener('change', (e) => {
       this.isReducedMotion = e.matches;
@@ -68,23 +68,23 @@ class AccessibilityManager {
     });
     this.isReducedMotion = reducedMotionMediaQuery.matches;
 
-    // ?�커??관�?
+    // ?커??관?
     if (this.options.enableFocusManagement) {
       this.setupFocusManagement();
     }
 
-    // ?�킵 망희
+    // ?킵 망희
     if (this.options.enableSkipLinks) {
       this.setupSkipLinks();
     }
   }
 
-  // 기본 ?�축???�록
+  // 기본 ?축???록
   private registerDefaultShortcuts(): void {
     this.registerShortcut({
       key: 'k',
       ctrl: true,
-      description: '검?�창 ?�기',
+      description: '검?창 ?기',
       category: 'utility',
       handler: (event) => {
         event.preventDefault();
@@ -98,7 +98,7 @@ class AccessibilityManager {
 
     this.registerShortcut({
       key: 'Escape',
-      description: '모달 ?�기',
+      description: '모달 ?기',
       category: 'utility',
       handler: (event) => {
         const modals = document.querySelectorAll('[role="dialog"]:not([aria-hidden="true"])');
@@ -113,7 +113,7 @@ class AccessibilityManager {
     this.registerShortcut({
       key: 'Tab',
       shift: true,
-      description: '?�전 ?�소�??�띙',
+      description: '?전 ?소??띙',
       category: 'navigation',
       handler: (event) => {
         if (event.shiftKey) {
@@ -123,18 +123,18 @@ class AccessibilityManager {
     });
   }
 
-  // ?�축???�록
+  // ?축???록
   registerShortcut(shortcut: KeyboardShortcut): void {
     const keyCombo = this.getKeyComboString(shortcut);
     this.shortcuts.set(keyCombo, shortcut);
   }
 
-  // ?�축???�제
+  // ?축???제
   unregisterShortcut(keyCombo: string): void {
     this.shortcuts.delete(keyCombo);
   }
 
-  // ?�축??문잝???�성
+  // ?축??문잝???성
   private getKeyComboString(shortcut: KeyboardShortcut): string {
     const parts = [];
     if (shortcut.ctrl) parts.push('Ctrl');
@@ -145,7 +145,7 @@ class AccessibilityManager {
     return parts.join('+');
   }
 
-  // ???�벤???�들??
+  // ???벤???들??
   private handleKeyEvent(event: KeyboardEvent): void {
     const keyCombo = this.getKeyComboString({
       key: event.key,
@@ -164,7 +164,7 @@ class AccessibilityManager {
     }
   }
 
-  // ?�커??관�??�정
+  // ?커??관??정
   private setupFocusManagement(): void {
     document.addEventListener('focusin', (event) => {
       const target = event.target as HTMLElement;
@@ -174,7 +174,7 @@ class AccessibilityManager {
     });
   }
 
-  // ?�전 ?�소�??�커???�띙
+  // ?전 ?소??커???띙
   private focusPreviousElement(): void {
     if (this.focusHistory.length > 1) {
       const previousElement = this.focusHistory[this.focusHistory.length - 2];
@@ -184,13 +184,13 @@ class AccessibilityManager {
     }
   }
 
-  // ?�킵 망희 ?�정
+  // ?킵 망희 ?정
   private setupSkipLinks(): void {
     const skipLinkHTML = `
-      <nav class="skip-links visually-hidden-focusable" aria-label="메인 콘텝�?바로가�?>
-        <a href="#main-content" class="skip-link">메인 콘텝츠로 ?�띙</a>
-        <a href="#navigation" class="skip-link">주요 ?�비게이?�으�??�띙</a>
-        <a href="#footer" class="skip-link">?�터�??�띙</a>
+      <nav class="skip-links visually-hidden-focusable" aria-label="메인 콘텝?바로가?>
+        <a href="#main-content" class="skip-link">메인 콘텝츠로 ?띙</a>
+        <a href="#navigation" class="skip-link">주요 ?비게이?으??띙</a>
+        <a href="#footer" class="skip-link">?터??띙</a>
       </nav>
     `;
     
@@ -199,7 +199,7 @@ class AccessibilityManager {
     document.body.insertBefore(container.firstElementChild!, document.body.firstChild);
   }
 
-  // ?�커???�랩 ?�정
+  // ?커???랩 ?정
   setupFocusTrap(element: HTMLElement): void {
     const focusableElements = element.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -224,7 +224,7 @@ class AccessibilityManager {
     this.focusTrapStack.push([element, firstElement, lastElement]);
   }
 
-  // ?�커???�랩 ?�제
+  // ?커???랩 ?제
   removeFocusTrap(element: HTMLElement): void {
     const trapIndex = this.focusTrapStack.findIndex(trap => trap[0] === element);
     if (trapIndex !== -1) {
@@ -232,7 +232,7 @@ class AccessibilityManager {
     }
   }
 
-  // 고�?�?모드 ?��?
+  // 고??모드 ??
   private toggleHighContrast(enabled: boolean): void {
     if (enabled) {
       document.body.classList.add('high-contrast');
@@ -241,7 +241,7 @@ class AccessibilityManager {
     }
   }
 
-  // ?�니메이??객소 모드 ?��?
+  // ?니메이??객소 모드 ??
   private toggleReducedMotion(enabled: boolean): void {
     if (enabled) {
       document.body.classList.add('reduced-motion');
@@ -250,7 +250,7 @@ class AccessibilityManager {
     }
   }
 
-  // ?�커???�시 ?�정
+  // ?커???시 ?정
   setFocusIndicator(type: 'auto' | 'always' | 'never'): void {
     if (typeof document === 'undefined') return;
     const style = document.createElement('style');
@@ -266,7 +266,7 @@ class AccessibilityManager {
     document.head?.appendChild(style);
   }
 
-  // ?�희�?리띔???�스???�성
+  // ?희?리띔???스???성
   createScreenReaderOnly(text: string): HTMLElement {
     const span = document.createElement('span');
     span.className = 'sr-only';
@@ -275,7 +275,7 @@ class AccessibilityManager {
     return span;
   }
 
-  // ?�이�?리전 ?�성 (?�희�?리띔???�시�??�띰?�트 ?�달)
+  // ?이?리전 ?성 (?희?리띔???시??띰?트 ?달)
   createLiveRegion(options: { polite?: boolean; assertive?: boolean } = {}): HTMLElement {
     const region = document.createElement('div');
     region.setAttribute('aria-live', options.assertive ? 'assertive' : 'polite');
@@ -285,11 +285,11 @@ class AccessibilityManager {
     return region;
   }
 
-  // ?�근???�스???�우�?
+  // ?근???스???우?
   runAccessibilityAudit(): Array<{ type: string; message: string; element?: HTMLElement }> {
     const issues: Array<{ type: string; message: string; element?: HTMLElement }> = [];
 
-    // ?�커??가?�한 ?�소???�이블이 ?�는지 ?�인
+    // ?커??가?한 ?소???이블이 ?는지 ?인
     const focusableElements = document.querySelectorAll(
       'input:not([type="hidden"]), select, textarea, button, [tabindex]:not([tabindex="-1"])'
     );
@@ -300,20 +300,20 @@ class AccessibilityManager {
       if (!hasLabel) {
         issues.push({
           type: 'missing-label',
-          message: '?�커??가?�한 ?�소???�근 가?�한 ?�이블이 ?�습?�다',
+          message: '?커??가?한 ?소???근 가?한 ?이블이 ?습?다',
           element
         });
       }
     });
 
-    // ?��?지???��??�스?��? ?�는지 ?�인
+    // ??지?????스?? ?는지 ?인
     const images = document.querySelectorAll('img');
     images.forEach(img => {
       const image = img as HTMLImageElement;
       if (!image.alt && !image.title) {
         issues.push({
           type: 'missing-alt',
-          message: '?��?지???��??�스?��? ?�습?�다',
+          message: '??지?????스?? ?습?다',
           element: image
         });
       }
@@ -322,12 +322,12 @@ class AccessibilityManager {
     return issues;
   }
 
-  // ?�근 가?�한 ?�이�??�인
+  // ?근 가?한 ?이??인
   private hasAccessibleLabel(element: HTMLElement): boolean {
-    // aria-label ?�용
+    // aria-label ?용
     if (element.getAttribute('aria-label')) return true;
     
-    // aria-labelledby ?�용
+    // aria-labelledby ?용
     const labelledby = element.getAttribute('aria-labelledby');
     if (labelledby) {
       const labelElement = document.getElementById(labelledby);
@@ -336,7 +336,7 @@ class AccessibilityManager {
       }
     }
     
-    // ?�이�??�소 ?�용
+    // ?이??소 ?용
     if (element.id) {
       const label = document.querySelector(`label[for="${element.id}"]`);
       if (label && (label.textContent?.trim() || (label as HTMLElement).innerText.trim())) {
@@ -344,7 +344,7 @@ class AccessibilityManager {
       }
     }
     
-    // ?�식 ?�스???�용
+    // ?식 ?스???용
     if (element.textContent?.trim() || (element as HTMLInputElement).value?.trim()) {
       return true;
     }
@@ -352,7 +352,7 @@ class AccessibilityManager {
     return false;
   }
 
-  // ?�재 ?�근???�태 가?�오�?
+  // ?재 ?근???태 가?오?
   getStatus(): {
     keyboardNavigation: boolean;
     highContrast: boolean;
@@ -369,19 +369,19 @@ class AccessibilityManager {
     };
   }
 
-  // ?�축??목록 가?�오�?
+  // ?축??목록 가?오?
   getShortcuts(): KeyboardShortcut[] {
     return Array.from(this.shortcuts.values());
   }
 
-  // 메모�??�리
+  // 메모??리
   destroy(): void {
-    // ?�벤??리스???�거
+    // ?벤??리스???거
     if (this._boundHandleKeyEvent) {
       document.removeEventListener('keydown', this._boundHandleKeyEvent);
     }
     
-    // ?�커???�랩 ?�제
+    // ?커???랩 ?제
     this.focusTrapStack.forEach(trap => {
       const [element] = trap;
       element.removeEventListener('keydown', () => {});
@@ -394,7 +394,7 @@ class AccessibilityManager {
   }
 }
 
-// ?�역 ?�근??관리잝 ?�스?�스
+// ?역 ?근??관리잝 ?스?스
 export const accessibilityManager = new AccessibilityManager({
   enableKeyboardNavigation: true,
   enableScreenReaderSupport: true,
@@ -404,7 +404,7 @@ export const accessibilityManager = new AccessibilityManager({
   enableReducedMotion: true
 });
 
-// React ???�태
+// React ???태
 export function useAccessibility() {
   const [status, setStatus] = useState(accessibilityManager.getStatus());
 
@@ -431,7 +431,7 @@ export function useAccessibility() {
   return { ...status, manager: accessibilityManager };
 }
 
-// ?�보???�비게이??객�? ??
+// ?보???비게이??객? ??
 export function useKeyboardNavigation() {
   const [isKeyboard, setIsKeyboard] = useState(false);
 
@@ -451,7 +451,7 @@ export function useKeyboardNavigation() {
   return isKeyboard;
 }
 
-// ?�커??관�???
+// ?커??관???
 export function useFocusManagement(ref: React.RefObject<HTMLElement>) {
   useEffect(() => {
     if (ref.current) {
@@ -466,9 +466,9 @@ export function useFocusManagement(ref: React.RefObject<HTMLElement>) {
   }, [ref]);
 }
 
-// ?��???가?�드 - CSS ?�래???�의
+// ????가?드 - CSS ?래???의
 export const accessibilityStyles = `
-  /* ?�희�?리띔 ?�용 */
+  /* ?희?리띔 ?용 */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -481,7 +481,7 @@ export const accessibilityStyles = `
     border: 0;
   }
 
-  /* ?�희�?리띔 ?�용 (?�커?????�시) */
+  /* ?희?리띔 ?용 (?커?????시) */
   .visually-hidden-focusable {
     position: absolute !important;
     width: 1px !important;
@@ -506,18 +506,18 @@ export const accessibilityStyles = `
     white-space: normal !important;
   }
 
-  /* ?�보???�비게이???�시 */
+  /* ?보???비게이???시 */
   .keyboard-navigation :focus {
     outline: 2px solid var(--app-primary, #3b82f6);
     outline-offset: 2px;
   }
 
-  /* 고�?�?모드 */
+  /* 고??모드 */
   .high-contrast {
     filter: contrast(1.5);
   }
 
-  /* ?�니메이??객소 */
+  /* ?니메이??객소 */
   .reduced-motion * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

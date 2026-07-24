@@ -1,273 +1,546 @@
 "use client";
 
+
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { Menu, X, Bell } from "lucide-react";
+
 import { useHapticFeedback } from "@/lib/useHapticFeedback";
 
+
+
 function useEdgeSwipe(
+
   onSwipeLeft: () => void,
+
   onSwipeRight: () => void,
+
   edgeThreshold = 30,
+
   swipeThreshold = 60,
+
 ) {
+
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
+
+
   useEffect(() => {
+
     function onTouchStart(e: TouchEvent) {
+
       if (e.touches.length !== 1) return;
+
       const x = e.touches[0].clientX;
+
       const w = window.innerWidth;
+
       if (x > edgeThreshold && x < w - edgeThreshold) return;
+
       touchStart.current = { x, y: e.touches[0].clientY };
+
     }
+
+
 
     function onTouchEnd(e: TouchEvent) {
+
       if (!touchStart.current) return;
+
       const dx = e.changedTouches[0].clientX - touchStart.current.x;
+
       const dy = e.changedTouches[0].clientY - touchStart.current.y;
+
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > swipeThreshold) {
+
         if (dx > 0) onSwipeRight();
+
         else onSwipeLeft();
+
       }
+
       touchStart.current = null;
+
     }
+
+
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
+
     document.addEventListener("touchend", onTouchEnd, { passive: true });
+
     return () => {
+
       document.removeEventListener("touchstart", onTouchStart);
+
       document.removeEventListener("touchend", onTouchEnd);
+
     };
+
   }, [onSwipeLeft, onSwipeRight, edgeThreshold, swipeThreshold]);
+
 }
+
 import { Header } from "@/components/layout/Header";
+
 import { Sidebar } from "@/components/layout/Sidebar";
+
 import { Workspace } from "@/components/layout/Workspace";
+
 import { Inspector } from "@/components/layout/Inspector";
+
 import MobileInspectorSheet from "@/components/ui/MobileInspectorSheet";
+
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
+
 import { CommandPaletteTrigger } from "@/components/workspace/CommandPalette";
+
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+
 import { CheatsheetModal } from "@/components/workspace/CheatsheetModal";
+
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
+
 import { KeyboardShortcutHints } from "@/components/ui/KeyboardShortcutHints";
+
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
+
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
+
 import { useVisualViewport } from "@/hooks/useVisualViewport";
+
 import { useOrientation } from "@/hooks/useOrientation";
+
 import { useBrowserNotification } from "@/hooks/useBrowserNotification";
+
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
+
 import { useDashboardStore } from "@/store/useDashboardStore";
 
+
+
 export function DashboardShell() {
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [inspectorOpen, setInspectorOpen] = useState(false);
+
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+
   const activeTab = useDashboardStore((s) => s.activeTab);
+
   const setActiveTab = useDashboardStore((s) => s.setActiveTab);
+
   const accountsLoading = useDashboardStore((s) => s.accountsLoading);
+
   const selectedAccountId = useDashboardStore((s) => s.selectedAccountId);
+
   const [isMobile, setIsMobile] = useState(false);
 
+
+
   const sidebarCollapsed = useDashboardStore((s) => s.sidebarCollapsed);
+
   const toggleSidebarCollapsed = useDashboardStore((s) => s.toggleSidebarCollapsed);
+
   const haptics = useHapticFeedback();
 
+
+
   const toggleSidebar = useCallback(() => {
+
     haptics.light();
+
     setSidebarOpen((v) => !v);
+
     setInspectorOpen(false);
+
   }, [haptics]);
+
   const toggleInspector = useCallback(() => {
+
     haptics.light();
+
     setInspectorOpen((v) => !v);
+
     setSidebarOpen(false);
+
   }, [haptics]);
+
+
 
   // Edge swipe: left edge ??sidebar, right edge ??inspector
+
   useEdgeSwipe(
+
     useCallback(() => { haptics.medium(); setInspectorOpen(true); setSidebarOpen(false); }, [haptics]),
+
     useCallback(() => { haptics.medium(); setSidebarOpen(true); setInspectorOpen(false); }, [haptics]),
+
   );
+
+
 
   // "?" key opens cheatsheet (only when not typing in an input)
+
   useEffect(() => {
+
     function handler(e: KeyboardEvent) {
+
       if (e.key === "?" && !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, [contenteditable]"))) {
+
         setCheatsheetOpen((v) => !v);
+
       }
+
     }
+
     document.addEventListener("keydown", handler);
+
     return () => document.removeEventListener("keydown", handler);
+
   }, []);
+
+
 
   const shortcutHandlers = useMemo(() => ({
+
     onNavigate: (tabId: import("@/types").TabId) => setActiveTab(tabId),
+
   }), [setActiveTab]);
+
   useKeyboardShortcuts(shortcutHandlers);
 
+
+
   const { isKeyboardVisible } = useVisualViewport();
+
   const orientation = useOrientation();
+
   const scrollPositions = useRef<Map<string, number>>(new Map());
+
   const containerRef = useRef<HTMLDivElement>(null);
 
+
+
   useEffect(() => {
+
     const container = containerRef.current;
+
     if (!container) return;
+
     const key = `${orientation}-${activeTab}`;
+
     const saved = scrollPositions.current.get(key);
+
     if (saved != null) {
+
       container.scrollTop = saved;
+
     }
+
     return () => {
+
       scrollPositions.current.set(key, container.scrollTop);
+
     };
+
   }, [orientation, activeTab]);
 
-  // ?�?� Mobile detection ?�?�
+
+
+  // ?? Mobile detection ??
+
   useEffect(() => {
+
     const mq = window.matchMedia("(max-width: 767px)");
+
     setIsMobile(mq.matches);
+
     function handler(e: MediaQueryListEvent) { setIsMobile(e.matches); }
+
     mq.addEventListener("change", handler);
+
     return () => mq.removeEventListener("change", handler);
+
   }, []);
 
+
+
   // Auto-open mobile inspector when an account is selected on mobile
+
   useEffect(() => {
+
     if (isMobile && selectedAccountId) {
+
       setMobileInspectorOpen(true);
+
     }
+
   }, [isMobile, selectedAccountId]);
 
-  // ?�?� Foreground auto-refresh ?�?�
+
+
+  // ?? Foreground auto-refresh ??
+
   const fetchAccounts = useDashboardStore((s) => s.fetchAccounts);
 
+
+
   useEffect(() => {
+
     function onVisibilityChange() {
+
       if (document.visibilityState === "visible") {
+
         fetchAccounts();
+
       }
+
     }
+
     document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+
   }, [fetchAccounts]);
 
-  // ?�?� Browser notifications ?�?�
+
+
+  // ?? Browser notifications ??
+
   const { notifyBroadcastComplete } = useBrowserNotification();
 
+
+
   // Notify when broadcasts complete per-account
+
   const accounts = useDashboardStore((s) => s.accounts);
+
   const prevSentRef = useRef<Record<string, number>>({});
+
   useEffect(() => {
+
     for (const acc of accounts) {
+
       const prev = prevSentRef.current[acc.id] ?? 0;
+
       if (acc.todaySent > prev && prev > 0) {
+
         const delta = acc.todaySent - prev;
+
         notifyBroadcastComplete(acc.name ?? acc.phone, delta, delta, 0);
+
       }
+
       prevSentRef.current[acc.id] = acc.todaySent;
+
     }
+
   }, [accounts, notifyBroadcastComplete]);
 
-  // ?�?� First-visit auto-redirect to dashboard with 0 accounts ?�?�
+
+
+  // ?? First-visit auto-redirect to dashboard with 0 accounts ??
+
   useEffect(() => {
+
     const HAS_VISITED_KEY = "telemon-has-visited";
+
     if (typeof localStorage === "undefined") return;
+
     try {
+
       const hasVisited = localStorage.getItem(HAS_VISITED_KEY);
+
       if (!hasVisited && accounts.length === 0 && !accountsLoading && activeTab !== "dashboard") {
+
         localStorage.setItem(HAS_VISITED_KEY, "1");
+
         setActiveTab("dashboard");
+
       }
+
     } catch (e) { console.warn('Unhandled error in DashboardShell', e) }
+
   }, [accounts, accountsLoading]);
 
+
+
   return (
+
     <div className="flex h-dvh flex-col overflow-hidden bg-app-bg text-app-text">
+
       <NetworkStatus />
+
       <OnboardingTour hasAccounts={accounts.length > 0} accountsLoading={accountsLoading} />
+
       <CheatsheetModal open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
+
       <Header />
+
       {/* Mobile: slim top bar with account + inspector toggles */}
+
       {isMobile && (
-        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="모바???�색">
+
+        <div className="flex items-center gap-1 border-b border-app-border/50 bg-app-surface/80 backdrop-blur-sm px-2 py-1 sm:hidden" role="toolbar" aria-label="모바???색">
+
           <button
+
             type="button"
+
             onClick={() => { haptics.tick(); setSidebarOpen(v => !v); }}
+
             aria-label="계정 목록"
+
             className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all"
+
           >
+
             <Menu className="h-4 w-4 shrink-0" />
+
             <span className="text-[11px]">계정</span>
+
           </button>
+
           <CommandPaletteTrigger />
+
           <button
+
             type="button"
+
             onClick={() => {
+
               haptics.light();
+
               setMobileInspectorOpen(v => !v);
+
             }}
-            aria-label="?�스?�터"
+
+            aria-label="?스?터"
+
             className="flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-app-text-muted hover:text-app-text hover:bg-app-card-hover active:scale-95 transition-all ml-auto"
+
           >
+
             <Bell className="h-4 w-4 shrink-0" />
-            <span className="text-[11px]">?�스?�터</span>
+
+            <span className="text-[11px]">?스?터</span>
+
           </button>
-        </div>
-      )}
-      <div
-        ref={containerRef}
-        className="relative flex min-h-0 flex-1"
-        style={{ paddingBottom: isKeyboardVisible ? "var(--keyboard-offset, 0px)" : undefined }}
-      >
-        {/* Sidebar ??always visible on desktop, overlay on mobile */}
-        <div
-          id="dashboard-sidebar"
-          role="complementary"
-          aria-label="계정 목록"
-          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
-        >
-          {sidebarOpen && (
-            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
-          )}
-          <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`} style={{ paddingLeft: "env(safe-area-inset-left, 0px)" }}>
-            <Sidebar collapsed={sidebarCollapsed} />
-          </div>
-        </div>
-        <Workspace />
-        {/* Inspector ??always visible on desktop, bottom sheet on mobile */}
-        <div
-          id="dashboard-inspector"
-          role="complementary"
-          aria-label="?�스?�터"
-          className={`${!isMobile && inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
-        >
-          {!isMobile && inspectorOpen && (
-            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
-          )}
-          <div className={`relative z-10 ${!isMobile && inspectorOpen ? "block" : "hidden"} sm:block`} style={{ paddingRight: "env(safe-area-inset-right, 0px)" }}>
-            <Inspector />
-          </div>
+
         </div>
 
-        {/* Mobile bottom sheet inspector */}
-        {isMobile && (
-          <MobileInspectorSheet
-            open={mobileInspectorOpen}
-            onClose={() => setMobileInspectorOpen(false)}
-            title="?�스?�터"
-          >
+      )}
+
+      <div
+
+        ref={containerRef}
+
+        className="relative flex min-h-0 flex-1"
+
+        style={{ paddingBottom: isKeyboardVisible ? "var(--keyboard-offset, 0px)" : undefined }}
+
+      >
+
+        {/* Sidebar ??always visible on desktop, overlay on mobile */}
+
+        <div
+
+          id="dashboard-sidebar"
+
+          role="complementary"
+
+          aria-label="계정 목록"
+
+          className={`${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden"} sm:relative sm:z-auto sm:flex`}
+
+        >
+
+          {sidebarOpen && (
+
+            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
+
+          )}
+
+          <div className={`relative z-10 ${sidebarOpen ? "block" : "hidden"} sm:block`} style={{ paddingLeft: "env(safe-area-inset-left, 0px)" }}>
+
+            <Sidebar collapsed={sidebarCollapsed} />
+
+          </div>
+
+        </div>
+
+        <Workspace />
+
+        {/* Inspector ??always visible on desktop, bottom sheet on mobile */}
+
+        <div
+
+          id="dashboard-inspector"
+
+          role="complementary"
+
+          aria-label="?스?터"
+
+          className={`${!isMobile && inspectorOpen ? "fixed inset-0 z-50 flex justify-end" : "hidden"} sm:relative sm:z-auto sm:flex`}
+
+        >
+
+          {!isMobile && inspectorOpen && (
+
+            <div className="fixed inset-0 bg-black/50 sm:hidden" onClick={() => setInspectorOpen(false)} />
+
+          )}
+
+          <div className={`relative z-10 ${!isMobile && inspectorOpen ? "block" : "hidden"} sm:block`} style={{ paddingRight: "env(safe-area-inset-right, 0px)" }}>
+
             <Inspector />
+
+          </div>
+
+        </div>
+
+
+
+        {/* Mobile bottom sheet inspector */}
+
+        {isMobile && (
+
+          <MobileInspectorSheet
+
+            open={mobileInspectorOpen}
+
+            onClose={() => setMobileInspectorOpen(false)}
+
+            title="?스?터"
+
+          >
+
+            <Inspector />
+
           </MobileInspectorSheet>
+
         )}
+
       </div>
+
       <ScrollToTop />
+
       {isMobile && <MobileBottomNav />}
+
       <div className="hidden sm:flex absolute bottom-2 left-72">
+
         <KeyboardShortcutHints compact />
+
       </div>
+
     </div>
+
   );
+
 }
+

@@ -76,7 +76,7 @@ export default function MiniAppPage() {
         const { mainButton } = await import("@tma.js/sdk-react");
         if (cancelled) return;
         mainButton.mount();
-        mainButton.setParams({ text: "?�로고침", isEnabled: true, isVisible: false });
+        mainButton.setParams({ text: "?로고침", isEnabled: true, isVisible: false });
         off = mainButton.onClick(handleRefresh);
       } catch (e) { console.warn('Unhandled error in page', e) }
     })();
@@ -115,7 +115,7 @@ export default function MiniAppPage() {
           <div className="flex items-center gap-2">
             <ThemeQuickToggle />
             {online ? <Wifi className="h-3.5 w-3.5 text-emerald-500" /> : <WifiOff className="h-3.5 w-3.5 text-red-500" />}
-            <button onClick={handleRefresh} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="?�로고침">
+            <button onClick={handleRefresh} className="flex min-h-11 min-w-11 items-center justify-center rounded-full active:scale-90" style={{ backgroundColor: "var(--tg-theme-section-separator-color, #3a4a5a)" }} aria-label="?로고침">
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>

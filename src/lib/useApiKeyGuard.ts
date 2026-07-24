@@ -5,7 +5,7 @@ import { getToken } from "@/lib/auth";
 
 const APIKEY_STORAGE_KEY = "telemon_has_api_key";
 
-/** ?�재 API ?��? ?�록?�어 ?�는지 ?�인 */
+/** ?재 API ?? ?록?어 ?는지 ?인 */
 export function checkHasApiKey(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -15,19 +15,19 @@ export function checkHasApiKey(): boolean {
   }
 }
 
-/** API ???�록 ?�태�??�??*/
+/** API ???록 ?태????*/
 export function markApiKeySet() {
   try {
     localStorage.setItem(APIKEY_STORAGE_KEY, "true");
   } catch (e) { console.warn('Unhandled error in useApiKeyGuard', e) }
 }
 
-/** 발송 같�? ?�료 기능??보호?�는 ??*/
+/** 발송 같? ?료 기능??보호?는 ??*/
 export function useApiKeyGuard() {
   const [hasApiKey, setHasApiKey] = useState(checkHasApiKey);
   const [showModal, setShowModal] = useState(false);
 
-  /** ?�큰???�는지 + API ?��? ?�정?�었?��? ?�인 */
+  /** ?큰???는지 + API ?? ?정?었?? ?인 */
   const requireApiKey = useCallback((): boolean => {
     const token = getToken();
     if (!token) return false; // 로그??????

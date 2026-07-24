@@ -78,11 +78,11 @@ export function useAiWhisper(chatId: string | null, options: Options = {}) {
       }, MAX_LOAD_MS);
 
       try {
-        const payload = `고객명: ${options.customerName || "고객"}
-메시지:
+        const payload = `: ${options.customerName || ""}
+聘:
 ${(options.recentMessages || []).slice(0, RECENT_MSG_COUNT).map((m) => `[${m.role}] ${m.content}`).join("\n")}
 
-이 고객에 대한 Whisper 분석을 위 시스템 프롬프트 규칙에 따라 JSON으로 응답하세요.`;
+   Whisper 劇  첵 트 칙  JSON 究.`;
 
         const response = await aiChat({
           messages: [

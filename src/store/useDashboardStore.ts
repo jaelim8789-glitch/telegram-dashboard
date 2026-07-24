@@ -174,7 +174,7 @@ export function getRecentRecipientSets(): string[][] {
   return loadRecentRecipientSets();
 }
 
-// ??메모�?관�??�터?�이???�장
+// ??메모?관??터?이???장
 interface TabMemoryManagement {
   activeTabs: string[];
   tabLoadTimestamps: Record<string, number>;
@@ -184,7 +184,7 @@ interface TabMemoryManagement {
   unregisterActiveTab: (tabId: string) => void;
 }
 
-// ??메모�?관�?기능 추�?
+// ??메모?관?기능 추?
 export const useDashboardStore = create<DashboardState & TabMemoryManagement>((set, get) => ({
   ...INITIAL_STATE,
   dashboardRefreshKey: 0,
@@ -231,14 +231,14 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
 
   setSubscription: (subscriptionStatus, plan, trialExpiresAt) => set({ subscriptionStatus, plan, trialExpiresAt }),
 
-  /** RuntimeManager�??�해 즉시 계정 ?�환 ??API ?�호�??�음 */
+  /** RuntimeManager??해 즉시 계정 ?환 ??API ?호??음 */
   selectAccount: (id) => {
     set({ selectedAccountId: id });
-    // RuntimeManager?�도 ?�기?�하??캐시???�이?��? 준비되?�록 ??
+    // RuntimeManager?도 ?기?하??캐시???이?? 준비되?록 ??
     RuntimeManager.getInstance().selectAccount(id);
   },
 
-  /** RuntimeManager�??�해 계정 목록 로드 (캐시 ?�선) */
+  /** RuntimeManager??해 계정 목록 로드 (캐시 ?선) */
   fetchAccounts: async () => {
     set({ accountsLoading: true, accountsError: null });
     try {
@@ -255,14 +255,14 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
         runtimeManagerSubscriptions.add(unsub);
         _subscriptionActive = true;
       }
-      // RuntimeManager가 초기?�되???��? ?�으�?초기??
+      // RuntimeManager가 초기?되???? ?으?초기??
       if (!manager.accounts.length) {
         await manager.initialize();
       } else {
-        // ?��? 초기?�됨 ??백그?�운??refresh�??�리�?
+        // ?? 초기?됨 ??백그?운??refresh??리?
         manager.refreshAll().catch((e) => {
-          console.error("[useDashboardStore] 백그?�운??refresh ?�패", e);
-          set({ accountsError: "백그?�운??refresh???�패?�습?�다" });
+          console.error("[useDashboardStore] 백그?운??refresh ?패", e);
+          set({ accountsError: "백그?운??refresh???패?습?다" });
         });
       }
 
@@ -273,11 +273,11 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
         selectedAccountId: state.selectedAccountId ?? accounts[0]?.id ?? null,
       }));
 
-      // RuntimeManager 구독 ??최초 ??번만 ?�록 (중복 구독 방�?)
+      // RuntimeManager 구독 ??최초 ??번만 ?록 (중복 구독 방?)
     } catch (err) {
       set({
         accountsLoading: false,
-        accountsError: err instanceof Error ? err.message : "계정 목록??불러?��? 못했?�니??",
+        accountsError: err instanceof Error ? err.message : "계정 목록??불러?? 못했?니??",
       });
     }
   },
@@ -296,7 +296,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
 
   removeAccount: async (id) => {
     await api.deleteAccount(id);
-    // RuntimeManager?�서???�거
+    // RuntimeManager?서???거
     const manager = RuntimeManager.getInstance();
     await manager.refreshAll();
     set((state) => ({
@@ -363,28 +363,28 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       navView: "feature",
       navFeature: "send",
       navCategory: "send",
-      reuseNotice: "?�정??불러?�습?�다. ?�용???�인 ??발송?�세??",
+      reuseNotice: "?정??불러?습?다. ?용???인 ??발송?세??",
       sendReplyToMessageId: broadcast.replyToMessageId ?? null,
     });
   },
 
-  // ??메모�?관�??�태
+  // ??메모?관??태
   activeTabs: [],
   tabLoadTimestamps: {},
-  maxInactiveTabs: 5, // 비활????최�? 개수
+  maxInactiveTabs: 5, // 비활????최? 개수
   
-  // 비활?????�리
+  // 비활?????리
   cleanupInactiveTabs: () => {
     set(state => {
       const now = Date.now();
       const newTabLoadTimestamps = { ...state.tabLoadTimestamps };
       const tabsToKeep = state.activeTabs;
       
-      // ?�래??비활?????�거
+      // ?래??비활?????거
       Object.keys(newTabLoadTimestamps).forEach(tabId => {
         if (!tabsToKeep.includes(tabId)) {
           const timeSinceLastLoad = now - newTabLoadTimestamps[tabId];
-          // 30�??�상 비활???�태?????�거
+          // 30??상 비활???태?????거
           if (timeSinceLastLoad > 30 * 60 * 1000) {
             delete newTabLoadTimestamps[tabId];
           }
@@ -395,7 +395,7 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
     });
   },
   
-  // ?�성 ???�록
+  // ?성 ???록
   registerActiveTab: (tabId: string) => {
     set(state => {
       const newActiveTabs = state.activeTabs.includes(tabId) 
@@ -411,13 +411,13 @@ export const useDashboardStore = create<DashboardState & TabMemoryManagement>((s
       };
     });
     
-    // ?�요 ??비활?????�리
+    // ?요 ??비활?????리
     setTimeout(() => {
       get().cleanupInactiveTabs();
     }, 0);
   },
   
-  // ?�성 ???�제
+  // ?성 ???제
   unregisterActiveTab: (tabId: string) => {
     set(state => {
       const newActiveTabs = state.activeTabs.filter(id => id !== tabId);
