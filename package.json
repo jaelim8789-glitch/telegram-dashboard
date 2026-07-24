@@ -121,7 +121,7 @@
   "devDependencies": {
     "@chromatic-com/storybook": "^3",
     "@emotion/jest": "^11.11.0",
-    "@next/bundle-analyzer": "^15.5.20",
+    "@next/bundle-analyzer": "^16.2.11",
     "@playwright/test": "^1.61.1",
     "@storybook/addon-essentials": "^8",
     "@storybook/addon-interactions": "^8",
