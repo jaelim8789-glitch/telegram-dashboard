@@ -1,4 +1,4 @@
-# TeleMon Frontend ??鍮뚮뱶 諛⑸쾿
+# TeleMon Frontend ????����?諛⑸��?
 # docker build --no-cache -t telemon-frontend .
 # docker run -p 3000:3000 telemon-frontend
 
@@ -16,7 +16,7 @@ ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 
-RUN corepack enable && corepack prepare pnpm@10.8.1 --activate
+RUN npm install -g pnpm@10.8.1
 
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --no-frozen-lockfile --prefer-offline --ignore-scripts
@@ -51,9 +51,7 @@ ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/ ./
 
 USER nextjs
 EXPOSE 3000
