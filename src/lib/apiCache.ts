@@ -11,7 +11,7 @@ interface CacheEntry {
 
 class ApiCache {
   private cache: Map<string, CacheEntry>;
-  private pendingRequests: Map<string, Promise<any>>;
+  private pendingRequests: Map<string, Promise<unknown>>;
 
   constructor() {
     this.cache = new Map();

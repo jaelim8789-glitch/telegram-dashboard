@@ -365,7 +365,7 @@ class AutonomousGrowthManager {
   /**
    * 콘텐츠�? 발송?�니??
    */
-  private async sendContent(content: string, targets: string[], timing: TimingStrategy): Promise<any> {
+  private async sendContent(content: string, targets: string[], timing: TimingStrategy): Promise<unknown> {
     try {
       // ?�성 계정 가?�오�?
       const accounts = await api.fetchAccounts();

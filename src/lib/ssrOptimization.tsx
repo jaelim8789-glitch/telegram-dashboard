@@ -31,8 +31,8 @@ class SsrOptimizer {
   }
 
   // ?¬ë¬ ?°ì´???ì???¬ì  ë¡ë©
-  public async preloadMultipleData(dataFetchers: Array<{ key: string; fetcher: () => Promise<any>; ttl?: number }>): Promise<Record<string, any>> {
-    const results: Record<string, any> = {};
+  public async preloadMultipleData(dataFetchers: Array<{ key: string; fetcher: () => Promise<unknown>; ttl?: number }>): Promise<Record<string, unknown>> {
+    const results: Record<string, unknown> = {};
     
     const promises = dataFetchers.map(async ({ key, fetcher, ttl }) => {
       results[key] = await this.preloadData(key, fetcher, ttl);
@@ -152,7 +152,7 @@ class SsrOptimizer {
   }
 
   // ?ë² ?¬ì´??ìºì ???ì±
-  public generateCacheKey(url: string, params: Record<string, any>, userAgent?: string): string {
+  public generateCacheKey(url: string, params: Record<string, unknown>, userAgent?: string): string {
     const paramStr = Object.keys(params)
       .sort()
       .map(key => `${key}=${params[key]}`)
@@ -188,13 +188,13 @@ class SsrOptimizer {
   // ?ì´?ì ?°ì  ?ëë§?
   public async renderLayoutFirst(
     layoutRenderer: () => string,
-    contentFetchers: Array<{ key: string; fetcher: () => Promise<any> }>
-  ): Promise<{ layoutHtml: string; contentData: Record<string, any> }> {
+    contentFetchers: Array<{ key: string; fetcher: () => Promise<unknown> }>
+  ): Promise<{ layoutHtml: string; contentData: Record<string, unknown> }> {
     // ?ì´?ì ë¨¼ì? ?ëë§?
     const layoutHtml = layoutRenderer();
     
     // ì½íì¸??°ì´??ë³ë ¬ë¡?ê°?¸ì¤ê¸?
-    const contentData: Record<string, any> = {};
+    const contentData: Record<string, unknown> = {};
     const fetchPromises = contentFetchers.map(async (fetcher) => {
       contentData[fetcher.key] = await fetcher.fetcher();
     });
@@ -227,9 +227,9 @@ class SsrOptimizer {
   // ?°ì´???¨í´ ê¸°ë° ?¬ì  ë¡ë©
   public async preloadBasedOnPattern(
     url: string,
-    dataDependencies: Array<{ pattern: string; fetcher: () => Promise<any> }>
-  ): Promise<Record<string, any>> {
-    const results: Record<string, any> = {};
+    dataDependencies: Array<{ pattern: string; fetcher: () => Promise<unknown> }>
+  ): Promise<Record<string, unknown>> {
+    const results: Record<string, unknown> = {};
     
     for (const dep of dataDependencies) {
       if (url.includes(dep.pattern)) {
@@ -348,7 +348,7 @@ export function OptimizedServerComponent<T>({
 }
 
 // ?°ì´???¬ì  ë¡ë© HOC
-export function withServerData<T, P extends Record<string, any>>(
+export function withServerData<T, P extends Record<string, unknown>>(
   Component: React.ComponentType<P>,
   dataKey: string,
   fetcher: () => Promise<T>
@@ -423,7 +423,7 @@ export const serverSideUtilities = {
   },
 
   // ?ë²?ì ìºì ???ì±
-  generateCacheKey: (url: string, params: Record<string, any>, userAgent?: string): string => {
+  generateCacheKey: (url: string, params: Record<string, unknown>, userAgent?: string): string => {
     const optimizer = SsrOptimizer.getInstance();
     return optimizer.generateCacheKey(url, params, userAgent);
   }
@@ -432,11 +432,11 @@ export const serverSideUtilities = {
 // ?ì´?ì ?°ì  ?ëë§???
 export function useLayoutFirstRendering() {
   const [layoutRendered, setLayoutRendered] = useState(false);
-  const [contentData, setContentData] = useState<Record<string, any>>({});
+  const [contentData, setContentData] = useState<Record<string, unknown>>({});
 
   const renderLayoutFirst = useCallback(async (
     layoutRenderer: () => string,
-    contentFetchers: Array<{ key: string; fetcher: () => Promise<any> }>
+    contentFetchers: Array<{ key: string; fetcher: () => Promise<unknown> }>
   ) => {
     const optimizer = SsrOptimizer.getInstance();
     const { layoutHtml, contentData } = await optimizer.renderLayoutFirst(layoutRenderer, contentFetchers);

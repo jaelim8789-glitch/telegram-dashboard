@@ -84,25 +84,25 @@ export function useWebWorker(workerPath: string) {
   }, []);
 
   // 다양한 데이터 처리 작업을 위한 헬퍼 함수들
-  const sortData = useCallback((data: any[], sortBy: string, order: 'asc' | 'desc' = 'asc') => {
+  const sortData = useCallback((data: unknown[], sortBy: string, order: 'asc' | 'desc' = 'asc') => {
     return runTask('SORT_DATA', { data, sortBy, order });
   }, [runTask]);
 
-  const filterData = useCallback((data: any[], filters: Record<string, any>) => {
+  const filterData = useCallback((data: unknown[], filters: Record<string, unknown>) => {
     return runTask('FILTER_DATA', { data, filters });
   }, [runTask]);
 
-  const groupData = useCallback((data: any[], groupBy: string) => {
+  const groupData = useCallback((data: unknown[], groupBy: string) => {
     return runTask('GROUP_DATA', { data, groupBy });
   }, [runTask]);
 
-  const aggregateData = useCallback((data: any[], aggregations: { field: string; operation: 'sum' | 'avg' | 'count' | 'min' | 'max' }[]) => {
+  const aggregateData = useCallback((data: unknown[], aggregations: { field: string; operation: 'sum' | 'avg' | 'count' | 'min' | 'max' }[]) => {
     return runTask('AGGREGATE_DATA', { data, aggregations });
   }, [runTask]);
 
   const processLargeDataset = useCallback((
-    data: any[],
-    filters: Record<string, any>,
+    data: unknown[],
+    filters: Record<string, unknown>,
     sortBy: string,
     order: 'asc' | 'desc' = 'asc',
     aggregations: { field: string; operation: 'sum' | 'avg' | 'count' | 'min' | 'max' }[]

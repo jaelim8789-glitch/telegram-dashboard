@@ -47,7 +47,7 @@ export function useSmartTaskAutomation(options: TaskAutomationOptions = {}) {
   });
 
   const [activeTasks, setActiveTasks] = useState<Set<string>>(new Set());
-  const [executionLogs, setExecutionLogs] = useState<any[]>(() => {
+  const [executionLogs, setExecutionLogs] = useState<unknown[]>(() => {
     try {
       const saved = localStorage.getItem('automation-execution-logs');
       return saved ? JSON.parse(saved) : [];

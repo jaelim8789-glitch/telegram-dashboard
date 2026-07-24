@@ -7,7 +7,7 @@ export function useExport() {
   const toast = useToastStore(s => s.add);
   const [exporting, setExporting] = useState(false);
 
-  const exportCSV = useCallback(async (data: Record<string, any>[], filename: string) => {
+  const exportCSV = useCallback(async (data: Record<string, unknown>[], filename: string) => {
     setExporting(true);
     try {
       const headers = Object.keys(data[0] || {});

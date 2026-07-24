@@ -1,7 +1,7 @@
 // 웹 워커: CPU 집약적 작업을 백그라운드에서 처리
 
 // 데이터 정렬 작업
-function sortData(data: any[], sortBy: string, order: 'asc' | 'desc' = 'asc'): any[] {
+function sortData(data: unknown[], sortBy: string, order: 'asc' | 'desc' = 'asc'): unknown[] {
   return [...data].sort((a, b) => {
     const aValue = a[sortBy];
     const bValue = b[sortBy];
@@ -17,7 +17,7 @@ function sortData(data: any[], sortBy: string, order: 'asc' | 'desc' = 'asc'): a
 }
 
 // 데이터 필터링 작업
-function filterData(data: any[], filters: Record<string, any>): any[] {
+function filterData(data: unknown[], filters: Record<string, unknown>): unknown[] {
   return data.filter(item => {
     return Object.entries(filters).every(([key, value]) => {
       if (value === null || value === undefined) return true;
@@ -33,7 +33,7 @@ function filterData(data: any[], filters: Record<string, any>): any[] {
 }
 
 // 데이터 그룹화 작업
-function groupData(data: any[], groupBy: string): Record<string, any[]> {
+function groupData(data: unknown[], groupBy: string): Record<string, unknown[]> {
   return data.reduce((acc, item) => {
     const key = item[groupBy];
     if (!acc[key]) {
@@ -41,11 +41,11 @@ function groupData(data: any[], groupBy: string): Record<string, any[]> {
     }
     acc[key].push(item);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, unknown[]>);
 }
 
 // 데이터 집계 작업
-function aggregateData(data: any[], aggregations: { field: string; operation: 'sum' | 'avg' | 'count' | 'min' | 'max' }[]): Record<string, number> {
+function aggregateData(data: unknown[], aggregations: { field: string; operation: 'sum' | 'avg' | 'count' | 'min' | 'max' }[]): Record<string, number> {
   const result: Record<string, number> = {};
   
   for (const agg of aggregations) {
