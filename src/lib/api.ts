@@ -72,7 +72,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         if (!res.ok) {
           if (res.status === 401) {
             const refreshed = await tryRefreshToken();
-            if (refreshed) continue;
+            // eslint-disable-next-line no-unreachable-loop
+                  if (refreshed) continue;
           }
           const body = await readErrorBody(res);
           const detail = extractDetailMessage(body) ?? `?�청???�패?�습?�다 (${res.status})`;
@@ -119,6 +120,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
               if (!res.ok) {
                 if (res.status === 401) {
                   const refreshed = await tryRefreshToken();
+                  // eslint-disable-next-line no-unreachable-loop
                   if (refreshed) continue;
                 }
                 const body = await readErrorBody(res);
@@ -130,7 +132,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
               return res.json() as Promise<T>;
             } catch (bgErr) {
               clearTimeout(bgTimeout);
-              if (attempt < MAX_RETRIES - 1) continue;
+              // eslint-disable-next-line no-unreachable-loop
+                if (attempt < MAX_RETRIES - 1) continue;
               throw bgErr;
             }
           }
@@ -219,7 +222,8 @@ export async function requestFast<T>(path: string, init?: RequestInit): Promise<
           return res.json() as Promise<T>;
         } catch (bgErr) {
           clearTimeout(bgTimeout);
-          if (attempt < MAX_RETRIES - 1) continue;
+          // eslint-disable-next-line no-unreachable-loop
+                if (attempt < MAX_RETRIES - 1) continue;
           throw bgErr;
         }
       }

@@ -3,7 +3,7 @@
 // Supports push notifications + IndexedDB offline data layer.
 
 // 캐시 이름을 빌드 해시로 관리하여 자동 갱신 (stamp-sw-buildhash.js가 빌드 시 주입)
-const CACHE_NAME = `telemon-v9cD-91OZKvsm9eiCRCEDC`;
+const CACHE_NAME = `telemon-fixed-20260724`;
 const TEMP_CACHE_NAME = 'telemon-temp-v1';
 const STATIC_ASSETS = [
   "/",
