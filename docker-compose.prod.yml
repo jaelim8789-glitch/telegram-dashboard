@@ -17,10 +17,7 @@ services:
       - telemon_network
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: ghcr.io/jaelim8789-glitch/telemon-backend:latest
     container_name: telemon_backend_prod
     ports:
       - "8000:8000"
@@ -40,10 +37,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: ghcr.io/jaelim8789-glitch/telemon-frontend:latest
     container_name: telemon_frontend_prod
     ports:
       - "3000:3000"
